@@ -1,0 +1,59 @@
+# push 到 main（或在 Actions 页手动运行）时：部署游戏服务器 Worker，再部署网页到 Pages。
+name: Deploy
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Check secrets
+        env:
+          ADMIN_PIN: ${{ secrets.ADMIN_PIN }}
+        run: |
+          missing=""
+          [ -n "$CLOUDFLARE_API_TOKEN" ] || missing="$missing CLOUDFLARE_API_TOKEN"
+          [ -n "$CLOUDFLARE_ACCOUNT_ID" ] || missing="$missing CLOUDFLARE_ACCOUNT_ID"
+          [ -n "$ADMIN_PIN" ] || missing="$missing ADMIN_PIN"
+          if [ -n "$missing" ]; then echo "::error::缺少 GitHub Secrets:$missing"; exit 1; fi
+
+      - run: npm ci
+      - run: npm run build
+
+      - name: Deploy game server (Worker borderland-game)
+        working-directory: worker
+        run: npx wrangler deploy
+
+      - name: Set ADMIN_PIN on Worker
+        working-directory: worker
+        env:
+          ADMIN_PIN: ${{ secrets.ADMIN_PIN }}
+        run: printf '%s' "$ADMIN_PIN" | npx wrangler secret put ADMIN_PIN
+
+      - name: Create Pages project (first run only)
+        run: |
+          if npx wrangler pages project list | grep -q '\bborderland\b'; then
+            echo "Pages project exists"
+          else
+            npx wrangler pages project create borderland --production-branch main
+          fi
+
+      - name: Deploy web (Pages project borderland)
+        working-directory: web
+        run: npx wrangler pages deploy --branch main --commit-hash "$GITHUB_SHA" --commit-dirty=true
