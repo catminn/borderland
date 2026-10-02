@@ -1,0 +1,17 @@
+{
+  "name": "borderland",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "cp shared/rules.js web/public/rules.js",
+    "dev": "npm run build && cd worker && wrangler dev -c wrangler.dev.jsonc --port 8787",
+    "deploy:game": "cd worker && wrangler deploy",
+    "deploy:web": "npm run build && cd web && wrangler pages deploy",
+    "dev:pages": "npm run build && cd web && wrangler pages dev public --port 8788 --do GAME=Game@borderland-game",
+    "test": "node tests/sync.test.mjs",
+    "test:restart": "node tests/restart.test.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "^4.40.0"
+  }
+}

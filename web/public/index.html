@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>百鬼夜行 控制台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@700;900&family=Noto+Sans+SC:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>百鬼夜行</h1>
+      <p class="sub">CSSA 万圣节竞技控制台</p>
+    </div>
+    <div class="clock" aria-label="游戏时钟">
+      <span class="pill" id="conn" hidden>连接中…</span>
+      <span class="t" id="clk">T+00:00</span>
+      <button class="btn" id="clockctl" data-a="clockctl" hidden>开始计时</button>
+      <span class="who" id="who"></span>
+      <button class="btn" id="logout" data-a="logout" hidden>退出</button>
+    </div>
+  </header>
+  <nav role="tablist" id="tabs" hidden></nav>
+  <div class="notice" id="notice" role="status"></div>
+  <main id="view"></main>
+</div>
+<div id="modal"></div>
+<script type="module" src="app.js"></script>
+</body>
+</html>

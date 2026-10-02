@@ -1,0 +1,9 @@
+// Local development only: same Worker, but it also serves the web pages so one process runs everything.
+{
+  "name": "borderland-game",
+  "main": "src/index.js",
+  "compatibility_date": "2025-09-01",
+  "assets": { "directory": "../web/public", "binding": "ASSETS" },
+  "durable_objects": { "bindings": [{ "name": "GAME", "class_name": "Game" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Game"] }]
+}
