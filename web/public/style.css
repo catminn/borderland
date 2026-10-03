@@ -808,3 +808,27 @@ body.fullamb #amb{position:fixed;inset:0;height:auto}
 .cstep{position:absolute;right:4px;top:4px;bottom:4px;width:26px;display:flex;flex-direction:column;gap:2px}
 .cstep button{flex:1;min-height:0;padding:0;border:1px solid var(--line);background:var(--panel2);color:var(--sub);border-radius:5px;font-size:9px;line-height:1;cursor:pointer}
 .cstep button:hover{color:var(--accent);border-color:var(--accent)}
+
+/* 生死簿: lantern glows fluorescent cyan in dark */
+:root[data-theme="dark"] .logo .scroll{background:#9ffcf0;border-color:#5ff0dc;box-shadow:0 0 14px 4px rgba(80,240,220,.65),inset 0 0 6px rgba(255,255,255,.7)}
+/* 修改冥币: same coin box as the market */
+.coin-in .in{padding-right:34px}
+.coin-in input[type=number]{-moz-appearance:textfield;appearance:textfield}
+.coin-in input[type=number]::-webkit-inner-spin-button,.coin-in input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+/* 买命回队 confirm */
+.mrow.asking .l2{grid-template-columns:minmax(130px,1.3fr) minmax(70px,.7fr) minmax(100px,.9fr) minmax(200px,1.5fr)}
+.rvask{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:6px}
+.rvask .btn-main,.rvask .btn-line{min-height:44px;padding:0 8px;font-size:15px;white-space:nowrap}
+@media (max-width:719px){.mrow.asking .l2{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.rvask{grid-column:1/-1}}
+/* 各队状态: tap a skill card to read it */
+.trg{display:block}
+.trg .skdrow{padding:0 20px 12px}
+.trg .skd{margin-top:0}
+.tcard .skd{margin-top:2px;padding:10px 12px}
+.tcard .skd b{font-size:17px}
+button.sk{background:transparent;font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+button.sk:hover{border-color:var(--accent);color:var(--accent)}
+button.sk.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.tbl .trg+.trg .tr{border-top:1px solid var(--line)}
+/* player page: market mates sit above the skill cards; hide the block on computers when nobody is in the market */
+@media (min-width:1100px){.page.allin>.pcol>.sec.mk0{display:none}}
