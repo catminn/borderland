@@ -9,7 +9,9 @@ const EYE_D=[[.05,.1],[.95,.12],[.04,.48],[.96,.42],[.07,.88],[.93,.9],[.18,.05]
 const EYE_M=[[.15,.085],[.85,.1],[.14,.94],[.86,.955],[.5,.975]];
 
 class GhostAmbience extends HTMLElement{
-  static get observedAttributes(){return['data-len','data-err','data-ok','data-keep','data-top'];}
+  static get observedAttributes(){return['data-len','data-err','data-ok','data-keep','data-top','data-tone'];}
+  // Light pages: paper money drifting down at a slant. Dark pages and login: ghost fire rising from below.
+  get light(){return this.mode!=='login'&&this.dataset.tone==='light';}
   connectedCallback(){
     this.style.cssText='position:absolute;inset:0;display:block;pointer-events:none;overflow:hidden';
     if(!this.cv){this.cv=document.createElement('canvas');this.cv.style.cssText='width:100%;height:100%;display:block';this.appendChild(this.cv);}
@@ -40,6 +42,7 @@ class GhostAmbience extends HTMLElement{
   attributeChangedCallback(n,o,v){
     if(!this.ctx||!this.flames)return;
     if(n==='data-len')this.len=+v||0;
+    if(n==='data-tone'&&v!==o){this.init();if(this.reduced)this.drawStatic();return;}
     if((n==='data-keep'||n==='data-top')&&v!==o)this.flames.forEach(f=>{if(this.inKeep(f.x,f.y,8))Object.assign(f,this.spot());});
     if(n==='data-err'&&o!==null&&v!==o&&v!=='0')this.triggerError();
     if(n==='data-ok'){if(v==='1'&&o!=='1')this.triggerOk();else if(v!=='1'&&o==='1'){this.okMode=false;this.init();if(this.reduced)this.drawStatic();}}
@@ -52,7 +55,7 @@ class GhostAmbience extends HTMLElement{
     else this.flames.forEach(f=>{if(f.x>w||f.y>h)Object.assign(f,this.spot());});
     if(this.reduced)this.drawStatic();}
   spot(){const w=this.w,h=this.h;
-    if(this.mode==='page')return{x:rnd(.45,.97)*w,y:rnd(26,110)};
+    if(this.mode==='page')return{x:rnd(.45,.97)*w,y:h-rnd(6,30)};
     if(this.mode==='screen'||this.mode==='login'){ // bottom-heavy: only around the content (data-keep) and below the page header (data-top)
       for(let i=0;i<40;i++){const q=this.rawSpot();if(Math.random()<.04+.96*Math.pow(q.y/h,3))return q;}
       const q=this.rawSpot();q.y=Math.max(q.y,h*rnd(.78,.96));return q;}
@@ -68,9 +71,12 @@ class GhostAmbience extends HTMLElement{
     for(const b of bands){a-=(b[2]-b[0])*(b[3]-b[1]);if(a<=0)return{x:rnd(b[0],b[2]),y:rnd(b[1],b[3])};}
     const b=bands[0];return{x:rnd(b[0],b[2]),y:rnd(b[1],b[3])};}
   init(){
-    const login=this.mode!=='page',n=this.mode==='screen'?(this.mob?4:9):login?(this.mob?4:9):(this.mob?2:3);
+    const login=this.mode!=='page';
+    if(this.light){this.flames=[];this.eyes=[];this.fog=[];
+      this.paper=Array.from({length:this.mode==='screen'?(this.mob?9:18):(this.mob?4:7)},()=>this.newPaper(rnd(-.1,1)));this.nextSpawn=9;return;}
+    const n=this.mode==='screen'?(this.mob?4:9):login?(this.mob?4:9):(this.mob?2:3);
     this.flames=Array.from({length:n},(_,i)=>{const z=rnd(.3,1),size=login?(this.mob?10+z*13:13+z*19):(this.mob?9+z*8:11+z*11);
-      return{...this.spot(),z,size,seed:rnd(0,100),bobA:rnd(5,13),bobS:rnd(.35,.7),swA:rnd(2,6),swS:rnd(.5,1.1),phase:'on',a:login?1:.9,timer:rnd(4,16),dip:0,lean:0,
+      return{...this.spot(),z,size,seed:rnd(0,100),bobA:rnd(5,13),bobS:rnd(.35,.7),swA:rnd(2,6),swS:rnd(.5,1.1),phase:'on',a:login?1:.9,timer:rnd(4,16),dip:0,lean:0,rise:this.mode==='page'?rnd(5,10):rnd(12,26),
         trail:login&&i<2?[]:null,trailT:0};}).sort((a,b)=>a.z-b.z);
     const slots=login?(this.mob?EYE_M:EYE_D):[];
     this.eyes=slots.map(([x,y])=>({nx:x,ny:y,s:rnd(.8,1.15),red:Math.random()<.35,tilt:rnd(.06,.16),state:'closed',open:0,t:0,hold:0,blink:0,lx:0,ly:0}));
@@ -81,7 +87,7 @@ class GhostAmbience extends HTMLElement{
   keepRect(){const k=(this.dataset.keep||'').split(',').map(Number);return k.length===4&&!k.some(isNaN)?k:null;}
   inKeep(x,y,pad=0){if(y<+(this.dataset.top||0)+pad)return true;const k=this.keepRect();if(!k)return false;
     return x>k[0]-pad&&x<k[0]+k[2]+pad&&y>k[1]-pad&&y<k[1]+k[3]+pad;}
-  newPaper(y){const z=rnd(.4,1);return{x:rnd(.02,.98),y,z,vy:rnd(14,26),sw:rnd(.5,1.2),seed:rnd(0,100),rot:rnd(0,6),rs:rnd(-.9,.9),slip:Math.random()<.3};}
+  newPaper(y){const z=rnd(.4,1),k=this.mode==='screen'?1.6:1;return{x:rnd(-.25,.95),y,z,vx:rnd(16,34)*k,vy:rnd(20,38)*k,sw:rnd(.5,1.2),seed:rnd(0,100),rot:rnd(0,6),rs:rnd(-.9,.9),slip:Math.random()<.3};}
   triggerError(){if(this.reduced||this.mode!=='login'||this.okMode)return;this.errMode=true;this.errT=0;this.eyes.forEach(e=>{e.state='stare';});}
   triggerOk(){this.okMode=true;this.okT=0;this.errMode=false;}
   update(dt){
@@ -98,10 +104,13 @@ class GhostAmbience extends HTMLElement{
       else if(f.phase==='off'){f.off-=dt;if(f.off<0){Object.assign(f,this.spot());if(f.trail)f.trail=[];f.phase='in';}}
       else if(f.phase==='in'){f.a+=dt*.7;if(f.a>=1){f.a=1;f.phase='on';f.timer=rnd(6,18);}}
       if(Math.random()<dt*.18)f.dip=1;f.dip=Math.max(0,f.dip-dt*2.6);
+      if(f.rise){f.y-=f.rise*dt; // drift upward; fade out near the top or when touching the big screen's content
+        const top=this.mode==='page'?16:this.mode==='login'?h*.04:Math.min(h-20,+(this.dataset.top||0))+12;
+        if(f.phase==='on'&&(f.y-f.size<top||(this.mode==='screen'&&this.inKeep(f.x,f.y-f.size*1.5,0))))f.phase='fade';}
     }
     for(const f of this.flames)if(f.trail){f.trailT+=dt;if(f.trailT>.09&&f.a>.2){f.trailT=0;f.trail.push({x:f.cx||f.x,y:(f.tip||f.y),a:.9*f.a});if(f.trail.length>22)f.trail.shift();}
       for(const p of f.trail){p.y-=16*dt;p.x+=Math.sin(t*1.7+p.y*.05)*6*dt;p.a-=dt*.45;}f.trail=f.trail.filter(p=>p.a>0);}
-    for(const p of this.paper){p.y+=p.vy*(.5+.5*p.z)*dt/h;p.x+=Math.sin(t*p.sw+p.seed)*.018*dt;p.rot+=p.rs*dt;if(p.y>1.06)Object.assign(p,this.newPaper(-.05));}
+    for(const p of this.paper){const sp=.5+.5*p.z;p.y+=p.vy*sp*dt/h;p.x+=p.vx*sp*dt/w+Math.sin(t*p.sw+p.seed)*.012*dt;p.rot+=p.rs*dt;if(p.y>1.08||p.x>1.12)Object.assign(p,this.newPaper(-.06));}
     for(const b of this.fog){b.x+=b.sp*dt;if(b.x-b.rx>1)b.x=-b.rx;}
     if(this.mode==='page')return;
     let gx=this.target?this.target.x:w/2,gy=this.target?this.target.y:h*.56;
@@ -149,10 +158,10 @@ class GhostAmbience extends HTMLElement{
     c.fillStyle=g;c.fill();
     c.restore();
   }
-  drawPaper(p,t){const c=this.ctx,x=p.x*this.w,y=p.y*this.h,s=8+p.z*7;c.save();c.translate(x,y);c.rotate(p.rot);c.scale(Math.cos(t*1.1+p.seed),1);
-    c.globalAlpha=.22+.36*p.z;
-    if(p.slip){c.fillStyle='#d6c68c';c.fillRect(-s*.55,-s*.85,s*1.1,s*1.7);c.fillStyle='rgba(150,40,25,.55)';c.fillRect(-s*.25,-s*.3,s*.5,s*.5);}
-    else{c.fillStyle='#d8cfa8';c.beginPath();c.arc(0,0,s,0,Math.PI*2);c.rect(-s*.33,-s*.33,s*.66,s*.66);c.fill('evenodd');}
+  drawPaper(p,t){const c=this.ctx,x=p.x*this.w,y=p.y*this.h,s=this.mode==='screen'?11+p.z*9:7+p.z*6;c.save();c.translate(x,y);c.rotate(p.rot);c.scale(Math.cos(t*1.1+p.seed),1);
+    c.globalAlpha=.4+.4*p.z;c.lineWidth=1;c.strokeStyle='rgba(110,88,40,.55)';
+    if(p.slip){c.fillStyle='#dcc882';c.fillRect(-s*.55,-s*.85,s*1.1,s*1.7);c.strokeRect(-s*.55,-s*.85,s*1.1,s*1.7);c.fillStyle='rgba(170,45,28,.7)';c.fillRect(-s*.25,-s*.3,s*.5,s*.5);}
+    else{c.fillStyle='#cdb878';c.beginPath();c.arc(0,0,s,0,Math.PI*2);c.rect(-s*.33,-s*.33,s*.66,s*.66);c.fill('evenodd');c.stroke();}
     c.restore();}
   draw(){
     const c=this.ctx,w=this.w,h=this.h,t=this.t,k=this.okMode?this.okT:-1;c.clearRect(0,0,w,h);
@@ -179,7 +188,7 @@ class GhostAmbience extends HTMLElement{
       const g=c.createRadialGradient(0,0,0,0,0,ew*.6);g.addColorStop(0,col[0]);g.addColorStop(1,col[1]);c.fillStyle=g;c.fill();
       c.shadowBlur=0;c.clip();c.fillStyle='#120806';c.beginPath();c.ellipse(e.lx*ew*.26,e.ly*eh*.35,ew*.075,Math.max(.5,eh*.92),0,0,Math.PI*2);c.fill();c.restore();});
   }
-  drawStatic(){if(!this.flames)return;const c=this.ctx;c.clearRect(0,0,this.w,this.h);this.flames.forEach(f=>{f.a=this.okMode?0:1;f.dip=0;f.lean=0;this.drawFlame(f,0);});}
+  drawStatic(){if(!this.flames)return;const c=this.ctx;c.clearRect(0,0,this.w,this.h);(this.paper||[]).forEach(p=>this.drawPaper(p,0));this.flames.forEach(f=>{f.a=this.okMode?0:1;f.dip=0;f.lean=0;this.drawFlame(f,0);});}
 }
 customElements.define('ghost-ambience',GhostAmbience);
 })();
