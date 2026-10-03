@@ -87,7 +87,7 @@ class GhostAmbience extends HTMLElement{
   keepRect(){const k=(this.dataset.keep||'').split(',').map(Number);return k.length===4&&!k.some(isNaN)?k:null;}
   inKeep(x,y,pad=0){if(y<+(this.dataset.top||0)+pad)return true;const k=this.keepRect();if(!k)return false;
     return x>k[0]-pad&&x<k[0]+k[2]+pad&&y>k[1]-pad&&y<k[1]+k[3]+pad;}
-  newPaper(y){const z=rnd(.4,1),k=this.mode==='screen'?1.6:1;return{x:rnd(-.25,.95),y,z,vx:rnd(16,34)*k,vy:rnd(20,38)*k,sw:rnd(.5,1.2),seed:rnd(0,100),rot:rnd(0,6),rs:rnd(-.9,.9),slip:Math.random()<.3};}
+  newPaper(y){const z=rnd(.4,1),k=this.mode==='screen'?1.4:1;return{x:rnd(-.25,.95),y,z,vx:rnd(8,18)*k,vy:rnd(10,20)*k,swA:rnd(18,40)*k,ph:rnd(0,6.3),sw:rnd(.5,1.2),seed:rnd(0,100),rot:rnd(0,6),rs:rnd(-.9,.9),slip:Math.random()<.3};}
   triggerError(){if(this.reduced||this.mode!=='login'||this.okMode)return;this.errMode=true;this.errT=0;this.eyes.forEach(e=>{e.state='stare';});}
   triggerOk(){this.okMode=true;this.okT=0;this.errMode=false;}
   update(dt){
@@ -110,7 +110,8 @@ class GhostAmbience extends HTMLElement{
     }
     for(const f of this.flames)if(f.trail){f.trailT+=dt;if(f.trailT>.09&&f.a>.2){f.trailT=0;f.trail.push({x:f.cx||f.x,y:(f.tip||f.y),a:.9*f.a});if(f.trail.length>22)f.trail.shift();}
       for(const p of f.trail){p.y-=16*dt;p.x+=Math.sin(t*1.7+p.y*.05)*6*dt;p.a-=dt*.45;}f.trail=f.trail.filter(p=>p.a>0);}
-    for(const p of this.paper){const sp=.5+.5*p.z;p.y+=p.vy*sp*dt/h;p.x+=p.vx*sp*dt/w+Math.sin(t*p.sw+p.seed)*.012*dt;p.rot+=p.rs*dt;if(p.y>1.08||p.x>1.12)Object.assign(p,this.newPaper(-.06));}
+    for(const p of this.paper){const sp=.5+.5*p.z,sw=Math.cos(t*p.sw+p.ph); // falling leaf: swings side to side, slows at the ends of each swing
+      p.y+=p.vy*sp*(.55+.45*Math.abs(sw))*dt/h;p.x+=(p.vx*sp+sw*p.swA)*dt/w;p.rot=Math.sin(t*p.sw+p.ph)*.6+p.seed;if(p.y>1.08||p.x>1.12)Object.assign(p,this.newPaper(-.06));}
     for(const b of this.fog){b.x+=b.sp*dt;if(b.x-b.rx>1)b.x=-b.rx;}
     if(this.mode==='page')return;
     let gx=this.target?this.target.x:w/2,gy=this.target?this.target.y:h*.56;
@@ -158,10 +159,10 @@ class GhostAmbience extends HTMLElement{
     c.fillStyle=g;c.fill();
     c.restore();
   }
-  drawPaper(p,t){const c=this.ctx,x=p.x*this.w,y=p.y*this.h,s=this.mode==='screen'?11+p.z*9:7+p.z*6;c.save();c.translate(x,y);c.rotate(p.rot);c.scale(Math.cos(t*1.1+p.seed),1);
-    c.globalAlpha=.4+.4*p.z;c.lineWidth=1;c.strokeStyle='rgba(110,88,40,.55)';
-    if(p.slip){c.fillStyle='#dcc882';c.fillRect(-s*.55,-s*.85,s*1.1,s*1.7);c.strokeRect(-s*.55,-s*.85,s*1.1,s*1.7);c.fillStyle='rgba(170,45,28,.7)';c.fillRect(-s*.25,-s*.3,s*.5,s*.5);}
-    else{c.fillStyle='#cdb878';c.beginPath();c.arc(0,0,s,0,Math.PI*2);c.rect(-s*.33,-s*.33,s*.66,s*.66);c.fill('evenodd');c.stroke();}
+  drawPaper(p,t){const c=this.ctx,x=p.x*this.w,y=p.y*this.h,s=this.mode==='screen'?9+p.z*8:6+p.z*5;c.save();c.translate(x,y);c.rotate(p.rot);c.scale(.25+.75*Math.abs(Math.cos(t*.55+p.seed)),1);
+    c.globalAlpha=.3+.35*p.z;c.lineWidth=1;c.strokeStyle='rgba(70,95,88,.22)';c.fillStyle='#ffffff';
+    c.shadowColor='rgba(40,70,60,.12)';c.shadowBlur=4;
+    c.beginPath();c.arc(0,0,s,0,Math.PI*2);c.rect(-s*.33,-s*.33,s*.66,s*.66);c.fill('evenodd');c.shadowBlur=0;c.stroke();
     c.restore();}
   draw(){
     const c=this.ctx,w=this.w,h=this.h,t=this.t,k=this.okMode?this.okT:-1;c.clearRect(0,0,w,h);
