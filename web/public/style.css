@@ -677,3 +677,9 @@ body.board .stage{background:transparent}
 .pins .pr .rb .small{padding-right:4px}
 .pins .pr .rb .clue{min-height:34px;font-size:14px;border-radius:8px;padding:0}
 @media (max-width:719px){.pins .pr .rb{grid-template-columns:repeat(4,minmax(0,1fr))}.pins .pr .rb .small{grid-column:1/-1}}
+/* 大屏窄屏：花色 2×2，最矮的柱子也放得下名次 */
+@media (max-width:819px){
+  .stage .bars{height:260px}
+  .stage .bcol .b{--b0:28px;--b1:110px;align-items:flex-start}
+  .stage .bcol .su{display:grid;grid-template-columns:repeat(2,auto);justify-content:center;gap:0 6px;font-size:14px;line-height:1.25}
+}
