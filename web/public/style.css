@@ -702,3 +702,12 @@ body.board .stage{background:transparent}
 .shopfull .nm.off{color:var(--mute);text-decoration:line-through}
 @media (max-width:719px){.shopchips{flex-direction:column}}
 body.fullamb #amb{position:fixed;inset:0;height:auto}
+/* Computers: player and market pages show all their sections at once in columns (no sub-tabs) */
+@media (min-width:1100px){
+  .page.allin{display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:18px;align-items:start}
+  .page.allin>.subtabs{display:none}
+  .page.allin>:not(.sec){grid-column:1/-1}
+  .page.allin>.sec,.page.allin>.sec:not(.on){display:flex}
+  .page.allin .prooms{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .page.allin .people{grid-template-columns:minmax(0,1fr)}
+}

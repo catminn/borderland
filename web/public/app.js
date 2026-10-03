@@ -265,7 +265,7 @@ function viewMarket(){
     +t.skills.map(k=>'<div class="li" style="padding:8px 0;min-height:52px"><div class="grow"><span style="font-size:16px;font-weight:700">'+esc(k.name)+'</span><span class="small">'+esc(k.by)+' 买于 '+fmt(k.t)+'</span></div>'
       +'<button class="btn-line acc" data-a="usecard" data-t="'+t.id+'" data-k="'+k.sid+'">标记已使用</button></div>').join('')+'</div>').join('');
   const hold='<h2 class="sh">各队持有的技能卡</h2>'+(inv||'<div class="pn"><span class="muted">还没有队伍买过技能卡。</span></div>');
-  return '<div class="page tabbed toptabs">'+sub('market',[['buy','孟婆买命'],['shop','技能卡商铺'],['hold','各队持卡']],'top')
+  return '<div class="page tabbed toptabs allin">'+sub('market',[['buy','孟婆买命'],['shop','技能卡商铺'],['hold','各队持卡']],'top')
     +sec('market','buy',buy)+sec('market','shop',shop)+sec('market','hold',hold)+'</div>';
 }
 
@@ -436,7 +436,7 @@ function viewPlayer(){
     +'<span class="small">花本队冥币 '+RATE+':1 换助力（队伍现有 <span class="mono" style="color:var(--ink)">'+t.score+'</span>）</span>';
   const roomSec='<h2 class="sh" style="font-size:22px">全部房间</h2><div class="prooms">'+ROOMS.map(roomCard).join('')+'</div>';
   const tabs=[['team','本队'],['task','任务'+(unread?'<b class="cnt">'+unread+'</b>':'')],['market','鬼市'+(mk.length?'<b class="cnt">'+mk.length+'</b>':'')],['rooms','房间']];
-  return '<div class="page tabbed toptabs">'+pass+sub('player',tabs,'top')
+  return '<div class="page tabbed toptabs allin">'+pass+sub('player',tabs,'top')
     +sec('player','team',teamSec)+sec('player','task',taskSec)+sec('player','market',mkSec)+sec('player','rooms',roomSec)+'</div>';
 }
 function modalHtml(){
@@ -487,7 +487,8 @@ function setAmb(mode,tone){
 const THEME_KEY=r=>'borderland.theme.'+r;
 // Three remembered choices per device: big screen (default dark), player page and staff pages (default light).
 const themeKey=()=>ui.tab==='board'?'screen':ME&&ME.role==='player'?'player':'staff';
-function themeFor(){const r=themeKey();let v=null;try{v=localStorage.getItem(THEME_KEY(r));}catch{/* private mode */}
+const inMarketNow=()=>{const p=ME&&ME.role==='player'&&S&&S.players.find(x=>x.id===ME.pid);return !!(p&&p.st==='market');};
+function themeFor(){const r=themeKey();if(r==='player'&&inMarketNow())return 'dark';let v=null;try{v=localStorage.getItem(THEME_KEY(r));}catch{/* private mode */}
   return v||(r==='screen'?'dark':'light');}
 const themed=()=>true;
 
@@ -507,12 +508,18 @@ function render(){
   if(!tabs.includes(ui.tab))ui.tab=tabs[0];
   document.documentElement.dataset.theme=themed()?themeFor():'light';
   document.body.classList.toggle('board',ui.tab==='board');
-  const staffTab=['dealer','npc','market','ctrl'].includes(ui.tab),full=staffTab&&innerWidth>=720; // computers: same background as the big screen
+  // Staff and player pages: the big screen's full-window background on computers, and on phones in dark mode;
+  // flames and eyes only show where no panel covers them (data-free). Phones in light mode keep the header strip.
+  const userTab=['dealer','npc','market','ctrl','player'].includes(ui.tab),tone=themeFor(),full=userTab&&(innerWidth>=720||tone==='dark');
   document.body.classList.toggle('fullamb',full);
-  setAmb(ui.tab==='board'||full?'screen':staffTab||ui.tab==='player'?'page':null,themeFor());
-  if(full){const g=$('#amb ghost-ambience');if(g){g.removeAttribute('data-keep'); // the big screen's content area does not apply here
-    const top=String(Math.round(Math.max($('#top').getBoundingClientRect().bottom,$('#tabs').hidden?0:$('#tabs').getBoundingClientRect().bottom)+6)); // keep off the header and tabs
-    if(g.dataset.top!==top)g.dataset.top=top;}}
+  setAmb(ui.tab==='board'||full?'screen':userTab?'page':null,tone);
+  {const g=$('#amb ghost-ambience');if(g){
+    if(full){g.removeAttribute('data-keep'); // the big screen's content area does not apply here
+      const top=String(Math.round(Math.max($('#top').getBoundingClientRect().bottom,$('#tabs').hidden?0:$('#tabs').getBoundingClientRect().bottom)+6));
+      if(g.dataset.top!==top)g.dataset.top=top;
+      if(g.dataset.free!=='1')g.dataset.free='1';
+      const more=ui.tab==='player'&&inMarketNow()?'1':'0';if(g.dataset.more!==more)g.dataset.more=more;}
+    else{delete g.dataset.free;delete g.dataset.more;}}}
   const nav=$('#tabs');nav.hidden=tabs.length<2;
   morph(nav,tabs.map(v=>'<button role="tab" data-a="tab" data-v="'+v+'" aria-selected="'+(v===ui.tab)+'">'+TAB_NAME[v]+'</button>').join(''));
   $('#logo').innerHTML=ui.tab==='ctrl'?'<span class="scroll"></span>生死簿':'百鬼夜行';
@@ -520,7 +527,7 @@ function render(){
   $('#logout').hidden=false;$('#conn').hidden=false;
   const run=CLOCK&&CLOCK.running;
   const cc=$('#clockctl');cc.hidden=ME.role!=='ctrl';cc.textContent=run?'暂停计时':'开始计时';
-  const th=$('#theme');th.hidden=!themed();th.textContent=themeFor()==='dark'?'浅色':'深色';
+  const th=$('#theme');th.hidden=!themed()||(themeKey()==='player'&&inMarketNow());th.textContent=themeFor()==='dark'?'浅色':'深色';
   $('.clk').classList.toggle('paused',!run);$('#clkdot').className='gd'+(run?'':' off');
   if(!S){$('#view').innerHTML='<section class="pn muted">正在连接服务器…</section>';return;}
   R.use(S);S.t=nowT();$('#clk').textContent=fmt(S.t);
