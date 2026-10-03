@@ -29,7 +29,7 @@ class GhostAmbience extends HTMLElement{
     this.resize();
     if(this.reduced)return;
     this.last=performance.now();
-    const minDt=this.mode==='login'?1/31:0;
+    const minDt=this.mode==='page'?0:1/31;
     this.loop=now=>{this.raf=requestAnimationFrame(this.loop);const raw=(now-this.last)/1000;if(raw<minDt)return;
       const dt=Math.min(.05,raw);this.last=now;
       if(this.visible&&this.w>0&&this.flames&&!document.hidden){this.t+=dt;this.update(dt);this.draw();}};
@@ -43,7 +43,7 @@ class GhostAmbience extends HTMLElement{
     if(n==='data-err'&&o!==null&&v!==o&&v!=='0')this.triggerError();
     if(n==='data-ok'){if(v==='1'&&o!=='1')this.triggerOk();else if(v!=='1'&&o==='1'){this.okMode=false;this.init();if(this.reduced)this.drawStatic();}}
   }
-  resize(){const w=this.clientWidth,h=this.clientHeight,d=Math.min(window.devicePixelRatio||1,this.mode==='login'?1:1.5);
+  resize(){const w=this.clientWidth,h=this.clientHeight,d=Math.min(window.devicePixelRatio||1,this.mode==='page'?1.5:1);
     if(!w||!h)return;
     const mob=w<600,first=!this.flames||mob!==this.mob;
     this.w=w;this.h=h;this.mob=mob;this.cv.width=Math.round(w*d);this.cv.height=Math.round(h*d);this.ctx.setTransform(d,0,0,d,0,0);
@@ -52,10 +52,11 @@ class GhostAmbience extends HTMLElement{
     if(this.reduced)this.drawStatic();}
   spot(){const w=this.w,h=this.h;
     if(this.mode==='page')return{x:rnd(.45,.97)*w,y:rnd(26,110)};
+    if(this.mode==='screen')return{x:rnd(.02,.98)*w,y:rnd(.04,.96)*h};
     if(this.mob)return{x:rnd(.1,.9)*w,y:Math.random()<.5?rnd(.07,.17)*h:rnd(.83,.92)*h};
     return{x:(Math.random()<.5?rnd(.05,.28):rnd(.72,.95))*w,y:rnd(.14,.86)*h};}
   init(){
-    const login=this.mode==='login',n=login?(this.mob?3:6):(this.mob?2:3);
+    const login=this.mode!=='page',n=this.mode==='screen'?(this.mob?3:8):login?(this.mob?3:6):(this.mob?2:3);
     this.flames=Array.from({length:n},(_,i)=>{const z=rnd(.3,1),size=login?(this.mob?10+z*13:13+z*19):(this.mob?9+z*8:11+z*11);
       return{...this.spot(),z,size,seed:rnd(0,100),bobA:rnd(5,13),bobS:rnd(.35,.7),swA:rnd(2,6),swS:rnd(.5,1.1),phase:'on',a:login?1:.9,timer:rnd(4,16),dip:0,lean:0,
         trail:login&&i<2?[]:null,trailT:0};}).sort((a,b)=>a.z-b.z);
@@ -87,7 +88,7 @@ class GhostAmbience extends HTMLElement{
       for(const p of f.trail){p.y-=16*dt;p.x+=Math.sin(t*1.7+p.y*.05)*6*dt;p.a-=dt*.45;}f.trail=f.trail.filter(p=>p.a>0);}
     for(const p of this.paper){p.y+=p.vy*(.5+.5*p.z)*dt/h;p.x+=Math.sin(t*p.sw+p.seed)*.018*dt;p.rot+=p.rs*dt;if(p.y>1.06)Object.assign(p,this.newPaper(-.05));}
     for(const b of this.fog){b.x+=b.sp*dt;if(b.x-b.rx>1)b.x=-b.rx;}
-    if(this.mode!=='login')return;
+    if(this.mode==='page')return;
     let gx=this.target?this.target.x:w/2,gy=this.target?this.target.y:h*.56;
     if(this.okMode){const k=this.okT;gx=cx;gy=cy;
       for(const e of this.eyes){e.open=k<1.35?Math.min(1,e.open+dt/.15):Math.max(0,e.open-dt/.12);}
@@ -111,7 +112,7 @@ class GhostAmbience extends HTMLElement{
       e.lx+=(dx/d-e.lx)*Math.min(1,dt*sp);e.ly+=(dy/d-e.ly)*Math.min(1,dt*sp);}
   }
   drawFlame(f,t){
-    const c=this.ctx,page=this.mode==='page',br=(.78+.22*nz(t*2.2,f.seed))*(1-.75*f.dip);
+    const c=this.ctx,page=this.mode==='page'||this.dataset.tone==='light',br=(.78+.22*nz(t*2.2,f.seed))*(1-.75*f.dip);
     const cx=f.x+Math.sin(t*f.swS+f.seed)*f.swA+nz(t*1.1,f.seed+3)*2,by=f.y+Math.sin(t*f.bobS+f.seed)*f.bobA;
     const r=f.size*.36*(1+.08*nz(t*6,f.seed)),hg=f.size*1.55*(1+.16*nz(t*4.3,f.seed+5));
     const tdx=nz(t*3.2,f.seed+9)*r*.7+(f.lean||0)*Math.sign(this.w/2-cx)*r*1.8;
@@ -148,6 +149,7 @@ class GhostAmbience extends HTMLElement{
       c.fillStyle=`rgba(150,185,185,${(.07*p.a).toFixed(3)})`;c.beginPath();c.arc(p.x,p.y,rr,0,Math.PI*2);c.fill();}
     for(const f of this.flames)this.drawFlame(f,t);
     c.restore();
+    if(this.mode==='screen'&&this.dataset.tone!=='light')for(const e of this.eyes)if(e.open>.01)this.drawEyes(e);
     if(this.mode==='login'){
       if(k>=0){c.fillStyle=`rgba(0,0,0,${Math.min(.5,k/.3*.5).toFixed(3)})`;c.fillRect(0,0,w,h);}
       for(const e of this.eyes)if(e.open>.01)this.drawEyes(e);}

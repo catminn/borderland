@@ -307,6 +307,7 @@ textarea.in{height:auto;min-height:90px;padding:10px 12px;line-height:1.6;resize
 /* ---------- 大屏 (1920×1080 stage, scaled to fit) ---------- */
 .stage-wrap{position:relative;width:100%;overflow:hidden;border-radius:12px}
 .stage{position:absolute;left:0;top:0;width:1920px;height:1080px;transform-origin:0 0;transform:scale(var(--k,.5));background:var(--bg);color:var(--ink);padding:52px 56px;display:grid;grid-template-columns:440px minmax(0,1fr);gap:56px;overflow:hidden}
+.stage>.left,.stage>.right{position:relative;z-index:1}
 .stage .left{display:flex;flex-direction:column;gap:40px;min-height:0}
 .stage .ttl{font-family:var(--disp);font-size:104px;line-height:1}
 .stage .en{font-size:22px;color:var(--sub);letter-spacing:.15em}
@@ -436,26 +437,25 @@ body.login #amb{background:radial-gradient(ellipse at center,rgba(0,0,0,0) 40%,r
 body.login header.top,body.login nav.pages{display:none}
 body.login .wrap{min-height:100vh;justify-content:center;align-items:center;padding:20px}
 body.login .notice{display:none}
-.lg{position:relative;width:100%;max-width:420px;background:#101a1d;border:1px solid #22363c;border-radius:20px;box-shadow:0 30px 80px rgba(0,0,0,.5);padding:40px 26px 28px;display:flex;flex-direction:column;gap:16px;color:#e6f0ea}
+.lg{position:relative;width:100%;max-width:400px;background:#101a1d;border:1px solid #22363c;border-radius:20px;box-shadow:0 30px 80px rgba(0,0,0,.5);padding:clamp(22px,4.5vh,36px) 24px clamp(18px,3.5vh,26px);display:flex;flex-direction:column;gap:clamp(10px,1.8vh,16px);color:#e6f0ea}
 .lg.shake{animation:shake .32s ease-out .6s 1}
-.lg .t{font-family:var(--disp);font-size:58px;line-height:1;text-align:center}
+.lg .t{font-family:var(--disp);font-size:clamp(38px,6.5vh,54px);line-height:1;text-align:center}
 .lg .s{font-size:14px;color:#8fa8a2;text-align:center;letter-spacing:.12em}
 .lg .dv{display:flex;align-items:center;gap:10px;padding:2px 0}
 .lg .dv i{flex:1;height:1px;background:rgba(224,71,47,.55)}
 .lg .dv b{width:6px;height:6px;background:#e0472f;transform:rotate(45deg)}
 .lg .k{font-size:16px;font-weight:700}
 .boxes{position:relative;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
-.boxes .bx{height:60px;border:1px solid #2e474e;background:#0b1416;border-radius:10px;display:grid;place-items:center;font:800 28px var(--mono);color:#e6f0ea}
+.boxes .bx{height:clamp(44px,6.5vh,56px);border:1px solid #2e474e;background:#0b1416;border-radius:10px;display:grid;place-items:center;font:800 28px var(--mono);color:#e6f0ea}
 .boxes .bx.act{border:2px solid #5fe0b4;box-shadow:0 0 14px rgba(95,224,180,.35)}
 .boxes.bad .bx{border:2px solid #ff6a50}
 .boxes input{position:absolute;inset:0;opacity:0;font-size:16px;width:100%;height:100%;border:0;padding:0;caret-color:transparent}
 .boxes input:focus{outline:none}
 .boxes:focus-within .bx.act{border-color:#5fe0b4}
-.lg .err{display:flex;gap:10px;align-items:flex-start;border:1px solid #ff6a50;background:rgba(255,106,80,.1);color:#ffc2b5;padding:11px 12px;font-size:15px;font-weight:700;line-height:1.5;border-radius:10px}
-.lg .err i{flex:none;width:20px;height:20px;border-radius:50%;background:#ff6a50;color:#0a1012;display:grid;place-items:center;font:800 13px var(--mono);font-style:normal;margin-top:1px}
-.lg .go{min-height:56px;background:#5fe0b4;color:#04241a;border:none;border-radius:12px;font-size:19px;font-weight:900;letter-spacing:.3em;box-shadow:0 0 22px rgba(95,224,180,.25)}
+.lg .go{min-height:clamp(46px,6.5vh,54px);background:#5fe0b4;color:#04241a;border:none;border-radius:12px;font-size:19px;font-weight:900;letter-spacing:.3em;box-shadow:0 0 22px rgba(95,224,180,.25)}
 .lg .go:disabled{opacity:.6}
-.lg .h{font-size:14px;color:#8fa8a2;text-align:center}
+.lg .h{font-size:14px;line-height:20px;min-height:20px;color:#8fa8a2;text-align:center}
+.lg .h.err{color:#ff8a72;font-weight:700}
 .lg .okv{position:absolute;inset:0;z-index:5;border-radius:20px;background:rgba(9,14,15,.95);display:flex;align-items:center;justify-content:center;gap:24px;padding:0 20px;animation:fadeIn .3s ease both}
 .seal{position:relative;width:150px;height:150px;flex:none;transform:rotate(-6deg)}
 .seal .rp{position:absolute;inset:0;border-radius:28%;border:3px solid rgba(150,36,26,.8);animation:ripple .75s ease-out .6s both}
@@ -518,8 +518,10 @@ body.login .notice{display:none}
 }
 @media (min-width:720px){
   .subtabs:not(.top){display:none}
-  .page.ledger .sec:not(.on){display:none}
-  .subtabs.top{display:flex;gap:6px;margin-top:-6px;flex-wrap:wrap}
+  .page.toptabs .sec:not(.on){display:none}
+  .page.toptabs .prooms{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .page.toptabs .people{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .subtabs.top{display:flex;gap:6px;flex-wrap:wrap}
 }
 /* big screen on a narrow window (staff glancing at it on a phone): plain stacked layout instead of the scaled stage */
 @media (max-width:819px){
@@ -556,3 +558,52 @@ body.login .notice{display:none}
   body.screen .wrap{padding:16px 14px 40px}
   body.screen header.top{opacity:1;position:static;margin-bottom:10px;justify-content:flex-end}
 }
+
+/* ---------- fit one screen ---------- */
+/* Computers: the app is exactly one window tall; the header stays put and only the content area scrolls if needed.
+   Spacing and type are a notch tighter than the 1440 mockups so typical pages fit a laptop screen. */
+@media (min-width:720px){
+  body:not(.login):not(.screen){height:100vh;overflow:hidden}
+  body:not(.login):not(.screen) .wrap{height:100vh;padding:14px 28px 0;gap:12px}
+  body:not(.login):not(.screen) #view{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding-bottom:20px;scrollbar-gutter:stable}
+  header.top{padding-bottom:10px}
+  .logo{font-size:26px}
+  .page,.cols2,.cols-dealer,.pubcols,.pcols,.stack{gap:14px}
+  .sec{gap:10px}
+  .sh{font-size:24px}
+  .pn{padding:14px 16px;gap:10px;border-radius:14px}
+  .notice{min-height:34px;padding:6px 12px}
+  nav.pages button,.subtabs.top button{min-height:38px;padding:0 14px;font-size:14px}
+  .btn-main{min-height:48px;font-size:16px}
+  .cb{min-height:42px;font-size:15px}
+  .cb.big{min-height:52px}
+  .sbtn{min-height:44px}
+  .in{height:42px}
+  .rbtn{padding:8px 12px}
+  .rbtn .n{font-size:19px}
+  .rbtn .nm{font-size:14px}
+  .hero{padding:14px 18px;gap:20px}
+  .tile{width:76px}
+  .tile .tn{font-size:40px}
+  .tile .ts{font-size:24px}
+  .hero .name b{font-size:42px}
+  .hero .info{gap:6px}
+  .wl button{min-height:50px;font-size:18px}
+  .rule{font-size:15px;line-height:1.6}
+  .pc .id{font-size:24px}
+  .helpbox{height:42px}
+  .tbl .tr{padding:8px 18px}
+  .tbl .cn{font-size:20px}
+  .sq{width:34px;height:30px;font-size:17px}
+  .pass{padding:14px 16px;gap:10px}
+  .pass .id{font-size:44px}
+  .mini .cv{font-size:30px}
+  .note,.mate{padding:12px 14px;gap:8px}
+}
+/* phones: the bottom tab bar stays, the header is compact, nothing scrolls sideways */
+@media (max-width:719px){
+  .stage{position:relative}
+  .stage .hd,.stage .clock,.stage .cast,.stage .rank,.stage .rgrid{position:relative;z-index:1}
+}
+.notice:empty{display:none}
+.subtabs .cnt{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;margin-left:4px;border-radius:9px;background:var(--red);color:#fff;font:700 11px var(--mono)}

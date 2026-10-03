@@ -50,10 +50,10 @@ function broadcast(){
   const out=[];
   for(const l of S.log){
     let m,x=null,c='';
-    if((m=/^(\S+) 被(.)队勾魂/.exec(l.text))){x=m[1]+' 被勾魂，进入鬼市';c='hook';}
-    else if((m=/^(\S+) 输了 (\S+) 被抽签淘汰/.exec(l.text))){x=m[1]+' 抽签被淘汰，进入鬼市';c='hook';}
+    if((m=/^(\S+) 被(.)队勾魂/.exec(l.text))){x=m[1]+' 被勾魂';c='hook';}
+    else if((m=/^(\S+) 输了 (\S+) 被抽签淘汰/.exec(l.text))){x=m[1]+' 抽签淘汰';c='hook';}
     else if((m=/^(\S+) 喝下孟婆汤/.exec(l.text)))x=m[1]+' 买命回队';
-    else if((m=/^(\S+) 赢下 (\S+)，拿到扑克牌，\+(\d+)/.exec(l.text)))x=m[1]+'拿下 '+m[2]+' · +'+m[3]+' 冥币';
+    else if((m=/^(\S+) 赢下 (\S+)，拿到扑克牌，\+(\d+)/.exec(l.text)))x=m[1]+'拿下 '+m[2]+'　+'+m[3];
     else if((m=/^判官记录 (\S+) 率先完成任务「(.+)」/.exec(l.text))&&S.notices.some(n=>n.title===m[2]&&!n.secret)){x=m[1]+'率先完成任务「'+m[2]+'」';c='hot';}
     if(x)out.push({t:l.t,x,c});
     if(out.length>=5)break;
@@ -77,22 +77,22 @@ function viewBoard(){
       +'<div class="su">'+SUITS.map(s=>'<span class="'+(t.cards.some(c=>c.includes(s))?'got ':'')+(isRed(s)?'sr':'')+'">'+s+'</span>').join('')+'</div></div>';}).join('');
   const bc=broadcast();
   const run=CLOCK&&CLOCK.running;
-  return '<div class="stage-wrap"><div class="stage">'
-    +'<div class="left"><div class="hd"><div class="ttl">百鬼夜行</div><div class="en">CORNELL CSSA · 万圣夜</div></div>'
-    +'<div class="clock"><span class="cap">游戏时钟'+(run?'':' · 已暂停')+'</span><span class="ck mono'+(run?'':' paused')+'" id="sclk">'+fmt(S.t)+'</span>'
+  return '<div class="stage-wrap"><div class="stage"><ghost-ambience data-mode="screen" data-tone="'+themeFor()+'"></ghost-ambience>'
+    +'<div class="left"><div class="hd"><div class="ttl">百鬼夜行</div><div class="en">CORNELL CSSA 万圣夜</div></div>'
+    +'<div class="clock"><span class="cap">'+(run?'游戏时钟':'已暂停')+'</span><span class="ck mono'+(run?'':' paused')+'" id="sclk">'+fmt(S.t)+'</span>'
     +'<div class="prog"><span style="width:'+Math.min(100,S.t/9000*100).toFixed(1)+'%"></span></div><span class="cap" style="letter-spacing:0">全程约 2:30:00</span></div>'
     +'<div class="cast"><span class="cap" style="padding-bottom:8px">全场播报</span>'
     +(bc.length?bc.map(b=>'<div class="bc '+b.c+'"><span class="t">'+fmt(b.t)+'</span><span class="x">'+esc(b.x)+'</span></div>').join(''):'<div class="bc"><span class="x muted">暂无播报</span></div>')+'</div></div>'
-    +'<div class="right"><div class="rank"><div class="rh"><b>队伍冥币排名</b><span>柱下为已集花色 · 四色齐可进决赛</span></div><div class="bars">'+bars+'</div></div>'
+    +'<div class="right"><div class="rank"><div class="rh"><b>队伍冥币排名</b><span>四色齐可进决赛</span></div><div class="bars">'+bars+'</div></div>'
     +'<div class="rgrid">'+ROOMS.map(roomCard).join('')+'</div></div>'
     +'</div></div>';
 }
 function fitStage(){
   const w=$('.stage-wrap'),st=w&&w.firstChild;if(!w)return;
   if(innerWidth<820){st.style.removeProperty('--k');w.style.height='';w.style.width='';return;}
-  const k=ME&&ME.role==='screen'?Math.min(innerWidth/1920,innerHeight/1080):w.parentElement.clientWidth/1920;
+  const v=$('#view'),k=ME&&ME.role==='screen'?Math.min(innerWidth/1920,innerHeight/1080):Math.min(w.parentElement.clientWidth/1920,(v.clientHeight-24)/1080);
   st.style.setProperty('--k',k.toFixed(4));w.style.height=Math.round(1080*k)+'px';
-  w.style.width=ME&&ME.role==='screen'?Math.round(1920*k)+'px':'';w.style.margin=ME&&ME.role==='screen'?'0 auto':'';
+  w.style.width=Math.round(1920*k)+'px';w.style.margin='0 auto';
 }
 addEventListener('resize',fitStage);
 
@@ -104,19 +104,19 @@ function viewDealer(){
     return '<button class="rbtn'+(x.id===ui.room?' on':'')+'" data-a="room" data-v="'+x.id+'" aria-pressed="'+(x.id===ui.room)+'"><span class="n">'+cardG(x)+'</span><span class="nm">'+x.name+'</span>'
       +'<span class="st'+(n?' busy':'')+'">'+(n?'● 进行中':'空闲')+'</span></button>';}).join('')+'</div></div>';
   const hero='<div class="hero"><div class="tile"><span class="tn">'+r.card.slice(0,-1)+'</span><span class="ts '+(isRed(r.suit)?'sr':'')+'">'+r.suit+'</span></div>'
-    +'<div class="info"><div class="meta"><span class="typ">'+TYPE[r.suit]+(r.two?' · 两队对抗':'')+'</span><span class="coins">+'+r.n*100+' <small>冥币</small></span></div>'
+    +'<div class="info"><div class="meta"><span class="typ">'+TYPE[r.suit]+'</span>'+(r.two?'<span class="typ">两队</span>':'')+'<span class="coins">+'+r.n*100+' <small>冥币</small></span></div>'
     +'<div class="name"><b>'+r.name+'</b>'+(done?'<span class="stamp">已结算</span>':'')+'</div>'
-    +'<span class="status'+(ts.length?' busy':'')+'">'+(ts.length?'<i class="gd"></i>进行中 · '+ts.map(i=>team(i).name).join(' vs '):done?'本局已结算':'空闲 · 等待队伍入场')+'</span></div></div>';
+    +'<span class="status'+(ts.length?' busy':'')+'">'+(ts.length?'<i class="gd"></i>'+ts.map(i=>team(i).name).join(' vs ')+' 进行中':done?'已结算':'空闲')+'</span></div></div>';
   let entry;
   if(ts.length<cap){
     if(ui.pick&&(ts.includes(ui.pick)||whyNotEnter(ui.pick,r.id)))ui.pick='';
     const btns=S.teams.filter(t=>!ts.includes(t.id)).map(t=>{const w=whyNotEnter(t.id,r.id);
-      return cb({cls:'big',k:'pick',v:t.id,on:ui.pick===t.id,off:!!w,c:w?'var(--line2)':TC[t.id][0],label:t.name,small:w||'存活 '+alive(t.id).length+' 人 · 可入场'});}).join('');
+      return cb({cls:'big',k:'pick',v:t.id,on:ui.pick===t.id,off:!!w,c:w?'var(--line2)':TC[t.id][0],label:t.name,small:w||'存活 '+alive(t.id).length});}).join('');
     entry='<div class="chips c2">'+btns+'</div><button class="btn-main" data-a="enter"'+(ui.pick?'':' disabled')+'>'+(ui.pick?'放行 '+team(ui.pick).name+' 入场':'先选择可入场的队伍')+'</button>';
-  }else entry='<div class="empty">房间已满（'+cap+' 队），结算后才能放行下一队</div>';
+  }else entry='<div class="empty">房间已满，结算后再放行</div>';
   const info='<div class="pn" style="gap:14px"><h2 class="sh">规则与入场</h2><div class="rule">'+r.rule+'</div>'
-    +'<div class="lot'+(lottery?' hot':'')+'">'+(lottery?'牌面 '+r.n+' ≥ 5：输的队伍需抽签淘汰 1 人（该队鬼市已满 '+MARKET_CAP+' 人时免淘汰）':'本房牌面 '+r.n+'，输队不抽签（牌面 ≥ 5 才抽签淘汰 1 人）')+'</div>'
-    +'<div class="need"><b>放行入场</b><span class="small">'+(r.two?'两队对抗 · ':'')+'至少存活 <span class="mono" style="color:var(--ink)">'+r.min+'</span> 人</span></div>'+entry+'</div>';
+    +'<div class="lot'+(lottery?' hot':'')+'">'+(lottery?'输队抽签淘汰 1 人（鬼市满 '+MARKET_CAP+' 人免）':'输了不淘汰')+'</div>'
+    +'<div class="need"><b>放行入场</b><span class="small">至少存活 <span class="mono" style="color:var(--ink)">'+r.min+'</span> 人</span></div>'+entry+'</div>';
   const pending=ts.filter(t=>!ui.res[t]).length,ready=ts.length===cap&&!pending;
   const hint=done?'本局已结算':!ts.length?'等待入场':pending?'还差 '+pending+' 队未选':ts.length<cap?'还需第二队入场':'胜负已选好';
   const rows=ts.map(tid=>{const t=team(tid),v=ui.res[tid]||'';
@@ -125,13 +125,13 @@ function viewDealer(){
       +'<div class="wl" role="group" aria-label="'+t.name+'结果"><button class="w" data-a="res" data-t="'+tid+'" data-v="win" aria-pressed="'+(v==='win')+'">赢</button>'
       +'<button class="l" data-a="res" data-t="'+tid+'" data-v="lose" aria-pressed="'+(v==='lose')+'">输</button></div></div>';}).join('');
   const W=ts.filter(t=>ui.res[t]==='win').map(t=>team(t).name),L=ts.filter(t=>ui.res[t]==='lose').map(t=>team(t).name);
-  const summary=done?esc(ui.settled.msg):!ts.length?'放行队伍入场后，在这里记录胜负。':!ready?(ts.length<cap?'两队都入场后才能结算。':'请为每支队伍选择“赢”或“输”。')
-    :'结算预览：'+(W.length?W.join('、')+' 赢，得 '+r.card+' 与 +'+r.n*100+' 冥币':'无人获胜')+(L.length?'；'+L.join('、')+' 输'+(lottery?'，需抽签淘汰 1 人':''):'')+'。';
+  const summary=done?esc(ui.settled.msg):!ts.length?'':!ready?(ts.length<cap?'两队到齐才能结算':'为每队选赢或输')
+    :(W.length?W.join('、')+'赢：+'+r.n*100+' 冥币和 '+r.card:'无人获胜')+(L.length?'；'+L.join('、')+'输'+(lottery?'，抽签淘汰 1 人':''):'');
   const settle='<div class="pn" style="gap:14px"><div class="shrow"><h2 class="sh">房间内队伍</h2><span class="hint" style="font-weight:700;color:'+(ready?'var(--accent)':pending?'var(--warn)':'var(--sub)')+'">'+hint+'</span></div>'
-    +(rows?'<div class="rteams">'+rows+'</div>':'<div class="empty">暂无队伍入场，先在「规则与入场」放行</div>')
+    +(rows?'<div class="rteams">'+rows+'</div>':'<div class="empty">暂无队伍</div>')
     +'<span class="sum'+(ready||done?' ready':'')+'">'+summary+'</span>'
     +'<button class="btn-main'+(ready?' glow':'')+'" data-a="finish"'+(ready?'':' disabled')+' style="min-height:60px;font-size:19px;letter-spacing:.14em">'+(done?'已结算':'结束并结算')+'</button>'
-    +'<span class="small center">结算后冥币和扑克牌立即发放，请先核对胜负</span></div>';
+    +'<span class="small center">结算后立即发放，请先核对</span></div>';
   return '<div class="page tabbed">'+rooms+hero+'<div class="cols-dealer">'+sec('dealer','info',info)+sec('dealer','settle',settle)+'</div>'
     +sub('dealer',[['info','规则与入场'],['settle','胜负结算']])+'</div>';
 }
@@ -150,17 +150,17 @@ function viewNpc(){
     if(cur&&!rest.includes(cur))delete ui.doneSel[n.id];
     const live=n.due&&n.due>S.t;
     let body;
-    if(closed)body='<div class="lot">已由 '+lab(w)+' 率先完成，任务已关闭</div>';
+    if(closed)body='<div class="lot">'+lab(w)+' 已率先完成</div>';
     else if(!rest.length)body='<div class="lot">所有'+(ind?'队员':'队伍')+'都已完成</div>';
     else body='<span class="lbl">完成'+(ind?'队员':'队伍')+'</span><div class="chips '+(ind?'ids':'')+'">'
       +rest.map(c=>cb({cls:ind?'id':'',k:'doneSel.'+n.id,v:c,on:ui.doneSel[n.id]===c,c:ind?null:TC[c][0],label:lab(c),mark:!ind})).join('')+'</div>'
       +'<button class="btn-main" data-a="done" data-n="'+n.id+'"'+(ui.doneSel[n.id]?'':' disabled')+' style="min-height:52px">'+(ui.doneSel[n.id]?'确认 '+lab(ui.doneSel[n.id])+' 完成':'先选择完成者')+'</button>';
-    return '<div class="pn"><div class="thead"><span class="kb '+kc+'">'+kl+'</span><span class="small">'+modeOf(n)+' · 发给 '+esc(targetLabel(n))+'</span>'
+    return '<div class="pn"><div class="thead"><span class="kb '+kc+'">'+kl+'</span><span class="small">'+modeOf(n)+'</span>'+(n.target!=='all'?'<span class="typ">'+esc(targetLabel(n))+'</span>':'')
       +'<span class="tm'+(live?' live':'')+'">'+(live?'<i class="gd r"></i>':'')+(n.due?countdown(n):'不限时')+'</span></div>'
       +'<div class="ttitle"><b>'+esc(n.title)+'</b>'+(n.reward?'<span class="rw">+'+n.reward+'</span>':'')+'</div>'+body+'</div>';}).join('');
   const recs=S.notices.filter(n=>n.kind==='任务').flatMap(n=>Object.entries(n.done).map(([cid,d])=>({n,cid,d}))).sort((a,b)=>b.d.t-a.d.t);
   const records='<div class="pn" style="gap:0"><h3 style="padding-bottom:8px">已完成记录</h3>'+(recs.length?recs.map(({n,cid,d})=>
-    '<div class="li"><div class="grow"><span class="t">'+fmt(d.t)+(n.due&&d.t>n.due?' · 超时':'')+'</span><span class="x">'+lab(cid)+' 完成「'+esc(n.title)+'」'+(d.pts?' <span class="mono">+'+d.pts+'</span>':'')+'</span></div>'
+    '<div class="li"><div class="grow"><span class="t">'+fmt(d.t)+(n.due&&d.t>n.due?' 超时':'')+'</span><span class="x">'+lab(cid)+' 完成「'+esc(n.title)+'」'+(d.pts?' <span class="mono">+'+d.pts+'</span>':'')+'</span></div>'
     +'<button class="btn-line" data-a="undone" data-n="'+n.id+'" data-t="'+cid+'">撤销</button></div>').join(''):'<div class="li small">暂无记录</div>')+'</div>';
   const task=(cards||'<div class="pn"><span class="muted">还没有发布任务。总控在生死簿「发布」里发布。</span></div>')+records;
   // 勾魂令
@@ -176,11 +176,11 @@ function viewNpc(){
     +'<div class="step"><span class="lbl"><span class="st">①</span> 取得勾魂令的队伍</span><div class="chips">'+teamPick('hookTeam',ui.hookTeam)+'</div></div>'
     +'<div class="step"><span class="lbl"><span class="st">②</span> 被点名的别队</span><div class="chips">'+teamPick('hookTT',tt,id=>id===ui.hookTeam)+'</div></div>'
     +'<div class="step"><span class="lbl"><span class="st">③</span> 被点名的队员</span>'
-    +(!tt?'<span class="small">先选择 ② 被点名的队伍</span>':(full?'<span class="small" style="font-weight:700;color:var(--red)">'+team(tt).name+'鬼市已有 '+MARKET_CAP+' 人，不能再勾</span>':'')+'<div class="chips ids">'+members+'</div>')+'</div>'
+    +(!tt?'<span class="small">先选择 ② 被点名的队伍</span>':(full?'<span class="small" style="font-weight:700;color:var(--red)">'+team(tt).name+'鬼市已满，不能再勾</span>':'')+'<div class="chips ids">'+members+'</div>')+'</div>'
     +'<button class="btn-main red" data-a="hook"'+(ready?'':' disabled')+' style="min-height:60px;display:flex;align-items:center;justify-content:center;gap:12px;font-size:18px">'
     +'<span style="width:34px;height:34px;border:2px solid currentColor;border-radius:6px;display:grid;place-items:center;font-family:var(--brush);font-size:24px;line-height:1;transform:rotate(-8deg);font-weight:400">勾</span>'
-    +(ready?'勾魂 · '+team(ui.hookTeam).name+' → '+ui.hookTarget:'选完 ①②③ 后勾魂')+'</button>'
-    +'<span class="small center">被勾魂者进入鬼市，自动记入全场日志。保护期内（标“保”）和已在鬼市的队员不能点。</span></div>'
+    +(ready?team(ui.hookTeam).name+' 勾魂 '+ui.hookTarget:'选完 ①②③ 后勾魂')+'</button>'
+    +'<span class="small center">标“保”的在保护期内</span></div>'
     +'<div class="pn"><div class="shrow"><h3>已勾魂次数</h3><span class="small">本局共 <span class="mono" style="font-weight:800;font-size:22px;color:var(--ink)">'+S.gate+'</span> 次</span></div>'
     +'<div class="hgrid">'+S.teams.map(t=>'<div class="hc">'+tsq(t.id,26)+'<span>'+t.name+'</span><b>'+(counts[t.id]||0)+'</b></div>').join('')+'</div>'
     +hl.slice(0,3).map(h=>'<div class="hrow"><span class="minis">勾</span><span class="t">'+fmt(h.t)+'</span><span>'+(h.by?team(h.by).name+' 勾魂 ':'勾魂 ')+h.pid+'</span></div>').join('')+'</div>';
@@ -193,24 +193,23 @@ function viewMarket(){
   const mk=S.players.filter(p=>p.st==='market').sort((a,b)=>a.outAt-b.outAt);
   const people=mk.map(p=>{const stay=S.t-p.outAt,tOk=stay>=MIN_STAY,tot=p.coins+p.bail,ok=tOk&&tot>=COIN_GOAL;
     return '<div class="pn pc'+(ok?' ok':'')+'"><div class="idrow"><span class="id">'+p.id+'</span>'+tchip(p.team)+'</div>'
-      +'<div class="stay">已待 <span class="mono">'+mm(stay)+'</span><span class="pill '+(tOk?'free':'warn')+'">'+(ok?'<i class="gd"></i>':'')+(tOk?'已满 '+MIN_STAY/60+' 分钟':'未满 · 还差 '+mm(MIN_STAY-stay))+'</span></div>'
+      +'<div class="stay">已待 <span class="mono">'+mm(stay)+'</span><span class="pill '+(tOk?'free':'warn')+'">'+(ok?'<i class="gd"></i>':'')+(tOk?'时间已满':'还差 '+mm(MIN_STAY-stay))+'</span></div>'
       +'<div class="two"><label class="fld"><span>本人冥币</span><span class="coin-in"><input class="in mono" id="c-'+p.id+'" data-m="coin" data-p="'+p.id+'" value="'+p.coins+'" inputmode="numeric" aria-label="'+p.id+' 本人冥币"></span></label>'
       +'<div class="fld"><span>队友助力</span><div class="helpbox">+'+p.bail+'</div></div></div>'
       +'<div class="fld"><div class="tot"><span>合计</span><span class="mono'+(tot>=COIN_GOAL?' ok':'')+'" id="tot-'+p.id+'">'+tot+' / '+COIN_GOAL+'</span></div>'
       +'<div class="bar"><span class="'+(tot>=COIN_GOAL?'ok':'')+'" id="bar-'+p.id+'" style="width:'+Math.min(100,tot/COIN_GOAL*100)+'%"></span></div></div>'
-      +'<button class="btn-main ghost'+(ok?' glow':'')+'" data-a="revive" data-p="'+p.id+'"'+(ok?'':' disabled')+' style="min-height:52px">'+(ok?'买命回队':!tOk?'时间未满，暂不能买命':'还差 '+(COIN_GOAL-tot)+' 冥币')+'</button></div>';}).join('');
-  const buy='<div class="shrow"><h2 class="sh">孟婆买命</h2><span class="hint">满 '+MIN_STAY/60+' 分钟且合计 '+COIN_GOAL+' 冥币可回队 · 队友助力 '+RATE+':1 · 多出的冥币带回队伍</span></div>'
-    +(people?'<div class="people">'+people+'</div>':'<div class="empty">鬼市现在没有人。</div>')
-    +'<span class="small">本人冥币按现场纸钱清点后填入，离开输入框即保存。</span>';
+      +'<button class="btn-main ghost'+(ok?' glow':'')+'" data-a="revive" data-p="'+p.id+'"'+(ok?'':' disabled')+' style="min-height:52px">'+(ok?'买命回队':!tOk?'时间未满':'还差 '+(COIN_GOAL-tot)+' 冥币')+'</button></div>';}).join('');
+  const buy='<div class="shrow"><h2 class="sh">孟婆买命</h2><span class="hint">满 '+MIN_STAY/60+' 分钟且凑够 '+COIN_GOAL+' 可回队</span></div>'
+    +(people?'<div class="people">'+people+'</div>':'<div class="empty">鬼市现在没有人。</div>');
   if(ui.buyer&&!mk.some(p=>p.id===ui.buyer))ui.buyer='';
   const by=ui.buyer&&S.players.find(p=>p.id===ui.buyer);
   const goods=S.shop.map(c=>{const poor=by&&by.coins<c.price,can=c.stock>0&&by&&!poor;
     return '<div class="li goods"><div class="grow"><span class="nm'+(c.stock?'':' off')+'">'+esc(c.name)+'</span>'+(c.desc?'<span class="desc">'+esc(c.desc)+'</span>':'')
-      +'<span class="small"><span class="mono" style="color:var(--ink)">'+c.price+'</span> 冥币 · 库存 <span class="mono" style="color:'+(c.stock?'var(--ink)':'var(--red)')+'">'+c.stock+'</span></span></div>'
+      +'<span class="small"><span class="mono" style="color:var(--ink)">'+c.price+'</span> 冥币　库存 <span class="mono" style="color:'+(c.stock?'var(--ink)':'var(--red)')+'">'+c.stock+'</span></span></div>'
       +'<button class="btn-line '+(can?'fill':'')+'" data-a="buy" data-k="'+c.id+'"'+(can?'':' disabled')+' style="min-height:48px">'+(!c.stock?'已售罄':!by?'先选买家':poor?by.id+' 冥币不足':'卖给 '+by.id)+'</button></div>';}).join('');
-  const shop='<h2 class="sh">技能卡商铺</h2><div class="pn" style="gap:10px"><span class="lbl">买家（只有鬼市里的人能用自己的冥币买，卡归买家所在队伍）</span>'
+  const shop='<h2 class="sh">技能卡商铺</h2><div class="pn" style="gap:10px"><span class="lbl">买家（鬼市中的人）</span>'
     +(mk.length?'<div class="chips">'+mk.map(p=>cb({k:'buyer',v:p.id,on:ui.buyer===p.id,c:TC[p.team][0],label:'<span class="mono">'+p.id+'</span>',small:p.coins+' 冥币'})).join('')+'</div>'
-      :'<span class="small">鬼市现在没有人，暂时不能卖。</span>')
+      :'<span class="small">鬼市现在没有人</span>')
     +'<div class="list">'+goods+'</div></div>'
     +'<div class="pn dash" style="gap:10px"><h3 style="font-size:16px">上架新技能卡</h3>'
     +'<div class="ncform"><input class="in" id="ncn" data-m="nc.name" value="'+esc(ui.nc.name)+'" placeholder="卡名" aria-label="卡名">'
@@ -221,10 +220,9 @@ function viewMarket(){
   const inv=S.teams.filter(t=>t.skills.length).map(t=>'<div class="pn" style="gap:8px"><div class="hold-hd">'+tsq(t.id,30)+'<b>'+t.name+'</b><span class="small">'+t.skills.length+' 张可用</span></div>'
     +t.skills.map(k=>'<div class="li" style="padding:8px 0;min-height:52px"><div class="grow"><span style="font-size:16px;font-weight:700">'+esc(k.name)+'</span><span class="small">'+esc(k.by)+' 买于 '+fmt(k.t)+'</span></div>'
       +'<button class="btn-line acc" data-a="usecard" data-t="'+t.id+'" data-k="'+k.sid+'">标记已使用</button></div>').join('')+'</div>').join('');
-  const hold='<h2 class="sh">各队持有的技能卡</h2>'+(inv||'<div class="pn"><span class="muted">还没有队伍买过技能卡。</span></div>')
-    +'<span class="small">使用时找工作人员出示；标记已使用后卡会从该队移除。</span>';
-  return '<div class="page tabbed">'+sec('market','buy',buy)+'<div class="cols2">'+sec('market','shop',shop)+sec('market','hold',hold)+'</div>'
-    +sub('market',[['buy','孟婆买命'],['shop','技能卡商铺'],['hold','各队持卡']])+'</div>';
+  const hold='<h2 class="sh">各队持有的技能卡</h2>'+(inv||'<div class="pn"><span class="muted">还没有队伍买过技能卡。</span></div>');
+  return '<div class="page tabbed toptabs">'+sub('market',[['buy','孟婆买命'],['shop','技能卡商铺'],['hold','各队持卡']],'top')
+    +sec('market','buy',buy)+sec('market','shop',shop)+sec('market','hold',hold)+'</div>';
 }
 
 // ---------- 生死簿 ----------
@@ -256,7 +254,7 @@ function viewCtrl(){
     +'<div class="coinrow"><label class="fld"><span>增减（负数为扣）</span><input class="in mono" id="cv" data-m="coinAmt" value="'+esc(ui.coinAmt)+'" inputmode="numeric"></label>'
     +'<div class="quick">'+['-100','+100','+300','+500'].map(q=>'<button class="'+(q[0]==='-'?'neg':'')+'" data-a="quick" data-v="'+q+'">'+q+'</button>').join('')+'</div>'
     +'<button class="btn-main" id="coinbtn" data-a="setscore" style="min-height:48px;font-size:16px">'+coinBtn()+'</button></div></div>';
-  return '<div class="page tabbed ledger">'+sub('ctrl',[['status','各队状态'],['pub','发布'],['log','全场日志'],['tools','总控工具']],'top col')
+  return '<div class="page tabbed toptabs ledger">'+sub('ctrl',[['status','各队状态'],['pub','发布'],['log','全场日志'],['tools','总控工具']],'top col')
     +sec('ctrl','status',status)+sec('ctrl','pub',pubPanel())
     +sec('ctrl','log','<h2 class="sh">全场日志</h2><div class="pn logl" style="gap:0">'+(S.log.length?S.log.slice(0,300).map(l=>{const [k,c]=logTag(l);
       return '<div class="le"><span class="t">'+fmt(l.t)+'</span><span class="k" style="--kc:'+c+'">'+k+'</span><span class="x">'+esc(l.text)+'</span></div>';}).join(''):'<span class="muted">还没有日志。</span>')+'</div>')
@@ -272,7 +270,7 @@ function pubPanel(){
     +'<div class="fld"><span>发给谁</span><div class="chips auto">'+to.map(([v,l,id])=>'<button class="cb mid'+(toOn(v)?' on':'')+'" data-a="pubto" data-v="'+v+'" aria-pressed="'+toOn(v)+'"><span class="sw" style="--c:'+(id?TC[id][0]:'var(--sub)')+'"></span><span class="t">'+l+'</span></button>').join('')+'</div></div>'
     +(f.target==='player'?'<div class="fld"><span>选择队员</span><div class="chips ids">'+S.players.map(p=>cb({cls:'id',k:'pub.player',v:p.id,on:f.player===p.id,label:'<span class="sw" style="--c:'+TC[p.team][0]+';width:8px;height:8px;display:inline-block;border-radius:2px;background:var(--c);margin-right:4px"></span>'+p.id,mark:false,t:false})).join('')+'</div></div>':'')
     +'<div class="fgrid">'+(task?'<div class="fld"><span>完成方式</span><div class="seg2">'+[['first','先到先得'],['each','各自完成']].map(([v,l])=>'<button class="sbtn'+(f.mode===v?' on':'')+'" style="min-height:48px;font-size:15px" data-a="pick" data-k="pub.mode" data-v="'+v+'" aria-pressed="'+(f.mode===v)+'">'+l+'</button>').join('')+'</div></div>':'')
-    +'<label class="fld"><span>限时（分钟，0 为不限）</span><input class="in mono" id="pm" data-m="pub.mins" value="'+esc(f.mins)+'" inputmode="numeric"></label>'
+    +'<label class="fld"><span>限时（分钟）</span><input class="in mono" id="pm" data-m="pub.mins" value="'+esc(f.mins)+'" inputmode="numeric"></label>'
     +(task?'<label class="fld"><span>奖励冥币</span><input class="in mono" id="prw" data-m="pub.reward" value="'+esc(f.reward)+'" inputmode="numeric"></label>':'')+'</div>'
     +'<label class="fld"><span>标题</span><input class="in" id="pti" data-m="pub.title" value="'+esc(f.title)+'" placeholder="例如：鬼门开：还原鬼片海报"></label>'
     +'<label class="fld"><span>内容</span><textarea class="in" id="pb" data-m="pub.body" rows="3" placeholder="玩家手机上看到的说明：任务要求、集合地点…">'+esc(f.body)+'</textarea></label>'
@@ -280,10 +278,10 @@ function pubPanel(){
   const list=S.notices.filter(n=>n.kind!=='通知').slice(0,10).map(n=>{
     const aud=S.players.filter(p=>matches(n,p)),acked=aud.filter(p=>n.acks[p.id]).length,[kl,kc]=kindOf(n),ds=Object.keys(n.done);
     return '<div class="li"><div class="grow" style="gap:4px"><div class="thead"><span class="kb '+kc+'" style="font-size:12px;padding:0 7px">'+kl+'</span><b style="font-size:17px">'+esc(n.title)+'</b></div>'
-      +'<span class="small">发给 '+esc(targetLabel(n))+' · 已读 <span class="mono" style="color:var(--ink)">'+acked+' / '+aud.length+'</span>'+(n.due?' · '+countdown(n):'')+(n.reward?' · +'+n.reward:'')+'</span>'
+      +'<span class="small">已读 <span class="mono" style="color:var(--ink)">'+acked+'/'+aud.length+'</span>'+(n.target!=='all'?'　'+esc(targetLabel(n)):'')+(n.due?'　'+countdown(n):'')+'</span>'
       +(ds.length?'<span class="small">完成：'+ds.map(lab).join('、')+'</span>':'')+'</div>'
       +(ui.revokeAsk===n.id?'<span class="btns"><button class="btn-line fillred" data-a="revokeok" data-n="'+n.id+'">确认撤销</button><button class="btn-line" data-a="revokeno">取消</button></span>'
-        +'<span class="small" style="flex-basis:100%">撤销后玩家手机上的这条会消失'+(Object.values(n.done).some(d=>d.pts)?'，已发的奖励会扣回':'')+'</span>'
+        +'<span class="small" style="flex-basis:100%">玩家手机上会删除'+(Object.values(n.done).some(d=>d.pts)?'，奖励扣回':'')+'</span>'
         :'<button class="btn-line" data-a="revoke" data-n="'+n.id+'">撤销发布</button>')+'</div>';}).join('');
   return '<h2 class="sh">发布公告 / 任务</h2><div class="pubcols">'+form+'<div class="pn" style="gap:0"><h3 style="padding-bottom:8px">已发布</h3>'+(list||'<div class="li small">还没有发布过。</div>')+'</div></div>';
 }
@@ -295,13 +293,13 @@ function adminPanel(){
       +(A.ask==='pin:'+p.pin?'<span class="btns" style="gap:4px"><button class="btn-line fillred" data-a="adm-resetpin" data-v="'+p.pin+'">确认</button><button class="btn-line" data-a="adm-cancel">取消</button></span>'
         :'<button class="btn-line" data-a="adm-ask" data-v="pin:'+p.pin+'">重置</button>')+'</span></div>').join('')+'</div>'
     +'<div class="btns"><button class="btn-line" data-a="adm-csv">下载 PIN 表（CSV）</button><button class="btn-line" data-a="adm-hide">收起</button><span class="small">共 '+A.pins.length+' 个</span></div>':'';
-  const snaps=A.snaps?(A.snaps.length?'<div class="list">'+A.snaps.map(s=>'<div class="li"><div class="grow"><span class="x" style="font-size:15px">'+new Date(s.at).toLocaleTimeString()+'</span><span class="small">游戏 '+fmt(s.t||0)+' · '+esc(s.tag||'')+'</span></div>'
+  const snaps=A.snaps?(A.snaps.length?'<div class="list">'+A.snaps.map(s=>'<div class="li"><div class="grow"><span class="x" style="font-size:15px">'+new Date(s.at).toLocaleTimeString()+'</span><span class="small">游戏 '+fmt(s.t||0)+'　'+esc(s.tag||'')+'</span></div>'
       +(A.ask==='snap:'+s.key?'<span class="btns"><button class="btn-line fillred" data-a="adm-restore" data-v="'+s.key+'">确认恢复</button><button class="btn-line" data-a="adm-cancel">取消</button></span>'
         :'<button class="btn-line" data-a="adm-ask" data-v="snap:'+s.key+'">恢复到这里</button>')+'</div>').join('')+'</div>':'<span class="small">还没有备份。每 10 次操作自动备份一次。</span>'):'';
   const left='<div class="stack"><div class="pn"><span class="lbl" style="font-size:13px">游戏计时</span><div class="timer"><span class="big'+(run?'':' paused')+'" id="tclk">'+fmt(S.t)+'</span>'
     +'<button class="btn-line '+(run?'':'fill')+'" data-a="clockctl" style="min-height:52px;padding:0 24px;font-size:17px;font-weight:900">'+(run?'暂停':'开始')+'</button></div>'
-    +'<span class="small" style="font-weight:700;color:'+(run?'var(--accent)':'var(--warn)')+'">'+(run?'● 计时中':'❚❚ 已暂停，所有屏幕和玩家手机同步暂停')+'</span></div>'
-    +'<div class="pn"><div class="shrow"><h3>PIN</h3><span class="small">玩家每人一个；工作人员按下面的数量补齐，已有的不变</span></div>'
+    +'<span class="small" style="font-weight:700;color:'+(run?'var(--accent)':'var(--warn)')+'">'+(run?'● 计时中':'❚❚ 已暂停')+'</span></div>'
+    +'<div class="pn"><div class="shrow"><h3>PIN</h3><span class="small">按数量补齐工作人员 PIN</span></div>'
     +'<div class="cnts">'+num('dealer','Dealer')+num('judge','判官')+num('mengpo','孟婆')+num('ctrl','总控')+num('screen','大屏')+'</div>'
     +'<div class="btns"><button class="btn-line acc" data-a="adm-gen">生成 PIN</button><button class="btn-line" data-a="adm-pins">查看全部 PIN</button></div>'+pins+'</div></div>';
   const rs=A.resetTxt==='重置';
@@ -320,7 +318,7 @@ function viewPlayer(){
   const me=S.players.find(p=>p.id===ME.pid),t=team(me.team),prot=protectedLeft(me),inMk=me.st==='market';
   const stay=inMk?S.t-me.outAt:0;
   const badge=inMk?['在鬼市','bad']:prot?['保护期','warn']:['存活',''];
-  const subTxt=inMk?'已在鬼市 '+Math.floor(stay/60)+' 分 '+(stay%60)+' 秒':prot?'保护期剩余 '+Math.ceil(prot/60)+' 分钟，不能被勾魂':'状态正常 · 小心勾魂';
+  const subTxt=inMk?'已待 '+mm(stay):prot?'保护期还剩 '+Math.ceil(prot/60)+' 分钟':'小心勾魂';
   const pass='<div class="pass"><div class="r1"><div style="display:flex;flex-direction:column;gap:6px;min-width:0"><span class="cap">冥府通行证</span><span class="id">'+me.id+'</span></div>'
     +'<span class="badge '+badge[1]+'">'+badge[0]+'</span></div><div class="r2">'+tchip(t.id)+'<span class="muted">'+subTxt+'</span></div></div>';
   // 本队
@@ -330,11 +328,11 @@ function viewPlayer(){
     return '<div class="s4'+(has.length?' got':'')+'"><span class="g '+(isRed(s)?'sr':'')+'">'+s+'</span><span class="l">'+FRAG[s]+'</span><span class="c">'+(has.length?has.join(' '):'未获得')+'</span></div>';}).join('');
   const myRooms=S.rooms.filter(x=>x.teams.includes(t.id)).map(x=>{const r=room(x.id);
     return '<div class="myroom"><div class="cd">'+cardG(r)+'</div><div style="display:flex;flex-direction:column;gap:6px;min-width:0"><span class="on">● 本队进行中</span>'
-      +'<div class="vs">'+x.teams.map(tchip).join('<span>vs</span>')+'</div><span class="small">'+TYPE[r.suit]+' · 胜得 +'+r.n*100+' 冥币</span></div></div>';}).join('');
+      +'<div class="vs">'+x.teams.map(tchip).join('<span>vs</span>')+'</div><span class="small">赢 +'+r.n*100+' 冥币</span></div></div>';}).join('');
   const teamSec='<div class="stat2"><div class="mini"><span class="cap">队伍冥币</span><span class="cv">'+t.score+'</span></div>'
     +'<div class="mini" style="gap:10px"><span class="cap">存活 <span class="mono" style="font-weight:700;font-size:14px;color:var(--ink)">'+a+' / '+PER_TEAM+'</span></span><div class="dots">'+dots+'</div></div></div>'
     +'<div class="pn" style="padding:14px;gap:12px"><span class="cap small" style="font-size:12px">四色碎片</span><div class="suits4">'+suits+'</div>'
-    +'<div class="fin'+(st.k==='free'?' ok':'')+'">'+(st.k==='free'?'四色已齐 · 可进决赛':'未达决赛条件 · '+st.txt)+'</div></div>'
+    +'<div class="fin'+(st.k==='free'?' ok':'')+'">'+(st.k==='free'?'可进决赛':st.txt)+'</div></div>'
     +(myRooms||'<div class="pn" style="padding:14px"><span class="muted">本队现在没有在任何房间里。</span></div>')
     +'<h2 class="sh" style="font-size:20px;margin-top:6px">本队技能卡</h2>'+(t.skills.length?'<div class="skills">'+t.skills.map(k=>'<span>'+esc(k.name)+'</span>').join('')+'</div>'
       :'<span class="muted">还没有。技能卡只有鬼市里的人能用自己的冥币买。</span>');
@@ -349,27 +347,25 @@ function viewPlayer(){
       +'<div class="nt">'+esc(n.title)+'</div>'+(n.body?'<div class="nb">'+esc(n.body)+'</div>':'')
       +((n.due&&!d&&!lost)||n.reward?'<div class="nm">'+(n.due&&!d&&!lost?'<span class="red">⏱ '+countdown(n,true)+'</span>':'')+(n.reward?'<span>+'+n.reward+' 冥币</span>':'')+'</div>':'')
       +(acked?'<span class="small">已读</span>':'<button class="ack" data-a="ack" data-n="'+n.id+'">知道了</button>')+'</div>';}).join('');
-  const taskSec='<h2 class="sh" style="font-size:22px">通知与任务</h2>'+(notes||'<div class="pn"><span class="muted">暂时没有通知。</span></div>')
-    +'<span class="small">任务只能由判官记录完成，手机上不能自己提交。</span>';
+  const taskSec='<h2 class="sh" style="font-size:22px">通知与任务</h2>'+(notes||'<div class="pn"><span class="muted">暂时没有通知。</span></div>');
   // 鬼市
   const mk=S.players.filter(p=>p.team===t.id&&p.st==='market').sort((x,y)=>x.outAt-y.outAt);
   const mate=(p,mine)=>{const s=S.t-p.outAt,tot=p.coins+p.bail,tOk=s>=MIN_STAY,cOk=tot>=COIN_GOAL,gap=gapOf(p);
-    const line=tOk&&cOk?'条件已满足，可找孟婆买命':[tOk?'时间已满':'还需待 '+mm(MIN_STAY-s),cOk?'冥币已够':'差 '+(COIN_GOAL-tot)+' 冥币'].join(' · ');
+    const line=tOk&&cOk?'可以找孟婆买命了':[tOk?'':'还需 '+mm(MIN_STAY-s),cOk?'':'差 '+(COIN_GOAL-tot)+' 冥币'].filter(Boolean).join('，');
     const def=Math.min(gap*RATE,t.score);
     return '<div class="mate"'+(mine?' style="border-color:var(--red)"':'')+'><div class="r"><span class="id">'+p.id+(mine?' <span class="small" style="font-family:var(--sans)">（你）</span>':'')+'</span>'
-      +'<span class="small mono">'+mm(s)+' · '+tot+'/'+COIN_GOAL+'</span></div>'
+      +'<span class="small mono">'+tot+'/'+COIN_GOAL+'</span></div>'
       +'<div class="bar"><span class="ok" style="width:'+Math.min(100,tot/COIN_GOAL*100)+'%"></span></div>'
       +'<span class="small" style="font-weight:700;color:'+(tOk&&cOk?'var(--accent)':'var(--ink)')+'">'+line+'</span>'
       +(!mine&&me.st==='alive'&&gap>0?'<div class="give"><input class="in" id="d-'+p.id+'" data-m="don" data-p="'+p.id+'" value="'+(ui.don[p.id]!=null?ui.don[p.id]:def)+'" inputmode="numeric" placeholder="冥币数" aria-label="为 '+p.id+' 花掉的队伍冥币">'
         +'<button data-a="donate" data-p="'+p.id+'">冥币助力</button></div>':'')+'</div>';};
   const mkSec='<div class="shrow"><h2 class="sh" style="font-size:22px">鬼市中的队友</h2><span class="hint">满 '+MIN_STAY/60+' 分钟且 '+COIN_GOAL+' 冥币可买命</span></div>'
     +(mk.length?mk.map(p=>mate(p,p.id===me.id)).join(''):'<div class="pn"><span class="muted">本队现在没有人在鬼市。</span></div>')
-    +'<span class="small">助力用本队冥币 '+RATE+':1 兑换：输入框里填的是本队要花掉的冥币数，队伍现有 <span class="mono" style="color:var(--ink)">'+t.score+'</span>。</span>';
+    +'<span class="small">花本队冥币 '+RATE+':1 换助力（队伍现有 <span class="mono" style="color:var(--ink)">'+t.score+'</span>）</span>';
   const roomSec='<h2 class="sh" style="font-size:22px">全部房间</h2><div class="prooms">'+ROOMS.map(roomCard).join('')+'</div>';
-  const tabs=[['team','本队'],['task','任务'+(unread?' · '+unread:'')],['market','鬼市'+(mk.length?' · '+mk.length:'')],['rooms','房间']];
-  return '<div class="page tabbed">'+pass+'<div class="pcols"><div style="display:flex;flex-direction:column;gap:20px;min-width:0">'+sec('player','team',teamSec)+sec('player','market',mkSec)+'</div>'
-    +'<div style="display:flex;flex-direction:column;gap:20px;min-width:0">'+sec('player','task',taskSec)+sec('player','rooms',roomSec)+'</div></div>'
-    +sub('player',tabs)+'</div>';
+  const tabs=[['team','本队'],['task','任务'+(unread?'<b class="cnt">'+unread+'</b>':'')],['market','鬼市'+(mk.length?'<b class="cnt">'+mk.length+'</b>':'')],['rooms','房间']];
+  return '<div class="page tabbed toptabs">'+pass+sub('player',tabs,'top')
+    +sec('player','team',teamSec)+sec('player','task',taskSec)+sec('player','market',mkSec)+sec('player','rooms',roomSec)+'</div>';
 }
 function modalHtml(){
   if(!ME||ME.role!=='player'||!S)return '';
@@ -394,6 +390,8 @@ function patchKids(a,b){const an=[...a.childNodes],bn=[...b.childNodes];
 function patchNode(o,n){
   if(o.nodeType!==n.nodeType||o.nodeName!==n.nodeName){o.replaceWith(n);return;}
   if(o.nodeType!==1){if(o.nodeValue!==n.nodeValue)o.nodeValue=n.nodeValue;return;}
+  if(o.tagName==='GHOST-AMBIENCE'){ // manages its own style and canvas; only pass on its settings
+    for(const {name,value} of [...n.attributes])if(o.getAttribute(name)!==value)o.setAttribute(name,value);return;}
   for(const {name,value} of [...n.attributes])if(o.getAttribute(name)!==value)o.setAttribute(name,value);
   for(const {name} of [...o.attributes])if(!n.hasAttribute(name))o.removeAttribute(name);
   if(o.tagName==='INPUT'||o.tagName==='TEXTAREA'){
@@ -430,7 +428,7 @@ function render(){
   const nav=$('#tabs');nav.hidden=tabs.length<2;
   morph(nav,tabs.map(v=>'<button role="tab" data-a="tab" data-v="'+v+'" aria-selected="'+(v===ui.tab)+'">'+TAB_NAME[v]+'</button>').join(''));
   $('#logo').innerHTML=ui.tab==='ctrl'?'<span class="scroll"></span>生死簿':'百鬼夜行';
-  $('#who').textContent=ME.role==='player'?'玩家':ME.role==='ctrl'&&ui.tab!=='ctrl'?'总控 · '+TAB_NAME[ui.tab]:ME.label||ROLE_NAME[ME.role];
+  $('#who').textContent=ME.role==='player'?'玩家':ME.role==='ctrl'?'总控':ME.label||ROLE_NAME[ME.role];
   $('#logout').hidden=false;$('#conn').hidden=false;
   const run=CLOCK&&CLOCK.running;
   const cc=$('#clockctl');cc.hidden=ME.role!=='ctrl';cc.textContent=run?'暂停计时':'开始计时';
@@ -449,11 +447,10 @@ let entering=false,errKey=0;
 function renderLogin(){
   $('#tabs').hidden=true;$('#modal').innerHTML='';
   if($('#loginf'))return;
-  $('#view').innerHTML='<div class="lg" id="lgcard"><div class="t">百鬼夜行</div><div class="s">Cornell CSSA 万圣夜 · 登录入口</div><div class="dv"><i></i><b></b><i></i></div>'
-    +'<form id="loginf" style="display:flex;flex-direction:column;gap:16px"><label class="k" for="pin">输入 6 位 PIN</label>'
+  $('#view').innerHTML='<div class="lg" id="lgcard"><div class="t">百鬼夜行</div><div class="s">Cornell CSSA 万圣夜</div><div class="dv"><i></i><b></b><i></i></div>'
+    +'<form id="loginf" style="display:flex;flex-direction:column;gap:inherit"><label class="k" for="pin">输入 6 位 PIN</label>'
     +'<div class="boxes" id="boxes">'+'<div class="bx"></div>'.repeat(6)+'<input id="pin" inputmode="numeric" autocomplete="one-time-code" maxlength="6" aria-label="PIN"></div>'
-    +'<div class="err" id="lgerr" hidden><i>!</i><span></span></div>'
-    +'<button class="go">进入</button></form><div class="h">PIN 在你的名牌卡或邮件里</div></div>';
+    +'<button class="go">进入</button></form><div class="h" id="lgmsg" role="status">PIN 在你的名牌卡或邮件里</div></div>';
   syncBoxes();$('#pin').focus();
 }
 function syncBoxes(err){
@@ -462,9 +459,11 @@ function syncBoxes(err){
   $('#boxes').classList.toggle('bad',!!err);
   const g=$('#amb ghost-ambience');if(g)g.setAttribute('data-len',String(v.length));
 }
+// The message takes the place of the hint line, so the card never changes size.
+function loginMsg(msg){const e=$('#lgmsg');if(!e)return;e.classList.toggle('err',!!msg);e.textContent=msg||'PIN 在你的名牌卡或邮件里';}
 function loginError(msg){
-  const e=$('#lgerr');if(!e)return;
-  e.hidden=false;e.querySelector('span').textContent=msg==='PIN 不正确'?'PIN 不正确。请核对名牌卡或邮件里的 6 位数字。':msg;
+  if(!$('#lgmsg'))return;
+  loginMsg(msg==='PIN 不正确'?'PIN 不正确，请核对名牌卡或邮件':msg);
   syncBoxes(true);const g=$('#amb ghost-ambience');if(g)g.setAttribute('data-err',String(++errKey));
 }
 const SEAL_PATH='M18 4 H132 Q146 4 146 18 V132 Q146 146 132 146 H18 Q4 146 4 132 V18 Q4 4 18 4 Z M23 13 Q15 13 15 22 V127 Q15 136 23 136 H130 Q138 136 138 128 V21 Q138 12 130 12 Z';
@@ -485,14 +484,10 @@ function showSeal(){
   const g=$('#amb ghost-ambience');if(g)g.setAttribute('data-ok','1');
 }
 
-const HINTS={board:'大屏：实时显示各房间占用和队伍排名，排名按队伍冥币排序。右上角可切换深浅色。',
-  dealer:'Dealer：选房间，把队伍放进去；结束后记录输赢。系统会检查这队是否已打过这张牌、房间是否已满、存活人数是否够；赢房得“牌号×100”冥币，输掉牌号 5 及以上的房间会随机淘汰 1 人。',
-  ctrl:'生死簿：查看各队状态和全场日志，可以修改队伍冥币，也在这里发布公告、任务和秘密任务。',
-  npc:'判官：记录任务完成并点名勾魂（保护期内和本队队员不能点）。',
-  market:'鬼市：孟婆登记冥币、放人买命（待满 5 分钟且冥币达到 1000，队友助力 2:1，多余冥币复活后带回队伍）；商铺只卖给鬼市里的人。',
-  player:'玩家：查看本队状态、通知和任务、全部房间。任务只能由判官记录完成，这里不能自己提交。'};
-function say(r){const n=$('#notice');if(!r){n.className='notice';n.innerHTML='<span></span>';n.firstChild.textContent=ME?HINTS[ui.tab]||'':'';return;}
-  n.className='notice '+(r.ok?'ok':'bad');n.innerHTML='<b>'+(r.ok?'已记录':'不能这样操作')+'</b><span></span>';n.querySelector('span').textContent=r.msg;}
+let sayT=null;
+function say(r){const n=$('#notice');clearTimeout(sayT);if(!r||!r.msg){n.className='notice';n.innerHTML='';return;}
+  n.className='notice '+(r.ok?'ok':'bad');n.innerHTML='<b>'+(r.ok?'已记录':'不能这样操作')+'</b><span></span>';n.querySelector('span').textContent=r.msg;
+  sayT=setTimeout(()=>say(null),r.ok?6000:10000);}
 
 // ---------- session ----------
 const KEY='borderland.session';
@@ -504,7 +499,7 @@ async function login(pin){
   if(!/^\d{6}$/.test(pin)){loginError('请输入 6 位数字 PIN');return;}
   let res,j={};
   try{res=await fetch('/api/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({pin})});j=await res.json();}
-  catch{loginError('连不上服务器，请检查网络后再试');return;}
+  catch{loginError('连不上服务器，请检查网络');return;}
   if(!res.ok){loginError(j.error||'登录失败');return;}
   SESSION={token:j.token,me:j.me};store.set(SESSION);ME=j.me;S=null;ui.tab=null;
   connect();
@@ -535,7 +530,7 @@ function connect(){
   sock.onclose=e=>{
     if(ws!==sock)return;
     ws=null;connected=false;setConn();
-    for(const cb of pending.values())cb({ok:false,msg:'连接断开了，这次操作可能没有生效，重连后请确认'});
+    for(const cb of pending.values())cb({ok:false,msg:'连接断开，这次操作可能没生效'});
     pending.clear();
     if(e.code===4001){logout('登录已失效，请重新输入 PIN');return;}
     clearTimeout(timer);timer=setTimeout(connect,Math.min(5000,500*2**retry++));
@@ -550,7 +545,7 @@ setInterval(()=>{if(!ws||!connected)return;
 
 // Send one action. `after` runs only if the server accepted it.
 function send(a,after,quiet){
-  if(!ws||!connected){say(no('还没连上服务器，请稍等几秒再试'));return;}
+  if(!ws||!connected){say(no('还没连上服务器，请稍等'));return;}
   const id=++seq;
   pending.set(id,m=>{if(!quiet||!m.ok)say(m);if(m.ok&&after)after(m);requestRender();});
   ws.send(JSON.stringify({t:'act',id,a}));
@@ -564,7 +559,7 @@ document.addEventListener('click',e=>{
   const b=e.target.closest('[data-a]');if(!b||b.disabled)return;
   const a=b.dataset.a,v=b.dataset.v,A=ui.admin;
   if(a==='tab'){ui.tab=v;say(null);}
-  else if(a==='sub'){ui.sub[b.dataset.p]=v;scrollTo({top:0});}
+  else if(a==='sub'){ui.sub[b.dataset.p]=v;scrollTo({top:0});$('#view').scrollTop=0;}
   else if(a==='pick'){const k=b.dataset.k,next=b.dataset.t&&getp(k)===v?'':v;setp(k,next);
     if(k==='pub.target')ui.pub.mode=defMode(next);
     if(k==='hookTeam'&&ui.hookTT===next){ui.hookTT='';ui.hookTarget='';}
@@ -585,7 +580,7 @@ document.addEventListener('click',e=>{
     send({type:'ack',nid},null,true);}
   else if(a==='done'){const nid=+b.dataset.n,cid=ui.doneSel[nid];if(cid)send({type:'done',nid,cid},()=>{delete ui.doneSel[nid];});}
   else if(a==='setscore'){const t=ui.coinTeam&&team(ui.coinTeam),amt=coinAmt();
-    if(!t)say(no('请先选择队伍'));else if(!amt)say(no('请填写要增减的冥币数，比如 +300 或 -100'));
+    if(!t)say(no('请先选择队伍'));else if(!amt)say(no('请填增减数，如 +300'));
     else send({type:'setscore',tid:t.id,v:Math.max(0,t.score+amt)});}
   else if(a==='revoke'){ui.revokeAsk=+b.dataset.n;}
   else if(a==='revokeno'){ui.revokeAsk=null;}
@@ -613,7 +608,7 @@ document.addEventListener('change',e=>{
   if(m==='coin'){send({type:'coin',pid:e.target.dataset.p,coins:Math.max(0,parseInt(e.target.value,10)||0)},null,true);}
 });
 document.addEventListener('input',e=>{
-  if(e.target.id==='pin'){const el=e.target;el.value=el.value.replace(/\D/g,'').slice(0,6);$('#lgerr').hidden=true;syncBoxes();return;}
+  if(e.target.id==='pin'){const el=e.target;el.value=el.value.replace(/\D/g,'').slice(0,6);if($('#lgmsg').classList.contains('err'))loginMsg('');syncBoxes();return;}
   const m=e.target.dataset.m,v=e.target.value;if(!m)return;
   if(m==='coin'){const q=S.players.find(x=>x.id===e.target.dataset.p);if(q){q.coins=Math.max(0,parseInt(v,10)||0);const tot=q.coins+q.bail,el=document.getElementById('tot-'+q.id),bar=document.getElementById('bar-'+q.id);
     if(el)el.textContent=tot+' / '+COIN_GOAL;if(bar)bar.style.width=Math.min(100,tot/COIN_GOAL*100)+'%';}}
