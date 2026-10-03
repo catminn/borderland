@@ -6,25 +6,25 @@
 <title>百鬼夜行 控制台</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@700;900&family=Noto+Sans+SC:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=ZCOOL+XiaoWei&family=Noto+Sans+SC:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
+<script src="ghost-ambience.js" defer></script>
 </head>
 <body>
+<div id="amb" aria-hidden="true"></div>
 <div class="wrap">
-  <header>
-    <div>
-      <h1>百鬼夜行</h1>
-      <p class="sub">CSSA 万圣节竞技控制台</p>
-    </div>
-    <div class="clock" aria-label="游戏时钟">
+  <header class="top" id="top">
+    <span class="logo" id="logo">百鬼夜行</span>
+    <span class="tag" id="who"></span>
+    <span class="top-r">
       <span class="pill" id="conn" hidden>连接中…</span>
-      <span class="t" id="clk">T+00:00</span>
-      <button class="btn" id="clockctl" data-a="clockctl" hidden>开始计时</button>
-      <span class="who" id="who"></span>
-      <button class="btn" id="logout" data-a="logout" hidden>退出</button>
-    </div>
+      <span class="clk" aria-label="游戏时钟"><i class="gd" id="clkdot"></i><span id="clk">T+00:00</span></span>
+      <button class="tbtn" id="clockctl" data-a="clockctl" hidden>开始计时</button>
+      <button class="tbtn" id="theme" data-a="theme" hidden aria-label="切换深浅色">深色</button>
+      <button class="tbtn" id="logout" data-a="logout" hidden>退出</button>
+    </span>
   </header>
-  <nav role="tablist" id="tabs" hidden></nav>
+  <nav class="pages" role="tablist" id="tabs" hidden></nav>
   <div class="notice" id="notice" role="status"></div>
   <main id="view"></main>
 </div>

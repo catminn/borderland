@@ -37,11 +37,11 @@ const text = p => p.locator('#view').innerText();
 const ctrl = await page(ADMIN), judge = await page(P.judge), dealer = await page(P.dealer), screen = await page(P.screen), mengpo = await page(P.mengpo);
 const player = await page(P.player, 390);
 T('roles see only their tabs', (await judge.locator('#tabs').isHidden()) && (await text(judge)).includes('任务判定') && (await text(mengpo)).includes('孟婆买命'));
-T('player sees own page', (await text(player)).includes('B-02 · 蓝队'));
+{ const tx = await text(player); T('player sees own page', tx.includes('B-02') && tx.includes('蓝队')); }
 await ack(player);
 
 // ctrl publishes -> player gets a popup
-await ctrl.click('[data-a=tab][data-v=ctrl]');
+await ctrl.click('[data-a=tab][data-v=ctrl]'); await ctrl.click('[data-a=sub][data-p=ctrl][data-v=pub]');
 await ctrl.fill('#prw', '200'); await ctrl.dispatchEvent('#prw', 'change');
 await ctrl.fill('#pti', '同步测试任务'); await ctrl.fill('#pb', '内容'); await ctrl.click('[data-a=publish]');
 await player.waitForSelector('#modal .dlg', { timeout: 4000 }).catch(() => {});
@@ -51,9 +51,10 @@ await ack(player);
 // judge records -> ctrl log + score + broadcast
 const nid = admin.S.notices.find(n => n.title === '同步测试任务').id;
 const scoreB = admin.S.teams.find(t => t.id === 'B').score;
-await judge.selectOption('[id="ds-' + nid + '"]', 'B'); await judge.click('[data-a=done][data-n="' + nid + '"]');
+await judge.click('[data-a=pick][data-k="doneSel.' + nid + '"][data-v=B]'); await judge.click('[data-a=done][data-n="' + nid + '"]');
 await sleep(500);
 T('reward applied on server', admin.S.teams.find(t => t.id === 'B').score === scoreB + 200);
+await ctrl.click('[data-a=sub][data-p=ctrl][data-v=log]');
 T('ctrl log updated live', (await text(ctrl)).includes('判官记录 蓝队 率先完成任务「同步测试任务」'));
 await player.waitForSelector('#modal .dlg', { timeout: 4000 }).catch(() => {});
 T('player gets broadcast', (await player.locator('#modal').innerText()).includes('蓝队率先完成任务'));
@@ -74,18 +75,18 @@ T('player cannot use admin', !(await pc.act({ type: 'admin.reset', demo: false }
 T('player view hides log/shop', pc.S.log.length === 0 && pc.S.shop.length === 0);
 
 // dealer -> screen
-await dealer.click('[data-a=room][data-v="7H"]'); await dealer.selectOption('#pick', 'P'); await dealer.click('[data-a=enter]');
+await dealer.click('[data-a=room][data-v="7H"]'); await dealer.click('[data-a=pick][data-k=pick][data-v=P]'); await dealer.click('[data-a=enter]');
 await sleep(500);
-T('screen shows room live', (await text(screen)).includes('进行中 · 紫队'));
+T('screen shows room live', (await screen.locator('.rgrid').innerText()).includes('紫队'));
 
 // clock
 await ctrl.click('#clockctl'); await sleep(2200);
 const t1 = admin.S && (await ctrl.locator('#clk').innerText()), t2 = await screen.locator('#clk').innerText();
-T('clock running and same on screens', t1 === t2 && t1 !== 'T+29:00');
+T('clock running and same on screens', t1 === t2 && t1 !== 'T+29:00'); if (t1 !== t2 || t1 === 'T+29:00') console.log('clock', t1, t2);
 await ctrl.click('#clockctl');
 
 // typing is not wiped by live updates
-await ctrl.click('[data-a=tab][data-v=ctrl]'); await ctrl.click('#pti'); await ctrl.keyboard.type('正在输入');
+await ctrl.click('[data-a=tab][data-v=ctrl]'); await ctrl.click('[data-a=sub][data-p=ctrl][data-v=pub]'); await ctrl.click('#pti'); await ctrl.keyboard.type('正在输入');
 await admin.act({ type: 'setscore', tid: 'R', v: 4321 }); await sleep(600);
 T('typing survives broadcast', (await ctrl.inputValue('#pti')) === '正在输入');
 
