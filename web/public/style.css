@@ -57,7 +57,7 @@ input:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:1px}
 /* glowing ghost-fire dot */
 .gd{display:inline-block;flex:none;width:8px;height:8px;border-radius:50%;background:var(--accent);color:var(--accent);animation:gf 2.6s ease-in-out infinite}
 .gd.r{background:var(--red);color:var(--red)}
-.gd.off{background:var(--warn);color:var(--warn);animation:none;box-shadow:none}
+.gd.off{animation:none;box-shadow:none;opacity:.45}
 
 /* ---------- shell ---------- */
 #amb{position:absolute;left:0;right:0;top:0;height:150px;z-index:0;pointer-events:none}
@@ -70,7 +70,6 @@ header.top{display:flex;align-items:center;gap:8px 12px;padding-bottom:14px;bord
 .tag{border:1px solid var(--accent);color:var(--accent);padding:2px 10px;border-radius:999px;font-size:13px;font-weight:700;white-space:nowrap}
 .top-r{margin-left:auto;display:flex;align-items:center;gap:8px 10px;flex-wrap:wrap;justify-content:flex-end}
 .clk{display:flex;align-items:center;gap:8px;font:700 18px var(--mono);color:var(--accent);font-variant-numeric:tabular-nums}
-.clk.paused{color:var(--warn)}
 .tbtn{min-height:36px;padding:0 12px;border:1px solid var(--line2);background:transparent;color:var(--ink);border-radius:10px;font-size:14px;font-weight:700;white-space:nowrap}
 .tbtn:hover{border-color:var(--accent);color:var(--accent)}
 .pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line2);color:var(--sub);padding:1px 9px;font-size:13px;font-weight:900;border-radius:999px;white-space:nowrap;width:fit-content}
@@ -292,7 +291,6 @@ textarea.in{height:auto;min-height:90px;padding:10px 12px;line-height:1.6;resize
 .logl .x{flex:1 1 200px;min-width:0;font-size:15px}
 .timer{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .timer .big{font:800 44px var(--mono);color:var(--accent);flex:1;line-height:1}
-.timer .big.paused{color:var(--warn)}
 .cnts{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
 .cnts .in{text-align:center;padding:0 6px}
 .pins{max-height:420px;overflow:auto;border-top:1px solid var(--line)}
@@ -314,7 +312,6 @@ textarea.in{height:auto;min-height:90px;padding:10px 12px;line-height:1.6;resize
 .stage .clock{border-top:4px solid var(--accent);padding-top:20px;display:flex;flex-direction:column;gap:12px}
 .stage .cap{font-size:22px;color:var(--sub);letter-spacing:.3em}
 .stage .ck{font:800 86px var(--mono);line-height:1;color:var(--accent)}
-.stage .ck.paused{color:var(--warn)}
 .stage .prog{height:10px;background:var(--track);border-radius:5px;overflow:hidden}
 .stage .prog span{display:block;height:100%;background:var(--accent)}
 .stage .cast{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden}
@@ -609,13 +606,13 @@ body.login .notice{display:none}
 .subtabs .cnt{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;margin-left:4px;border-radius:9px;background:var(--red);color:#fff;font:700 11px var(--mono)}
 
 /* big-screen progress: burning incense */
-@keyframes ember{0%,100%{box-shadow:0 0 10px 3px rgba(255,110,40,.55);transform:scale(1)}50%{box-shadow:0 0 18px 6px rgba(255,130,50,.8);transform:scale(1.15)}}
+@keyframes ember{0%,100%{box-shadow:0 0 8px 2px currentColor;transform:scale(1)}50%{box-shadow:0 0 18px 6px currentColor;transform:scale(1.15)}}
 @keyframes smoke{0%{opacity:0;transform:translate(-50%,0) scaleY(.6)}20%{opacity:.7}100%{opacity:0;transform:translate(calc(-50% + 10px),-46px) scaleY(1.4) rotate(12deg)}}
 .xiang{position:relative;padding-top:40px}
-.xiang .stick{position:relative;height:9px;border-radius:5px;overflow:hidden;background:linear-gradient(180deg,#b86a3e,#7c3b1e)}
-.xiang .ash{position:absolute;left:0;top:0;bottom:0;width:calc(var(--p)*100%);background:repeating-linear-gradient(90deg,#9aa39e 0 7px,#7b847f 7px 10px)}
-.xiang .ember{position:absolute;left:calc(var(--p)*100%);top:40px;width:14px;height:14px;margin:-2.5px 0 0 -7px;border-radius:50%;background:radial-gradient(circle,#fff6c8 0,#ff8a33 45%,#e2461a 70%);animation:ember 1.8s ease-in-out infinite}
-.xiang .smoke{position:absolute;left:50%;bottom:10px;width:7px;height:34px;border-radius:50%;background:linear-gradient(to top,rgba(190,205,200,.55),rgba(190,205,200,0));filter:blur(2px);animation:smoke 3.6s ease-out infinite}
+.xiang .stick{position:relative;height:9px;border-radius:5px;overflow:hidden;background:linear-gradient(180deg,#4f7268,#2a463f)}
+.xiang .ash{position:absolute;left:0;top:0;bottom:0;width:calc(var(--p)*100%);background:repeating-linear-gradient(90deg,#a3b3ad 0 7px,#84958f 7px 10px);opacity:.8}
+.xiang .ember{position:absolute;left:calc(var(--p)*100%);top:40px;width:14px;height:14px;margin:-2.5px 0 0 -7px;border-radius:50%;color:var(--accent);background:radial-gradient(circle,#f2fff9 0,#8ff3cf 42%,var(--accent) 72%);animation:ember 1.8s ease-in-out infinite}
+.xiang .smoke{position:absolute;left:50%;bottom:10px;width:7px;height:34px;border-radius:50%;background:linear-gradient(to top,rgba(120,215,185,.5),rgba(120,215,185,0));filter:blur(2px);animation:smoke 3.6s ease-out infinite}
 .xiang .smoke.s2{animation-delay:1.8s;width:5px}
 .xiang .watch{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));margin-top:10px}
 .xiang .watch span{border-left:2px solid var(--line);padding-left:8px;font-family:var(--disp);font-size:22px;color:var(--sub);line-height:1.2}
@@ -646,3 +643,8 @@ body.login .notice{display:none}
 /* big screen: ghost fire lives on the page background, around the stage */
 body.board #amb{position:fixed;inset:0;height:auto}
 body.board .stage{background:transparent}
+
+/* action results float as a toast, so they never push the page (or the big screen) around */
+.notice{pointer-events:none;position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:90;width:max-content;max-width:min(560px,calc(100vw - 32px));box-shadow:0 12px 30px rgba(13,25,27,.22);background:var(--panel);animation:riseIn .2s ease both}
+.notice.bad{background:var(--panel);background-image:linear-gradient(var(--red-soft),var(--red-soft))}
+@media (max-width:719px){.notice{bottom:calc(env(safe-area-inset-bottom) + 86px)}}
