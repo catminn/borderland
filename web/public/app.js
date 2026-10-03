@@ -468,9 +468,11 @@ function setAmb(mode,tone){
     $('#amb').innerHTML=mode?'<ghost-ambience data-mode="'+mode+'"'+(mode==='login'?' data-len="0" data-err="0" data-ok="0"':'')+'></ghost-ambience>':'';}
   const g=$('#amb ghost-ambience');if(g&&tone&&g.dataset.tone!==tone)g.dataset.tone=tone;}
 const THEME_KEY=r=>'borderland.theme.'+r;
-function themeFor(){const r=ME&&ME.role==='player'?'player':'screen';let v=null;try{v=localStorage.getItem(THEME_KEY(r));}catch{/* private mode */}
+// Three remembered choices per device: big screen (default dark), player page and staff pages (default light).
+const themeKey=()=>ui.tab==='board'?'screen':ME&&ME.role==='player'?'player':'staff';
+function themeFor(){const r=themeKey();let v=null;try{v=localStorage.getItem(THEME_KEY(r));}catch{/* private mode */}
   return v||(r==='screen'?'dark':'light');}
-const themed=()=>ui.tab==='board'||ui.tab==='player';
+const themed=()=>true;
 
 function render(){
   if(DEVME&&!entering){ME=devMe();if(FULL)S=ME.role==='player'?R.viewFor(FULL,ME):FULL;}
@@ -638,7 +640,7 @@ document.addEventListener('click',e=>{
   else if(a==='coinstep'){ui.coinAmt=String(coinAmt()+(+v));}
   else if(a==='clue'){const t=ui.coinTeam&&team(ui.coinTeam);if(t)send({type:'setcards',tid:t.id,card:v,on:!t.cards.includes(v)});}
   else if(a==='copypin'){copyText(v).then(()=>say({ok:true,msg:'已复制 PIN '+v}),()=>say(no('复制失败，请手动选中 PIN')));}
-  else if(a==='theme'){const r=ME&&ME.role==='player'?'player':'screen',nx=themeFor()==='dark'?'light':'dark';try{localStorage.setItem(THEME_KEY(r),nx);}catch{/* private mode */}}
+  else if(a==='theme'){const r=themeKey(),nx=themeFor()==='dark'?'light':'dark';try{localStorage.setItem(THEME_KEY(r),nx);}catch{/* private mode */}}
   else if(a==='logout'){logout();return;}
   else if(a==='devops'){ui.devOps=!ui.devOps;say({ok:true,msg:ui.devOps?'开发者模式：可操作（以当前视角的身份）':'开发者模式：只读'});}
   else if(a==='clockctl'){send({type:'admin.clock',op:CLOCK&&CLOCK.running?'pause':'start'});}

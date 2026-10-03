@@ -128,7 +128,7 @@ class GhostAmbience extends HTMLElement{
       e.lx+=(dx/d-e.lx)*Math.min(1,dt*sp);e.ly+=(dy/d-e.ly)*Math.min(1,dt*sp);}
   }
   drawFlame(f,t){
-    const c=this.ctx,page=this.mode==='page'||this.dataset.tone==='light',br=(.78+.22*nz(t*2.2,f.seed))*(1-.75*f.dip);
+    const c=this.ctx,page=this.dataset.tone==='light'||(this.mode==='page'&&this.dataset.tone!=='dark'),br=(.78+.22*nz(t*2.2,f.seed))*(1-.75*f.dip);
     const cx=f.x+Math.sin(t*f.swS+f.seed)*f.swA+nz(t*1.1,f.seed+3)*2,by=f.y+Math.sin(t*f.bobS+f.seed)*f.bobA;
     const r=f.size*.36*(1+.08*nz(t*6,f.seed)),hg=f.size*1.55*(1+.16*nz(t*4.3,f.seed+5));
     const tdx=nz(t*3.2,f.seed+9)*r*.7+(f.lean||0)*Math.sign(this.w/2-cx)*r*1.8;
