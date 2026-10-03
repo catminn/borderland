@@ -701,4 +701,4 @@ body.board .stage{background:transparent}
 .shopfull .desc{font-size:14px;color:var(--sub);line-height:1.5}
 .shopfull .nm.off{color:var(--mute);text-decoration:line-through}
 @media (max-width:719px){.shopchips{flex-direction:column}}
-body.sideamb #amb{position:fixed;inset:0;height:auto}
+body.fullamb #amb{position:fixed;inset:0;height:auto}

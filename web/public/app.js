@@ -507,12 +507,12 @@ function render(){
   if(!tabs.includes(ui.tab))ui.tab=tabs[0];
   document.documentElement.dataset.theme=themed()?themeFor():'light';
   document.body.classList.toggle('board',ui.tab==='board');
-  const staffTab=['dealer','npc','market','ctrl'].includes(ui.tab),side=staffTab&&innerWidth>=720;
-  document.body.classList.toggle('sideamb',side);
-  setAmb(ui.tab==='board'?'screen':side?'side':staffTab||ui.tab==='player'?'page':null,themeFor());
-  if(side){const g=$('#amb ghost-ambience'),r=$('.wrap').getBoundingClientRect(),cs=getComputedStyle($('.wrap')),
-    k=Math.round(r.left+parseFloat(cs.paddingLeft))+',0,'+Math.round(r.width-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight))+','+innerHeight;
-    if(g&&g.getAttribute('data-keep')!==k)g.setAttribute('data-keep',k);}
+  const staffTab=['dealer','npc','market','ctrl'].includes(ui.tab),full=staffTab&&innerWidth>=720; // computers: same background as the big screen
+  document.body.classList.toggle('fullamb',full);
+  setAmb(ui.tab==='board'||full?'screen':staffTab||ui.tab==='player'?'page':null,themeFor());
+  if(full){const g=$('#amb ghost-ambience');if(g){g.removeAttribute('data-keep'); // the big screen's content area does not apply here
+    const top=String(Math.round(Math.max($('#top').getBoundingClientRect().bottom,$('#tabs').hidden?0:$('#tabs').getBoundingClientRect().bottom)+6)); // keep off the header and tabs
+    if(g.dataset.top!==top)g.dataset.top=top;}}
   const nav=$('#tabs');nav.hidden=tabs.length<2;
   morph(nav,tabs.map(v=>'<button role="tab" data-a="tab" data-v="'+v+'" aria-selected="'+(v===ui.tab)+'">'+TAB_NAME[v]+'</button>').join(''));
   $('#logo').innerHTML=ui.tab==='ctrl'?'<span class="scroll"></span>生死簿':'百鬼夜行';
