@@ -236,10 +236,9 @@ function viewMarket(){
   const mk=S.players.filter(p=>p.st==='market').sort((a,b)=>a.outAt-b.outAt);
   // Left (≈60%): one compact row per person in the market.
   const rows=mk.map(p=>{const stay=S.t-p.outAt,tOk=stay>=MIN_STAY,tot=p.coins+p.bail,cOk=tot>=COIN_GOAL,ok=tOk&&cOk;
-    const elig=ok?'<span class="pill free"><i class="gd"></i>可以买命</span>':'<span class="pill warn">'+(!tOk?'还差 '+mm(MIN_STAY-stay):'还差 '+(COIN_GOAL-tot)+' 冥币')+'</span>';
     return '<div class="mrow'+(ok?' ok':'')+'"><div class="l1"><span class="id">'+p.id+'</span>'+tchip(p.team)
-      +'<span class="stay'+(tOk?' okc':'')+'">已停留 <b class="mono">'+Math.min(MIN_STAY/60,Math.floor(stay/60))+'</b>/'+MIN_STAY/60+' 分钟</span>'
-      +'<span class="elig">'+elig+'</span></div>'
+      +'<span class="stay'+(tOk?' okc':'')+'">已停留 <b class="mono">'+mm(stay)+'</b>/'+MIN_STAY/60+' 分钟</span>'
+      +'</div>'
       +'<div class="l2"><label class="kv"><span class="k">本人冥币</span><span class="coin-in"><input class="in mono" id="c-'+p.id+'" data-m="coin" data-p="'+p.id+'" value="'+p.coins+'" inputmode="numeric" aria-label="'+p.id+' 本人冥币"></span></label>'
       +'<div class="kv"><span class="k">队友助力</span><span class="v">+'+p.bail+'</span></div>'
       +'<div class="kv"><span class="k">合计</span><span class="v'+(cOk?' ok':'')+'" id="tot-'+p.id+'">'+tot+' / '+COIN_GOAL+'</span></div>'
