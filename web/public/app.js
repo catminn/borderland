@@ -10,8 +10,22 @@ let S=null, ME=null, CLOCK=null, OFFSET=0;
 let DEVME=null, FULL=null;
 function setMe(me){ME=me;DEVME=me&&me.role==='dev'?me:null;if(!DEVME)FULL=null;}
 function devMe(){const v=ui.as||'ctrl';return v.startsWith('player:')?{role:'player',pid:v.slice(7),label:'玩家'}:{role:v,pid:null,label:ROLE_NAME[v]};}
-// Phone vibration (Android; iPhone browsers ignore it) plus a visual shake.
-const buzz=p=>{try{if(navigator.vibrate)navigator.vibrate(p);}catch{/* not supported */}};
+// Phone vibration plus a visual shake. Android: navigator.vibrate. iPhone Safari has no vibrate API; toggling a hidden
+// <input type="checkbox" switch> gives one haptic tick (iOS 17.4+), but iOS only allows it right after a real tap,
+// so it works for the login error and not for popups pushed by the server.
+const IOS=/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+let hapLabel=null;
+function iosTick(){
+  if(!hapLabel){const w=document.createElement('div');w.setAttribute('aria-hidden','true');
+    w.style.cssText='position:fixed;left:-9999px;top:0;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none';
+    w.innerHTML='<input type="checkbox" switch id="hapsw" tabindex="-1"><label for="hapsw"></label>';
+    w.addEventListener('click',e=>e.stopPropagation());w.addEventListener('change',e=>e.stopPropagation());
+    document.body.appendChild(w);hapLabel=w.querySelector('label');}
+  const f=document.activeElement;hapLabel.click();if(f&&f!==document.activeElement&&f.focus)f.focus({preventScroll:true});}
+function buzz(p){
+  try{if(navigator.vibrate&&!IOS){navigator.vibrate(p);return;}}catch{/* not supported */}
+  if(!IOS)return;const a=Array.isArray(p)?p:[p];let t=0;
+  a.forEach((d,i)=>{if(i%2===0)setTimeout(iosTick,t);t+=d;});}
 function shakeEl(el,cls){if(!el)return;el.classList.remove(cls);void el.offsetWidth;el.classList.add(cls);}
 let ui={ddOpen:null,don:{},tab:null,room:'3S',pick:'',res:{},settled:null,hookTeam:'',hookTarget:'',doneSel:{},revokeAsk:null,
   coinTeam:'',coinAmt:'',buyer:'',shopCard:'',as:'ctrl',devOps:false,devAck:new Set(),nc:{name:'',desc:'',price:'',stock:''},
