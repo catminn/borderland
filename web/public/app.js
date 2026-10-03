@@ -507,7 +507,12 @@ function render(){
   if(!tabs.includes(ui.tab))ui.tab=tabs[0];
   document.documentElement.dataset.theme=themed()?themeFor():'light';
   document.body.classList.toggle('board',ui.tab==='board');
-  setAmb(ui.tab==='board'?'screen':['dealer','npc','market','ctrl','player'].includes(ui.tab)?'page':null,themeFor());
+  const staffTab=['dealer','npc','market','ctrl'].includes(ui.tab),side=staffTab&&innerWidth>=720;
+  document.body.classList.toggle('sideamb',side);
+  setAmb(ui.tab==='board'?'screen':side?'side':staffTab||ui.tab==='player'?'page':null,themeFor());
+  if(side){const g=$('#amb ghost-ambience'),r=$('.wrap').getBoundingClientRect(),cs=getComputedStyle($('.wrap')),
+    k=Math.round(r.left+parseFloat(cs.paddingLeft))+',0,'+Math.round(r.width-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight))+','+innerHeight;
+    if(g&&g.getAttribute('data-keep')!==k)g.setAttribute('data-keep',k);}
   const nav=$('#tabs');nav.hidden=tabs.length<2;
   morph(nav,tabs.map(v=>'<button role="tab" data-a="tab" data-v="'+v+'" aria-selected="'+(v===ui.tab)+'">'+TAB_NAME[v]+'</button>').join(''));
   $('#logo').innerHTML=ui.tab==='ctrl'?'<span class="scroll"></span>生死簿':'百鬼夜行';
