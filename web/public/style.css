@@ -668,5 +668,6 @@ body.board .stage{background:transparent}
 .clue.on .sr{color:var(--red)}
 .clue:disabled{opacity:.45}
 .devas{max-width:140px}
+.devops.on{background:var(--red);border-color:var(--red);color:#fff}
 @media (max-width:640px){.clues{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media (prefers-reduced-motion:reduce){.lg.eshake,.dlg.jolt{animation:none}}

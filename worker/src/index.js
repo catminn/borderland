@@ -119,7 +119,13 @@ export class Game extends DurableObject {
   }
 
   async handle(s, a) {
-    if (s.role === 'dev') return R.no('开发者模式只能查看，不能操作');
+    if (s.role === 'dev') { // acts as the viewpoint chosen on the page, only when its 可操作 switch is on
+      const as = a.as || {}, roles = ['ctrl', 'dealer', 'judge', 'mengpo', 'screen', 'player'];
+      if (!roles.includes(as.role)) return R.no('开发者模式：先打开右上角「可操作」');
+      if (as.role === 'player' && !this.S.players.some(p => p.id === as.pid)) return R.no('没有这个玩家');
+      s = { role: as.role, pid: as.role === 'player' ? as.pid : null, label: '开发者' };
+      delete a.as;
+    }
     if (typeof a.type === 'string' && a.type.startsWith('admin.')) {
       if (s.role !== 'ctrl') return R.no('只有总控能做这个操作');
       return this.admin(a);

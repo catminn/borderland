@@ -39,7 +39,7 @@
 - **服务器时钟**：`clock = {running, base, at}`，游戏时间 = running ? base + (now-at)/1000 : base。每次操作前服务器设 `S.t`；浏览器用服务器下发的 clock 和时间差自己算，所以各屏一致。总控有开始/暂停。
 - **存储**：DO 的 SQLite 存储（KV API）。键：`state`、`clock`、`auth`（pins + sessions）、`snap:<毫秒时间戳>`（每 10 次成功操作自动快照，保留 30 个；重置/恢复前也会快照）。日志超过 1500 条截断。
 - **登录**：`POST /api/login {pin}` → `{token, me}`；浏览器存 localStorage（键 `borderland.session`）。同 IP 连续 10 次错误锁 5 分钟。`?pin=123456` 链接可自动登录（以后印二维码用）。
-- **开发者模式**：Worker 密钥 `DEV_PIN`（值由用户定，不写进仓库；GitHub Secret `DEV_PIN`，没设就关闭；本地写在 `.dev.vars`）登录得到 `role:'dev'`：服务器拒绝它的所有操作（只读），收到全量状态；网页右上角下拉框选视角（总控/Dealer/判官/孟婆/大屏/任一玩家），玩家视角在浏览器里用 `viewFor` 过滤，弹窗「知道了」只在本机生效。**仓库是公开的，PIN 不要写进代码**；活动当天前删掉（`wrangler secret delete DEV_PIN` 并删 GitHub Secret）。
+- **开发者模式**：Worker 密钥 `DEV_PIN`（值由用户定，不写进仓库；GitHub Secret `DEV_PIN`，没设就关闭；本地写在 `.dev.vars`）登录得到 `role:'dev'`，收到全量状态；网页右上角下拉框选视角（总控/Dealer/判官/孟婆/大屏/任一玩家），玩家视角在浏览器里用 `viewFor` 过滤。旁边「只读 / 可操作」开关（默认只读，刷新后回到只读）：可操作时每个操作带 `as:{role,pid}`，服务器以该视角身份执行（权限照常检查；`admin.*` 只在总控视角可用）；只读时弹窗「知道了」只在本机生效。**仓库是公开的，PIN 不要写进代码**；活动当天前删掉（`wrangler secret delete DEV_PIN` 并删 GitHub Secret）。
 - **管理员 PIN** 不在数据里，是 Worker 的密钥 `ADMIN_PIN`（本地在 `worker/.dev.vars`，值 888888，仅本地）。其他 PIN 由总控在网页上生成，存在 `auth.pins`。重置某个 PIN 会让用旧 PIN 登录的会话立即失效（服务器关闭其 socket，code 4001）。
 - **WebSocket 协议**：服务器 → `hello {me,S,clock,now}`、`state {S,clock,now}`、`res {id,ok,msg,data}`、`pong`。浏览器 → `act {id, a:{type,...}}`、`ping`（每 20s；60s 没收到任何消息就判定假死并重连）。
 - **防止打字被冲掉**：有输入框/下拉框获得焦点时，收到的新状态先不重绘，失焦后再重绘。

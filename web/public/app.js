@@ -14,7 +14,7 @@ function devMe(){const v=ui.as||'ctrl';return v.startsWith('player:')?{role:'pla
 const buzz=p=>{try{if(navigator.vibrate)navigator.vibrate(p);}catch{/* not supported */}};
 function shakeEl(el,cls){if(!el)return;el.classList.remove(cls);void el.offsetWidth;el.classList.add(cls);}
 let ui={ddOpen:null,don:{},tab:null,room:'3S',pick:'',res:{},settled:null,hookTeam:'',hookTarget:'',doneSel:{},revokeAsk:null,
-  coinTeam:'',coinAmt:'',buyer:'',shopCard:'',as:'ctrl',devAck:new Set(),nc:{name:'',desc:'',price:'',stock:''},
+  coinTeam:'',coinAmt:'',buyer:'',shopCard:'',as:'ctrl',devOps:false,devAck:new Set(),nc:{name:'',desc:'',price:'',stock:''},
   sub:{dealer:'info',npc:'task',market:'buy',ctrl:'status',player:'team'},
   pub:{kind:'任务',mode:'first',reward:0,title:'',body:'',target:'all',team:'R',player:'',mins:10,to:'all'},
   admin:{pins:null,snaps:null,counts:{dealer:8,judge:3,mengpo:2,ctrl:2,screen:1},ask:null,resetTxt:''}};
@@ -455,6 +455,7 @@ const themed=()=>ui.tab==='board'||ui.tab==='player';
 function render(){
   if(DEVME&&!entering){ME=devMe();if(FULL)S=ME.role==='player'?R.viewFor(FULL,ME):FULL;}
   const da=$('#devas');da.hidden=!DEVME||entering;
+  const dop=$('#devops');dop.hidden=da.hidden;dop.textContent=ui.devOps?'可操作':'只读';dop.classList.toggle('on',ui.devOps);dop.setAttribute('aria-pressed',String(ui.devOps));
   if(DEVME&&!entering){const src=FULL||S,h='<optgroup label="工作人员">'+['ctrl','dealer','judge','mengpo','screen'].map(r=>'<option value="'+r+'">'+ROLE_NAME[r]+'</option>').join('')+'</optgroup>'
       +(src?src.teams.map(t=>'<optgroup label="'+t.name+'">'+src.players.filter(p=>p.team===t.id).map(p=>'<option value="player:'+p.id+'">'+p.id+'</option>').join('')+'</optgroup>').join(''):'');
     if(da.dataset.h!==h){da.innerHTML=h;da.dataset.h=h;}if(da.value!==ui.as)da.value=ui.as;}
@@ -593,6 +594,7 @@ setInterval(()=>{if(!ws||!connected)return;
 // Send one action. `after` runs only if the server accepted it.
 function send(a,after,quiet){
   if(!ws||!connected){say(no('还没连上服务器，请稍等'));return;}
+  if(DEVME){if(!ui.devOps){say(no('开发者模式现在是只读，点右上角「只读」切换成可操作'));return;}a={...a,as:{role:ME.role,pid:ME.pid}};}
   const id=++seq;
   pending.set(id,m=>{if(!quiet||!m.ok)say(m);if(m.ok&&after)after(m);requestRender();});
   ws.send(JSON.stringify({t:'act',id,a}));
@@ -618,6 +620,7 @@ document.addEventListener('click',e=>{
   else if(a==='copypin'){copyText(v).then(()=>say({ok:true,msg:'已复制 PIN '+v}),()=>say(no('复制失败，请手动选中 PIN')));}
   else if(a==='theme'){const r=ME&&ME.role==='player'?'player':'screen',nx=themeFor()==='dark'?'light':'dark';try{localStorage.setItem(THEME_KEY(r),nx);}catch{/* private mode */}}
   else if(a==='logout'){logout();return;}
+  else if(a==='devops'){ui.devOps=!ui.devOps;say({ok:true,msg:ui.devOps?'开发者模式：可操作（以当前视角的身份）':'开发者模式：只读'});}
   else if(a==='clockctl'){send({type:'admin.clock',op:CLOCK&&CLOCK.running?'pause':'start'});}
   else if(a==='room'){ui.room=v;ui.pick='';ui.res={};ui.settled=null;}
   else if(a==='res'){ui.res[b.dataset.t]=ui.res[b.dataset.t]===v?undefined:v;}
@@ -625,7 +628,7 @@ document.addEventListener('click',e=>{
   else if(a==='finish'){const rid=ui.room;send({type:'finish',rid,results:ui.res},m=>{ui.res={};ui.settled={rid,msg:m.msg};});}
   else if(a==='hook'){send({type:'hook',actor:ui.hookTeam,pid:ui.hookTarget},()=>{ui.hookTarget='';});}
   else if(a==='publish'){send({type:'publish',f:{...ui.pub,mins:+ui.pub.mins||0,reward:+ui.pub.reward||0}},()=>{ui.pub.title='';ui.pub.body='';});}
-  else if(a==='ack'&&DEVME){ui.devAck.add(b.dataset.n+':'+ME.pid);}
+  else if(a==='ack'&&DEVME&&!ui.devOps){ui.devAck.add(b.dataset.n+':'+ME.pid);}
   else if(a==='ack'){const nid=+b.dataset.n,n=S&&S.notices.find(x=>x.id===nid);
     if(n&&ME.pid&&!n.acks[ME.pid])n.acks[ME.pid]=S.t; // show the next notice right away; the server confirms
     send({type:'ack',nid},null,true);}
