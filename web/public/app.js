@@ -6,10 +6,17 @@ const {ROOMS,FRAG,SUITS,RATE,PER_TEAM,MIN_STAY,COIN_GOAL,team,room,alive,inMarke
   defMode,isFirst,indiv,lab,cands,whyNotEnter,gapOf,teamStatus,teamOf,no}=R;
 
 let S=null, ME=null, CLOCK=null, OFFSET=0;
+// Developer mode: DEVME is the real (read-only) sign-in, FULL the full state; ME/S are swapped to the chosen viewpoint.
+let DEVME=null, FULL=null;
+function setMe(me){ME=me;DEVME=me&&me.role==='dev'?me:null;if(!DEVME)FULL=null;}
+function devMe(){const v=ui.as||'ctrl';return v.startsWith('player:')?{role:'player',pid:v.slice(7),label:'玩家'}:{role:v,pid:null,label:ROLE_NAME[v]};}
+// Phone vibration (Android; iPhone browsers ignore it) plus a visual shake.
+const buzz=p=>{try{if(navigator.vibrate)navigator.vibrate(p);}catch{/* not supported */}};
+function shakeEl(el,cls){if(!el)return;el.classList.remove(cls);void el.offsetWidth;el.classList.add(cls);}
 let ui={ddOpen:null,don:{},tab:null,room:'3S',pick:'',res:{},settled:null,hookTeam:'',hookTarget:'',doneSel:{},revokeAsk:null,
-  coinTeam:'',coinAmt:'+100',buyer:'',nc:{name:'',desc:'',price:300,stock:1},
+  coinTeam:'',coinAmt:'',buyer:'',shopCard:'',as:'ctrl',devAck:new Set(),nc:{name:'',desc:'',price:'',stock:''},
   sub:{dealer:'info',npc:'task',market:'buy',ctrl:'status',player:'team'},
-  pub:{kind:'任务',mode:'first',reward:0,title:'',body:'',target:'all',team:'R',player:'',mins:10},
+  pub:{kind:'任务',mode:'first',reward:0,title:'',body:'',target:'all',team:'R',player:'',mins:10,to:'all'},
   admin:{pins:null,snaps:null,counts:{dealer:8,judge:3,mengpo:2,ctrl:2,screen:1},ask:null,resetTxt:''}};
 const $=s=>document.querySelector(s);
 const ROLE_TABS={ctrl:['board','dealer','npc','market','ctrl'],dealer:['dealer'],judge:['npc'],mengpo:['market'],screen:['board'],player:['player']};
@@ -222,14 +229,14 @@ function viewMarket(){
     +(people?'<div class="people">'+people+'</div>':'<div class="empty">鬼市现在没有人。</div>');
   if(ui.buyer&&!mk.some(p=>p.id===ui.buyer))ui.buyer='';
   const by=ui.buyer&&S.players.find(p=>p.id===ui.buyer);
-  const goods=S.shop.map(c=>{const poor=by&&by.coins<c.price,can=c.stock>0&&by&&!poor;
-    return '<div class="li goods"><div class="grow"><span class="nm'+(c.stock?'':' off')+'">'+esc(c.name)+'</span>'+(c.desc?'<span class="desc">'+esc(c.desc)+'</span>':'')
-      +'<span class="small"><span class="mono" style="color:var(--ink)">'+c.price+'</span> 冥币　库存 <span class="mono" style="color:'+(c.stock?'var(--ink)':'var(--red)')+'">'+c.stock+'</span></span></div>'
-      +'<button class="btn-line '+(can?'fill':'')+'" data-a="buy" data-k="'+c.id+'"'+(can?'':' disabled')+' style="min-height:48px">'+(!c.stock?'已售罄':!by?'先选买家':poor?by.id+' 冥币不足':'卖给 '+by.id)+'</button></div>';}).join('');
-  const shop='<h2 class="sh">技能卡商铺</h2><div class="pn" style="gap:10px"><span class="lbl">买家（鬼市中的人）</span>'
-    +(mk.length?'<div class="chips">'+mk.map(p=>cb({k:'buyer',v:p.id,on:ui.buyer===p.id,c:TC[p.team][0],label:'<span class="mono">'+p.id+'</span>',small:p.coins+' 冥币'})).join('')+'</div>'
-      :'<span class="small">鬼市现在没有人</span>')
-    +'<div class="list">'+goods+'</div></div>'
+  if(ui.shopCard&&!S.shop.some(c=>c.id===ui.shopCard))ui.shopCard='';
+  const card=ui.shopCard&&S.shop.find(c=>c.id===ui.shopCard),poor=by&&card&&by.coins<card.price,can=card&&card.stock>0&&by&&!poor;
+  const shop='<h2 class="sh">技能卡商铺</h2><div class="pn" style="gap:12px"><div class="fgrid two">'
+    +'<div class="fld"><span>买家（鬼市中的人）</span>'+dd('buyer',by&&by.id,mk.length?'选择买家':'鬼市现在没有人',by&&TC[by.team][0],mk.map(p=>({v:p.id,label:p.id,c:TC[p.team][0],note:p.coins+' 冥币'})))+'</div>'
+    +'<div class="fld"><span>技能卡</span>'+dd('shopCard',card&&esc(card.name),'选择技能卡',null,S.shop.map(c=>({v:c.id,label:esc(c.name),off:!c.stock,note:c.stock?c.price+' 冥币 · 库存 '+c.stock:'已售罄'})))+'</div></div>'
+    +(card?'<span class="small"><span class="mono" style="color:var(--ink)">'+card.price+'</span> 冥币　库存 <span class="mono" style="color:'+(card.stock?'var(--ink)':'var(--red)')+'">'+card.stock+'</span>'+(card.desc?'　'+esc(card.desc):'')+'</span>':'')
+    +'<button class="btn-main'+(can?' glow':'')+'" data-a="buy" data-k="'+(card?card.id:'')+'"'+(can?'':' disabled')+' style="min-height:52px">'
+    +(!by?'先选买家':!card?'先选技能卡':!card.stock?'已售罄':poor?by.id+' 冥币不足':'卖给 '+by.id)+'</button></div>'
     +'<div class="pn dash" style="gap:10px"><h3 style="font-size:16px">上架新技能卡</h3>'
     +'<div class="ncform"><input class="in" id="ncn" data-m="nc.name" value="'+esc(ui.nc.name)+'" placeholder="卡名" aria-label="卡名">'
     +'<input class="in mono" id="ncp" data-m="nc.price" value="'+esc(ui.nc.price)+'" placeholder="价格" inputmode="numeric" aria-label="价格（冥币）" style="font-size:16px">'
@@ -264,15 +271,24 @@ function teamRows(){
 function coinAmt(){const v=parseInt(String(ui.coinAmt).replace(/[^\d-]/g,''),10);return Number.isFinite(v)?v:0;}
 function coinBtn(){const t=ui.coinTeam&&team(ui.coinTeam),a=coinAmt();
   return t&&a?'确认 '+t.name+' '+(a>0?'+':'')+a+' → '+Math.max(0,t.score+a):'确认修改';}
+function editTeam(){
+  const ct=ui.coinTeam&&team(ui.coinTeam);
+  return '<div class="pn" style="gap:12px"><h3>修改队伍</h3>'
+    +'<div class="coinrow"><div class="fld"><span>队伍</span>'+dd('coinTeam',ct&&ct.name,'选择队伍',ct&&TC[ct.id][0],S.teams.map(t=>({v:t.id,label:t.name,c:TC[t.id][0],note:t.score+' 冥币'})))+'</div>'
+    +'<div class="fld"><span>冥币增减（↑ ↓ 每次 100）</span><div class="step">'
+    +'<button data-a="coinstep" data-v="-100" aria-label="减 100">−</button>'
+    +'<input class="in mono" type="number" step="100" id="cv" data-m="coinAmt" value="'+esc(ui.coinAmt)+'" placeholder="0" aria-label="冥币增减">'
+    +'<button data-a="coinstep" data-v="100" aria-label="加 100">+</button></div></div>'
+    +'<button class="btn-main" id="coinbtn" data-a="setscore" style="min-height:48px;font-size:16px">'+coinBtn()+'</button></div>'
+    +'<div class="fld"><span>线索（扑克牌，点一下加上 / 去掉）</span><div class="clues">'+ROOMS.map(r=>{const has=!!(ct&&ct.cards.includes(r.card));
+      return '<button class="clue'+(has?' on':'')+'" data-a="clue" data-v="'+r.card+'"'+(ct?'':' disabled')+' aria-pressed="'+has+'">'+cardG(r)+'</button>';}).join('')+'</div></div></div>';
+}
 function logTag(l){const x=l.text;
   return /勾魂|抽签淘汰|被淘汰/.test(x)?['勾魂','var(--red)']:/孟婆汤|鬼市|助力/.test(x)&&!/技能卡/.test(x)?['鬼市','var(--accent)']:/技能卡/.test(x)?['技能卡','#6b4f9a']
     :/发布|撤销发布/.test(x)?['发布','var(--ink2)']:/任务/.test(x)?['任务','var(--accent)']:/进入|赢下|输了/.test(x)?['房间','var(--ink2)']:/冥币/.test(x)?['冥币','var(--warn)']:['系统','var(--sub)'];}
 function viewCtrl(){
   const status='<h2 class="sh">各队状态</h2>'+teamRows()
-    +'<div class="pn"><h3>修改队伍冥币</h3><div class="chips c6">'+teamPick('coinTeam',ui.coinTeam,null,id=>team(id).score+' 冥币')+'</div>'
-    +'<div class="coinrow"><label class="fld"><span>增减（负数为扣）</span><input class="in mono" id="cv" data-m="coinAmt" value="'+esc(ui.coinAmt)+'" inputmode="numeric"></label>'
-    +'<div class="quick">'+['-100','+100','+300','+500'].map(q=>'<button class="'+(q[0]==='-'?'neg':'')+'" data-a="quick" data-v="'+q+'">'+q+'</button>').join('')+'</div>'
-    +'<button class="btn-main" id="coinbtn" data-a="setscore" style="min-height:48px;font-size:16px">'+coinBtn()+'</button></div></div>';
+    +editTeam();
   return '<div class="page tabbed toptabs ledger">'+sub('ctrl',[['status','各队状态'],['pub','发布'],['log','全场日志'],['tools','总控工具']],'top col')
     +sec('ctrl','status',status)+sec('ctrl','pub',pubPanel())
     +sec('ctrl','log','<h2 class="sh">全场日志</h2><div class="pn logl" style="gap:0">'+(S.log.length?S.log.slice(0,300).map(l=>{const [k,c]=logTag(l);
@@ -280,14 +296,14 @@ function viewCtrl(){
     +sec('ctrl','tools',adminPanel())+'</div>';
 }
 function pubPanel(){
-  const f=ui.pub,task=f.kind!=='公告';
+  const f=ui.pub,task=f.kind!=='公告';f.to=f.target==='team'?'team:'+f.team:f.target;
   const to=[['all','全场'],...S.teams.map(t=>['team:'+t.id,t.name,t.id]),['alive','存活的人'],['market','鬼市里的人'],['player','某位队员']];
   const toOn=v=>v==='team:'+f.team?f.target==='team':v===f.target;
   const toName=f.target==='team'?team(f.team).name:f.target==='player'?(f.player||'某位队员'):{all:'全场',alive:'存活的',market:'鬼市里的'}[f.target];
   const form='<div class="pn" style="gap:14px">'
     +'<div class="fld"><span>类型</span><div class="seg3">'+['公告','任务','秘密任务'].map(k=>'<button class="sbtn'+(f.kind===k?' on':'')+(k==='秘密任务'?' secret':'')+'" data-a="pick" data-k="pub.kind" data-v="'+k+'" aria-pressed="'+(f.kind===k)+'">'+k+'</button>').join('')+'</div></div>'
-    +'<div class="fld"><span>发给谁</span><div class="chips auto">'+to.map(([v,l,id])=>'<button class="cb mid'+(toOn(v)?' on':'')+'" data-a="pubto" data-v="'+v+'" aria-pressed="'+toOn(v)+'"><span class="sw" style="--c:'+(id?TC[id][0]:'var(--sub)')+'"></span><span class="t">'+l+'</span></button>').join('')+'</div></div>'
-    +(f.target==='player'?'<div class="fld"><span>选择队员</span><div class="chips ids">'+S.players.map(p=>cb({cls:'id',k:'pub.player',v:p.id,on:f.player===p.id,label:'<span class="sw" style="--c:'+TC[p.team][0]+';width:8px;height:8px;display:inline-block;border-radius:2px;background:var(--c);margin-right:4px"></span>'+p.id,mark:false,t:false})).join('')+'</div></div>':'')
+    +'<div class="fgrid"><div class="fld"><span>发给谁</span>'+dd('pub.to',(to.find(([v])=>toOn(v))||[])[1],'选择对象',f.target==='team'?TC[f.team][0]:null,to.map(([v,l,id])=>({v,label:l,c:id?TC[id][0]:null})))+'</div>'
+    +(f.target==='player'?'<div class="fld"><span>选择队员</span>'+dd('pub.player',f.player,'选择队员',f.player&&TC[teamOf(f.player)][0],S.teams.flatMap(t=>[{group:t.name},...S.players.filter(p=>p.team===t.id).map(p=>({v:p.id,label:p.id,c:TC[t.id][0],note:p.st==='alive'?'':'鬼市'}))]))+'</div>':'')+'</div>'
     +'<div class="fgrid">'+(task?'<div class="fld"><span>完成方式</span><div class="seg2">'+[['first','先到先得'],['each','各自完成']].map(([v,l])=>'<button class="sbtn'+(f.mode===v?' on':'')+'" style="min-height:48px;font-size:15px" data-a="pick" data-k="pub.mode" data-v="'+v+'" aria-pressed="'+(f.mode===v)+'">'+l+'</button>').join('')+'</div></div>':'')
     +'<label class="fld"><span>限时（分钟）</span><input class="in mono" id="pm" data-m="pub.mins" value="'+esc(f.mins)+'" inputmode="numeric"></label>'
     +(task?'<label class="fld"><span>奖励冥币</span><input class="in mono" id="prw" data-m="pub.reward" value="'+esc(f.reward)+'" inputmode="numeric"></label>':'')+'</div>'
@@ -310,7 +326,7 @@ function adminPanel(){
   const pins=A.pins?'<div class="pins"><div class="pr h"><span>身份</span><span>编号 / 名称</span><span>PIN</span><span></span></div>'
     +A.pins.map(p=>'<div class="pr"><span>'+esc(p.roleName)+'</span><span class="mono" style="font-weight:700">'+esc(p.pid||p.label)+'</span><span class="pin">'+p.pin+'</span><span>'
       +(A.ask==='pin:'+p.pin?'<span class="btns" style="gap:4px"><button class="btn-line fillred" data-a="adm-resetpin" data-v="'+p.pin+'">确认</button><button class="btn-line" data-a="adm-cancel">取消</button></span>'
-        :'<button class="btn-line" data-a="adm-ask" data-v="pin:'+p.pin+'">重置</button>')+'</span></div>').join('')+'</div>'
+        :'<span class="btns" style="gap:4px"><button class="btn-line" data-a="copypin" data-v="'+p.pin+'">复制</button><button class="btn-line" data-a="adm-ask" data-v="pin:'+p.pin+'">重置</button></span>')+'</span></div>').join('')+'</div>'
     +'<div class="btns"><button class="btn-line" data-a="adm-csv">下载 PIN 表（CSV）</button><button class="btn-line" data-a="adm-hide">收起</button><span class="small">共 '+A.pins.length+' 个</span></div>':'';
   const snaps=A.snaps?(A.snaps.length?'<div class="list">'+A.snaps.map(s=>'<div class="li"><div class="grow"><span class="x" style="font-size:15px">'+new Date(s.at).toLocaleTimeString()+'</span><span class="small">游戏 '+fmt(s.t||0)+'　'+esc(s.tag||'')+'</span></div>'
       +(A.ask==='snap:'+s.key?'<span class="btns"><button class="btn-line fillred" data-a="adm-restore" data-v="'+s.key+'">确认恢复</button><button class="btn-line" data-a="adm-cancel">取消</button></span>'
@@ -389,9 +405,9 @@ function viewPlayer(){
 function modalHtml(){
   if(!ME||ME.role!=='player'||!S)return '';
   const me=S.players.find(p=>p.id===ME.pid);
-  const n=S.notices.find(x=>matches(x,me)&&!x.acks[me.id]);if(!n)return '';
+  const n=S.notices.find(x=>matches(x,me)&&!x.acks[me.id]&&!(DEVME&&ui.devAck.has(x.id+':'+me.id)));if(!n)return '';
   const [kl,kc]=kindOf(n),r=n.due?n.due-S.t:0;
-  return '<div class="ovl"><div class="dlg" role="dialog" aria-modal="true" aria-labelledby="dt"><div class="new"><i></i>新通知</div>'
+  return '<div class="ovl"><div class="dlg" data-n="'+n.id+'" data-k="'+(n.title==='你被淘汰了'?'out':'')+'" role="dialog" aria-modal="true" aria-labelledby="dt"><div class="new"><i></i>新通知</div>'
     +'<div class="bd"><span class="k '+(kc==='alert'?'alert':'')+'">'+kl+'</span>'+(modeOf(n)?'<span>'+modeOf(n)+'</span>':'')+'</div>'
     +'<h3 id="dt">'+esc(n.title)+'</h3>'+(n.body?'<div class="body">'+esc(n.body)+'</div>':'')
     +'<div class="foot">'+(n.due?'<span class="cap">剩余时间</span><span class="cd'+(r>0?'':' over')+'">'+(r>0?mmss(r):'已截止')+'</span>':'')
@@ -422,7 +438,7 @@ function patchNode(o,n){
   patchKids(o,n);
 }
 
-let dirty=false,ambMode=null;
+let dirty=false,ambMode=null,lastModal=null;
 const isTyping=()=>{const a=document.activeElement;return !!a&&/^(INPUT|TEXTAREA)$/.test(a.tagName)&&!!a.closest('#view');};
 function requestRender(){if(isTyping()){dirty=true;tickClocks();}else render();}
 document.addEventListener('focusout',()=>setTimeout(()=>{if(dirty&&!isTyping()){dirty=false;render();}},0));
@@ -437,6 +453,11 @@ function themeFor(){const r=ME&&ME.role==='player'?'player':'screen';let v=null;
 const themed=()=>ui.tab==='board'||ui.tab==='player';
 
 function render(){
+  if(DEVME&&!entering){ME=devMe();if(FULL)S=ME.role==='player'?R.viewFor(FULL,ME):FULL;}
+  const da=$('#devas');da.hidden=!DEVME||entering;
+  if(DEVME&&!entering){const src=FULL||S,h='<optgroup label="工作人员">'+['ctrl','dealer','judge','mengpo','screen'].map(r=>'<option value="'+r+'">'+ROLE_NAME[r]+'</option>').join('')+'</optgroup>'
+      +(src?src.teams.map(t=>'<optgroup label="'+t.name+'">'+src.players.filter(p=>p.team===t.id).map(p=>'<option value="player:'+p.id+'">'+p.id+'</option>').join('')+'</optgroup>').join(''):'');
+    if(da.dataset.h!==h){da.innerHTML=h;da.dataset.h=h;}if(da.value!==ui.as)da.value=ui.as;}
   const login=!ME||entering;
   document.body.classList.toggle('login',login);
   document.body.classList.toggle('screen',!login&&ME.role==='screen');
@@ -450,7 +471,7 @@ function render(){
   const nav=$('#tabs');nav.hidden=tabs.length<2;
   morph(nav,tabs.map(v=>'<button role="tab" data-a="tab" data-v="'+v+'" aria-selected="'+(v===ui.tab)+'">'+TAB_NAME[v]+'</button>').join(''));
   $('#logo').innerHTML=ui.tab==='ctrl'?'<span class="scroll"></span>生死簿':'百鬼夜行';
-  $('#who').textContent=ME.role==='player'?'玩家':ME.role==='ctrl'?'总控':ME.label||ROLE_NAME[ME.role];
+  $('#who').textContent=(DEVME?'开发者 · ':'')+(ME.role==='player'?(DEVME?ME.pid:'玩家'):ME.role==='ctrl'?'总控':ME.label||ROLE_NAME[ME.role]);
   $('#logout').hidden=false;$('#conn').hidden=false;
   const run=CLOCK&&CLOCK.running;
   const cc=$('#clockctl');cc.hidden=ME.role!=='ctrl';cc.textContent=run?'暂停计时':'开始计时';
@@ -462,6 +483,9 @@ function render(){
   fitStage();
   const had=!!$('#modal .dlg');morph($('#modal'),modalHtml());
   const mb=$('#modal button');if(mb&&!had)mb.focus();
+  const dlg=$('#modal .dlg'),mk=dlg?dlg.dataset.n:null;
+  if(mk&&mk!==lastModal){buzz(dlg.dataset.k==='out'?[150,70,150,70,260]:[90,60,90]);shakeEl(dlg,'jolt');}
+  lastModal=mk;
 }
 
 // ---------- login ----------
@@ -487,6 +511,7 @@ function loginError(msg){
   if(!$('#lgmsg'))return;
   loginMsg(msg==='PIN 不正确'?'PIN 不正确，请核对名牌卡或邮件':msg);
   syncBoxes(true);const g=$('#amb ghost-ambience');if(g)g.setAttribute('data-err',String(++errKey));
+  buzz([70,50,70]);shakeEl($('#lgcard'),'eshake');
 }
 const SEAL_PATH='M18 4 H132 Q146 4 146 18 V132 Q146 146 132 146 H18 Q4 146 4 132 V18 Q4 4 18 4 Z M23 13 Q15 13 15 22 V127 Q15 136 23 136 H130 Q138 136 138 128 V21 Q138 12 130 12 Z';
 const SEAL_STROKES=['M32 42 Q46 52 38 68','M30 90 Q48 98 38 118','M62 44 Q66 32 84 30 Q96 29 102 22','M62 44 V124','M90 40 V118','M66 56 H120','M66 76 H116','M66 96 H116','M62 122 H122'];
@@ -502,7 +527,7 @@ function showSeal(){
     +'<svg viewBox="0 0 150 150" style="pointer-events:none"><path class="drip" d="M48 145 q1.5 5 .5 9 q-1 5 .8 10" fill="none" stroke="#bd3a2c" stroke-width="1.6" stroke-linecap="round" opacity=".85"/>'
     +'<path class="drip b" d="M108 145 q-1 4 0 7 q1 3 -.4 6" fill="none" stroke="#bd3a2c" stroke-width="1.2" stroke-linecap="round" opacity=".7"/></svg></div></div>'
     +'<div class="sealtx">'+chars+'</div></div>');
-  c.classList.add('shake');
+  c.classList.add('shake');setTimeout(()=>buzz(110),600); // the seal lands at 0.6 s
   const g=$('#amb ghost-ambience');if(g)g.setAttribute('data-ok','1');
 }
 
@@ -523,7 +548,7 @@ async function login(pin){
   try{res=await fetch('/api/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({pin})});j=await res.json();}
   catch{loginError('连不上服务器，请检查网络');return;}
   if(!res.ok){loginError(j.error||'登录失败');return;}
-  SESSION={token:j.token,me:j.me};store.set(SESSION);ME=j.me;S=null;ui.tab=null;
+  SESSION={token:j.token,me:j.me};store.set(SESSION);setMe(j.me);S=null;ui.tab=null;
   connect();
   if(!$('#lgcard')){render();say(null);return;}
   entering=true;showSeal();
@@ -531,7 +556,7 @@ async function login(pin){
   setTimeout(()=>{entering=false;$('#view').innerHTML='';render();say(null);},reduce?400:2600);
 }
 function logout(msg){
-  SESSION=null;store.set(null);ME=null;S=null;CLOCK=null;entering=false;
+  SESSION=null;store.set(null);setMe(null);S=null;CLOCK=null;entering=false;
   if(ws){const w=ws;ws=null;try{w.close();}catch{/* ignore */}}
   clearTimeout(timer);$('#view').innerHTML='';render();say(null);if(msg)loginError(msg);
 }
@@ -546,8 +571,8 @@ function connect(){
   ws=sock;
   sock.onopen=()=>{connected=true;retry=0;lastMsg=Date.now();setConn();};
   sock.onmessage=e=>{lastMsg=Date.now();let m;try{m=JSON.parse(e.data);}catch{return;}
-    if(m.t==='hello'){ME=m.me;SESSION.me=m.me;store.set(SESSION);}
-    if(m.t==='hello'||m.t==='state'){S=m.S;CLOCK=m.clock;OFFSET=m.now-Date.now();requestRender();}
+    if(m.t==='hello'){setMe(m.me);SESSION.me=m.me;store.set(SESSION);}
+    if(m.t==='hello'||m.t==='state'){S=m.S;if(DEVME)FULL=m.S;CLOCK=m.clock;OFFSET=m.now-Date.now();requestRender();}
     else if(m.t==='res'){const cb=pending.get(m.id);pending.delete(m.id);if(cb)cb(m);}};
   sock.onclose=e=>{
     if(ws!==sock)return;
@@ -585,9 +610,12 @@ document.addEventListener('click',e=>{
   else if(a==='sub'){ui.sub[b.dataset.p]=v;scrollTo({top:0});$('#view').scrollTop=0;}
   else if(a==='dd'){ui.ddOpen=ui.ddOpen===v?null:v;}
   else if(a==='pick'){ui.ddOpen=null;const k=b.dataset.k,next=b.dataset.t&&getp(k)===v?'':v;setp(k,next);
-    if(k==='pub.target')ui.pub.mode=defMode(next);}
+    if(k==='pub.target')ui.pub.mode=defMode(next);
+    if(k==='pub.to'){const t=next||'all';if(t.startsWith('team:')){ui.pub.target='team';ui.pub.team=t.slice(5);}else ui.pub.target=t;ui.pub.mode=defMode(ui.pub.target);}}
   else if(a==='pubto'){if(v.startsWith('team:')){ui.pub.target='team';ui.pub.team=v.slice(5);}else ui.pub.target=v;ui.pub.mode=defMode(ui.pub.target);}
-  else if(a==='quick'){ui.coinAmt=v;}
+  else if(a==='coinstep'){ui.coinAmt=String(coinAmt()+(+v));}
+  else if(a==='clue'){const t=ui.coinTeam&&team(ui.coinTeam);if(t)send({type:'setcards',tid:t.id,card:v,on:!t.cards.includes(v)});}
+  else if(a==='copypin'){copyText(v).then(()=>say({ok:true,msg:'已复制 PIN '+v}),()=>say(no('复制失败，请手动选中 PIN')));}
   else if(a==='theme'){const r=ME&&ME.role==='player'?'player':'screen',nx=themeFor()==='dark'?'light':'dark';try{localStorage.setItem(THEME_KEY(r),nx);}catch{/* private mode */}}
   else if(a==='logout'){logout();return;}
   else if(a==='clockctl'){send({type:'admin.clock',op:CLOCK&&CLOCK.running?'pause':'start'});}
@@ -597,6 +625,7 @@ document.addEventListener('click',e=>{
   else if(a==='finish'){const rid=ui.room;send({type:'finish',rid,results:ui.res},m=>{ui.res={};ui.settled={rid,msg:m.msg};});}
   else if(a==='hook'){send({type:'hook',actor:ui.hookTeam,pid:ui.hookTarget},()=>{ui.hookTarget='';});}
   else if(a==='publish'){send({type:'publish',f:{...ui.pub,mins:+ui.pub.mins||0,reward:+ui.pub.reward||0}},()=>{ui.pub.title='';ui.pub.body='';});}
+  else if(a==='ack'&&DEVME){ui.devAck.add(b.dataset.n+':'+ME.pid);}
   else if(a==='ack'){const nid=+b.dataset.n,n=S&&S.notices.find(x=>x.id===nid);
     if(n&&ME.pid&&!n.acks[ME.pid])n.acks[ME.pid]=S.t; // show the next notice right away; the server confirms
     send({type:'ack',nid},null,true);}
@@ -611,7 +640,7 @@ document.addEventListener('click',e=>{
   else if(a==='revive'){send({type:'revive',pid:b.dataset.p});}
   else if(a==='buy'){send({type:'buy',kid:b.dataset.k,buyer:ui.buyer});}
   else if(a==='usecard'){send({type:'usecard',tid:b.dataset.t,sid:+b.dataset.k});}
-  else if(a==='addcard'){send({type:'addcard',f:ui.nc},()=>{ui.nc={name:'',desc:'',price:300,stock:1};});}
+  else if(a==='addcard'){send({type:'addcard',f:ui.nc},()=>{ui.nc={name:'',desc:'',price:'',stock:''};});}
   else if(a==='donate'){const d=ui.don[b.dataset.p];send({type:'donate',pid:b.dataset.p,amt:d==null?null:d},()=>{delete ui.don[b.dataset.p];});}
   else if(a==='adm-ask'){A.ask=v;}
   else if(a==='adm-cancel'){A.ask=null;}
@@ -626,6 +655,7 @@ document.addEventListener('click',e=>{
   render();
 });
 document.addEventListener('change',e=>{
+  if(e.target.id==='devas'){ui.as=e.target.value;ui.tab=null;ui.ddOpen=null;say(null);render();return;}
   const m=e.target.dataset.m;if(!m)return;
   if(m==='coin'){send({type:'coin',pid:e.target.dataset.p,coins:Math.max(0,parseInt(e.target.value,10)||0)},null,true);}
 });
@@ -641,6 +671,10 @@ document.addEventListener('input',e=>{
   else if(m.startsWith('adm.'))ui.admin.counts[m.slice(4)]=+v;
   else if(m.startsWith('pub.'))ui.pub[m.slice(4)]=v;
 });
+function copyText(t){
+  if(navigator.clipboard&&window.isSecureContext)return navigator.clipboard.writeText(t);
+  return new Promise((ok,bad)=>{const x=document.createElement('textarea');x.value=t;x.style.cssText='position:fixed;opacity:0';document.body.appendChild(x);x.select();
+    try{document.execCommand('copy')?ok():bad();}catch(e){bad(e);}x.remove();});}
 function downloadPins(){
   const rows=[['身份','编号/名称','PIN']].concat((ui.admin.pins||[]).map(p=>[p.roleName,p.pid||p.label,p.pin]));
   const csv='﻿'+rows.map(r=>r.map(x=>'"'+String(x).replace(/"/g,'""')+'"').join(',')).join('\r\n');
@@ -659,4 +693,4 @@ function downloadPins(){
 document.body.dataset.gaFrame='1';
 const qp=new URLSearchParams(location.search).get('pin');
 if(qp){history.replaceState(null,'',location.pathname);render();login(qp);}
-else{if(SESSION){ME=SESSION.me;connect();}render();say(null);}
+else{if(SESSION){setMe(SESSION.me);connect();}render();say(null);}

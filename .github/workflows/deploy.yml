@@ -46,6 +46,13 @@ jobs:
           ADMIN_PIN: ${{ secrets.ADMIN_PIN }}
         run: printf '%s' "$ADMIN_PIN" | npx wrangler secret put ADMIN_PIN
 
+      - name: Set DEV_PIN on Worker (optional; developer mode is off without it)
+        working-directory: worker
+        env:
+          DEV_PIN: ${{ secrets.DEV_PIN }}
+        run: |
+          if [ -n "$DEV_PIN" ]; then printf '%s' "$DEV_PIN" | npx wrangler secret put DEV_PIN; else echo "DEV_PIN not set: developer mode off"; fi
+
       - name: Create Pages project (first run only)
         run: |
           if npx wrangler pages project list | grep -q '\bborderland\b'; then

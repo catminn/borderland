@@ -648,3 +648,25 @@ body.board .stage{background:transparent}
 .notice{pointer-events:none;position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:90;width:max-content;max-width:min(560px,calc(100vw - 32px));box-shadow:0 12px 30px rgba(13,25,27,.22);background:var(--panel);animation:riseIn .2s ease both}
 .notice.bad{background:var(--panel);background-image:linear-gradient(var(--red-soft),var(--red-soft))}
 @media (max-width:719px){.notice{bottom:calc(env(safe-area-inset-bottom) + 86px)}}
+
+
+.coinrow{grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.2fr)}
+.fgrid.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media (max-width:640px){.coinrow,.fgrid.two{grid-template-columns:minmax(0,1fr)}}
+/* ---------- 2026-10-03: shakes, coin stepper, clues, dev bar ---------- */
+.lg .h{width:0;min-width:100%} /* the message never widens the card */
+.lg.eshake{animation:shake .4s ease-out}
+.dlg.jolt{animation:shake .45s ease-out}
+.step{display:grid;grid-template-columns:48px minmax(0,1fr) 48px;gap:6px}
+.step button{min-height:48px;border:1px solid var(--line2);background:var(--card);border-radius:10px;font:800 22px var(--mono);color:var(--accent)}
+.step button:first-child{color:var(--red)}
+.step input{text-align:center;font-size:18px;min-height:48px}
+.clues{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:6px}
+.clue{min-height:48px;border:1.5px dashed var(--line2);background:transparent;border-radius:10px;font:800 18px var(--mono);color:var(--mute)}
+.clue .sr{color:inherit}
+.clue.on{border-style:solid;border-color:var(--accent);background:var(--card);color:var(--ink)}
+.clue.on .sr{color:var(--red)}
+.clue:disabled{opacity:.45}
+.devas{max-width:140px}
+@media (max-width:640px){.clues{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media (prefers-reduced-motion:reduce){.lg.eshake,.dlg.jolt{animation:none}}

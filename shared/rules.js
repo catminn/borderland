@@ -88,6 +88,10 @@ function revokeNotice(nid){const i=S.notices.findIndex(x=>x.id===nid);if(i<0)ret
   return ok('已撤销「'+n.title+'」'+(back?'，扣回奖励 '+back+' 冥币':''));}
 function setScore(tid,v){const t=team(tid);v=Math.round(+v);if(!Number.isFinite(v)||v<0)return no('冥币数要是不小于 0 的整数');
   const old=t.score;if(v===old)return no('冥币数没有变化');t.score=v;log('总控修改 '+t.name+' 冥币：'+old+' → '+v);return ok(t.name+'冥币已改为 '+v);}
+function setCards(tid,card,on){const t=team(tid);if(!t)return no('请先选择队伍');if(!ROOMS.some(r=>r.card===card))return no('没有这张牌');
+  const has=t.cards.includes(card);if(!!on===has)return no(t.name+(has?'已经有 ':'本来就没有 ')+card);
+  if(on)t.cards.push(card);else t.cards=t.cards.filter(c=>c!==card);
+  log('总控修改 '+t.name+' 线索：'+(on?'加上 ':'去掉 ')+card);return ok(t.name+(on?'加上 ':'去掉 ')+card);}
 function whyNotEnter(tid,rid){
   const t=team(tid),r=room(rid),st=S.rooms.find(x=>x.id===rid);
   if(st.teams.length>=(r.two?2:1))return '房间已满';
@@ -178,7 +182,7 @@ function buyCard(kid,buyer){const c=S.shop.find(x=>x.id===kid);
 function useCard(tid,sid){const t=team(tid),i=t.skills.findIndex(k=>k.sid===sid);if(i<0)return no('这张卡不存在');
   const k=t.skills.splice(i,1)[0];log(t.name+' 使用技能卡「'+k.name+'」');return ok(t.name+'已使用「'+k.name+'」');}
 function addCard(f){f={name:String((f&&f.name)||'').slice(0,30),desc:String((f&&f.desc)||'').slice(0,200),price:f&&f.price,stock:f&&f.stock};if(!f.name.trim())return no('先写卡名');
-  const price=Math.round(+f.price);if(!(price>0))return no('价格要大于 0');const stock=Math.max(1,Math.round(+f.stock)||1);
+  const price=Math.round(+f.price);if(!(price>0))return no('先填价格（大于 0）');const stock=Math.round(+f.stock);if(!(stock>0))return no('先填库存（至少 1）');
   const nm=f.name.trim();S.shop.push({id:'k'+(S.sid++),name:nm,desc:f.desc.trim(),price,stock});log('鬼市商铺上架技能卡「'+nm+'」');return ok('已上架「'+nm+'」');}
 function teamStatus(t){
   const missing=SUITS.filter(s=>!t.cards.some(c=>c.includes(s)));
@@ -212,7 +216,7 @@ export function newGame(demo){init();if(demo)seed();return S;}
 
 // Which roles may perform each action ('ctrl' may do everything).
 const ROLE_OK={enter:['dealer'],finish:['dealer'],hook:['judge'],done:['judge'],undone:['judge'],
-  publish:['ctrl'],revoke:['ctrl'],setscore:['ctrl'],
+  publish:['ctrl'],revoke:['ctrl'],setscore:['ctrl'],setcards:['ctrl'],
   revive:['mengpo'],coin:['mengpo'],buy:['mengpo'],usecard:['mengpo'],addcard:['mengpo'],
   ack:['player'],donate:['player']};
 
@@ -231,6 +235,7 @@ export function apply(state,me,a){
     case 'publish':return publish(a.f);
     case 'revoke':return revokeNotice(+a.nid);
     case 'setscore':return setScore(a.tid,a.v);
+    case 'setcards':return setCards(a.tid,a.card,!!a.on);
     case 'revive':return revive(a.pid);
     case 'coin':{const p=S.players.find(x=>x.id===a.pid);if(!p||p.st!=='market')return no('该队员不在鬼市');
       p.coins=Math.max(0,Math.round(+a.coins)||0);return ok(p.id+' 冥币记为 '+p.coins);}
@@ -250,4 +255,4 @@ export function viewFor(state,me){
     teams:state.teams.map(t=>p&&t.id===p.team?t:{...t,skills:[]})};
 }
 
-export {COIN_GOAL,FINAL_MIN,FRAG,MIN_STAY,MODES,PER_TEAM,PROTECT,RATE,ROOMS,SHOP0,SUITS,TEAMS,ack,addCard,alive,buyCard,cands,defMode,donate,eliminate,enterRoom,esc,finishRoom,fmt,gapOf,hook,inMarket,indiv,init,isFirst,kindLabel,lab,log,markDone,matches,no,ok,protectedLeft,publish,pushNotice,revive,revokeNotice,rewardTxt,room,seed,setScore,targetLabel,tcol,team,teamOf,teamStatus,unmarkDone,useCard,whyNotEnter};
+export {COIN_GOAL,FINAL_MIN,FRAG,MIN_STAY,MODES,PER_TEAM,PROTECT,RATE,ROOMS,SHOP0,SUITS,TEAMS,ack,addCard,alive,buyCard,cands,setCards,defMode,donate,eliminate,enterRoom,esc,finishRoom,fmt,gapOf,hook,inMarket,indiv,init,isFirst,kindLabel,lab,log,markDone,matches,no,ok,protectedLeft,publish,pushNotice,revive,revokeNotice,rewardTxt,room,seed,setScore,targetLabel,tcol,team,teamOf,teamStatus,unmarkDone,useCard,whyNotEnter};

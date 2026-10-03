@@ -4,7 +4,7 @@
 import { DurableObject } from 'cloudflare:workers';
 import * as R from '../../shared/rules.js';
 
-const ROLE_NAME = { player: '玩家', dealer: 'Dealer', judge: '判官', mengpo: '孟婆', ctrl: '总控', screen: '大屏' };
+const ROLE_NAME = { player: '玩家', dealer: 'Dealer', judge: '判官', mengpo: '孟婆', ctrl: '总控', screen: '大屏', dev: '开发者' };
 const STAFF_ROLES = ['dealer', 'judge', 'mengpo', 'ctrl', 'screen'];
 const SNAP_EVERY = 10, SNAP_KEEP = 30, LOG_KEEP = 1500;
 
@@ -42,6 +42,8 @@ export class Game extends DurableObject {
   // ---------- identity ----------
   identity(pin) {
     if (this.env.ADMIN_PIN && pin === String(this.env.ADMIN_PIN)) return { role: 'ctrl', label: '总控（管理员）' };
+    // Developer mode: read-only, sees every page. Only on when the Worker secret DEV_PIN is set.
+    if (this.env.DEV_PIN && pin === String(this.env.DEV_PIN)) return { role: 'dev', label: '开发者' };
     return this.auth.pins[pin] || null;
   }
   sessionOf(token) {
@@ -117,6 +119,7 @@ export class Game extends DurableObject {
   }
 
   async handle(s, a) {
+    if (s.role === 'dev') return R.no('开发者模式只能查看，不能操作');
     if (typeof a.type === 'string' && a.type.startsWith('admin.')) {
       if (s.role !== 'ctrl') return R.no('只有总控能做这个操作');
       return this.admin(a);
