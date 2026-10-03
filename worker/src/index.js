@@ -18,7 +18,7 @@ function newPin(taken) {
 export class Game extends DurableObject {
   constructor(ctx, env) {
     super(ctx, env);
-    this.fails = new Map(); this.acts = 0;
+    this.acts = 0;
     ctx.blockConcurrencyWhile(async () => {
       this.S = await ctx.storage.get('state');
       this.clock = (await ctx.storage.get('clock')) || { running: false, base: 0, at: Date.now() };
@@ -64,17 +64,10 @@ export class Game extends DurableObject {
   }
 
   async login(req) {
-    const ip = req.headers.get('cf-connecting-ip') || 'local', f = this.fails.get(ip);
-    if (f && f.n >= 10 && Date.now() < f.until) return json({ error: '尝试次数太多，请 5 分钟后再试' }, 429);
     let pin = '';
     try { pin = String((await req.json()).pin || '').trim(); } catch { /* bad body */ }
     const id = /^\d{6}$/.test(pin) ? this.identity(pin) : null;
-    if (!id) {
-      const n = f && Date.now() < f.until ? f.n + 1 : 1;
-      this.fails.set(ip, { n, until: Date.now() + 5 * 60 * 1000 });
-      return json({ error: 'PIN 不正确' }, 401);
-    }
-    this.fails.delete(ip);
+    if (!id) return json({ error: 'PIN 不正确' }, 401);   // no lockout: at the event everyone shares one Wi-Fi address
     const token = randHex(16);
     this.auth.sessions[token] = { pin, at: Date.now() };
     await this.ctx.storage.put('auth', this.auth);
