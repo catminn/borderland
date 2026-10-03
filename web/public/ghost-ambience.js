@@ -24,8 +24,8 @@ class GhostAmbience extends HTMLElement{
     this.frame=this.closest('[data-ga-frame]');
     if(this.frame){
       this.onMove=e=>{const r=this.getBoundingClientRect();this.target={x:e.clientX-r.left,y:e.clientY-r.top};};
-      this.onLeave=()=>{this.target=null;};
-      this.frame.addEventListener('pointermove',this.onMove);this.frame.addEventListener('pointerleave',this.onLeave);
+      this.onLeave=e=>{if(e.pointerType!=='touch')this.target=null;}; // a finger lifts off, but the eyes keep looking at where it was
+      this.frame.addEventListener('pointermove',this.onMove);this.frame.addEventListener('pointerdown',this.onMove);this.frame.addEventListener('pointerleave',this.onLeave);
     }
     this.reduced=RM.matches;
     this.resize();
@@ -38,7 +38,7 @@ class GhostAmbience extends HTMLElement{
     this.raf=requestAnimationFrame(this.loop);
   }
   disconnectedCallback(){cancelAnimationFrame(this.raf);this.ro&&this.ro.disconnect();this.io&&this.io.disconnect();
-    if(this.frame){this.frame.removeEventListener('pointermove',this.onMove);this.frame.removeEventListener('pointerleave',this.onLeave);}}
+    if(this.frame){this.frame.removeEventListener('pointermove',this.onMove);this.frame.removeEventListener('pointerdown',this.onMove);this.frame.removeEventListener('pointerleave',this.onLeave);}}
   attributeChangedCallback(n,o,v){
     if(!this.ctx||!this.flames)return;
     if(n==='data-len')this.len=+v||0;
@@ -134,7 +134,7 @@ class GhostAmbience extends HTMLElement{
         else if(e.state==='closing'||e.state==='stare'){e.open-=dt;if(e.open<=0){e.open=0;e.state='closed';}}
       }
     }
-    for(const e of this.eyes){if(e.open<=0)continue;const ex=e.nx*w,ey=e.ny*h,dx=gx-ex,dy=gy-ey,d=Math.hypot(dx,dy)||1,sp=this.okMode||this.errMode?6:1.6;
+    for(const e of this.eyes){if(e.open<=0)continue;const ex=e.nx*w,ey=e.ny*h,dx=gx-ex,dy=gy-ey,d=Math.hypot(dx,dy)||1,sp=this.okMode||this.errMode?6:4;
       e.lx+=(dx/d-e.lx)*Math.min(1,dt*sp);e.ly+=(dy/d-e.ly)*Math.min(1,dt*sp);}
   }
   drawFlame(f,t){
@@ -187,7 +187,7 @@ class GhostAmbience extends HTMLElement{
       c.beginPath();c.moveTo(-ew/2,0);c.quadraticCurveTo(0,-eh*1.25,ew/2,0);c.quadraticCurveTo(0,eh*1.25,-ew/2,0);c.closePath();
       c.shadowColor=col[2];c.shadowBlur=20;c.globalAlpha=Math.min(1,e.open*1.5)*.92;
       const g=c.createRadialGradient(0,0,0,0,0,ew*.6);g.addColorStop(0,col[0]);g.addColorStop(1,col[1]);c.fillStyle=g;c.fill();
-      c.shadowBlur=0;c.clip();c.fillStyle='#120806';c.beginPath();c.ellipse(e.lx*ew*.26,e.ly*eh*.35,ew*.075,Math.max(.5,eh*.92),0,0,Math.PI*2);c.fill();c.restore();});
+      c.shadowBlur=0;c.clip();c.fillStyle='#120806';c.beginPath();c.ellipse(e.lx*ew*.38,e.ly*eh*.55,ew*.075,Math.max(.5,eh*.92),0,0,Math.PI*2);c.fill();c.restore();});
   }
   drawStatic(){if(!this.flames)return;const c=this.ctx;c.clearRect(0,0,this.w,this.h);(this.paper||[]).forEach(p=>this.drawPaper(p,0));this.flames.forEach(f=>{f.a=this.okMode?0:1;f.dip=0;f.lean=0;this.drawFlame(f,0);});}
 }
