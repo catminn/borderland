@@ -28,7 +28,7 @@ function buzz(p){
   a.forEach((d,i)=>{if(i%2===0)setTimeout(iosTick,t);t+=d;});}
 function shakeEl(el,cls){if(!el)return;el.classList.remove(cls);void el.offsetWidth;el.classList.add(cls);}
 let ui={ddOpen:null,don:{},tab:null,room:'3S',pick:'',res:{},settled:null,hookTeam:'',hookTarget:'',doneSel:{},revokeAsk:null,
-  coinTeam:'',coinAmt:'',buyer:'',shopCard:'',as:'ctrl',devOps:false,devAck:new Set(),nc:{name:'',desc:'',price:'',stock:''},
+  coinTeam:'',coinAmt:'',buyer:'',mkTab:'buy',ncOpen:false,as:'ctrl',devOps:false,devAck:new Set(),nc:{name:'',desc:'',price:'',stock:''},
   sub:{dealer:'info',npc:'task',market:'buy',ctrl:'status',player:'team'},
   pub:{kind:'任务',mode:'first',reward:0,title:'',body:'',target:'all',team:'R',players:[],mins:10,to:'all'},
   admin:{pins:null,snaps:null,counts:{dealer:8,judge:3,mengpo:2,ctrl:2,screen:1},ask:null,resetTxt:''}};
@@ -234,39 +234,49 @@ function viewNpc(){
 // ---------- 鬼市 ----------
 function viewMarket(){
   const mk=S.players.filter(p=>p.st==='market').sort((a,b)=>a.outAt-b.outAt);
-  const people=mk.map(p=>{const stay=S.t-p.outAt,tOk=stay>=MIN_STAY,tot=p.coins+p.bail,ok=tOk&&tot>=COIN_GOAL;
-    return '<div class="pn pc'+(ok?' ok':'')+'"><div class="idrow"><span class="id">'+p.id+'</span>'+tchip(p.team)+'</div>'
-      +'<div class="stay">已待 <span class="mono">'+mm(stay)+'</span><span class="pill '+(tOk?'free':'warn')+'">'+(ok?'<i class="gd"></i>':'')+(tOk?'时间已满':'还差 '+mm(MIN_STAY-stay))+'</span></div>'
-      +'<div class="two"><label class="fld"><span>本人冥币</span><span class="coin-in"><input class="in mono" id="c-'+p.id+'" data-m="coin" data-p="'+p.id+'" value="'+p.coins+'" inputmode="numeric" aria-label="'+p.id+' 本人冥币"></span></label>'
-      +'<div class="fld"><span>队友助力</span><div class="helpbox">+'+p.bail+'</div></div></div>'
-      +'<div class="fld"><div class="tot"><span>合计</span><span class="mono'+(tot>=COIN_GOAL?' ok':'')+'" id="tot-'+p.id+'">'+tot+' / '+COIN_GOAL+'</span></div>'
-      +'<div class="bar"><span class="'+(tot>=COIN_GOAL?'ok':'')+'" id="bar-'+p.id+'" style="width:'+Math.min(100,tot/COIN_GOAL*100)+'%"></span></div></div>'
-      +'<button class="btn-main ghost'+(ok?' glow':'')+'" data-a="revive" data-p="'+p.id+'"'+(ok?'':' disabled')+' style="min-height:52px">'+(ok?'买命回队':!tOk?'时间未满':'还差 '+(COIN_GOAL-tot)+' 冥币')+'</button></div>';}).join('');
-  const buy='<div class="shrow"><h2 class="sh">孟婆买命</h2><span class="hint">满 '+MIN_STAY/60+' 分钟且凑够 '+COIN_GOAL+' 可回队</span></div>'
-    +(people?'<div class="people">'+people+'</div>':'<div class="empty">鬼市现在没有人。</div>');
+  // Left (≈60%): one compact row per person in the market.
+  const rows=mk.map(p=>{const stay=S.t-p.outAt,tOk=stay>=MIN_STAY,tot=p.coins+p.bail,cOk=tot>=COIN_GOAL,ok=tOk&&cOk;
+    const elig=ok?'<span class="pill free"><i class="gd"></i>可以买命</span>':'<span class="pill warn">'+(!tOk?'还差 '+mm(MIN_STAY-stay):'还差 '+(COIN_GOAL-tot)+' 冥币')+'</span>';
+    return '<div class="mrow'+(ok?' ok':'')+'"><div class="l1"><span class="id">'+p.id+'</span>'+tchip(p.team)
+      +'<span class="stay">已待 <b class="mono">'+mm(stay)+'</b></span><span class="small'+(tOk?' okc':'')+'">'+(tOk?'时间已满':'未满 '+MIN_STAY/60+' 分钟')+'</span>'
+      +'<span class="elig">'+elig+'</span></div>'
+      +'<div class="l2"><label class="kv"><span class="k">本人冥币</span><span class="coin-in"><input class="in mono" id="c-'+p.id+'" data-m="coin" data-p="'+p.id+'" value="'+p.coins+'" inputmode="numeric" aria-label="'+p.id+' 本人冥币"></span></label>'
+      +'<div class="kv"><span class="k">队友助力</span><span class="v">+'+p.bail+'</span></div>'
+      +'<div class="kv"><span class="k">合计</span><span class="v'+(cOk?' ok':'')+'" id="tot-'+p.id+'">'+tot+' / '+COIN_GOAL+'</span></div>'
+      +'<button class="btn-main'+(ok?' glow':'')+'" data-a="revive" data-p="'+p.id+'"'+(ok?'':' disabled')+'>'+(ok?'买命回队':!tOk?'时间未满':'差 '+(COIN_GOAL-tot))+'</button></div></div>';}).join('');
+  const left='<section class="mcol"><div class="shrow"><h2 class="sh">孟婆买命</h2><span class="hint">满 '+MIN_STAY/60+' 分钟且凑够 '+COIN_GOAL+' 可回队</span></div>'
+    +(rows?'<div class="mlist">'+rows+'</div>':'<div class="empty">鬼市现在没有人。</div>')+'</section>';
+  // Right (≈40%): tabs 购买技能卡 / 各队持有.
   if(ui.buyer&&!mk.some(p=>p.id===ui.buyer))ui.buyer='';
-  const by=ui.buyer&&S.players.find(p=>p.id===ui.buyer);
-  if(ui.shopCard&&!S.shop.some(c=>c.id===ui.shopCard))ui.shopCard='';
-  const card=ui.shopCard&&S.shop.find(c=>c.id===ui.shopCard),poor=by&&card&&by.coins<card.price,can=card&&card.stock>0&&by&&!poor;
-  const shop='<h2 class="sh">技能卡商铺</h2><div class="pn" style="gap:12px"><div class="fgrid two">'
-    +'<div class="fld"><span>买家（鬼市中的人）</span>'+dd('buyer',by&&by.id,mk.length?'选择买家':'鬼市现在没有人',by&&TC[by.team][0],mk.map(p=>({v:p.id,label:p.id,c:TC[p.team][0],note:p.coins+' 冥币'})))+'</div>'
-    +'<div class="fld"><span>技能卡</span>'+dd('shopCard',card&&esc(card.name),'选择技能卡',null,S.shop.map(c=>({v:c.id,label:esc(c.name),off:!c.stock,note:c.stock?c.price+' 冥币 · 库存 '+c.stock:'已售罄'})))+'</div></div>'
-    +(card?'<span class="small"><span class="mono" style="color:var(--ink)">'+card.price+'</span> 冥币　库存 <span class="mono" style="color:'+(card.stock?'var(--ink)':'var(--red)')+'">'+card.stock+'</span>'+(card.desc?'　'+esc(card.desc):'')+'</span>':'')
-    +'<button class="btn-main'+(can?' glow':'')+'" data-a="buy" data-k="'+(card?card.id:'')+'"'+(can?'':' disabled')+' style="min-height:52px">'
-    +(!by?'先选买家':!card?'先选技能卡':!card.stock?'已售罄':poor?by.id+' 冥币不足':'卖给 '+by.id)+'</button></div>'
-    +shopList()
-    +'<div class="pn dash" style="gap:10px"><h3 style="font-size:16px">上架新技能卡</h3>'
-    +'<div class="ncform"><input class="in" id="ncn" data-m="nc.name" value="'+esc(ui.nc.name)+'" placeholder="卡名" aria-label="卡名">'
-    +'<input class="in mono" id="ncp" data-m="nc.price" value="'+esc(ui.nc.price)+'" placeholder="价格" inputmode="numeric" aria-label="价格（冥币）" style="font-size:16px">'
-    +'<input class="in mono" id="ncs" data-m="nc.stock" value="'+esc(ui.nc.stock)+'" placeholder="库存" inputmode="numeric" aria-label="库存" style="font-size:16px"></div>'
-    +'<input class="in" id="ncd" data-m="nc.desc" value="'+esc(ui.nc.desc)+'" placeholder="效果说明（可不填）" aria-label="效果说明">'
-    +'<button class="btn-line acc" data-a="addcard" style="min-height:48px">上架</button></div>';
-  const inv=S.teams.filter(t=>t.skills.length).map(t=>'<div class="pn" style="gap:8px"><div class="hold-hd">'+tsq(t.id,30)+'<b>'+t.name+'</b><span class="small">'+t.skills.length+' 张可用</span></div>'
-    +t.skills.map(k=>'<div class="li" style="padding:8px 0;min-height:52px"><div class="grow"><span style="font-size:16px;font-weight:700">'+esc(k.name)+'</span><span class="small">'+esc(k.by)+' 买于 '+fmt(k.t)+'</span></div>'
-      +'<button class="btn-line acc" data-a="usecard" data-t="'+t.id+'" data-k="'+k.sid+'">标记已使用</button></div>').join('')+'</div>').join('');
-  const hold='<h2 class="sh">各队持有的技能卡</h2>'+(inv||'<div class="pn"><span class="muted">还没有队伍买过技能卡。</span></div>');
-  return '<div class="page tabbed toptabs allin">'+sub('market',[['buy','孟婆买命'],['shop','技能卡商铺'],['hold','各队持卡']],'top')
-    +sec('market','buy',buy)+sec('market','shop',shop)+sec('market','hold',hold)+'</div>';
+  const by=ui.buyer&&S.players.find(p=>p.id===ui.buyer),held=S.teams.reduce((n,t)=>n+t.skills.length,0),tab=ui.mkTab==='hold'?'hold':'buy';
+  const tabs='<div class="mtabs" role="tablist"><button role="tab" data-a="mktab" data-v="buy" aria-selected="'+(tab==='buy')+'">购买技能卡</button>'
+    +'<button role="tab" data-a="mktab" data-v="hold" aria-selected="'+(tab==='hold')+'">各队持有'+(held?' <span class="n">'+held+'</span>':'')+'</button></div>';
+  let body;
+  if(tab==='buy'){
+    const buyers=mk.length?'<div class="buyers">'+mk.map(p=>'<button class="bchip'+(ui.buyer===p.id?' on':'')+'" data-a="pick" data-k="buyer" data-v="'+p.id+'" data-t="1" aria-pressed="'+(ui.buyer===p.id)+'"><span class="sw" style="--c:'+TC[p.team][0]+'"></span><b class="mono">'+p.id+'</b><span>'+p.coins+' 冥币</span></button>').join('')+'</div>'
+      :'<span class="small">鬼市现在没有人，没人能买。</span>';
+    const goods=S.shop.length?S.shop.map(c=>{const poor=by&&by.coins<c.price,can=c.stock>0&&by&&!poor;
+      return '<div class="good"><div class="gl"><b class="'+(c.stock?'':'off')+'">'+esc(c.name)+'</b>'+(c.desc?'<span class="d">'+esc(c.desc)+'</span>':'')+'</div>'
+        +'<div class="gr"><span class="small"><b class="mono">'+c.price+'</b> 冥币 · '+(c.stock?'库存 '+c.stock:'<span class="redc">售罄</span>')+'</span>'
+        +'<button class="btn-line'+(can?' fill':'')+'" data-a="buy" data-k="'+c.id+'"'+(can?'':' disabled')+'>'+(!c.stock?'已售罄':!by?'先选买家':poor?'冥币不足':'卖给 '+by.id)+'</button></div></div>';}).join('')
+      :'<span class="muted">商铺里还没有技能卡。</span>';
+    body='<div class="fld"><span>买家（鬼市中的人）</span>'+buyers+'</div><div class="goods2">'+goods+'</div>';
+  }else{
+    body=S.teams.filter(t=>t.skills.length).map(t=>'<div class="hold"><div class="hold-hd">'+tsq(t.id,26)+'<b>'+t.name+'</b><span class="small">'+t.skills.length+' 张可用</span></div>'
+      +t.skills.map(k=>'<div class="good"><div class="gl"><b>'+esc(k.name)+'</b><span class="small">'+esc(k.by)+' 买于 '+fmt(k.t)+'</span></div>'
+        +'<div class="gr"><button class="btn-line acc" data-a="usecard" data-t="'+t.id+'" data-k="'+k.sid+'">标记已使用</button></div></div>').join('')+'</div>').join('')
+      ||'<span class="muted">还没有队伍买过技能卡。</span>';
+  }
+  const right='<section class="mcol"><div class="shrow"><h2 class="sh">技能卡</h2><button class="btn-line addbtn" data-a="ncopen">＋ 上架新技能卡</button></div><div class="pn mshop">'+tabs+body+'</div></section>';
+  // 上架新技能卡: a dialog, not a form that always takes space.
+  const sheet=ui.ncOpen?'<div class="sheet"><div class="sheet-bg" data-a="ncclose"></div><div class="sheet-card pn" role="dialog" aria-modal="true" aria-labelledby="nct">'
+    +'<h3 id="nct">上架新技能卡</h3>'
+    +'<label class="fld"><span>卡名</span><input class="in" id="ncn" data-m="nc.name" value="'+esc(ui.nc.name)+'" placeholder="例如：替身纸人"></label>'
+    +'<div class="fgrid two"><label class="fld"><span>价格（冥币）</span><input class="in mono" id="ncp" data-m="nc.price" value="'+esc(ui.nc.price)+'" inputmode="numeric"></label>'
+    +'<label class="fld"><span>库存</span><input class="in mono" id="ncs" data-m="nc.stock" value="'+esc(ui.nc.stock)+'" inputmode="numeric"></label></div>'
+    +'<label class="fld"><span>效果说明（可不填）</span><textarea class="in" id="ncd" data-m="nc.desc" rows="3">'+esc(ui.nc.desc)+'</textarea></label>'
+    +'<div class="btns"><button class="btn-main" data-a="addcard">上架</button><button class="btn-line" data-a="ncclose">取消</button></div></div></div>':'';
+  return '<div class="page mkt">'+left+right+sheet+'</div>';
 }
 
 // ---------- 生死簿 ----------
@@ -289,19 +299,6 @@ function teamRows(){
 function coinAmt(){const v=parseInt(String(ui.coinAmt).replace(/[^\d-]/g,''),10);return Number.isFinite(v)?v:0;}
 function coinBtn(){const t=ui.coinTeam&&team(ui.coinTeam),a=coinAmt();
   return t&&a?'确认 '+t.name+' '+(a>0?'+':'')+a+' → '+Math.max(0,t.score+a):'确认修改';}
-// Everything the shop sells. Computer: a full list with descriptions. Phone: short chips; tap one for its details
-// (tapping also picks it for the sell form above).
-function shopList(){
-  if(!S.shop.length)return '<div class="pn"><span class="muted">商铺里还没有技能卡。</span></div>';
-  const st=c=>c.stock?'库存 <span class="mono" style="color:var(--ink)">'+c.stock+'</span>':'<span style="color:var(--red)">已售罄</span>';
-  const full='<div class="pn shopfull" style="gap:0"><h3 style="padding-bottom:6px">商铺里的技能卡</h3>'+S.shop.map(c=>'<div class="li"><div class="grow" style="gap:2px">'
-    +'<span class="nm'+(c.stock?'':' off')+'" style="font-size:17px;font-weight:800">'+esc(c.name)+'</span>'+(c.desc?'<span class="desc">'+esc(c.desc)+'</span>':'<span class="small">（没有效果说明）</span>')+'</div>'
-    +'<span class="small" style="text-align:right;white-space:nowrap"><span class="mono" style="color:var(--ink);font-weight:800">'+c.price+'</span> 冥币<br>'+st(c)+'</span></div>').join('')+'</div>';
-  const o=S.shop.find(c=>c.id===ui.shopOpen);
-  const chips='<div class="pn shopchips" style="gap:10px"><h3>商铺里的技能卡</h3><div class="skills">'+S.shop.map(c=>'<button class="sk'+(ui.shopOpen===c.id?' on':'')+(c.stock?'':' out')+'" data-a="shopopen" data-v="'+c.id+'" aria-expanded="'+(ui.shopOpen===c.id)+'">'+esc(c.name)+'</button>').join('')+'</div>'
-    +(o?'<div class="skd"><b>'+esc(o.name)+'</b>'+(o.desc?'<span class="d">'+esc(o.desc)+'</span>':'')+'<span class="small"><span class="mono" style="color:var(--ink);font-weight:800">'+o.price+'</span> 冥币　'+st(o)+'</span></div>':'')+'</div>';
-  return full+chips;
-}
 function editTeam(){
   const ct=ui.coinTeam&&team(ui.coinTeam);if(ui.clueAsk&&ui.clueAsk.tid!==ui.coinTeam)ui.clueAsk=null;const q=ui.clueAsk;
   return '<div class="pn" style="gap:12px"><h3>修改队伍</h3>'
@@ -508,6 +505,7 @@ function render(){
   if(!tabs.includes(ui.tab))ui.tab=tabs[0];
   document.documentElement.dataset.theme=themed()?themeFor():'light';
   document.body.classList.toggle('board',ui.tab==='board');
+  document.body.classList.toggle('natscroll',ui.tab==='market');
   // Staff and player pages: the big screen's full-window background on computers, and on phones in dark mode;
   // flames and eyes only show where no panel covers them (data-free). Phones in light mode keep the header strip.
   const userTab=['dealer','npc','market','ctrl','player'].includes(ui.tab),tone=themeFor(),full=userTab&&(innerWidth>=720||tone==='dark');
@@ -665,7 +663,9 @@ document.addEventListener('click',e=>{
   else if(a==='pick'){ui.ddOpen=null;const k=b.dataset.k,next=b.dataset.t&&getp(k)===v?'':v;setp(k,next);
     if(k==='pub.target')ui.pub.mode=defMode(next);
     if(k==='pub.to'){const t=next||'all';if(t.startsWith('team:')){ui.pub.target='team';ui.pub.team=t.slice(5);}else ui.pub.target=t;ui.pub.mode=defMode(ui.pub.target);}}
-  else if(a==='shopopen'){ui.shopOpen=ui.shopOpen===v?null:v;const c=S.shop.find(x=>x.id===v);if(ui.shopOpen&&c&&c.stock)ui.shopCard=v;}
+  else if(a==='mktab'){ui.mkTab=v;}
+  else if(a==='ncopen'){ui.ncOpen=true;setTimeout(()=>{const e=$('#ncn');if(e)e.focus();},0);}
+  else if(a==='ncclose'){ui.ncOpen=false;}
   else if(a==='skill'){ui.skillOpen=ui.skillOpen===+v?null:+v;}
   else if(a==='pickm'||a==='unpick'){const k=b.dataset.k,cur=getp(k)||[];setp(k,cur.includes(v)?cur.filter(x=>x!==v):a==='pickm'?[...cur,v]:cur);}
   else if(a==='pubto'){if(v.startsWith('team:')){ui.pub.target='team';ui.pub.team=v.slice(5);}else ui.pub.target=v;ui.pub.mode=defMode(ui.pub.target);}
@@ -699,7 +699,7 @@ document.addEventListener('click',e=>{
   else if(a==='revive'){send({type:'revive',pid:b.dataset.p});}
   else if(a==='buy'){send({type:'buy',kid:b.dataset.k,buyer:ui.buyer});}
   else if(a==='usecard'){send({type:'usecard',tid:b.dataset.t,sid:+b.dataset.k});}
-  else if(a==='addcard'){send({type:'addcard',f:ui.nc},()=>{ui.nc={name:'',desc:'',price:'',stock:''};});}
+  else if(a==='addcard'){send({type:'addcard',f:ui.nc},()=>{ui.nc={name:'',desc:'',price:'',stock:''};ui.ncOpen=false;});}
   else if(a==='donate'){const d=ui.don[b.dataset.p];send({type:'donate',pid:b.dataset.p,amt:d==null?null:d},()=>{delete ui.don[b.dataset.p];});}
   else if(a==='adm-ask'){A.ask=v;}
   else if(a==='adm-cancel'){A.ask=null;}
@@ -715,6 +715,7 @@ document.addEventListener('click',e=>{
   else if(a==='adm-csv'){downloadPins();}
   render();
 });
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&ui.ncOpen){ui.ncOpen=false;render();}});
 document.addEventListener('change',e=>{
   if(e.target.id==='devas'){ui.as=e.target.value;ui.tab=null;ui.ddOpen=null;say(null);render();return;}
   const m=e.target.dataset.m;if(!m)return;
