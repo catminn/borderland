@@ -386,10 +386,20 @@ function adminPanel(){
 function viewPlayer(){
   const me=S.players.find(p=>p.id===ME.pid),t=team(me.team),prot=protectedLeft(me),inMk=me.st==='market';
   const stay=inMk?S.t-me.outAt:0;
-  const badge=inMk?['在鬼市','bad']:prot?['保护期','warn']:['存活',''];
-  const subTxt=inMk?'已待 '+mm(stay):prot?'保护期还剩 '+Math.ceil(prot/60)+' 分钟':'小心勾魂';
-  const pass='<div class="pass"><div class="r1"><div style="display:flex;flex-direction:column;gap:6px;min-width:0"><span class="cap">冥府通行证</span><span class="id">'+me.id+'</span></div>'
-    +'<span class="badge '+badge[1]+'">'+badge[0]+'</span></div><div class="r2">'+tchip(t.id)+'<span class="muted">'+subTxt+'</span></div></div>';
+  // 酆都通行证: a clearance document, stamped with the current state
+  const wst=inMk?'market':prot?'protected':'alive';
+  const wseal={alive:'存活',protected:'保护中',market:'鬼市'}[wst];
+  const wnote=wst==='alive'?'<span class="w-hint">小心勾魂</span>'
+    :'<span class="w-lab">'+(wst==='market'?'已待':'保护期还剩')+'</span><span class="w-num">'+(wst==='market'?mm(stay):Math.ceil(prot/60)+' 分钟')+'</span>';
+  const wch=[...wseal],wn=wch.length,wh=wn>2?78:58,wy=wn>2?[27,51,75]:[29,55];
+  const wen='<div class="wen" data-st="'+wst+'"><svg class="w-grain" aria-hidden="true"><rect width="100%" height="100%" filter="url(#paperGrain)"></rect></svg>'
+    +'<i class="w-frame"></i><i class="w-cn tl"></i><i class="w-cn tr"></i><i class="w-cn bl"></i><i class="w-cn br"></i>'
+    +'<div class="w-title"><b>酆都通行证</b><span>冥府签发</span></div><div class="w-rule"></div>'
+    +'<div class="w-who"><span class="w-idg"><span class="w-k">持证人</span><span class="w-id">'+me.id+'</span></span>'
+    +'<span class="w-teamg"><span class="w-k">所属</span><i class="w-sw" style="'+tv(t.id)+'"></i><span class="w-team">'+t.name+'</span></span></div>'
+    +'<div class="w-state"><div class="w-note">'+wnote+'</div>'
+    +'<svg class="w-seal" viewBox="0 0 64 '+(wh+6)+'" role="img" aria-label="'+wseal+'"><g filter="url(#sealInk)"><rect x="3" y="3" width="58" height="'+wh+'" rx="2"></rect>'
+    +wch.map((c,i)=>'<text x="32" y="'+wy[i]+'" text-anchor="middle" font-size="'+(wn>2?24:28)+'">'+c+'</text>').join('')+'</g></svg></div></div>';
   // 本队
   const a=alive(t.id).length,st=teamStatus(t);
   const dots=S.players.filter(p=>p.team===t.id).map(p=>'<span class="dt'+(p.st==='alive'?'':' out')+'" style="'+tv(t.id)+'" title="'+p.id+(p.st==='alive'?'':'（鬼市）')+'"></span>').join('');
@@ -436,8 +446,8 @@ function viewPlayer(){
     +'<span class="small">花本队冥币 '+RATE+':1 换助力（队伍现有 <span class="mono" style="color:var(--ink)">'+t.score+'</span>）</span>';
   const roomSec='<h2 class="sh" style="font-size:22px">全部房间</h2><div class="prooms">'+ROOMS.map(r=>roomCard(r,t.id)).join('')+'</div>';
   const tabs=[['team','本队'],['task','任务'+(unread?'<b class="cnt">'+unread+'</b>':'')],['market','鬼市'+(mk.length?'<b class="cnt">'+mk.length+'</b>':'')],['rooms','房间']];
-  return '<div class="page tabbed toptabs allin">'+pass+sub('player',tabs,'top')
-    +'<div class="pcol l">'+sec('player','team',teamSec)+sec('player','market',mkSec).replace('class="sec','class="sec'+(mk.length?'':' mk0'))+sec('player','team',skillsPart)+sec('player','rooms',roomSec)+'</div>'
+  return '<div class="page tabbed toptabs allin">'+sub('player',tabs,'top')
+    +'<div class="pcol l">'+wen+sec('player','team',teamSec)+sec('player','market',mkSec).replace('class="sec','class="sec'+(mk.length?'':' mk0'))+sec('player','team',skillsPart)+sec('player','rooms',roomSec)+'</div>'
     +'<div class="pcol r">'+sec('player','task',taskSec)+'</div></div>';
 }
 function modalHtml(){

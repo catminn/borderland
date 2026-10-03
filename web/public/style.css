@@ -354,13 +354,6 @@ body.screen .logo,body.screen .tag,body.screen .clk,body.screen .notice{display:
 body.screen .stage-wrap{border-radius:0}
 
 /* ---------- 玩家 ---------- */
-.pass{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:14px}
-.pass .r1{display:flex;justify-content:space-between;align-items:flex-end;gap:10px}
-.pass .cap{font-size:12px;color:var(--sub);letter-spacing:.2em}
-.pass .id{font:800 56px var(--mono);line-height:1}
-.pass .badge{padding:6px 14px;border-radius:999px;font-size:17px;font-weight:900;color:var(--bg);background:var(--accent);white-space:nowrap}
-.pass .badge.warn{background:var(--warn)} .pass .badge.bad{background:var(--red)}
-.pass .r2{display:flex;align-items:center;gap:10px;font-size:14px;flex-wrap:wrap}
 .pcols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:start}
 .stat2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .mini{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:6px;min-width:0}
@@ -516,7 +509,6 @@ body.login .notice{display:none}
   .cnts{grid-template-columns:repeat(3,minmax(0,1fr))}
   .pins .pr{grid-template-columns:64px minmax(0,1fr) 80px auto;gap:6px;font-size:13px}
   .danger{padding:16px}
-  .pass .id{font-size:44px}
 }
 @media (min-width:720px){
   .subtabs:not(.top){display:none}
@@ -597,8 +589,6 @@ body.login .notice{display:none}
   .tbl .tr{padding:8px 18px}
   .tbl .cn{font-size:20px}
   .sq{width:34px;height:30px;font-size:17px}
-  .pass{padding:14px 16px;gap:10px}
-  .pass .id{font-size:44px}
   .mini .cv{font-size:30px}
   .note,.mate{padding:12px 14px;gap:8px}
 }
@@ -788,11 +778,6 @@ body.fullamb #amb{position:fixed;inset:0;height:auto}
   .page.allin>:not(.sec):not(.pcol){grid-column:1/-1}
   .page.allin>.pcol{display:flex;flex-direction:column;gap:18px;min-width:0}
   .page.allin>.pcol>.sec,.page.allin>.pcol>.sec:not(.on){display:flex}
-  .page.allin>.pass{flex-direction:row;align-items:center;justify-content:flex-start;gap:12px 22px;padding:10px 20px}
-  .page.allin>.pass .r1{justify-content:flex-start;align-items:center;gap:16px}
-  .page.allin>.pass .r1>div{flex-direction:row!important;align-items:baseline;gap:12px!important}
-  .page.allin>.pass .id{font-size:34px}
-  .page.allin>.pass .badge{padding:3px 12px;font-size:15px}
   .page.allin .tsum{grid-template-columns:minmax(0,.8fr) minmax(0,1fr) minmax(0,2.2fr)}
   .page.allin .tsum .frag{grid-column:auto}
   .page.allin .tsum .mini{padding:10px 14px}
@@ -832,3 +817,52 @@ button.sk.on{background:var(--accent);border-color:var(--accent);color:var(--acc
 .tbl .trg+.trg .tr{border-top:1px solid var(--line)}
 /* player page: market mates sit above the skill cards; hide the block on computers when nobody is in the market */
 @media (min-width:1100px){.page.allin>.pcol>.sec.mk0{display:none}}
+
+/* ---------- 酆都通行证 (clearance document) ---------- */
+:root{--wpaper:#f5f4e8;--wline:#c9d6cf;--wframe:rgba(11,118,88,.3);--whair:#c9d6cf}
+:root[data-theme="dark"]{--wpaper:#121d20;--wline:#22363c;--wframe:rgba(95,224,180,.28);--whair:#2a3f44}
+.wen{--sc:var(--accent);position:relative;box-sizing:border-box;height:112px;display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);grid-template-areas:"title state" "rule state" "who state";grid-template-rows:auto auto auto;align-content:center;row-gap:9px;column-gap:28px;padding:0 34px 0 38px;background:var(--wpaper);color:var(--ink);border:1px solid var(--wline);border-radius:3px;min-width:0}
+.wen[data-st="protected"]{--sc:var(--warn)}
+.wen[data-st="market"]{--sc:var(--red)}
+.wen .w-grain{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:.055;mix-blend-mode:multiply}
+:root[data-theme="dark"] .wen .w-grain{display:none}
+.wen .w-frame{position:absolute;inset:7px;border:1px solid var(--wframe);pointer-events:none}
+.wen .w-cn{position:absolute;width:10px;height:10px;pointer-events:none;border:0 solid var(--accent)}
+.wen .w-cn.tl{left:6px;top:6px;border-left-width:2px;border-top-width:2px}
+.wen .w-cn.tr{right:6px;top:6px;border-right-width:2px;border-top-width:2px}
+.wen .w-cn.bl{left:6px;bottom:6px;border-left-width:2px;border-bottom-width:2px}
+.wen .w-cn.br{right:6px;bottom:6px;border-right-width:2px;border-bottom-width:2px}
+.wen .w-title{grid-area:title;position:relative;display:flex;align-items:baseline;gap:16px;min-width:0}
+.wen .w-title b{font-family:var(--disp);font-weight:400;font-size:42px;line-height:1;letter-spacing:.08em;white-space:nowrap}
+.wen .w-title span{font-size:12px;line-height:1;letter-spacing:.3em;color:var(--sub);white-space:nowrap}
+.wen .w-rule{grid-area:rule;position:relative;height:1px;background:var(--whair)}
+.wen .w-who{grid-area:who;position:relative;display:flex;align-items:baseline;gap:26px;min-width:0}
+.wen .w-idg,.wen .w-teamg{display:flex;align-items:baseline;gap:9px}
+.wen .w-teamg{align-items:center;gap:7px}
+.wen .w-k{font-size:12px;letter-spacing:.2em;color:var(--sub);white-space:nowrap}
+.wen .w-id{font:700 26px var(--mono);line-height:1;font-variant-numeric:tabular-nums}
+.wen .w-sw{flex:none;width:9px;height:9px;border-radius:2px;background:var(--c)}
+.wen .w-team{font-size:16px;font-weight:700;white-space:nowrap}
+.wen .w-state{grid-area:state;position:relative;display:flex;align-items:center;justify-content:flex-end;gap:22px;min-width:0}
+.wen .w-note{display:flex;flex-direction:column;align-items:flex-end;gap:5px}
+.wen .w-hint{font-size:17px;font-weight:700;line-height:1.2;white-space:nowrap}
+.wen .w-lab{font-size:12px;line-height:1;color:var(--sub);white-space:nowrap}
+.wen .w-num{font:700 22px var(--mono);line-height:1.1;white-space:nowrap}
+.wen .w-seal{flex:none;width:64px;height:auto;overflow:visible;transform:translate(7px,5px) rotate(-4deg)}
+.wen .w-seal rect{fill:var(--sc);fill-opacity:.09;stroke:var(--sc);stroke-width:3.6}
+.wen .w-seal text{fill:var(--sc);font-family:var(--brush)}
+@media (max-width:1099px){.page.allin .wen{order:-2}.page.allin>.subtabs{order:-1}}
+@media (min-width:720px){.wen{flex:none}}
+@media (max-width:719px){
+  .wen{height:auto;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"title title" "rule rule" "who state";row-gap:12px;column-gap:12px;padding:20px 24px 20px 26px}
+  .wen .w-title b{font-size:36px}
+  .wen .w-title span{font-size:11px}
+  .wen .w-who{flex-direction:column;align-items:flex-start;gap:10px}
+  .wen .w-idg{flex-direction:column;align-items:flex-start;gap:4px}
+  .wen .w-id{font-size:40px}
+  .wen .w-state{flex-direction:column-reverse;align-items:flex-end;justify-content:center;gap:12px}
+  .wen .w-note{align-items:flex-end}
+  .wen .w-hint{font-size:16px}
+  .wen .w-num{font-size:20px}
+  .wen .w-seal{width:68px;transform:translate(6px,0) rotate(-4deg)}
+}
