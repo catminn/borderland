@@ -432,6 +432,7 @@ body.screen .stage-wrap{border-radius:0}
 /* ---------- 登录 ---------- */
 body.login{background-color:#0a1012}
 body.login #amb{position:fixed;inset:0;height:auto}
+body.login #amb{background:radial-gradient(ellipse at center,rgba(0,0,0,0) 40%,rgba(0,0,0,.74) 100%)}
 body.login header.top,body.login nav.pages{display:none}
 body.login .wrap{min-height:100vh;justify-content:center;align-items:center;padding:20px}
 body.login .notice{display:none}
@@ -446,7 +447,7 @@ body.login .notice{display:none}
 .boxes{position:relative;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
 .boxes .bx{height:60px;border:1px solid #2e474e;background:#0b1416;border-radius:10px;display:grid;place-items:center;font:800 28px var(--mono);color:#e6f0ea}
 .boxes .bx.act{border:2px solid #5fe0b4;box-shadow:0 0 14px rgba(95,224,180,.35)}
-.boxes.err .bx{border:2px solid #ff6a50}
+.boxes.bad .bx{border:2px solid #ff6a50}
 .boxes input{position:absolute;inset:0;opacity:0;font-size:16px;width:100%;height:100%;border:0;padding:0;caret-color:transparent}
 .boxes input:focus{outline:none}
 .boxes:focus-within .bx.act{border-color:#5fe0b4}

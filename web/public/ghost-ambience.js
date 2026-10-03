@@ -1,3 +1,5 @@
+// Ghost-fire ambience from the Claude Design handoff, lightened for phones: 1x canvas on the login page, 30 fps,
+// no canvas blur filter, cached fog gradients; the edge vignette is drawn by CSS (body.login #amb).
 (()=>{
 if(customElements.get('ghost-ambience'))return;
 const RM=window.matchMedia?matchMedia('(prefers-reduced-motion: reduce)'):{matches:false};
@@ -27,9 +29,10 @@ class GhostAmbience extends HTMLElement{
     this.resize();
     if(this.reduced)return;
     this.last=performance.now();
-    this.loop=now=>{const dt=Math.min(.05,(now-this.last)/1000);this.last=now;
-      if(this.visible&&this.w>0&&this.flames){this.t+=dt;this.update(dt);this.draw();}
-      this.raf=requestAnimationFrame(this.loop);};
+    const minDt=this.mode==='login'?1/31:0;
+    this.loop=now=>{this.raf=requestAnimationFrame(this.loop);const raw=(now-this.last)/1000;if(raw<minDt)return;
+      const dt=Math.min(.05,raw);this.last=now;
+      if(this.visible&&this.w>0&&this.flames&&!document.hidden){this.t+=dt;this.update(dt);this.draw();}};
     this.raf=requestAnimationFrame(this.loop);
   }
   disconnectedCallback(){cancelAnimationFrame(this.raf);this.ro&&this.ro.disconnect();this.io&&this.io.disconnect();
@@ -40,7 +43,7 @@ class GhostAmbience extends HTMLElement{
     if(n==='data-err'&&o!==null&&v!==o&&v!=='0')this.triggerError();
     if(n==='data-ok'){if(v==='1'&&o!=='1')this.triggerOk();else if(v!=='1'&&o==='1'){this.okMode=false;this.init();if(this.reduced)this.drawStatic();}}
   }
-  resize(){const w=this.clientWidth,h=this.clientHeight,d=Math.min(window.devicePixelRatio||1,2);
+  resize(){const w=this.clientWidth,h=this.clientHeight,d=Math.min(window.devicePixelRatio||1,this.mode==='login'?1:1.5);
     if(!w||!h)return;
     const mob=w<600,first=!this.flames||mob!==this.mob;
     this.w=w;this.h=h;this.mob=mob;this.cv.width=Math.round(w*d);this.cv.height=Math.round(h*d);this.ctx.setTransform(d,0,0,d,0,0);
@@ -118,9 +121,7 @@ class GhostAmbience extends HTMLElement{
     const hr=f.size*(page?1.6:2.1),halo=c.createRadialGradient(cx,by-hg*.25,0,cx,by-hg*.25,hr);
     halo.addColorStop(0,page?'rgba(11,118,88,.18)':'rgba(80,220,195,.3)');halo.addColorStop(.5,page?'rgba(11,118,88,.06)':'rgba(60,160,210,.1)');halo.addColorStop(1,'rgba(40,120,200,0)');
     c.fillStyle=halo;c.beginPath();c.arc(cx,by-hg*.25,hr,0,Math.PI*2);c.fill();
-    const hasF='filter' in c;
-    if(hasF)c.filter=`blur(${(page?.8:1.4+(1-f.z)*3.2).toFixed(1)}px)`;
-    c.shadowColor=page?'rgba(11,118,88,.55)':'rgba(110,240,210,.9)';c.shadowBlur=page?10:16+f.z*14;
+    c.shadowColor=page?'rgba(11,118,88,.55)':'rgba(110,240,210,.9)';c.shadowBlur=page?8:10+f.z*8;
     const wr=1+.12*nz(t*5.3,f.seed+11),wl=1+.12*nz(t*4.7,f.seed+17);
     c.beginPath();c.moveTo(cx+tdx,by-hg);
     c.bezierCurveTo(cx+r*1.15*wr,by-hg*.45,cx+r*1.05*wr,by+r*.25,cx,by+r);
@@ -129,7 +130,6 @@ class GhostAmbience extends HTMLElement{
     if(page){g.addColorStop(0,'rgba(230,255,246,.95)');g.addColorStop(.25,'rgba(70,205,165,.8)');g.addColorStop(.6,'rgba(11,118,88,.5)');g.addColorStop(1,'rgba(20,80,130,0)');}
     else{g.addColorStop(0,'rgba(255,255,255,.97)');g.addColorStop(.16,'rgba(205,255,240,.92)');g.addColorStop(.4,'rgba(80,225,190,.78)');g.addColorStop(.72,'rgba(40,115,205,.45)');g.addColorStop(1,'rgba(30,50,160,0)');}
     c.fillStyle=g;c.fill();
-    if(!page){c.shadowBlur=0;if(hasF)c.filter=`blur(${(3+(1-f.z)*4).toFixed(1)}px)`;c.globalAlpha=A*.45;c.fill();}
     c.restore();
   }
   drawPaper(p,t){const c=this.ctx,x=p.x*this.w,y=p.y*this.h,s=8+p.z*7;c.save();c.translate(x,y);c.rotate(p.rot);c.scale(Math.cos(t*1.1+p.seed),1);
@@ -141,15 +141,14 @@ class GhostAmbience extends HTMLElement{
     const c=this.ctx,w=this.w,h=this.h,t=this.t,k=this.okMode?this.okT:-1;c.clearRect(0,0,w,h);
     c.save();
     if(k>.58&&k<.9){const a=(1-(k-.58)/.32)*3.2;c.translate(Math.sin(k*95)*a,Math.cos(k*80)*a*.6);}
-    for(const b of this.fog){c.save();c.translate(b.x*w,b.y*h);c.scale(1,b.ry/(b.rx*w));const R=b.rx*w,g=c.createRadialGradient(0,0,0,0,0,R);
-      g.addColorStop(0,`rgba(150,190,182,${b.a})`);g.addColorStop(1,'rgba(150,190,182,0)');c.fillStyle=g;c.beginPath();c.arc(0,0,R,0,Math.PI*2);c.fill();c.restore();}
+    for(const b of this.fog){const R=b.rx*w;if(!b.g||b.gw!==w){b.g=c.createRadialGradient(0,0,0,0,0,R);b.g.addColorStop(0,`rgba(150,190,182,${b.a})`);b.g.addColorStop(1,'rgba(150,190,182,0)');b.gw=w;}
+      c.save();c.translate(b.x*w,b.y*h);c.scale(1,b.ry/R);c.fillStyle=b.g;c.beginPath();c.arc(0,0,R,0,Math.PI*2);c.fill();c.restore();}
     for(const p of this.paper)this.drawPaper(p,t);
-    for(const f of this.flames)if(f.trail)for(const p of f.trail){const rr=5+(1-p.a)*16,g=c.createRadialGradient(p.x,p.y,0,p.x,p.y,rr);
-      g.addColorStop(0,`rgba(150,185,185,${(.13*p.a).toFixed(3)})`);g.addColorStop(1,'rgba(150,185,185,0)');c.fillStyle=g;c.beginPath();c.arc(p.x,p.y,rr,0,Math.PI*2);c.fill();}
+    for(const f of this.flames)if(f.trail)for(const p of f.trail){const rr=4+(1-p.a)*12;
+      c.fillStyle=`rgba(150,185,185,${(.07*p.a).toFixed(3)})`;c.beginPath();c.arc(p.x,p.y,rr,0,Math.PI*2);c.fill();}
     for(const f of this.flames)this.drawFlame(f,t);
     c.restore();
-    if(this.mode==='login'){const v=c.createRadialGradient(w/2,h/2,Math.min(w,h)*.32,w/2,h/2,Math.max(w,h)*.78);
-      v.addColorStop(0,'rgba(0,0,0,0)');v.addColorStop(1,'rgba(0,0,0,.74)');c.fillStyle=v;c.fillRect(0,0,w,h);
+    if(this.mode==='login'){
       if(k>=0){c.fillStyle=`rgba(0,0,0,${Math.min(.5,k/.3*.5).toFixed(3)})`;c.fillRect(0,0,w,h);}
       for(const e of this.eyes)if(e.open>.01)this.drawEyes(e);}
   }
@@ -162,9 +161,7 @@ class GhostAmbience extends HTMLElement{
       const g=c.createRadialGradient(0,0,0,0,0,ew*.6);g.addColorStop(0,col[0]);g.addColorStop(1,col[1]);c.fillStyle=g;c.fill();
       c.shadowBlur=0;c.clip();c.fillStyle='#120806';c.beginPath();c.ellipse(e.lx*ew*.26,e.ly*eh*.35,ew*.075,Math.max(.5,eh*.92),0,0,Math.PI*2);c.fill();c.restore();});
   }
-  drawStatic(){if(!this.flames)return;const c=this.ctx;c.clearRect(0,0,this.w,this.h);this.flames.forEach(f=>{f.a=this.okMode?0:1;f.dip=0;f.lean=0;this.drawFlame(f,0);});
-    if(this.mode==='login'){const w=this.w,h=this.h,v=c.createRadialGradient(w/2,h/2,Math.min(w,h)*.32,w/2,h/2,Math.max(w,h)*.78);
-      v.addColorStop(0,'rgba(0,0,0,0)');v.addColorStop(1,'rgba(0,0,0,.74)');c.fillStyle=v;c.fillRect(0,0,w,h);}}
+  drawStatic(){if(!this.flames)return;const c=this.ctx;c.clearRect(0,0,this.w,this.h);this.flames.forEach(f=>{f.a=this.okMode?0:1;f.dip=0;f.lean=0;this.drawFlame(f,0);});}
 }
 customElements.define('ghost-ambience',GhostAmbience);
 })();

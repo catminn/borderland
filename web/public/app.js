@@ -459,7 +459,7 @@ function renderLogin(){
 function syncBoxes(err){
   const v=$('#pin')?$('#pin').value:'',bx=document.querySelectorAll('#boxes .bx');
   bx.forEach((b,i)=>{b.textContent=v[i]||'';b.classList.toggle('act',!err&&i===Math.min(v.length,5)&&v.length<6);});
-  $('#boxes').classList.toggle('err',!!err);
+  $('#boxes').classList.toggle('bad',!!err);
   const g=$('#amb ghost-ambience');if(g)g.setAttribute('data-len',String(v.length));
 }
 function loginError(msg){
