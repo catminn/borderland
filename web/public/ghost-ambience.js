@@ -23,7 +23,7 @@ class GhostAmbience extends HTMLElement{
     this.io=new IntersectionObserver(es=>{this.visible=es[0].isIntersecting;});this.io.observe(this);
     this.frame=this.closest('[data-ga-frame]');
     if(this.frame){
-      this.onMove=e=>{const r=this.getBoundingClientRect();this.target={x:e.clientX-r.left,y:e.clientY-r.top};};
+      this.onMove=e=>{const r=this.getBoundingClientRect();this.target={x:e.clientX-r.left,y:e.clientY-r.top};this.lastMove=this.t;};
       this.onLeave=e=>{if(e.pointerType!=='touch')this.target=null;}; // a finger lifts off, but the eyes keep looking at where it was
       this.frame.addEventListener('pointermove',this.onMove);this.frame.addEventListener('pointerdown',this.onMove);this.frame.addEventListener('pointerleave',this.onLeave);
     }
@@ -122,12 +122,13 @@ class GhostAmbience extends HTMLElement{
       if(e2>2.7){this.errMode=false;this.eyes.forEach(e=>{e.state='closed';e.open=0;});this.nextSpawn=rnd(1.5,3);}
     }else{
       const openCount=this.eyes.filter(e=>e.state!=='closed').length;
-      const maxOpen=Math.min(this.eyes.length,(this.mob?1:2)+Math.floor(this.len/(this.mob?3:2)));
+      const active=this.lastMove!=null&&this.t-this.lastMove<2.5; // the pointer is moving: more eyes wake up to watch it
+      const maxOpen=Math.min(this.eyes.length,(this.mob?1:2)+Math.floor(this.len/(this.mob?3:2))+(active?(this.mob?2:3):0));
       this.nextSpawn-=dt;
       if(this.nextSpawn<0&&openCount<maxOpen){const c=this.eyes.filter(e=>e.state==='closed');
         const c2=c.filter(e=>!this.inKeep(e.nx*w,e.ny*h,30));
         if(c2.length){const e=c2[Math.floor(Math.random()*c2.length)];e.state='opening';e.t=0;e.hold=rnd(1.6,3.4);e.blink=rnd(.5,e.hold-.4);e.lx=0;e.ly=0;}
-        this.nextSpawn=rnd(2.6,5.5)/(1+this.len*.3);}
+        this.nextSpawn=rnd(2.6,5.5)/(1+this.len*.3)/(active?3:1);}
       for(const e of this.eyes){
         if(e.state==='opening'){e.open+=dt;if(e.open>=1){e.open=1;e.state='open';e.t=0;}}
         else if(e.state==='open'){e.t+=dt;const b=e.t-e.blink;e.open=b>0&&b<.2?Math.abs(b-.1)/.1:1;if(e.t>e.hold)e.state='closing';}
