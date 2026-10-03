@@ -90,11 +90,11 @@ function broadcast(){
   }
   return out;
 }
-function roomCard(r){
-  const ts=S.rooms.find(x=>x.id===r.id).teams;
-  return '<div class="room'+(ts.length?' busy':'')+'"><div class="top"><div class="cd">'+cardG(r)+'</div>'
+function roomCard(r,mt){
+  const ts=S.rooms.find(x=>x.id===r.id).teams,mine=!!mt&&ts.includes(mt);
+  return '<div class="room'+(ts.length?' busy':'')+(mine?' mine':'')+'"><div class="top"><div class="cd">'+cardG(r)+'</div>'
     +'<div class="rr"><span class="typ">'+TYPE[r.suit]+'</span><span class="pt">+'+r.n*100+'</span></div></div>'
-    +'<div class="bt">'+(ts.length?'<span class="on"><i class="gd"></i>进行中</span><div class="vs">'+ts.map(tchip).join('<span>vs</span>')+'</div>'
+    +'<div class="bt">'+(ts.length?'<span class="on"><i class="gd"></i>'+(mine?'本队进行中':'进行中')+'</span><div class="vs">'+ts.map(tchip).join('<span>vs</span>')+'</div>'
       :'<span class="idle">空闲</span>')+'</div></div>';
 }
 function viewBoard(){
@@ -239,7 +239,7 @@ function viewMarket(){
     return '<div class="mrow'+(ok?' ok':'')+'"><div class="l1"><span class="id">'+p.id+'</span>'+tchip(p.team)
       +'<span class="stay'+(tOk?' okc':'')+'">已停留 <b class="mono">'+mm(stay)+'</b>/'+MIN_STAY/60+' 分钟</span>'
       +'</div>'
-      +'<div class="l2"><label class="kv"><span class="k">本人冥币</span><span class="coin-in"><input class="in mono" id="c-'+p.id+'" data-m="coin" data-p="'+p.id+'" value="'+p.coins+'" inputmode="numeric" aria-label="'+p.id+' 本人冥币"></span></label>'
+      +'<div class="l2"><label class="kv"><span class="k">本人冥币</span><span class="coin-in"><input class="in mono" id="c-'+p.id+'" data-m="coin" data-p="'+p.id+'" value="'+p.coins+'" inputmode="numeric" aria-label="'+p.id+' 本人冥币"><span class="cstep"><button type="button" data-a="mcoin" data-p="'+p.id+'" data-v="100" aria-label="增加 100">▲</button><button type="button" data-a="mcoin" data-p="'+p.id+'" data-v="-100" aria-label="减少 100">▼</button></span></span></label>'
       +'<div class="kv"><span class="k">队友助力</span><span class="v">+'+p.bail+'</span></div>'
       +'<div class="kv"><span class="k">合计</span><span class="v'+(cOk?' ok':'')+'" id="tot-'+p.id+'">'+tot+' / '+COIN_GOAL+'</span></div>'
       +'<button class="btn-main'+(ok?' glow':'')+'" data-a="revive" data-p="'+p.id+'"'+(ok?'':' disabled')+'>'+(ok?'买命回队':!tOk?'时间未满':'差 '+(COIN_GOAL-tot))+'</button></div></div>';}).join('');
@@ -396,26 +396,27 @@ function viewPlayer(){
   const myRooms=S.rooms.filter(x=>x.teams.includes(t.id)).map(x=>{const r=room(x.id);
     return '<div class="myroom"><div class="cd">'+cardG(r)+'</div><div style="display:flex;flex-direction:column;gap:6px;min-width:0"><span class="on">● 本队进行中</span>'
       +'<div class="vs">'+x.teams.map(tchip).join('<span>vs</span>')+'</div><span class="small">赢 +'+r.n*100+' 冥币</span></div></div>';}).join('');
-  const teamSec='<div class="stat2"><div class="mini"><span class="cap">队伍冥币</span><span class="cv">'+t.score+'</span></div>'
-    +'<div class="mini" style="gap:10px"><span class="cap">存活 <span class="mono" style="font-weight:700;font-size:14px;color:var(--ink)">'+a+' / '+PER_TEAM+'</span></span><div class="dots">'+dots+'</div></div></div>'
-    +'<div class="pn" style="padding:14px;gap:12px"><span class="cap small" style="font-size:12px">四色碎片</span><div class="suits4">'+suits+'</div>'
-    +'<div class="fin'+(st.k==='free'?' ok':'')+'">'+(st.k==='free'?'可进决赛':st.txt)+'</div></div>'
-    +(myRooms||'<div class="pn" style="padding:14px"><span class="muted">本队现在没有在任何房间里。</span></div>')
-    +'<h2 class="sh" style="font-size:20px;margin-top:6px">本队技能卡</h2>'+(t.skills.length?'<div class="skills">'+t.skills.map(k=>'<button class="sk'+(ui.skillOpen===k.sid?' on':'')+'" data-a="skill" data-v="'+k.sid+'" aria-expanded="'+(ui.skillOpen===k.sid)+'">'+esc(k.name)+'</button>').join('')+'</div>'
-      +((sk=>sk?'<div class="skd"><b>'+esc(sk.name)+'</b>'+(sk.desc?'<span class="d">'+esc(sk.desc)+'</span>':'')+'<span class="small">'+esc(sk.by)+' 于 '+fmt(sk.t)+' 在鬼市买入</span><span class="small">使用时找工作人员出示这一页。</span></div>':'')(t.skills.find(k=>k.sid===ui.skillOpen)))
-      :'<span class="muted">还没有。技能卡只有鬼市里的人能用自己的冥币买。</span>');
+  const fin='<div class="fin'+(st.k==='free'?' ok':'')+'">'+(st.k==='free'?'可进决赛':st.txt)+'</div>';
+  const teamSec='<div class="tsum"><div class="mini"><span class="cap">队伍冥币</span><span class="cv">'+t.score+'</span></div>'
+    +'<div class="mini" style="gap:8px"><span class="cap">存活 <span class="mono" style="font-weight:700;font-size:14px;color:var(--ink)">'+a+' / '+PER_TEAM+'</span></span><div class="dots">'+dots+'</div></div>'
+    +'<div class="mini frag"><span class="cap">四色碎片</span><div class="suits4">'+suits+'</div>'+fin+'</div></div>'
+    +'<div class="mobonly">'+(myRooms||'<div class="pn" style="padding:14px"><span class="muted">本队现在没有在任何房间里。</span></div>')+'</div>'
+    +'<div class="skrow"><span class="cap">本队技能卡</span>'+(t.skills.length?'<div class="skills">'+t.skills.map(k=>'<button class="sk'+(ui.skillOpen===k.sid?' on':'')+'" data-a="skill" data-v="'+k.sid+'" aria-expanded="'+(ui.skillOpen===k.sid)+'">'+esc(k.name)+'</button>').join('')+'</div>':'<span class="muted small">暂无。鬼市里的人可用个人冥币购买。</span>')+'</div>'
+    +((sk=>sk?'<div class="skd"><b>'+esc(sk.name)+'</b>'+(sk.desc?'<span class="d">'+esc(sk.desc)+'</span>':'')+'<span class="small">'+esc(sk.by)+' 于 '+fmt(sk.t)+' 在鬼市买入</span><span class="small">使用时找工作人员出示这一页。</span></div>':'')(t.skills.find(k=>k.sid===ui.skillOpen)));
   // 通知与任务
   const mine=S.notices.filter(n=>matches(n,me)),unread=mine.filter(n=>!n.acks[me.id]).length;
-  const notes=mine.map(n=>{const acked=!!n.acks[me.id],[kl,kc]=kindOf(n),key=indiv(n)?me.id:me.team,d=n.done[key],w=Object.keys(n.done)[0];
-    let ns='',nc='',lost=false;
-    if(n.kind==='任务'){if(d){ns='已完成 '+fmt(d.t);nc='var(--accent)';}else if(isFirst(n)&&w){lost=true;ns=n.secret?'任务已关闭':'已被'+lab(w)+'抢先';nc='var(--sub)';}else{ns='进行中';nc='var(--accent)';}}
-    const live=n.due&&n.due>S.t&&!d&&!lost;
+  const nmeta=n=>{const key=indiv(n)?me.id:me.team,d=n.done[key],w=Object.keys(n.done)[0],lost=n.kind==='任务'&&!d&&isFirst(n)&&!!w;return{d,w,lost,live:n.kind==='任务'&&!d&&!lost};};
+  const noteHtml=n=>{const acked=!!n.acks[me.id],[kl,kc]=kindOf(n),{d,w,lost}=nmeta(n);
+    let ns='',nc='';
+    if(n.kind==='任务'){if(d){ns='已完成 '+fmt(d.t);nc='var(--accent)';}else if(lost){ns=n.secret?'任务已关闭':'已被'+lab(w)+'抢先';nc='var(--sub)';}else{ns='进行中';nc='var(--accent)';}}
     return '<div class="note'+(acked?'':' new')+(lost?' lost':'')+'"><div class="nh"><span class="kb round '+kc+'" style="font-size:12px;padding:1px 10px">'+kl+'</span>'
       +(modeOf(n)?'<span class="mode">'+modeOf(n)+'</span>':'')+'<span class="mode mono">'+fmt(n.t)+'</span>'+(ns?'<span class="ns" style="color:'+nc+'">'+ns+'</span>':'')+'</div>'
       +'<div class="nt">'+esc(n.title)+'</div>'+(n.body?'<div class="nb">'+esc(n.body)+'</div>':'')
       +((n.due&&!d&&!lost)||n.reward?'<div class="nm">'+(n.due&&!d&&!lost?'<span class="red">⏱ '+countdown(n,true)+'</span>':'')+(n.reward?'<span>+'+n.reward+' 冥币</span>':'')+'</div>':'')
-      +(acked?'<span class="small">已读</span>':'<button class="ack" data-a="ack" data-n="'+n.id+'">知道了</button>')+'</div>';}).join('');
-  const taskSec='<h2 class="sh" style="font-size:22px">通知与任务</h2>'+(notes||'<div class="pn"><span class="muted">暂时没有通知。</span></div>');
+      +(acked?'<span class="small">已读</span>':'<button class="ack" data-a="ack" data-n="'+n.id+'">知道了</button>')+'</div>';};
+  const curN=mine.filter(n=>!n.acks[me.id]||nmeta(n).live),histN=mine.filter(n=>!curN.includes(n));
+  const taskSec='<h2 class="sh" style="font-size:22px">当前任务与通知</h2>'+(curN.length?curN.map(noteHtml).join(''):'<div class="pn"><span class="muted">暂时没有新的通知或进行中的任务。</span></div>')
+    +(histN.length?'<button class="histbtn" data-a="hist" aria-expanded="'+!!ui.histOpen+'">历史消息（'+histN.length+'）<span>'+(ui.histOpen?'收起 ▲':'展开 ▼')+'</span></button>'+(ui.histOpen?histN.map(noteHtml).join(''):''):'');
   // 鬼市
   const mk=S.players.filter(p=>p.team===t.id&&p.st==='market').sort((x,y)=>x.outAt-y.outAt);
   const mate=(p,mine)=>{const s=S.t-p.outAt,tot=p.coins+p.bail,tOk=s>=MIN_STAY,cOk=tot>=COIN_GOAL,gap=gapOf(p);
@@ -430,10 +431,11 @@ function viewPlayer(){
   const mkSec='<div class="shrow"><h2 class="sh" style="font-size:22px">鬼市中的队友</h2><span class="hint">满 '+MIN_STAY/60+' 分钟且 '+COIN_GOAL+' 冥币可买命</span></div>'
     +(mk.length?mk.map(p=>mate(p,p.id===me.id)).join(''):'<div class="pn"><span class="muted">本队现在没有人在鬼市。</span></div>')
     +'<span class="small">花本队冥币 '+RATE+':1 换助力（队伍现有 <span class="mono" style="color:var(--ink)">'+t.score+'</span>）</span>';
-  const roomSec='<h2 class="sh" style="font-size:22px">全部房间</h2><div class="prooms">'+ROOMS.map(roomCard).join('')+'</div>';
+  const roomSec='<h2 class="sh" style="font-size:22px">全部房间</h2><div class="prooms">'+ROOMS.map(r=>roomCard(r,t.id)).join('')+'</div>';
   const tabs=[['team','本队'],['task','任务'+(unread?'<b class="cnt">'+unread+'</b>':'')],['market','鬼市'+(mk.length?'<b class="cnt">'+mk.length+'</b>':'')],['rooms','房间']];
   return '<div class="page tabbed toptabs allin">'+pass+sub('player',tabs,'top')
-    +sec('player','team',teamSec)+sec('player','task',taskSec)+sec('player','market',mkSec)+sec('player','rooms',roomSec)+'</div>';
+    +'<div class="pcol l">'+sec('player','team',teamSec)+sec('player','rooms',roomSec)+'</div>'
+    +'<div class="pcol r">'+sec('player','task',taskSec)+sec('player','market',mkSec)+'</div></div>';
 }
 function modalHtml(){
   if(!ME||ME.role!=='player'||!S)return '';
@@ -504,7 +506,7 @@ function render(){
   if(!tabs.includes(ui.tab))ui.tab=tabs[0];
   document.documentElement.dataset.theme=themed()?themeFor():'light';
   document.body.classList.toggle('board',ui.tab==='board');
-  document.body.classList.toggle('natscroll',ui.tab==='market');
+  document.body.classList.toggle('natscroll',ui.tab==='market'||(ui.tab==='player'&&ME&&ME.role==='player'));
   // Staff and player pages: the big screen's full-window background on computers, and on phones in dark mode;
   // flames and eyes only show where no panel covers them (data-free). Phones in light mode keep the header strip.
   const userTab=['dealer','npc','market','ctrl','player'].includes(ui.tab),tone=themeFor(),full=userTab&&(innerWidth>=720||tone==='dark');
@@ -695,6 +697,8 @@ document.addEventListener('click',e=>{
   else if(a==='revokeno'){ui.revokeAsk=null;}
   else if(a==='revokeok'){ui.revokeAsk=null;send({type:'revoke',nid:+b.dataset.n});}
   else if(a==='undone'){send({type:'undone',nid:+b.dataset.n,cid:b.dataset.t});}
+  else if(a==='mcoin'){const q=S.players.find(x=>x.id===b.dataset.p);if(q)send({type:'coin',pid:q.id,coins:Math.max(0,q.coins+(+v))});}
+  else if(a==='hist'){ui.histOpen=!ui.histOpen;}
   else if(a==='revive'){send({type:'revive',pid:b.dataset.p});}
   else if(a==='buy'){send({type:'buy',kid:b.dataset.k,buyer:ui.buyer});}
   else if(a==='usecard'){send({type:'usecard',tid:b.dataset.t,sid:+b.dataset.k});}

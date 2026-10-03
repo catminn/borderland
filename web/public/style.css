@@ -706,7 +706,6 @@ body.fullamb #amb{position:fixed;inset:0;height:auto}
 @media (min-width:1100px){
   .page.allin{display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:18px;align-items:start}
   .page.allin>.subtabs{display:none}
-  .page.allin>:not(.sec){grid-column:1/-1}
   .page.allin>.sec,.page.allin>.sec:not(.on){display:flex}
   .page.allin .prooms{grid-template-columns:repeat(2,minmax(0,1fr))}
   .page.allin .people{grid-template-columns:minmax(0,1fr)}
@@ -770,3 +769,42 @@ body.fullamb #amb{position:fixed;inset:0;height:auto}
   .good .gr{flex-direction:row;align-items:center;justify-content:space-between}
 }
 .shrow .addbtn{align-self:center;min-height:36px;padding:0 14px}
+/* ---------- 玩家页 (2026-10-03 relayout) ---------- */
+.pcol{display:contents}
+.tsum{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tsum .frag{grid-column:1/-1}
+.tsum .frag{flex-direction:row;align-items:center;flex-wrap:wrap;gap:8px 14px}
+.tsum .frag .suits4{flex:1 1 260px}
+.tsum .frag .fin{flex:none}
+.skrow{display:flex;align-items:center;flex-wrap:wrap;gap:6px 12px}
+.skrow .cap{font-size:12px;color:var(--sub);letter-spacing:.1em}
+.histbtn{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:44px;padding:0 16px;border:1px dashed var(--line2);background:var(--panel2);color:var(--sub);border-radius:12px;font-size:14px;font-weight:700;cursor:pointer}
+.room.mine{border-color:var(--red);box-shadow:0 0 0 2px var(--red-soft),0 0 16px var(--glow)}
+.prooms,.page.toptabs .prooms,.page.allin .prooms{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}
+@media (min-width:1100px){
+  .mobonly{display:none}
+  .page.allin .prooms{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .page.allin{grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:18px 22px}
+  .page.allin>:not(.sec):not(.pcol){grid-column:1/-1}
+  .page.allin>.pcol{display:flex;flex-direction:column;gap:18px;min-width:0}
+  .page.allin>.pcol>.sec,.page.allin>.pcol>.sec:not(.on){display:flex}
+  .page.allin>.pass{flex-direction:row;align-items:center;justify-content:flex-start;gap:12px 22px;padding:10px 20px}
+  .page.allin>.pass .r1{justify-content:flex-start;align-items:center;gap:16px}
+  .page.allin>.pass .r1>div{flex-direction:row!important;align-items:baseline;gap:12px!important}
+  .page.allin>.pass .id{font-size:34px}
+  .page.allin>.pass .badge{padding:3px 12px;font-size:15px}
+  .page.allin .tsum{grid-template-columns:minmax(0,.8fr) minmax(0,1fr) minmax(0,2.2fr)}
+  .page.allin .tsum .frag{grid-column:auto}
+  .page.allin .tsum .mini{padding:10px 14px}
+  .page.allin .tsum .mini .cv{font-size:30px}
+  .page.allin .tsum .frag .suits4{flex:1 1 200px}
+  .page.allin .s4{padding:6px 2px}
+  .page.allin .s4 .g{font-size:22px}
+}
+@media (max-width:719px){.tsum{grid-template-columns:1fr 1fr}.tsum .frag{grid-column:1/-1}}
+/* 鬼市 coin up/down */
+.mrow .coin-in{position:relative}
+.mrow .coin-in .in{padding-right:34px}
+.cstep{position:absolute;right:4px;top:4px;bottom:4px;width:26px;display:flex;flex-direction:column;gap:2px}
+.cstep button{flex:1;min-height:0;padding:0;border:1px solid var(--line);background:var(--panel2);color:var(--sub);border-radius:5px;font-size:9px;line-height:1;cursor:pointer}
+.cstep button:hover{color:var(--accent);border-color:var(--accent)}
