@@ -52,7 +52,7 @@ export class Game extends DurableObject {
     const id = this.identity(s.pin);
     return id ? { ...id, pin: s.pin } : null;   // PIN reset or deleted -> session no longer valid
   }
-  me(s) { return { role: s.role, pid: s.pid || null, label: s.label || ROLE_NAME[s.role] }; }
+  me(s) { return { role: s.role, pid: s.pid || null, label: s.label || ROLE_NAME[s.role], rooms: s.role === 'dealer' && Array.isArray(s.rooms) ? s.rooms : null }; }
 
   // ---------- HTTP ----------
   async fetch(req) {
@@ -137,8 +137,9 @@ export class Game extends DurableObject {
   }
 
   // ---------- 总控 tools ----------
+  dealerLabel(rooms) { return 'Dealer ' + (rooms.length ? rooms.map(id => R.ROOMS.find(r => r.id === id).card).join(' ') : '未绑定'); }
   pinList() {
-    return Object.entries(this.auth.pins).map(([pin, v]) => ({ pin, role: v.role, roleName: ROLE_NAME[v.role], pid: v.pid || '', label: v.label || '' }))
+    return Object.entries(this.auth.pins).map(([pin, v]) => ({ pin, role: v.role, roleName: ROLE_NAME[v.role], pid: v.pid || '', label: v.label || '', rooms: v.rooms || null }))
       .sort((a, b) => (a.role === 'player') - (b.role === 'player') || (a.pid || a.label).localeCompare(b.pid || b.label, 'zh'));
   }
   async admin(a) {
@@ -167,11 +168,29 @@ export class Game extends DurableObject {
         for (const role of STAFF_ROLES) {
           const want = Math.max(0, Math.min(30, Math.round(+counts[role]) || 0));
           let n = Object.values(pins).filter(v => v.role === role).length;
-          while (n < want) { n++; const pin = newPin(taken); taken.add(pin); pins[pin] = { role, label: ROLE_NAME[role] + ' ' + n }; made++; }
+          while (n < want) { n++; const pin = newPin(taken); taken.add(pin); pins[pin] = { role, label: ROLE_NAME[role] + ' ' + n }; if (role === 'dealer') pins[pin].rooms = []; made++; }
         }
+        // Each room goes to one Dealer: rooms nobody holds yet are dealt out to Dealers that have none, round-robin.
+        const dealers = Object.values(pins).filter(v => v.role === 'dealer');
+        for (const v of dealers) if (!Array.isArray(v.rooms)) v.rooms = [];   // PINs made before room binding
+        const held = new Set(dealers.flatMap(v => v.rooms || []));
+        const free = R.ROOMS.map(r => r.id).filter(id => !held.has(id)), empty = dealers.filter(v => Array.isArray(v.rooms) && !v.rooms.length);
+        free.forEach((id, i) => { if (empty.length) empty[i % empty.length].rooms.push(id); });
+        for (const v of dealers) if (Array.isArray(v.rooms)) v.label = this.dealerLabel(v.rooms);
         return ok('新生成 ' + made + ' 个 PIN，共 ' + Object.keys(pins).length + ' 个', { changed: false, auth: true, data: this.pinList() });
       }
       case 'admin.pins': return ok('', { changed: false, data: this.pinList() });
+      case 'admin.setrooms': { // 总控 changes which rooms one Dealer PIN may run
+        const v = this.auth.pins[String(a.pin || '')];
+        if (!v || v.role !== 'dealer') return R.no('这不是 Dealer 的 PIN');
+        const ids = R.ROOMS.map(r => r.id), rooms = [...new Set(a.rooms || [])].filter(id => ids.includes(id));
+        v.rooms = ids.filter(id => rooms.includes(id)); v.label = this.dealerLabel(v.rooms);
+        for (const ws of this.ctx.getWebSockets()) { // reconnect that Dealer so the page shows the new rooms
+          const s = this.sessionOf(ws.deserializeAttachment()?.token);
+          if (s && s.pin === String(a.pin)) try { ws.close(4002, 'rooms changed'); } catch { /* gone */ }
+        }
+        return ok(v.label + (v.rooms.length ? '' : '（没有房间）'), { changed: false, auth: true, data: this.pinList() });
+      }
       case 'admin.resetpin': {
         const old = String(a.pin || ''), v = this.auth.pins[old];
         if (!v) return R.no('没有这个 PIN');

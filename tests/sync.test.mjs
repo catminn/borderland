@@ -22,7 +22,7 @@ const pins = gen.data, pinOf = f => pins.find(f).pin;
 T('pins generated (42 players + 7 staff)', pins.length === 49);
 T('pins unique', new Set(pins.map(p => p.pin)).size === pins.length);
 const P = { player: pinOf(p => p.pid === 'B-02'), judge: pinOf(p => p.role === 'judge'), judge2: pins.filter(p => p.role === 'judge')[1].pin,
-  dealer: pinOf(p => p.role === 'dealer'), screen: pinOf(p => p.role === 'screen'), mengpo: pinOf(p => p.role === 'mengpo') };
+  dealer: pinOf(p => p.role === 'dealer' && p.rooms && p.rooms.includes('7H')), screen: pinOf(p => p.role === 'screen'), mengpo: pinOf(p => p.role === 'mengpo') };
 
 const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
 const errs = [];
@@ -75,7 +75,7 @@ T('player cannot use admin', !(await pc.act({ type: 'admin.reset', demo: false }
 T('player view hides log/shop', pc.S.log.length === 0 && pc.S.shop.length === 0);
 
 // dealer -> screen
-await dealer.click('[data-a=room][data-v="7H"]'); await dealer.click('[data-a=pick][data-k=pick][data-v=P]'); await dealer.click('[data-a=enter]');
+if (await dealer.$('[data-a=room]')) await dealer.click('[data-a=room][data-v="7H"]'); await dealer.click('[data-a=pick][data-k=pick][data-v=P]'); await dealer.click('[data-a=enter]');
 await sleep(500);
 T('screen shows room live', (await screen.locator('.rgrid').innerText()).includes('紫队'));
 

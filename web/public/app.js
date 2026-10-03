@@ -141,9 +141,12 @@ addEventListener('resize',fitStage);
 
 // ---------- Dealer ----------
 function viewDealer(){
+  const mine=ME.role==='dealer'&&Array.isArray(ME.rooms)?ME.rooms:null;
+  if(mine&&!mine.length)return '<div class="page"><div class="pn"><h2 class="sh">还没有分配房间</h2><span class="muted">请总控在「总控工具 › PIN」里给这个 Dealer PIN 绑定房间。</span></div></div>';
+  if(mine&&!mine.includes(ui.room)){ui.room=mine[0];ui.pick='';ui.res={};ui.settled=null;}
   const r=room(ui.room),ts=S.rooms.find(x=>x.id===r.id).teams,cap=r.two?2:1,lottery=r.n>=5;
   const done=ui.settled&&ui.settled.rid===r.id&&!ts.length;
-  const rooms='<div class="sec on" style="gap:10px"><span class="lbl">全部房间'+(ME.role==='ctrl'?'（总控视角）':'')+'</span><div class="rooms8">'+ROOMS.map(x=>{const n=S.rooms.find(y=>y.id===x.id).teams.length;
+  const rooms=mine&&mine.length===1?'':'<div class="sec on" style="gap:10px"><span class="lbl">'+(mine?'我负责的房间':'全部房间'+(ME.role==='ctrl'?'（总控视角）':''))+'</span><div class="rooms8">'+ROOMS.filter(x=>!mine||mine.includes(x.id)).map(x=>{const n=S.rooms.find(y=>y.id===x.id).teams.length;
     return '<button class="rbtn'+(x.id===ui.room?' on':'')+'" data-a="room" data-v="'+x.id+'" aria-pressed="'+(x.id===ui.room)+'"><span class="n">'+cardG(x)+'</span><span class="nm">'+x.name+'</span>'
       +'<span class="st'+(n?' busy':'')+'">'+(n?'● 进行中':'空闲')+'</span></button>';}).join('')+'</div></div>';
   const hero='<div class="hero"><div class="tile"><span class="tn">'+r.card.slice(0,-1)+'</span><span class="ts '+(isRed(r.suit)?'sr':'')+'">'+r.suit+'</span></div>'
@@ -340,7 +343,10 @@ function adminPanel(){
   const pins=A.pins?'<div class="pins"><div class="pr h"><span>身份</span><span>编号 / 名称</span><span>PIN</span><span></span></div>'
     +A.pins.map(p=>'<div class="pr"><span>'+esc(p.roleName)+'</span><span class="mono" style="font-weight:700">'+esc(p.pid||p.label)+'</span><span class="pin">'+p.pin+'</span><span>'
       +(A.ask==='pin:'+p.pin?'<span class="btns" style="gap:4px"><button class="btn-line fillred" data-a="adm-resetpin" data-v="'+p.pin+'">确认</button><button class="btn-line" data-a="adm-cancel">取消</button></span>'
-        :'<span class="btns" style="gap:4px"><button class="btn-line" data-a="copypin" data-v="'+p.pin+'">复制</button><button class="btn-line" data-a="adm-ask" data-v="pin:'+p.pin+'">重置</button></span>')+'</span></div>').join('')+'</div>'
+        :'<span class="btns" style="gap:4px"><button class="btn-line" data-a="copypin" data-v="'+p.pin+'">复制</button><button class="btn-line" data-a="adm-ask" data-v="pin:'+p.pin+'">重置</button></span>')+'</span>'
+      +(p.role==='dealer'?'<span class="rb"><span class="small">负责房间</span>'+ROOMS.map(x=>{const on=!!(p.rooms&&p.rooms.includes(x.id)),by=!on&&A.pins.find(q=>q.role==='dealer'&&q.rooms&&q.rooms.includes(x.id));
+        return '<button class="clue'+(on?' on':'')+'" data-a="adm-room" data-v="'+p.pin+'" data-k="'+x.id+'" aria-pressed="'+on+'" title="'+(by?'现在归 '+esc(by.label):'')+'">'+cardG(x)+'</button>';}).join('')+'</span>':'')
+      +'</div>').join('')+'</div>'
     +'<div class="btns"><button class="btn-line" data-a="adm-csv">下载 PIN 表（CSV）</button><button class="btn-line" data-a="adm-hide">收起</button><span class="small">共 '+A.pins.length+' 个</span></div>':'';
   const snaps=A.snaps?(A.snaps.length?'<div class="list">'+A.snaps.map(s=>'<div class="li"><div class="grow"><span class="x" style="font-size:15px">'+new Date(s.at).toLocaleTimeString()+'</span><span class="small">游戏 '+fmt(s.t||0)+'　'+esc(s.tag||'')+'</span></div>'
       +(A.ask==='snap:'+s.key?'<span class="btns"><button class="btn-line fillred" data-a="adm-restore" data-v="'+s.key+'">确认恢复</button><button class="btn-line" data-a="adm-cancel">取消</button></span>'
@@ -474,7 +480,7 @@ function render(){
       +(src?src.teams.map(t=>'<optgroup label="'+t.name+'">'+src.players.filter(p=>p.team===t.id).map(p=>'<option value="player:'+p.id+'">'+p.id+'</option>').join('')+'</optgroup>').join(''):'');
     if(da.dataset.h!==h){da.innerHTML=h;da.dataset.h=h;}if(da.value!==ui.as)da.value=ui.as;}
   const login=!ME||entering;
-  document.body.classList.toggle('login',login);
+  document.body.classList.toggle('login',login);document.body.classList.toggle('dev',!!DEVME&&!login);
   document.body.classList.toggle('screen',!login&&ME.role==='screen');
   document.body.dataset.role=login?'':ME.role;
   if(login){document.documentElement.dataset.theme='dark';setAmb('login');renderLogin();return;}
@@ -664,6 +670,8 @@ document.addEventListener('click',e=>{
   else if(a==='adm-gen'){send({type:'admin.genpins',counts:A.counts},m=>{A.pins=m.data;});}
   else if(a==='adm-pins'){send({type:'admin.pins'},m=>{A.pins=m.data;},true);}
   else if(a==='adm-hide'){A.pins=null;}
+  else if(a==='adm-room'){const p=(A.pins||[]).find(q=>q.pin===v),k=b.dataset.k;if(p){const cur=p.rooms||[];
+    send({type:'admin.setrooms',pin:v,rooms:cur.includes(k)?cur.filter(x=>x!==k):[...cur,k]},m=>{A.pins=m.data;});}}
   else if(a==='adm-resetpin'){A.ask=null;send({type:'admin.resetpin',pin:v},m=>{A.pins=m.data;});}
   else if(a==='adm-snaps'){send({type:'admin.snaps'},m=>{A.snaps=m.data;},true);}
   else if(a==='adm-restore'){A.ask=null;send({type:'admin.restore',key:v},()=>{A.snaps=null;});}

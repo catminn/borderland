@@ -40,6 +40,7 @@
 - **存储**：DO 的 SQLite 存储（KV API）。键：`state`、`clock`、`auth`（pins + sessions）、`snap:<毫秒时间戳>`（每 10 次成功操作自动快照，保留 30 个；重置/恢复前也会快照）。日志超过 1500 条截断。
 - **登录**：`POST /api/login {pin}` → `{token, me}`；浏览器存 localStorage（键 `borderland.session`）。同 IP 连续 10 次错误锁 5 分钟。`?pin=123456` 链接可自动登录（以后印二维码用）。
 - **开发者模式**：Worker 密钥 `DEV_PIN`（值由用户定，不写进仓库；GitHub Secret `DEV_PIN`，没设就关闭；本地写在 `.dev.vars`）登录得到 `role:'dev'`，收到全量状态；网页右上角下拉框选视角（总控/Dealer/判官/孟婆/大屏/任一玩家），玩家视角在浏览器里用 `viewFor` 过滤。旁边「只读 / 可操作」开关（默认只读，刷新后回到只读）：可操作时每个操作带 `as:{role,pid}`，服务器以该视角身份执行（权限照常检查；`admin.*` 只在总控视角可用）；只读时弹窗「知道了」只在本机生效。**仓库是公开的，PIN 不要写进代码**；活动当天前删掉（`wrangler secret delete DEV_PIN` 并删 GitHub Secret）。
+- **Dealer 绑定房间**：Dealer 的 PIN 记录带 `rooms:[房间id]`，登录下发 `me.rooms`。生成 PIN 时，没人负责的房间轮流分给还没有房间的 Dealer（默认 8 个 Dealer = 一人一间；绑定前生成的旧 Dealer PIN 再点一次「生成」就会分到房间）；标签自动写成「Dealer 3♠」。`rules.apply` 拒绝 Dealer 对自己房间以外的 `enter/finish`（`me.rooms` 不是数组 = 全部房间，用于总控和开发者视角）。总控在 PIN 列表每个 Dealer 行下点 8 张牌改绑定（`admin.setrooms`），改完服务器以 4002 关掉该 Dealer 的连接让它重连拿到新房间。Dealer 页只显示自己的房间，只有一间时不显示房间选择。
 - **管理员 PIN** 不在数据里，是 Worker 的密钥 `ADMIN_PIN`（本地在 `worker/.dev.vars`，值 888888，仅本地）。其他 PIN 由总控在网页上生成，存在 `auth.pins`。重置某个 PIN 会让用旧 PIN 登录的会话立即失效（服务器关闭其 socket，code 4001）。
 - **WebSocket 协议**：服务器 → `hello {me,S,clock,now}`、`state {S,clock,now}`、`res {id,ok,msg,data}`、`pong`。浏览器 → `act {id, a:{type,...}}`、`ping`（每 20s；60s 没收到任何消息就判定假死并重连）。
 - **防止打字被冲掉**：有输入框/下拉框获得焦点时，收到的新状态先不重绘，失焦后再重绘。
@@ -92,7 +93,7 @@
 
 ## 5.5 新增决定（2026-10-02，优先级：C 部署 → Dealer 绑定 → 换皮 + 双语 → 动画）
 
-1. **Dealer 改成 PIN 绑定房间**：每个房间一个 Dealer PIN（一个 PIN 可绑多个房间）；服务器只允许 Dealer 操作自己绑定的房间（改 `shared/rules.js` 的权限检查 + `worker/src/index.js` 的 PIN 数据）。Dealer 登录后直接进入自己的房间；只绑一个房间时不显示房间选择。总控保留全部房间权限，并可在 PIN 列表里修改绑定。
+1. **（2026-10-03 已完成）Dealer 改成 PIN 绑定房间**：每个房间一个 Dealer PIN（一个 PIN 可绑多个房间）；服务器只允许 Dealer 操作自己绑定的房间（改 `shared/rules.js` 的权限检查 + `worker/src/index.js` 的 PIN 数据）。Dealer 登录后直接进入自己的房间；只绑一个房间时不显示房间选择。总控保留全部房间权限，并可在 PIN 列表里修改绑定。
 2. **中英双语**：右上角「EN / 中」切换；第一次打开跟随系统语言，手动切换后记住（localStorage）。规则消息、日志、系统通知改成「消息键 + 参数」，由网页翻译；工作人员手输的内容（公告、任务、技能卡名等）不翻译。**英文译名先列清单给用户确认再用。** 10/10 前完成。
 3. **动画（有时间再做）**：大屏播报（勾魂符纸盖印、率先完成播报条）、排名旗幡换位 + 冥币数字滚动、玩家通知符纸展开。纯 CSS，尊重 `prefers-reduced-motion`。
 4. **UI 换皮**：照用户在 Claude Design 做的两份稿——「百鬼夜行 视觉方案 v2」和「tmp-staff」（链接之后发）。只改网页文件，不动规则和服务器；电脑 1440 + 手机 390 都适配；只做浅色，大屏另给深色配色；设计稿和现有功能冲突的先问用户。

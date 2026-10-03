@@ -468,7 +468,7 @@ body.login .notice{display:none}
 /* ---------- phone (390) ---------- */
 @media (max-width:719px){
   #amb{height:120px}
-  .wrap{padding:16px 14px 100px;gap:14px}
+  .wrap{padding:16px 20px 100px;gap:14px}
   .logo{font-size:22px}
   .clk{font-size:15px}
   .tbtn{min-height:34px;padding:0 9px;font-size:13px}
@@ -645,7 +645,7 @@ body.board #amb{position:fixed;inset:0;height:auto}
 body.board .stage{background:transparent}
 
 /* action results float as a toast, so they never push the page (or the big screen) around */
-.notice{pointer-events:none;position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:90;width:max-content;max-width:min(560px,calc(100vw - 32px));box-shadow:0 12px 30px rgba(13,25,27,.22);background:var(--panel);animation:riseIn .2s ease both}
+.notice{pointer-events:none;position:fixed;left:0;right:0;margin:0 auto;bottom:24px;z-index:90;width:max-content;max-width:min(560px,calc(100vw - 32px));box-shadow:0 12px 30px rgba(13,25,27,.22);background:var(--panel);animation:riseIn .2s ease both}
 .notice.bad{background:var(--panel);background-image:linear-gradient(var(--red-soft),var(--red-soft))}
 @media (max-width:719px){.notice{bottom:calc(env(safe-area-inset-bottom) + 86px)}}
 
@@ -671,3 +671,9 @@ body.board .stage{background:transparent}
 .devops.on{background:var(--red);border-color:var(--red);color:#fff}
 @media (max-width:640px){.clues{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media (prefers-reduced-motion:reduce){.lg.eshake,.dlg.jolt{animation:none}}
+@media (max-width:719px){.mini .dots{gap:3px;flex-wrap:nowrap}.mini .dt{width:14px;height:14px}}
+@media (max-width:719px){body.dev .top-r{flex-wrap:wrap;min-width:0}body.dev .devas{max-width:116px}}
+.pins .pr .rb{grid-column:1/-1;display:grid;grid-template-columns:auto repeat(8,minmax(0,1fr));gap:4px;align-items:center;padding-bottom:4px}
+.pins .pr .rb .small{padding-right:4px}
+.pins .pr .rb .clue{min-height:34px;font-size:14px;border-radius:8px;padding:0}
+@media (max-width:719px){.pins .pr .rb{grid-template-columns:repeat(4,minmax(0,1fr))}.pins .pr .rb .small{grid-column:1/-1}}

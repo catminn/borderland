@@ -226,6 +226,7 @@ export function apply(state,me,a){
   const roles=a&&ROLE_OK[a.type];
   if(!roles)return no('未知操作');
   if(me.role!=='ctrl'&&!roles.includes(me.role))return no('你的身份不能做这个操作');
+  if(me.role==='dealer'&&Array.isArray(me.rooms)&&(a.type==='enter'||a.type==='finish')&&!me.rooms.includes(a.rid))return no('这个房间不归你管，只能操作：'+me.rooms.map(r=>room(r).card).join(' '));
   switch(a.type){
     case 'enter':return enterRoom(a.tid,a.rid);
     case 'finish':return finishRoom(a.rid,a.results||{});
