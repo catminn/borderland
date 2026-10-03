@@ -683,3 +683,7 @@ body.board .stage{background:transparent}
   .stage .bcol .b{--b0:28px;--b1:110px;align-items:flex-start}
   .stage .bcol .su{display:grid;grid-template-columns:repeat(2,auto);justify-content:center;gap:0 6px;font-size:14px;line-height:1.25}
 }
+.selchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.selchip{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 10px;border:1.5px solid var(--line2);border-radius:999px;background:var(--card);font:700 14px var(--mono);color:var(--ink)}
+.selchip .sw{width:10px;height:10px;border-radius:3px;background:var(--c)}
+.selchip b{color:var(--red);font-size:16px;line-height:1}

@@ -46,7 +46,7 @@ function init(){
 function matches(n,p){
   switch(n.target){case 'all':return true;case 'team':return n.ids.includes(p.team);case 'player':return n.ids.includes(p.id);
   case 'market':return p.st==='market';case 'alive':return p.st==='alive';}return false;}
-function targetLabel(n){return n.target==='all'?'全体玩家':n.target==='team'?team(n.ids[0]).name:n.target==='player'?n.ids[0]:n.target==='market'?'鬼市中的人':'存活玩家';}
+function targetLabel(n){return n.target==='all'?'全体玩家':n.target==='team'?team(n.ids[0]).name:n.target==='player'?(n.ids.length<=4?n.ids.join('、'):n.ids.slice(0,3).join('、')+' 等 '+n.ids.length+' 人'):n.target==='market'?'鬼市中的人':'存活玩家';}
 const rewardTxt=n=>n.reward?'+'+n.reward+' 冥币':'';
 const teamOf=id=>id.includes('-')?id.split('-')[0]:id;
 const MODES=[['first','先到先得'],['each','各自完成']];
@@ -62,7 +62,7 @@ function publish(f){f=f||{};const str=(v,n)=>String(v==null?'':v).slice(0,n);f={
   if(!['all','team','player','alive','market'].includes(f.target))return no('发布对象不对');if(!['公告','任务','秘密任务'].includes(f.kind))return no('类型不对');
   if(!f.title.trim())return no('先写标题');
   let ids=[];if(f.target==='team')ids=[f.team];
-  if(f.target==='player'){if(!f.player)return no('先选队员');ids=[f.player];}
+  if(f.target==='player'){const want=Array.isArray(f.players)?f.players:f.player?[f.player]:[];ids=[...new Set(want)].filter(id=>S.players.some(p=>p.id===id));if(!ids.length)return no('先选队员');}
   const isTask=f.kind!=='公告';pushNotice({kind:isTask?'任务':'公告',secret:f.kind==='秘密任务',title:f.title.trim(),body:f.body.trim(),target:f.target,ids,mins:Math.max(0,+f.mins||0),mode:isTask?f.mode:null,reward:isTask?Math.max(0,Math.round(+f.reward)||0):0});
   const n=S.notices[0];log('判官发布'+kindLabel(n)+'「'+n.title+'」→ '+targetLabel(n));
   return ok('已发布给 '+targetLabel(n)+'，共 '+S.players.filter(p=>matches(n,p)).length+' 人');}

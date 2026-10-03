@@ -30,7 +30,7 @@ function shakeEl(el,cls){if(!el)return;el.classList.remove(cls);void el.offsetWi
 let ui={ddOpen:null,don:{},tab:null,room:'3S',pick:'',res:{},settled:null,hookTeam:'',hookTarget:'',doneSel:{},revokeAsk:null,
   coinTeam:'',coinAmt:'',buyer:'',shopCard:'',as:'ctrl',devOps:false,devAck:new Set(),nc:{name:'',desc:'',price:'',stock:''},
   sub:{dealer:'info',npc:'task',market:'buy',ctrl:'status',player:'team'},
-  pub:{kind:'任务',mode:'first',reward:0,title:'',body:'',target:'all',team:'R',player:'',mins:10,to:'all'},
+  pub:{kind:'任务',mode:'first',reward:0,title:'',body:'',target:'all',team:'R',players:[],mins:10,to:'all'},
   admin:{pins:null,snaps:null,counts:{dealer:8,judge:3,mengpo:2,ctrl:2,screen:1},ask:null,resetTxt:''}};
 const $=s=>document.querySelector(s);
 const ROLE_TABS={ctrl:['board','dealer','npc','market','ctrl'],dealer:['dealer'],judge:['npc'],mengpo:['market'],screen:['board'],player:['player']};
@@ -62,13 +62,13 @@ function cb(o){
     +(o.mark===false?'':'<span class="mk">'+(o.on?'✓':'')+'</span>')+'</button>';
 }
 // Themed dropdown (no native <select>): a button that opens a list of pick buttons; ui.ddOpen holds the open one.
-function dd(k,valLabel,placeholder,valColor,options){
-  const open=ui.ddOpen===k,cur=getp(k);
+function dd(k,valLabel,placeholder,valColor,options,multi){
+  const open=ui.ddOpen===k,cur=getp(k),isOn=v=>multi?(cur||[]).includes(v):v===cur;
   return '<div class="dd'+(open?' open':'')+'"><button class="dd-btn" data-a="dd" data-v="'+k+'" aria-expanded="'+open+'">'
     +(valColor?'<span class="sw" style="--c:'+valColor+'"></span>':'')+'<span class="t'+(valLabel?'':' ph')+'">'+(valLabel||placeholder)+'</span><span class="car">▾</span></button>'
     +(open?'<div class="dd-list" role="listbox">'+options.map(o=>o.group?'<div class="dd-g">'+o.group+'</div>'
-      :'<button class="dd-o'+(o.v===cur?' on':'')+'" role="option" data-a="pick" data-k="'+k+'" data-v="'+esc(o.v)+'"'+(o.off?' disabled':'')+'>'
-        +(o.c?'<span class="sw" style="--c:'+o.c+'"></span>':'')+'<span class="t">'+o.label+'</span>'+(o.note?'<small>'+o.note+'</small>':'')+(o.v===cur?'<span class="mk">✓</span>':'')+'</button>').join('')+'</div>':'')+'</div>';
+      :'<button class="dd-o'+(isOn(o.v)?' on':'')+'" role="option" aria-selected="'+isOn(o.v)+'" data-a="'+(multi?'pickm':'pick')+'" data-k="'+k+'" data-v="'+esc(o.v)+'"'+(o.off?' disabled':'')+'>'
+        +(o.c?'<span class="sw" style="--c:'+o.c+'"></span>':'')+'<span class="t">'+o.label+'</span>'+(o.note?'<small>'+o.note+'</small>':'')+(isOn(o.v)?'<span class="mk">✓</span>':'')+'</button>').join('')+'</div>':'')+'</div>';
 }
 const teamPick=(k,cur,off,small)=>S.teams.map(t=>cb({k,v:t.id,on:cur===t.id,off:off&&off(t.id),c:TC[t.id][0],label:t.name,small:small&&small(t.id)})).join('');
 function countdown(n,short){if(!n.due)return '';const r=n.due-S.t;return r>0?(short?mmss(r):'剩余 '+mmss(r)):'已截止';}
@@ -316,11 +316,12 @@ function pubPanel(){
   const f=ui.pub,task=f.kind!=='公告';f.to=f.target==='team'?'team:'+f.team:f.target;
   const to=[['all','全场'],...S.teams.map(t=>['team:'+t.id,t.name,t.id]),['alive','存活的人'],['market','鬼市里的人'],['player','某位队员']];
   const toOn=v=>v==='team:'+f.team?f.target==='team':v===f.target;
-  const toName=f.target==='team'?team(f.team).name:f.target==='player'?(f.player||'某位队员'):{all:'全场',alive:'存活的',market:'鬼市里的'}[f.target];
+  const pl=f.players||[],toName=f.target==='team'?team(f.team).name:f.target==='player'?(!pl.length?'某位队员':pl.length<=3?pl.join('、'):pl.slice(0,2).join('、')+' 等 '+pl.length+' 人'):{all:'全场',alive:'存活的',market:'鬼市里的'}[f.target];
   const form='<div class="pn" style="gap:14px">'
     +'<div class="fld"><span>类型</span><div class="seg3">'+['公告','任务','秘密任务'].map(k=>'<button class="sbtn'+(f.kind===k?' on':'')+(k==='秘密任务'?' secret':'')+'" data-a="pick" data-k="pub.kind" data-v="'+k+'" aria-pressed="'+(f.kind===k)+'">'+k+'</button>').join('')+'</div></div>'
     +'<div class="fgrid"><div class="fld"><span>发给谁</span>'+dd('pub.to',(to.find(([v])=>toOn(v))||[])[1],'选择对象',f.target==='team'?TC[f.team][0]:null,to.map(([v,l,id])=>({v,label:l,c:id?TC[id][0]:null})))+'</div>'
-    +(f.target==='player'?'<div class="fld"><span>选择队员</span>'+dd('pub.player',f.player,'选择队员',f.player&&TC[teamOf(f.player)][0],S.teams.flatMap(t=>[{group:t.name},...S.players.filter(p=>p.team===t.id).map(p=>({v:p.id,label:p.id,c:TC[t.id][0],note:p.st==='alive'?'':'鬼市'}))]))+'</div>':'')+'</div>'
+    +(f.target==='player'?'<div class="fld"><span>选择队员（可多选）</span>'+dd('pub.players',pl.length?pl.length+' 人':'','选择队员',null,S.teams.flatMap(t=>[{group:t.name},...S.players.filter(p=>p.team===t.id).map(p=>({v:p.id,label:p.id,c:TC[t.id][0],note:p.st==='alive'?'':'鬼市'}))]),true)
+      +(pl.length?'<div class="selchips">'+pl.map(id=>'<button class="selchip" data-a="unpick" data-k="pub.players" data-v="'+id+'" aria-label="去掉 '+id+'"><span class="sw" style="--c:'+TC[teamOf(id)][0]+'"></span>'+id+'<b>×</b></button>').join('')+'</div>':'')+'</div>':'')+'</div>'
     +'<div class="fgrid">'+(task?'<div class="fld"><span>完成方式</span><div class="seg2">'+[['first','先到先得'],['each','各自完成']].map(([v,l])=>'<button class="sbtn'+(f.mode===v?' on':'')+'" style="min-height:48px;font-size:15px" data-a="pick" data-k="pub.mode" data-v="'+v+'" aria-pressed="'+(f.mode===v)+'">'+l+'</button>').join('')+'</div></div>':'')
     +'<label class="fld"><span>限时（分钟）</span><input class="in mono" id="pm" data-m="pub.mins" value="'+esc(f.mins)+'" inputmode="numeric"></label>'
     +(task?'<label class="fld"><span>奖励冥币</span><input class="in mono" id="prw" data-m="pub.reward" value="'+esc(f.reward)+'" inputmode="numeric"></label>':'')+'</div>'
@@ -636,6 +637,7 @@ document.addEventListener('click',e=>{
   else if(a==='pick'){ui.ddOpen=null;const k=b.dataset.k,next=b.dataset.t&&getp(k)===v?'':v;setp(k,next);
     if(k==='pub.target')ui.pub.mode=defMode(next);
     if(k==='pub.to'){const t=next||'all';if(t.startsWith('team:')){ui.pub.target='team';ui.pub.team=t.slice(5);}else ui.pub.target=t;ui.pub.mode=defMode(ui.pub.target);}}
+  else if(a==='pickm'||a==='unpick'){const k=b.dataset.k,cur=getp(k)||[];setp(k,cur.includes(v)?cur.filter(x=>x!==v):a==='pickm'?[...cur,v]:cur);}
   else if(a==='pubto'){if(v.startsWith('team:')){ui.pub.target='team';ui.pub.team=v.slice(5);}else ui.pub.target=v;ui.pub.mode=defMode(ui.pub.target);}
   else if(a==='coinstep'){ui.coinAmt=String(coinAmt()+(+v));}
   else if(a==='clue'){const t=ui.coinTeam&&team(ui.coinTeam);if(t)send({type:'setcards',tid:t.id,card:v,on:!t.cards.includes(v)});}
