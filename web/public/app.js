@@ -124,6 +124,20 @@ function incense(){
     +'<i class="ember"><b class="smoke"></b><b class="smoke s2"></b></i>'
     +'<div class="watch">'+['一更','二更','三更','四更','五更'].map((w,i)=>'<span class="'+(i===cur?'on':i<cur?'past':'')+'">'+w+'</span>').join('')+'</div></div>';
 }
+// Fixed one-screen staff pages (Dealer / 判官 / 生死簿): when the window has room to spare, scale the page up so it fills
+// the screen instead of sitting at the top with an empty bottom. Never scales down; pages taller than the window just scroll.
+let pageK=1;
+function fitPage(){
+  const v=$('#view'),pg=v&&v.firstElementChild,wrap=$('.wrap');if(!wrap)return;
+  const on=pg&&pg.classList.contains('page')&&innerWidth>=720&&ME&&['dealer','npc','ctrl'].includes(ui.tab)&&!document.body.classList.contains('natscroll');
+  let k=1;
+  if(on){
+    const H=pg.getBoundingClientRect().height/pageK,A=v.clientHeight-24,kw=(innerWidth-56)/1384;
+    k=Math.max(1,Math.min(1.5,A/H,kw));k=Math.round(k*50)/50;
+  }
+  if(k!==pageK){pageK=k;wrap.style.setProperty('--pk',k);}
+}
+addEventListener('resize',fitPage);
 function fitStage(){
   const w=$('.stage-wrap'),st=w&&w.firstChild;if(!w)return;
   const g=$('#amb ghost-ambience');
@@ -544,7 +558,7 @@ function render(){
   if(!S){$('#view').innerHTML='<section class="pn muted">正在连接服务器…</section>';return;}
   R.use(S);S.t=nowT();$('#clk').textContent=fmt(S.t);
   morph($('#view'),ui.tab==='board'?viewBoard():ui.tab==='dealer'?viewDealer():ui.tab==='ctrl'?viewCtrl():ui.tab==='npc'?viewNpc():ui.tab==='market'?viewMarket():viewPlayer());
-  fitStage();
+  fitStage();fitPage();
   const had=!!$('#modal .dlg');morph($('#modal'),modalHtml());
   const mb=$('#modal button');if(mb&&!had)mb.focus();
   const dlg=$('#modal .dlg'),mk=dlg?dlg.dataset.n:null;
