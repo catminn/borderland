@@ -479,7 +479,7 @@ document.addEventListener('focusout',()=>setTimeout(()=>{if(dirty&&!isTyping()){
 function tickClocks(){const t=fmt(nowT());$('#clk').textContent=t;for(const id of ['sclk','tclk']){const e=document.getElementById(id);if(e)e.textContent=t;}}
 function setAmb(mode,tone){
   if(ambMode!==mode){ambMode=mode;
-    $('#amb').innerHTML=mode?'<ghost-ambience data-mode="'+mode+'"'+(mode==='login'?' data-len="0" data-err="0" data-ok="0"':'')+'></ghost-ambience>':'';}
+    $('#amb').innerHTML=mode?'<ghost-ambience data-mode="'+mode+'"'+(mode==='login'?' data-len="0" data-err="0" data-ok="0" data-free="1"':'')+'></ghost-ambience>':'';}
   const g=$('#amb ghost-ambience');if(g&&tone&&g.dataset.tone!==tone)g.dataset.tone=tone;}
 const THEME_KEY=r=>'borderland.theme.'+r;
 // Three remembered choices per device: big screen (default dark), player page and staff pages (default light).
