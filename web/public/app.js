@@ -6,7 +6,7 @@ const {ROOMS,FRAG,SUITS,RATE,PER_TEAM,MIN_STAY,COIN_GOAL,MARKET_CAP,team,room,al
   defMode,isFirst,indiv,lab,cands,whyNotEnter,gapOf,teamStatus,teamOf,no}=R;
 
 let S=null, ME=null, CLOCK=null, OFFSET=0;
-let ui={don:{},tab:null,room:'3S',pick:'',res:{},settled:null,hookTeam:'',hookTT:'',hookTarget:'',doneSel:{},revokeAsk:null,
+let ui={ddOpen:null,don:{},tab:null,room:'3S',pick:'',res:{},settled:null,hookTeam:'',hookTarget:'',doneSel:{},revokeAsk:null,
   coinTeam:'',coinAmt:'+100',buyer:'',nc:{name:'',desc:'',price:300,stock:1},
   sub:{dealer:'info',npc:'task',market:'buy',ctrl:'status',player:'team'},
   pub:{kind:'任务',mode:'first',reward:0,title:'',body:'',target:'all',team:'R',player:'',mins:10},
@@ -39,6 +39,15 @@ function cb(o){
     +(o.off?' disabled':'')+(o.title?' title="'+esc(o.title)+'"':'')+' aria-pressed="'+!!o.on+'">'
     +(o.c?'<span class="sw" style="--c:'+o.c+'"></span>':'')+'<span class="t">'+o.label+(o.small!=null?'<small>'+o.small+'</small>':'')+'</span>'
     +(o.mark===false?'':'<span class="mk">'+(o.on?'✓':'')+'</span>')+'</button>';
+}
+// Themed dropdown (no native <select>): a button that opens a list of pick buttons; ui.ddOpen holds the open one.
+function dd(k,valLabel,placeholder,valColor,options){
+  const open=ui.ddOpen===k,cur=getp(k);
+  return '<div class="dd'+(open?' open':'')+'"><button class="dd-btn" data-a="dd" data-v="'+k+'" aria-expanded="'+open+'">'
+    +(valColor?'<span class="sw" style="--c:'+valColor+'"></span>':'')+'<span class="t'+(valLabel?'':' ph')+'">'+(valLabel||placeholder)+'</span><span class="car">▾</span></button>'
+    +(open?'<div class="dd-list" role="listbox">'+options.map(o=>o.group?'<div class="dd-g">'+o.group+'</div>'
+      :'<button class="dd-o'+(o.v===cur?' on':'')+'" role="option" data-a="pick" data-k="'+k+'" data-v="'+esc(o.v)+'"'+(o.off?' disabled':'')+'>'
+        +(o.c?'<span class="sw" style="--c:'+o.c+'"></span>':'')+'<span class="t">'+o.label+'</span>'+(o.note?'<small>'+o.note+'</small>':'')+(o.v===cur?'<span class="mk">✓</span>':'')+'</button>').join('')+'</div>':'')+'</div>';
 }
 const teamPick=(k,cur,off,small)=>S.teams.map(t=>cb({k,v:t.id,on:cur===t.id,off:off&&off(t.id),c:TC[t.id][0],label:t.name,small:small&&small(t.id)})).join('');
 function countdown(n,short){if(!n.due)return '';const r=n.due-S.t;return r>0?(short?mmss(r):'剩余 '+mmss(r)):'已截止';}
@@ -80,12 +89,19 @@ function viewBoard(){
   return '<div class="stage-wrap"><div class="stage"><ghost-ambience data-mode="screen" data-tone="'+themeFor()+'"></ghost-ambience>'
     +'<div class="left"><div class="hd"><div class="ttl">百鬼夜行</div><div class="en">CORNELL CSSA 万圣夜</div></div>'
     +'<div class="clock"><span class="cap">'+(run?'游戏时钟':'已暂停')+'</span><span class="ck mono'+(run?'':' paused')+'" id="sclk">'+fmt(S.t)+'</span>'
-    +'<div class="prog"><span style="width:'+Math.min(100,S.t/9000*100).toFixed(1)+'%"></span></div><span class="cap" style="letter-spacing:0">全程约 2:30:00</span></div>'
+    +incense()+'</div>'
     +'<div class="cast"><span class="cap" style="padding-bottom:8px">全场播报</span>'
     +(bc.length?bc.map(b=>'<div class="bc '+b.c+'"><span class="t">'+fmt(b.t)+'</span><span class="x">'+esc(b.x)+'</span></div>').join(''):'<div class="bc"><span class="x muted">暂无播报</span></div>')+'</div></div>'
     +'<div class="right"><div class="rank"><div class="rh"><b>队伍冥币排名</b><span>四色齐可进决赛</span></div><div class="bars">'+bars+'</div></div>'
     +'<div class="rgrid">'+ROOMS.map(roomCard).join('')+'</div></div>'
     +'</div></div>';
+}
+// Game progress as a burning incense stick: ash on the left, a glowing ember at "now", five watches of 30 min.
+function incense(){
+  const p=Math.min(1,Math.max(0,S.t/9000)),cur=Math.min(4,Math.floor(S.t/1800));
+  return '<div class="xiang" style="--p:'+p.toFixed(4)+'" role="img" aria-label="进度 '+Math.round(p*100)+'%"><div class="stick"><i class="ash"></i></div>'
+    +'<i class="ember"><b class="smoke"></b><b class="smoke s2"></b></i>'
+    +'<div class="watch">'+['一更','二更','三更','四更','五更'].map((w,i)=>'<span class="'+(i===cur?'on':i<cur?'past':'')+'">'+w+'</span>').join('')+'</div></div>';
 }
 function fitStage(){
   const w=$('.stage-wrap'),st=w&&w.firstChild;if(!w)return;
@@ -163,24 +179,21 @@ function viewNpc(){
     '<div class="li"><div class="grow"><span class="t">'+fmt(d.t)+(n.due&&d.t>n.due?' 超时':'')+'</span><span class="x">'+lab(cid)+' 完成「'+esc(n.title)+'」'+(d.pts?' <span class="mono">+'+d.pts+'</span>':'')+'</span></div>'
     +'<button class="btn-line" data-a="undone" data-n="'+n.id+'" data-t="'+cid+'">撤销</button></div>').join(''):'<div class="li small">暂无记录</div>')+'</div>';
   const task=(cards||'<div class="pn"><span class="muted">还没有发布任务。总控在生死簿「发布」里发布。</span></div>')+records;
-  // 勾魂令
-  if(ui.hookTT&&ui.hookTT===ui.hookTeam){ui.hookTT='';ui.hookTarget='';}
-  const tt=ui.hookTT,full=tt&&inMarket(tt).length>=MARKET_CAP;
-  if(ui.hookTarget){const p=S.players.find(x=>x.id===ui.hookTarget);if(!p||p.team!==tt||p.st!=='alive'||protectedLeft(p)>0||full)ui.hookTarget='';}
-  const members=tt?S.players.filter(p=>p.team===tt).map(p=>{const l=protectedLeft(p),gone=p.st!=='alive';
-    return cb({cls:'id redsel'+(gone?' gone':''),k:'hookTarget',v:p.id,on:ui.hookTarget===p.id,off:gone||l>0||full,label:p.id+(l>0&&!gone?' 保':''),mark:false,
-      title:gone?'在鬼市':l>0?'保护期还剩 '+Math.ceil(l/60)+' 分钟':''});}).join(''):'';
-  const ready=ui.hookTeam&&tt&&ui.hookTarget;
+  // 勾魂令: two dropdowns (who holds the token, who is named) and one button
+  if(ui.hookTarget){const p=S.players.find(x=>x.id===ui.hookTarget);
+    if(!p||p.team===ui.hookTeam||p.st!=='alive'||protectedLeft(p)>0||inMarket(p.team).length>=MARKET_CAP)ui.hookTarget='';}
+  const tgt=ui.hookTarget&&S.players.find(x=>x.id===ui.hookTarget);
+  const opts=S.teams.filter(t=>t.id!==ui.hookTeam).sort((x,y)=>(inMarket(x.id).length>=MARKET_CAP)-(inMarket(y.id).length>=MARKET_CAP)).flatMap(t=>{const full=inMarket(t.id).length>=MARKET_CAP;
+    return [{group:t.name+(full?'（鬼市已满）':'')},...S.players.filter(p=>p.team===t.id).map(p=>{const l=protectedLeft(p),gone=p.st!=='alive';
+      return {v:p.id,label:p.id,c:TC[t.id][0],off:gone||l>0||full,note:gone?'鬼市':l>0?'保护 '+Math.ceil(l/60)+' 分':''};})];});
+  const ready=ui.hookTeam&&tgt;
   const counts={};const hl=hookLog();hl.forEach(h=>{if(h.by)counts[h.by]=(counts[h.by]||0)+1;});
-  const hook='<div class="pn hook">'
-    +'<div class="step"><span class="lbl"><span class="st">①</span> 取得勾魂令的队伍</span><div class="chips">'+teamPick('hookTeam',ui.hookTeam)+'</div></div>'
-    +'<div class="step"><span class="lbl"><span class="st">②</span> 被点名的别队</span><div class="chips">'+teamPick('hookTT',tt,id=>id===ui.hookTeam)+'</div></div>'
-    +'<div class="step"><span class="lbl"><span class="st">③</span> 被点名的队员</span>'
-    +(!tt?'<span class="small">先选择 ② 被点名的队伍</span>':(full?'<span class="small" style="font-weight:700;color:var(--red)">'+team(tt).name+'鬼市已满，不能再勾</span>':'')+'<div class="chips ids">'+members+'</div>')+'</div>'
-    +'<button class="btn-main red" data-a="hook"'+(ready?'':' disabled')+' style="min-height:60px;display:flex;align-items:center;justify-content:center;gap:12px;font-size:18px">'
+  const hook='<div class="pn hook"><div class="two">'
+    +'<div class="fld"><span>取得勾魂令的队伍</span>'+dd('hookTeam',ui.hookTeam&&team(ui.hookTeam).name,'选择队伍',ui.hookTeam&&TC[ui.hookTeam][0],S.teams.map(t=>({v:t.id,label:t.name,c:TC[t.id][0]})))+'</div>'
+    +'<div class="fld"><span>被点名的队员</span>'+dd('hookTarget',tgt&&tgt.id,'选择别队队员',tgt&&TC[tgt.team][0],opts)+'</div></div>'
+    +'<button class="btn-main red" data-a="hook"'+(ready?'':' disabled')+' style="min-height:56px;display:flex;align-items:center;justify-content:center;gap:12px;font-size:18px">'
     +'<span style="width:34px;height:34px;border:2px solid currentColor;border-radius:6px;display:grid;place-items:center;font-family:var(--brush);font-size:24px;line-height:1;transform:rotate(-8deg);font-weight:400">勾</span>'
-    +(ready?team(ui.hookTeam).name+' 勾魂 '+ui.hookTarget:'选完 ①②③ 后勾魂')+'</button>'
-    +'<span class="small center">标“保”的在保护期内</span></div>'
+    +(ready?team(ui.hookTeam).name+' 勾魂 '+tgt.id:'先选队伍和队员')+'</button></div>'
     +'<div class="pn"><div class="shrow"><h3>已勾魂次数</h3><span class="small">本局共 <span class="mono" style="font-weight:800;font-size:22px;color:var(--ink)">'+S.gate+'</span> 次</span></div>'
     +'<div class="hgrid">'+S.teams.map(t=>'<div class="hc">'+tsq(t.id,26)+'<span>'+t.name+'</span><b>'+(counts[t.id]||0)+'</b></div>').join('')+'</div>'
     +hl.slice(0,3).map(h=>'<div class="hrow"><span class="minis">勾</span><span class="t">'+fmt(h.t)+'</span><span>'+(h.by?team(h.by).name+' 勾魂 ':'勾魂 ')+h.pid+'</span></div>').join('')+'</div>';
@@ -556,14 +569,14 @@ const getp=p=>p.split('.').reduce((o,k)=>o==null?o:o[k],ui);
 function setp(p,v){const ks=p.split('.');let o=ui;for(const k of ks.slice(0,-1))o=o[k]??(o[k]={});o[ks[ks.length-1]]=v;}
 document.addEventListener('submit',e=>{if(e.target.id!=='loginf')return;e.preventDefault();if(!entering)login($('#pin').value.trim());});
 document.addEventListener('click',e=>{
+  if(ui.ddOpen&&!e.target.closest('.dd')){ui.ddOpen=null;render();}
   const b=e.target.closest('[data-a]');if(!b||b.disabled)return;
   const a=b.dataset.a,v=b.dataset.v,A=ui.admin;
   if(a==='tab'){ui.tab=v;say(null);}
   else if(a==='sub'){ui.sub[b.dataset.p]=v;scrollTo({top:0});$('#view').scrollTop=0;}
-  else if(a==='pick'){const k=b.dataset.k,next=b.dataset.t&&getp(k)===v?'':v;setp(k,next);
-    if(k==='pub.target')ui.pub.mode=defMode(next);
-    if(k==='hookTeam'&&ui.hookTT===next){ui.hookTT='';ui.hookTarget='';}
-    if(k==='hookTT')ui.hookTarget='';}
+  else if(a==='dd'){ui.ddOpen=ui.ddOpen===v?null:v;}
+  else if(a==='pick'){ui.ddOpen=null;const k=b.dataset.k,next=b.dataset.t&&getp(k)===v?'':v;setp(k,next);
+    if(k==='pub.target')ui.pub.mode=defMode(next);}
   else if(a==='pubto'){if(v.startsWith('team:')){ui.pub.target='team';ui.pub.team=v.slice(5);}else ui.pub.target=v;ui.pub.mode=defMode(ui.pub.target);}
   else if(a==='quick'){ui.coinAmt=v;}
   else if(a==='theme'){const r=ME&&ME.role==='player'?'player':'screen',nx=themeFor()==='dark'?'light':'dark';try{localStorage.setItem(THEME_KEY(r),nx);}catch{/* private mode */}}

@@ -52,18 +52,23 @@ class GhostAmbience extends HTMLElement{
     if(this.reduced)this.drawStatic();}
   spot(){const w=this.w,h=this.h;
     if(this.mode==='page')return{x:rnd(.45,.97)*w,y:rnd(26,110)};
-    if(this.mode==='screen')return{x:rnd(.02,.98)*w,y:rnd(.04,.96)*h};
+    if(this.mode==='screen'){const z=Math.random();
+      if(z<.3)return{x:rnd(.02,.98)*w,y:rnd(.012,.045)*h};
+      if(z<.6)return{x:rnd(.02,.98)*w,y:rnd(.96,.995)*h};
+      if(z<.75)return{x:rnd(.004,.027)*w,y:rnd(.08,.92)*h};
+      if(z<.9)return{x:rnd(.973,.996)*w,y:rnd(.08,.92)*h};
+      return{x:rnd(.262,.285)*w,y:rnd(.1,.9)*h};}
     if(this.mob)return{x:rnd(.1,.9)*w,y:Math.random()<.5?rnd(.07,.17)*h:rnd(.83,.92)*h};
     return{x:(Math.random()<.5?rnd(.05,.28):rnd(.72,.95))*w,y:rnd(.14,.86)*h};}
   init(){
-    const login=this.mode!=='page',n=this.mode==='screen'?(this.mob?3:8):login?(this.mob?3:6):(this.mob?2:3);
+    const login=this.mode!=='page',n=this.mode==='screen'?(this.mob?4:14):login?(this.mob?3:6):(this.mob?2:3);
     this.flames=Array.from({length:n},(_,i)=>{const z=rnd(.3,1),size=login?(this.mob?10+z*13:13+z*19):(this.mob?9+z*8:11+z*11);
       return{...this.spot(),z,size,seed:rnd(0,100),bobA:rnd(5,13),bobS:rnd(.35,.7),swA:rnd(2,6),swS:rnd(.5,1.1),phase:'on',a:login?1:.9,timer:rnd(4,16),dip:0,lean:0,
         trail:login&&i<2?[]:null,trailT:0};}).sort((a,b)=>a.z-b.z);
     const slots=login?(this.mob?EYE_M:EYE_D):[];
     this.eyes=slots.map(([x,y])=>({nx:x,ny:y,s:rnd(.8,1.15),red:Math.random()<.35,tilt:rnd(.06,.16),state:'closed',open:0,t:0,hold:0,blink:0,lx:0,ly:0}));
     this.fog=login?Array.from({length:this.mob?2:5},()=>({x:rnd(0,1),y:rnd(.84,1.02),rx:rnd(.25,.5),ry:rnd(40,90),sp:rnd(.006,.014),a:rnd(.05,.1)})):[];
-    this.paper=login?Array.from({length:this.mob?4:9},()=>this.newPaper(rnd(-.1,1))):[];
+    this.paper=this.mode==='login'?Array.from({length:this.mob?4:9},()=>this.newPaper(rnd(-.1,1))):[];
     this.nextSpawn=rnd(1.2,2.6);
   }
   newPaper(y){const z=rnd(.4,1);return{x:rnd(.02,.98),y,z,vy:rnd(14,26),sw:rnd(.5,1.2),seed:rnd(0,100),rot:rnd(0,6),rs:rnd(-.9,.9),slip:Math.random()<.3};}
