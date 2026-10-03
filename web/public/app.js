@@ -2,7 +2,7 @@
 // The server owns the game state; this page signs in with a PIN, keeps a live WebSocket, renders the pages
 // for the signed-in role, and sends actions. Rule helpers come from rules.js (same file the server runs).
 import * as R from './rules.js';
-const {ROOMS,FRAG,SUITS,RATE,PER_TEAM,MIN_STAY,COIN_GOAL,MARKET_CAP,team,room,alive,inMarket,fmt,protectedLeft,esc,matches,targetLabel,
+const {ROOMS,FRAG,SUITS,RATE,PER_TEAM,MIN_STAY,COIN_GOAL,team,room,alive,inMarket,fmt,protectedLeft,esc,matches,targetLabel,
   defMode,isFirst,indiv,lab,cands,whyNotEnter,gapOf,teamStatus,teamOf,no}=R;
 
 let S=null, ME=null, CLOCK=null, OFFSET=0;
@@ -137,7 +137,7 @@ function viewDealer(){
     entry='<div class="chips c2">'+btns+'</div><button class="btn-main" data-a="enter"'+(ui.pick?'':' disabled')+'>'+(ui.pick?'放行 '+team(ui.pick).name+' 入场':'先选择可入场的队伍')+'</button>';
   }else entry='<div class="empty">房间已满，结算后再放行</div>';
   const info='<div class="pn" style="gap:14px"><h2 class="sh">规则与入场</h2><div class="rule">'+r.rule+'</div>'
-    +'<div class="lot'+(lottery?' hot':'')+'">'+(lottery?'输队抽签淘汰 1 人（鬼市满 '+MARKET_CAP+' 人免）':'输了不淘汰')+'</div>'
+    +'<div class="lot'+(lottery?' hot':'')+'">'+(lottery?'输队抽签淘汰 1 人':'输了不淘汰')+'</div>'
     +'<div class="need"><b>放行入场</b><span class="small">至少存活 <span class="mono" style="color:var(--ink)">'+r.min+'</span> 人</span></div>'+entry+'</div>';
   const pending=ts.filter(t=>!ui.res[t]).length,ready=ts.length===cap&&!pending;
   const hint=done?'本局已结算':!ts.length?'等待入场':pending?'还差 '+pending+' 队未选':ts.length<cap?'还需第二队入场':'胜负已选好';
@@ -187,11 +187,11 @@ function viewNpc(){
   const task=(cards||'<div class="pn"><span class="muted">还没有发布任务。总控在生死簿「发布」里发布。</span></div>')+records;
   // 勾魂令: two dropdowns (who holds the token, who is named) and one button
   if(ui.hookTarget){const p=S.players.find(x=>x.id===ui.hookTarget);
-    if(!p||p.team===ui.hookTeam||p.st!=='alive'||protectedLeft(p)>0||inMarket(p.team).length>=MARKET_CAP)ui.hookTarget='';}
+    if(!p||p.team===ui.hookTeam||p.st!=='alive'||protectedLeft(p)>0)ui.hookTarget='';}
   const tgt=ui.hookTarget&&S.players.find(x=>x.id===ui.hookTarget);
-  const opts=S.teams.filter(t=>t.id!==ui.hookTeam).sort((x,y)=>(inMarket(x.id).length>=MARKET_CAP)-(inMarket(y.id).length>=MARKET_CAP)).flatMap(t=>{const full=inMarket(t.id).length>=MARKET_CAP;
-    return [{group:t.name+(full?'（鬼市已满）':'')},...S.players.filter(p=>p.team===t.id).map(p=>{const l=protectedLeft(p),gone=p.st!=='alive';
-      return {v:p.id,label:p.id,c:TC[t.id][0],off:gone||l>0||full,note:gone?'鬼市':l>0?'保护 '+Math.ceil(l/60)+' 分':''};})];});
+  const opts=S.teams.filter(t=>t.id!==ui.hookTeam).flatMap(t=>{
+    return [{group:t.name},...S.players.filter(p=>p.team===t.id).map(p=>{const l=protectedLeft(p),gone=p.st!=='alive';
+      return {v:p.id,label:p.id,c:TC[t.id][0],off:gone||l>0,note:gone?'鬼市':l>0?'保护 '+Math.ceil(l/60)+' 分':''};})];});
   const ready=ui.hookTeam&&tgt;
   const counts={};const hl=hookLog();hl.forEach(h=>{if(h.by)counts[h.by]=(counts[h.by]||0)+1;});
   const hook='<div class="pn hook"><div class="two">'

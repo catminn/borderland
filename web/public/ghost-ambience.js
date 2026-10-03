@@ -53,26 +53,29 @@ class GhostAmbience extends HTMLElement{
     if(this.reduced)this.drawStatic();}
   spot(){const w=this.w,h=this.h;
     if(this.mode==='page')return{x:rnd(.45,.97)*w,y:rnd(26,110)};
-    if(this.mode==='screen'){ // only the space around the content (data-keep) and below the page header (data-top)
-      const k=this.keepRect(),T=Math.min(h-20,+(this.dataset.top||0)),pad=12;
-      if(!k)return{x:rnd(.01,.99)*w,y:rnd(T+10,h-6)};
-      const bands=[[0,T,w,k[1]-pad],[0,k[1]+k[3]+pad,w,h-4],[0,Math.max(T,k[1]),k[0]-pad,k[1]+k[3]],[k[0]+k[2]+pad,Math.max(T,k[1]),w,k[1]+k[3]]]
-        .map(b=>[Math.max(4,b[0]),Math.max(T+8,b[1]),Math.min(w-4,b[2]),b[3]]).filter(b=>b[2]-b[0]>6&&b[3]-b[1]>6);
-      if(!bands.length)return{x:rnd(.01,.99)*w,y:rnd(T+10,h-6)};
-      let a=Math.random()*bands.reduce((s,b)=>s+(b[2]-b[0])*(b[3]-b[1]),0);
-      for(const b of bands){a-=(b[2]-b[0])*(b[3]-b[1]);if(a<=0)return{x:rnd(b[0],b[2]),y:rnd(b[1],b[3])};}
-      const b=bands[0];return{x:rnd(b[0],b[2]),y:rnd(b[1],b[3])};}
+    if(this.mode==='screen'||this.mode==='login'){ // bottom-heavy: only around the content (data-keep) and below the page header (data-top)
+      for(let i=0;i<40;i++){const q=this.rawSpot();if(Math.random()<.04+.96*Math.pow(q.y/h,3))return q;}
+      const q=this.rawSpot();q.y=Math.max(q.y,h*rnd(.78,.96));return q;}
     if(this.mob)return{x:rnd(.1,.9)*w,y:Math.random()<.5?rnd(.07,.17)*h:rnd(.83,.92)*h};
     return{x:(Math.random()<.5?rnd(.05,.28):rnd(.72,.95))*w,y:rnd(.14,.86)*h};}
+  rawSpot(){const w=this.w,h=this.h;
+    const k=this.keepRect(),T=Math.min(h-20,+(this.dataset.top||0)),pad=12;
+    if(!k)return{x:rnd(.01,.99)*w,y:rnd(T+10,h-6)};
+    const bands=[[0,T,w,k[1]-pad],[0,k[1]+k[3]+pad,w,h-4],[0,Math.max(T,k[1]),k[0]-pad,k[1]+k[3]],[k[0]+k[2]+pad,Math.max(T,k[1]),w,k[1]+k[3]]]
+      .map(b=>[Math.max(4,b[0]),Math.max(T+8,b[1]),Math.min(w-4,b[2]),b[3]]).filter(b=>b[2]-b[0]>6&&b[3]-b[1]>6);
+    if(!bands.length)return{x:rnd(.01,.99)*w,y:rnd(T+10,h-6)};
+    let a=Math.random()*bands.reduce((s,b)=>s+(b[2]-b[0])*(b[3]-b[1]),0);
+    for(const b of bands){a-=(b[2]-b[0])*(b[3]-b[1]);if(a<=0)return{x:rnd(b[0],b[2]),y:rnd(b[1],b[3])};}
+    const b=bands[0];return{x:rnd(b[0],b[2]),y:rnd(b[1],b[3])};}
   init(){
-    const login=this.mode!=='page',n=this.mode==='screen'?(this.mob?5:18):login?(this.mob?3:6):(this.mob?2:3);
+    const login=this.mode!=='page',n=this.mode==='screen'?(this.mob?4:9):login?(this.mob?4:9):(this.mob?2:3);
     this.flames=Array.from({length:n},(_,i)=>{const z=rnd(.3,1),size=login?(this.mob?10+z*13:13+z*19):(this.mob?9+z*8:11+z*11);
       return{...this.spot(),z,size,seed:rnd(0,100),bobA:rnd(5,13),bobS:rnd(.35,.7),swA:rnd(2,6),swS:rnd(.5,1.1),phase:'on',a:login?1:.9,timer:rnd(4,16),dip:0,lean:0,
         trail:login&&i<2?[]:null,trailT:0};}).sort((a,b)=>a.z-b.z);
     const slots=login?(this.mob?EYE_M:EYE_D):[];
     this.eyes=slots.map(([x,y])=>({nx:x,ny:y,s:rnd(.8,1.15),red:Math.random()<.35,tilt:rnd(.06,.16),state:'closed',open:0,t:0,hold:0,blink:0,lx:0,ly:0}));
     this.fog=login?Array.from({length:this.mob?2:5},()=>({x:rnd(0,1),y:rnd(.84,1.02),rx:rnd(.25,.5),ry:rnd(40,90),sp:rnd(.006,.014),a:rnd(.05,.1)})):[];
-    this.paper=this.mode==='login'?Array.from({length:this.mob?4:9},()=>this.newPaper(rnd(-.1,1))):[];
+    this.paper=[];
     this.nextSpawn=rnd(1.2,2.6);
   }
   keepRect(){const k=(this.dataset.keep||'').split(',').map(Number);return k.length===4&&!k.some(isNaN)?k:null;}
@@ -103,10 +106,10 @@ class GhostAmbience extends HTMLElement{
     if(this.mode==='page')return;
     let gx=this.target?this.target.x:w/2,gy=this.target?this.target.y:h*.56;
     if(this.okMode){const k=this.okT;gx=cx;gy=cy;
-      for(const e of this.eyes){e.open=k<1.35?Math.min(1,e.open+dt/.15):Math.max(0,e.open-dt/.12);}
+      for(const e of this.eyes){e.open=k<2.3?Math.min(1,e.open+dt/.15):Math.max(0,e.open-dt/.25);}
     }else if(this.errMode){this.errT+=dt;const e2=this.errT;gx=cx;gy=cy;
-      for(const e of this.eyes){e.open=e2<.25?Math.min(1,e.open+dt/.18):e2<.95?1:Math.max(0,e.open-dt/.09);}
-      if(e2>1.15){this.errMode=false;this.eyes.forEach(e=>{e.state='closed';e.open=0;});this.nextSpawn=rnd(1.5,3);}
+      for(const e of this.eyes){e.open=e2<.25?Math.min(1,e.open+dt/.18):e2<2.4?1:Math.max(0,e.open-dt/.25);}
+      if(e2>2.7){this.errMode=false;this.eyes.forEach(e=>{e.state='closed';e.open=0;});this.nextSpawn=rnd(1.5,3);}
     }else{
       const openCount=this.eyes.filter(e=>e.state!=='closed').length;
       const maxOpen=Math.min(this.eyes.length,(this.mob?1:2)+Math.floor(this.len/(this.mob?3:2)));

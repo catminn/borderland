@@ -25,7 +25,7 @@ const SHOP0=[
   {id:'k4',name:'回魂香',desc:'一名鬼市队员的停留时间要求减半。',price:400,stock:3},
   {id:'k5',name:'勾魂令',desc:'立刻点名一名别队队员去鬼市（仍受保护期限制）。',price:800,stock:1}];
 const RATE=2;
-const PER_TEAM=7, PROTECT=600, MIN_STAY=300, COIN_GOAL=1000, MARKET_CAP=2, FINAL_MIN=4;
+const PER_TEAM=7, PROTECT=600, MIN_STAY=300, COIN_GOAL=1000, FINAL_MIN=4;
 
 const team=id=>S.teams.find(t=>t.id===id), room=id=>ROOMS.find(r=>r.id===id);
 const alive=t=>S.players.filter(p=>p.team===t&&p.st==='alive');
@@ -118,11 +118,9 @@ function finishRoom(rid,results,picks={}){
     if(results[tid]==='win'){
       t.cards.push(r.card); const pts=r.n*100; t.score+=pts; log(t.name+' 赢下 '+r.card+'，拿到扑克牌，+'+pts+' 冥币','back'); notes.push(t.name+'赢 +'+pts+' 冥币');
     }else if(r.n>=5){
-      if(inMarket(tid).length>=MARKET_CAP){log(t.name+' 输了 '+r.card+'，鬼市已有 '+MARKET_CAP+' 人，本次不淘汰');notes.push(t.name+'输（鬼市已满，免淘汰）');}
-      else{
-        const pool=alive(tid); const v=(picks[tid]&&pool.find(p=>p.id===picks[tid]))||pool[Math.floor(Math.random()*pool.length)];
-        eliminate(v,'输了 '+r.card+' 被抽签淘汰'); notes.push(t.name+'输，抽中 '+v.id);
-      }
+      const pool=alive(tid); if(!pool.length){log(t.name+' 输了 '+r.card+'，队里已无存活队员');notes.push(t.name+'输（无人可淘汰）');continue;}
+      const v=(picks[tid]&&pool.find(p=>p.id===picks[tid]))||pool[Math.floor(Math.random()*pool.length)];
+      eliminate(v,'输了 '+r.card+' 被抽签淘汰'); notes.push(t.name+'输，抽中 '+v.id);
     }else{log(t.name+' 输了 '+r.card+'，无淘汰');notes.push(t.name+'输');}
   }
   st.teams=[]; return ok(r.card+' 结算完成：'+notes.join('；'));
@@ -134,7 +132,6 @@ function hook(actorId,pid){
   if(p.team===actorId)return no('不能点名本队队员');
   if(p.st!=='alive')return no(p.id+' 已在鬼市');
   if(protectedLeft(p)>0)return no(p.id+' 刚复活，保护期还剩 '+Math.ceil(protectedLeft(p)/60)+' 分钟');
-  if(inMarket(p.team).length>=MARKET_CAP)return no(team(p.team).name+'鬼市已有 '+MARKET_CAP+' 人，不能再勾');
   S.gate++; eliminate(p,'被'+team(actorId).name+'勾魂（第 '+S.gate+' 次鬼门开）');
   return ok(team(actorId).name+'勾走了 '+p.id);
 }
@@ -253,4 +250,4 @@ export function viewFor(state,me){
     teams:state.teams.map(t=>p&&t.id===p.team?t:{...t,skills:[]})};
 }
 
-export {COIN_GOAL,FINAL_MIN,FRAG,MARKET_CAP,MIN_STAY,MODES,PER_TEAM,PROTECT,RATE,ROOMS,SHOP0,SUITS,TEAMS,ack,addCard,alive,buyCard,cands,defMode,donate,eliminate,enterRoom,esc,finishRoom,fmt,gapOf,hook,inMarket,indiv,init,isFirst,kindLabel,lab,log,markDone,matches,no,ok,protectedLeft,publish,pushNotice,revive,revokeNotice,rewardTxt,room,seed,setScore,targetLabel,tcol,team,teamOf,teamStatus,unmarkDone,useCard,whyNotEnter};
+export {COIN_GOAL,FINAL_MIN,FRAG,MIN_STAY,MODES,PER_TEAM,PROTECT,RATE,ROOMS,SHOP0,SUITS,TEAMS,ack,addCard,alive,buyCard,cands,defMode,donate,eliminate,enterRoom,esc,finishRoom,fmt,gapOf,hook,inMarket,indiv,init,isFirst,kindLabel,lab,log,markDone,matches,no,ok,protectedLeft,publish,pushNotice,revive,revokeNotice,rewardTxt,room,seed,setScore,targetLabel,tcol,team,teamOf,teamStatus,unmarkDone,useCard,whyNotEnter};
