@@ -695,3 +695,9 @@ body.board .stage{background:transparent}
 .clue.ask{border-style:solid;border-color:var(--red);box-shadow:0 0 0 2px var(--red-soft)}
 .clueask{margin-top:8px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px;padding:10px 12px;border:1.5px solid var(--red);border-radius:10px;background:var(--red-soft);font-size:15px}
 .clueask .btn-line{min-height:40px;padding:0 18px}
+.shopchips{display:none}
+.skills .sk.out{opacity:.5;text-decoration:line-through}
+@media (max-width:719px){.shopfull{display:none}.shopchips{display:flex}}
+.shopfull .desc{font-size:14px;color:var(--sub);line-height:1.5}
+.shopfull .nm.off{color:var(--mute);text-decoration:line-through}
+@media (max-width:719px){.shopchips{flex-direction:column}}

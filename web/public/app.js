@@ -254,6 +254,7 @@ function viewMarket(){
     +(card?'<span class="small"><span class="mono" style="color:var(--ink)">'+card.price+'</span> 冥币　库存 <span class="mono" style="color:'+(card.stock?'var(--ink)':'var(--red)')+'">'+card.stock+'</span>'+(card.desc?'　'+esc(card.desc):'')+'</span>':'')
     +'<button class="btn-main'+(can?' glow':'')+'" data-a="buy" data-k="'+(card?card.id:'')+'"'+(can?'':' disabled')+' style="min-height:52px">'
     +(!by?'先选买家':!card?'先选技能卡':!card.stock?'已售罄':poor?by.id+' 冥币不足':'卖给 '+by.id)+'</button></div>'
+    +shopList()
     +'<div class="pn dash" style="gap:10px"><h3 style="font-size:16px">上架新技能卡</h3>'
     +'<div class="ncform"><input class="in" id="ncn" data-m="nc.name" value="'+esc(ui.nc.name)+'" placeholder="卡名" aria-label="卡名">'
     +'<input class="in mono" id="ncp" data-m="nc.price" value="'+esc(ui.nc.price)+'" placeholder="价格" inputmode="numeric" aria-label="价格（冥币）" style="font-size:16px">'
@@ -288,6 +289,19 @@ function teamRows(){
 function coinAmt(){const v=parseInt(String(ui.coinAmt).replace(/[^\d-]/g,''),10);return Number.isFinite(v)?v:0;}
 function coinBtn(){const t=ui.coinTeam&&team(ui.coinTeam),a=coinAmt();
   return t&&a?'确认 '+t.name+' '+(a>0?'+':'')+a+' → '+Math.max(0,t.score+a):'确认修改';}
+// Everything the shop sells. Computer: a full list with descriptions. Phone: short chips; tap one for its details
+// (tapping also picks it for the sell form above).
+function shopList(){
+  if(!S.shop.length)return '<div class="pn"><span class="muted">商铺里还没有技能卡。</span></div>';
+  const st=c=>c.stock?'库存 <span class="mono" style="color:var(--ink)">'+c.stock+'</span>':'<span style="color:var(--red)">已售罄</span>';
+  const full='<div class="pn shopfull" style="gap:0"><h3 style="padding-bottom:6px">商铺里的技能卡</h3>'+S.shop.map(c=>'<div class="li"><div class="grow" style="gap:2px">'
+    +'<span class="nm'+(c.stock?'':' off')+'" style="font-size:17px;font-weight:800">'+esc(c.name)+'</span>'+(c.desc?'<span class="desc">'+esc(c.desc)+'</span>':'<span class="small">（没有效果说明）</span>')+'</div>'
+    +'<span class="small" style="text-align:right;white-space:nowrap"><span class="mono" style="color:var(--ink);font-weight:800">'+c.price+'</span> 冥币<br>'+st(c)+'</span></div>').join('')+'</div>';
+  const o=S.shop.find(c=>c.id===ui.shopOpen);
+  const chips='<div class="pn shopchips" style="gap:10px"><h3>商铺里的技能卡</h3><div class="skills">'+S.shop.map(c=>'<button class="sk'+(ui.shopOpen===c.id?' on':'')+(c.stock?'':' out')+'" data-a="shopopen" data-v="'+c.id+'" aria-expanded="'+(ui.shopOpen===c.id)+'">'+esc(c.name)+'</button>').join('')+'</div>'
+    +(o?'<div class="skd"><b>'+esc(o.name)+'</b>'+(o.desc?'<span class="d">'+esc(o.desc)+'</span>':'')+'<span class="small"><span class="mono" style="color:var(--ink);font-weight:800">'+o.price+'</span> 冥币　'+st(o)+'</span></div>':'')+'</div>';
+  return full+chips;
+}
 function editTeam(){
   const ct=ui.coinTeam&&team(ui.coinTeam);if(ui.clueAsk&&ui.clueAsk.tid!==ui.coinTeam)ui.clueAsk=null;const q=ui.clueAsk;
   return '<div class="pn" style="gap:12px"><h3>修改队伍</h3>'
@@ -639,6 +653,7 @@ document.addEventListener('click',e=>{
   else if(a==='pick'){ui.ddOpen=null;const k=b.dataset.k,next=b.dataset.t&&getp(k)===v?'':v;setp(k,next);
     if(k==='pub.target')ui.pub.mode=defMode(next);
     if(k==='pub.to'){const t=next||'all';if(t.startsWith('team:')){ui.pub.target='team';ui.pub.team=t.slice(5);}else ui.pub.target=t;ui.pub.mode=defMode(ui.pub.target);}}
+  else if(a==='shopopen'){ui.shopOpen=ui.shopOpen===v?null:v;const c=S.shop.find(x=>x.id===v);if(ui.shopOpen&&c&&c.stock)ui.shopCard=v;}
   else if(a==='skill'){ui.skillOpen=ui.skillOpen===+v?null:+v;}
   else if(a==='pickm'||a==='unpick'){const k=b.dataset.k,cur=getp(k)||[];setp(k,cur.includes(v)?cur.filter(x=>x!==v):a==='pickm'?[...cur,v]:cur);}
   else if(a==='pubto'){if(v.startsWith('team:')){ui.pub.target='team';ui.pub.team=v.slice(5);}else ui.pub.target=v;ui.pub.mode=defMode(ui.pub.target);}
