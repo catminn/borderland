@@ -642,3 +642,7 @@ body.login .notice{display:none}
 .dd-o .mk{color:var(--accent);font-weight:900}
 .dd-o:disabled{color:var(--off-fg);text-decoration:line-through}
 .dd-o:disabled small{text-decoration:none}
+
+/* big screen: ghost fire lives on the page background, around the stage */
+body.board #amb{position:fixed;inset:0;height:auto}
+body.board .stage{background:transparent}

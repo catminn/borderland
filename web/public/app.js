@@ -86,7 +86,7 @@ function viewBoard(){
       +'<div class="su">'+SUITS.map(s=>'<span class="'+(t.cards.some(c=>c.includes(s))?'got ':'')+(isRed(s)?'sr':'')+'">'+s+'</span>').join('')+'</div></div>';}).join('');
   const bc=broadcast();
   const run=CLOCK&&CLOCK.running;
-  return '<div class="stage-wrap"><div class="stage"><ghost-ambience data-mode="screen" data-tone="'+themeFor()+'"></ghost-ambience>'
+  return '<div class="stage-wrap"><div class="stage">'
     +'<div class="left"><div class="hd"><div class="ttl">百鬼夜行</div><div class="en">CORNELL CSSA 万圣夜</div></div>'
     +'<div class="clock"><span class="cap">'+(run?'游戏时钟':'已暂停')+'</span><span class="ck mono'+(run?'':' paused')+'" id="sclk">'+fmt(S.t)+'</span>'
     +incense()+'</div>'
@@ -105,10 +105,16 @@ function incense(){
 }
 function fitStage(){
   const w=$('.stage-wrap'),st=w&&w.firstChild;if(!w)return;
-  if(innerWidth<820){st.style.removeProperty('--k');w.style.height='';w.style.width='';return;}
+  const g=$('#amb ghost-ambience');
+  if(innerWidth<820){st.style.removeProperty('--k');w.style.height='';w.style.width='';if(g)g.removeAttribute('data-keep');return;}
   const v=$('#view'),k=ME&&ME.role==='screen'?Math.min(innerWidth/1920,innerHeight/1080):Math.min(w.parentElement.clientWidth/1920,(v.clientHeight-24)/1080);
   st.style.setProperty('--k',k.toFixed(4));w.style.height=Math.round(1080*k)+'px';
   w.style.width=Math.round(1920*k)+'px';w.style.margin='0 auto';
+  // keep the ghost fire off the text and cards: everything inside the stage's padding
+  if(g){const r=w.getBoundingClientRect(),keep=[r.left+44*k,r.top+40*k,r.width-88*k,r.height-80*k].map(Math.round).join(',');
+    if(g.dataset.keep!==keep)g.dataset.keep=keep;
+    const top=ME&&ME.role==='screen'?'0':String(Math.round(Math.max($('#top').getBoundingClientRect().bottom,$('#tabs').hidden?0:$('#tabs').getBoundingClientRect().bottom)+6));
+    if(g.dataset.top!==top)g.dataset.top=top;}
 }
 addEventListener('resize',fitStage);
 
@@ -421,8 +427,10 @@ const isTyping=()=>{const a=document.activeElement;return !!a&&/^(INPUT|TEXTAREA
 function requestRender(){if(isTyping()){dirty=true;tickClocks();}else render();}
 document.addEventListener('focusout',()=>setTimeout(()=>{if(dirty&&!isTyping()){dirty=false;render();}},0));
 function tickClocks(){const t=fmt(nowT());$('#clk').textContent=t;for(const id of ['sclk','tclk']){const e=document.getElementById(id);if(e)e.textContent=t;}}
-function setAmb(mode){if(ambMode===mode)return;ambMode=mode;
-  $('#amb').innerHTML=mode?'<ghost-ambience data-mode="'+mode+'"'+(mode==='login'?' data-len="0" data-err="0" data-ok="0"':'')+'></ghost-ambience>':'';}
+function setAmb(mode,tone){
+  if(ambMode!==mode){ambMode=mode;
+    $('#amb').innerHTML=mode?'<ghost-ambience data-mode="'+mode+'"'+(mode==='login'?' data-len="0" data-err="0" data-ok="0"':'')+'></ghost-ambience>':'';}
+  const g=$('#amb ghost-ambience');if(g&&tone&&g.dataset.tone!==tone)g.dataset.tone=tone;}
 const THEME_KEY=r=>'borderland.theme.'+r;
 function themeFor(){const r=ME&&ME.role==='player'?'player':'screen';let v=null;try{v=localStorage.getItem(THEME_KEY(r));}catch{/* private mode */}
   return v||(r==='screen'?'dark':'light');}
@@ -437,7 +445,8 @@ function render(){
   const tabs=ROLE_TABS[ME.role]||[];
   if(!tabs.includes(ui.tab))ui.tab=tabs[0];
   document.documentElement.dataset.theme=themed()?themeFor():'light';
-  setAmb(['dealer','npc','market','ctrl'].includes(ui.tab)?'page':null);
+  document.body.classList.toggle('board',ui.tab==='board');
+  setAmb(ui.tab==='board'?'screen':['dealer','npc','market','ctrl'].includes(ui.tab)?'page':null,themeFor());
   const nav=$('#tabs');nav.hidden=tabs.length<2;
   morph(nav,tabs.map(v=>'<button role="tab" data-a="tab" data-v="'+v+'" aria-selected="'+(v===ui.tab)+'">'+TAB_NAME[v]+'</button>').join(''));
   $('#logo').innerHTML=ui.tab==='ctrl'?'<span class="scroll"></span>生死簿':'百鬼夜行';

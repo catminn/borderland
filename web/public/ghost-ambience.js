@@ -9,7 +9,7 @@ const EYE_D=[[.05,.1],[.95,.12],[.04,.48],[.96,.42],[.07,.88],[.93,.9],[.18,.05]
 const EYE_M=[[.15,.085],[.85,.1],[.14,.94],[.86,.955],[.5,.975]];
 
 class GhostAmbience extends HTMLElement{
-  static get observedAttributes(){return['data-len','data-err','data-ok'];}
+  static get observedAttributes(){return['data-len','data-err','data-ok','data-keep','data-top'];}
   connectedCallback(){
     this.style.cssText='position:absolute;inset:0;display:block;pointer-events:none;overflow:hidden';
     if(!this.cv){this.cv=document.createElement('canvas');this.cv.style.cssText='width:100%;height:100%;display:block';this.appendChild(this.cv);}
@@ -40,6 +40,7 @@ class GhostAmbience extends HTMLElement{
   attributeChangedCallback(n,o,v){
     if(!this.ctx||!this.flames)return;
     if(n==='data-len')this.len=+v||0;
+    if((n==='data-keep'||n==='data-top')&&v!==o)this.flames.forEach(f=>{if(this.inKeep(f.x,f.y,8))Object.assign(f,this.spot());});
     if(n==='data-err'&&o!==null&&v!==o&&v!=='0')this.triggerError();
     if(n==='data-ok'){if(v==='1'&&o!=='1')this.triggerOk();else if(v!=='1'&&o==='1'){this.okMode=false;this.init();if(this.reduced)this.drawStatic();}}
   }
@@ -52,16 +53,19 @@ class GhostAmbience extends HTMLElement{
     if(this.reduced)this.drawStatic();}
   spot(){const w=this.w,h=this.h;
     if(this.mode==='page')return{x:rnd(.45,.97)*w,y:rnd(26,110)};
-    if(this.mode==='screen'){const z=Math.random();
-      if(z<.3)return{x:rnd(.02,.98)*w,y:rnd(.012,.045)*h};
-      if(z<.6)return{x:rnd(.02,.98)*w,y:rnd(.96,.995)*h};
-      if(z<.75)return{x:rnd(.004,.027)*w,y:rnd(.08,.92)*h};
-      if(z<.9)return{x:rnd(.973,.996)*w,y:rnd(.08,.92)*h};
-      return{x:rnd(.262,.285)*w,y:rnd(.1,.9)*h};}
+    if(this.mode==='screen'){ // only the space around the content (data-keep) and below the page header (data-top)
+      const k=this.keepRect(),T=Math.min(h-20,+(this.dataset.top||0)),pad=12;
+      if(!k)return{x:rnd(.01,.99)*w,y:rnd(T+10,h-6)};
+      const bands=[[0,T,w,k[1]-pad],[0,k[1]+k[3]+pad,w,h-4],[0,Math.max(T,k[1]),k[0]-pad,k[1]+k[3]],[k[0]+k[2]+pad,Math.max(T,k[1]),w,k[1]+k[3]]]
+        .map(b=>[Math.max(4,b[0]),Math.max(T+8,b[1]),Math.min(w-4,b[2]),b[3]]).filter(b=>b[2]-b[0]>6&&b[3]-b[1]>6);
+      if(!bands.length)return{x:rnd(.01,.99)*w,y:rnd(T+10,h-6)};
+      let a=Math.random()*bands.reduce((s,b)=>s+(b[2]-b[0])*(b[3]-b[1]),0);
+      for(const b of bands){a-=(b[2]-b[0])*(b[3]-b[1]);if(a<=0)return{x:rnd(b[0],b[2]),y:rnd(b[1],b[3])};}
+      const b=bands[0];return{x:rnd(b[0],b[2]),y:rnd(b[1],b[3])};}
     if(this.mob)return{x:rnd(.1,.9)*w,y:Math.random()<.5?rnd(.07,.17)*h:rnd(.83,.92)*h};
     return{x:(Math.random()<.5?rnd(.05,.28):rnd(.72,.95))*w,y:rnd(.14,.86)*h};}
   init(){
-    const login=this.mode!=='page',n=this.mode==='screen'?(this.mob?4:14):login?(this.mob?3:6):(this.mob?2:3);
+    const login=this.mode!=='page',n=this.mode==='screen'?(this.mob?5:18):login?(this.mob?3:6):(this.mob?2:3);
     this.flames=Array.from({length:n},(_,i)=>{const z=rnd(.3,1),size=login?(this.mob?10+z*13:13+z*19):(this.mob?9+z*8:11+z*11);
       return{...this.spot(),z,size,seed:rnd(0,100),bobA:rnd(5,13),bobS:rnd(.35,.7),swA:rnd(2,6),swS:rnd(.5,1.1),phase:'on',a:login?1:.9,timer:rnd(4,16),dip:0,lean:0,
         trail:login&&i<2?[]:null,trailT:0};}).sort((a,b)=>a.z-b.z);
@@ -71,6 +75,9 @@ class GhostAmbience extends HTMLElement{
     this.paper=this.mode==='login'?Array.from({length:this.mob?4:9},()=>this.newPaper(rnd(-.1,1))):[];
     this.nextSpawn=rnd(1.2,2.6);
   }
+  keepRect(){const k=(this.dataset.keep||'').split(',').map(Number);return k.length===4&&!k.some(isNaN)?k:null;}
+  inKeep(x,y,pad=0){if(y<+(this.dataset.top||0)+pad)return true;const k=this.keepRect();if(!k)return false;
+    return x>k[0]-pad&&x<k[0]+k[2]+pad&&y>k[1]-pad&&y<k[1]+k[3]+pad;}
   newPaper(y){const z=rnd(.4,1);return{x:rnd(.02,.98),y,z,vy:rnd(14,26),sw:rnd(.5,1.2),seed:rnd(0,100),rot:rnd(0,6),rs:rnd(-.9,.9),slip:Math.random()<.3};}
   triggerError(){if(this.reduced||this.mode!=='login'||this.okMode)return;this.errMode=true;this.errT=0;this.eyes.forEach(e=>{e.state='stare';});}
   triggerOk(){this.okMode=true;this.okT=0;this.errMode=false;}
@@ -105,7 +112,8 @@ class GhostAmbience extends HTMLElement{
       const maxOpen=Math.min(this.eyes.length,(this.mob?1:2)+Math.floor(this.len/(this.mob?3:2)));
       this.nextSpawn-=dt;
       if(this.nextSpawn<0&&openCount<maxOpen){const c=this.eyes.filter(e=>e.state==='closed');
-        if(c.length){const e=c[Math.floor(Math.random()*c.length)];e.state='opening';e.t=0;e.hold=rnd(1.6,3.4);e.blink=rnd(.5,e.hold-.4);e.lx=0;e.ly=0;}
+        const c2=c.filter(e=>!this.inKeep(e.nx*w,e.ny*h,30));
+        if(c2.length){const e=c2[Math.floor(Math.random()*c2.length)];e.state='opening';e.t=0;e.hold=rnd(1.6,3.4);e.blink=rnd(.5,e.hold-.4);e.lx=0;e.ly=0;}
         this.nextSpawn=rnd(2.6,5.5)/(1+this.len*.3);}
       for(const e of this.eyes){
         if(e.state==='opening'){e.open+=dt;if(e.open>=1){e.open=1;e.state='open';e.t=0;}}
