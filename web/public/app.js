@@ -631,8 +631,12 @@ function downloadPins(){
   setTimeout(()=>URL.revokeObjectURL(a.href),1000);
 }
 
-// The clock runs on the server; the page just redraws once a second.
-setInterval(()=>{if(S&&ME&&!entering)requestRender();},1000);
+// The clock runs on the server; the page redraws on each server-time second, so every screen flips together.
+(function tick(){
+  if(S&&ME&&!entering)requestRender();
+  const ms=CLOCK&&CLOCK.running?1000-(((Date.now()+OFFSET-CLOCK.at)%1000)+1000)%1000:1000;
+  setTimeout(tick,ms+20);
+})();
 
 // ---------- start ----------
 document.body.dataset.gaFrame='1';
