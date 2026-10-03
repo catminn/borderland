@@ -289,7 +289,7 @@ function coinAmt(){const v=parseInt(String(ui.coinAmt).replace(/[^\d-]/g,''),10)
 function coinBtn(){const t=ui.coinTeam&&team(ui.coinTeam),a=coinAmt();
   return t&&a?'确认 '+t.name+' '+(a>0?'+':'')+a+' → '+Math.max(0,t.score+a):'确认修改';}
 function editTeam(){
-  const ct=ui.coinTeam&&team(ui.coinTeam);
+  const ct=ui.coinTeam&&team(ui.coinTeam);if(ui.clueAsk&&ui.clueAsk.tid!==ui.coinTeam)ui.clueAsk=null;const q=ui.clueAsk;
   return '<div class="pn" style="gap:12px"><h3>修改队伍</h3>'
     +'<div class="coinrow"><div class="fld"><span>队伍</span>'+dd('coinTeam',ct&&ct.name,'选择队伍',ct&&TC[ct.id][0],S.teams.map(t=>({v:t.id,label:t.name,c:TC[t.id][0],note:t.score+' 冥币'})))+'</div>'
     +'<div class="fld"><span>冥币增减（↑ ↓ 每次 100）</span><div class="step">'
@@ -297,8 +297,9 @@ function editTeam(){
     +'<input class="in mono" type="number" step="100" id="cv" data-m="coinAmt" value="'+esc(ui.coinAmt)+'" placeholder="0" aria-label="冥币增减">'
     +'<button data-a="coinstep" data-v="100" aria-label="加 100">+</button></div></div>'
     +'<button class="btn-main" id="coinbtn" data-a="setscore" style="min-height:48px;font-size:16px">'+coinBtn()+'</button></div>'
-    +'<div class="fld"><span>线索（扑克牌，点一下加上 / 去掉）</span><div class="clues">'+ROOMS.map(r=>{const has=!!(ct&&ct.cards.includes(r.card));
-      return '<button class="clue'+(has?' on':'')+'" data-a="clue" data-v="'+r.card+'"'+(ct?'':' disabled')+' aria-pressed="'+has+'">'+cardG(r)+'</button>';}).join('')+'</div></div></div>';
+    +'<div class="fld"><span>线索（扑克牌，点牌后再确认加上 / 去掉）</span><div class="clues">'+ROOMS.map(r=>{const has=!!(ct&&ct.cards.includes(r.card));
+      return '<button class="clue'+(has?' on':'')+(q&&q.card===r.card?' ask':'')+'" data-a="clue" data-v="'+r.card+'"'+(ct?'':' disabled')+' aria-pressed="'+has+'">'+cardG(r)+'</button>';}).join('')+'</div>'
+    +(q?'<div class="clueask"><span>确认给 <b>'+ct.name+'</b> '+(ct.cards.includes(q.card)?'去掉':'加上')+' <b>'+q.card+'</b>？</span><span class="btns"><button class="btn-line fill" data-a="clueok">确认</button><button class="btn-line" data-a="clueno">取消</button></span></div>':'')+'</div></div>';
 }
 function logTag(l){const x=l.text;
   return /勾魂|抽签淘汰|被淘汰/.test(x)?['勾魂','var(--red)']:/孟婆汤|鬼市|助力/.test(x)&&!/技能卡/.test(x)?['鬼市','var(--accent)']:/技能卡/.test(x)?['技能卡','#6b4f9a']
@@ -390,7 +391,8 @@ function viewPlayer(){
     +'<div class="pn" style="padding:14px;gap:12px"><span class="cap small" style="font-size:12px">四色碎片</span><div class="suits4">'+suits+'</div>'
     +'<div class="fin'+(st.k==='free'?' ok':'')+'">'+(st.k==='free'?'可进决赛':st.txt)+'</div></div>'
     +(myRooms||'<div class="pn" style="padding:14px"><span class="muted">本队现在没有在任何房间里。</span></div>')
-    +'<h2 class="sh" style="font-size:20px;margin-top:6px">本队技能卡</h2>'+(t.skills.length?'<div class="skills">'+t.skills.map(k=>'<span>'+esc(k.name)+'</span>').join('')+'</div>'
+    +'<h2 class="sh" style="font-size:20px;margin-top:6px">本队技能卡</h2>'+(t.skills.length?'<div class="skills">'+t.skills.map(k=>'<button class="sk'+(ui.skillOpen===k.sid?' on':'')+'" data-a="skill" data-v="'+k.sid+'" aria-expanded="'+(ui.skillOpen===k.sid)+'">'+esc(k.name)+'</button>').join('')+'</div>'
+      +((sk=>sk?'<div class="skd"><b>'+esc(sk.name)+'</b>'+(sk.desc?'<span class="d">'+esc(sk.desc)+'</span>':'')+'<span class="small">'+esc(sk.by)+' 于 '+fmt(sk.t)+' 在鬼市买入</span><span class="small">使用时找工作人员出示这一页。</span></div>':'')(t.skills.find(k=>k.sid===ui.skillOpen)))
       :'<span class="muted">还没有。技能卡只有鬼市里的人能用自己的冥币买。</span>');
   // 通知与任务
   const mine=S.notices.filter(n=>matches(n,me)),unread=mine.filter(n=>!n.acks[me.id]).length;
@@ -491,7 +493,7 @@ function render(){
   if(!tabs.includes(ui.tab))ui.tab=tabs[0];
   document.documentElement.dataset.theme=themed()?themeFor():'light';
   document.body.classList.toggle('board',ui.tab==='board');
-  setAmb(ui.tab==='board'?'screen':['dealer','npc','market','ctrl'].includes(ui.tab)?'page':null,themeFor());
+  setAmb(ui.tab==='board'?'screen':['dealer','npc','market','ctrl','player'].includes(ui.tab)?'page':null,themeFor());
   const nav=$('#tabs');nav.hidden=tabs.length<2;
   morph(nav,tabs.map(v=>'<button role="tab" data-a="tab" data-v="'+v+'" aria-selected="'+(v===ui.tab)+'">'+TAB_NAME[v]+'</button>').join(''));
   $('#logo').innerHTML=ui.tab==='ctrl'?'<span class="scroll"></span>生死簿':'百鬼夜行';
@@ -637,10 +639,13 @@ document.addEventListener('click',e=>{
   else if(a==='pick'){ui.ddOpen=null;const k=b.dataset.k,next=b.dataset.t&&getp(k)===v?'':v;setp(k,next);
     if(k==='pub.target')ui.pub.mode=defMode(next);
     if(k==='pub.to'){const t=next||'all';if(t.startsWith('team:')){ui.pub.target='team';ui.pub.team=t.slice(5);}else ui.pub.target=t;ui.pub.mode=defMode(ui.pub.target);}}
+  else if(a==='skill'){ui.skillOpen=ui.skillOpen===+v?null:+v;}
   else if(a==='pickm'||a==='unpick'){const k=b.dataset.k,cur=getp(k)||[];setp(k,cur.includes(v)?cur.filter(x=>x!==v):a==='pickm'?[...cur,v]:cur);}
   else if(a==='pubto'){if(v.startsWith('team:')){ui.pub.target='team';ui.pub.team=v.slice(5);}else ui.pub.target=v;ui.pub.mode=defMode(ui.pub.target);}
   else if(a==='coinstep'){ui.coinAmt=String(coinAmt()+(+v));}
-  else if(a==='clue'){const t=ui.coinTeam&&team(ui.coinTeam);if(t)send({type:'setcards',tid:t.id,card:v,on:!t.cards.includes(v)});}
+  else if(a==='clue'){if(ui.coinTeam)ui.clueAsk={tid:ui.coinTeam,card:v};}
+  else if(a==='clueno'){ui.clueAsk=null;}
+  else if(a==='clueok'){const q=ui.clueAsk,t=q&&team(q.tid);ui.clueAsk=null;if(t)send({type:'setcards',tid:t.id,card:q.card,on:!t.cards.includes(q.card)});}
   else if(a==='copypin'){copyText(v).then(()=>say({ok:true,msg:'已复制 PIN '+v}),()=>say(no('复制失败，请手动选中 PIN')));}
   else if(a==='theme'){const r=themeKey(),nx=themeFor()==='dark'?'light':'dark';try{localStorage.setItem(THEME_KEY(r),nx);}catch{/* private mode */}}
   else if(a==='logout'){logout();return;}

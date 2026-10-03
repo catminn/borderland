@@ -175,7 +175,7 @@ function buyCard(kid,buyer){const c=S.shop.find(x=>x.id===kid);
   let tm,payer;
   {const p=S.players.find(x=>x.id===buyer);if(!p||p.st!=='market')return no('只有在鬼市的人能用个人冥币');
     if(p.coins<c.price)return no(p.id+' 只有 '+p.coins+' 冥币，买不起「'+c.name+'」（'+c.price+'）');p.coins-=c.price;tm=team(p.team);payer=p.id;}
-  c.stock--;tm.skills.push({sid:S.sid++,name:c.name,by:payer,t:S.t});
+  c.stock--;tm.skills.push({sid:S.sid++,name:c.name,desc:c.desc||'',by:payer,t:S.t});
   log(payer+' 在鬼市花 '+c.price+' 冥币买了技能卡「'+c.name+'」','back');
   pushNotice({kind:'通知',title:'本队获得技能卡',body:payer+' 在鬼市商铺买了「'+c.name+'」。'+(c.desc||'')+' 使用时找工作人员出示。',target:'team',ids:[tm.id]});
   return ok(payer+' 买到「'+c.name+'」，'+tm.name+'现有技能卡 '+tm.skills.length+' 张');}

@@ -399,7 +399,12 @@ body.screen .stage-wrap{border-radius:0}
 .mate .give .in{height:52px;font:700 20px var(--mono);border-width:1.5px;border-color:var(--line);background:var(--bg);border-radius:12px;flex:1}
 .mate .give button{min-height:52px;padding:0 20px;background:var(--accent);color:var(--accent-ink);border:none;font-size:17px;font-weight:900;border-radius:12px;white-space:nowrap}
 .skills{display:flex;flex-wrap:wrap;gap:8px}
-.skills span{background:var(--cb);border:1.5px solid var(--accent);color:var(--ink);padding:6px 14px;font-size:14px;font-weight:700;border-radius:999px}
+.skills span,.skills .sk{background:var(--cb);border:1.5px solid var(--accent);color:var(--ink);padding:6px 14px;font-size:14px;font-weight:700;border-radius:999px}
+.skills .sk{min-height:40px;cursor:pointer}
+.skills .sk.on{background:var(--accent);color:var(--accent-ink)}
+.skd{margin-top:10px;background:var(--panel);border:1.5px solid var(--accent);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:6px;animation:riseIn .2s ease both}
+.skd b{font-size:20px}
+.skd .d{font-size:16px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere}
 .prooms{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .prooms .room{padding:12px 14px;gap:6px}
 .prooms .room .cd{font-size:36px}
@@ -687,3 +692,6 @@ body.board .stage{background:transparent}
 .selchip{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 10px;border:1.5px solid var(--line2);border-radius:999px;background:var(--card);font:700 14px var(--mono);color:var(--ink)}
 .selchip .sw{width:10px;height:10px;border-radius:3px;background:var(--c)}
 .selchip b{color:var(--red);font-size:16px;line-height:1}
+.clue.ask{border-style:solid;border-color:var(--red);box-shadow:0 0 0 2px var(--red-soft)}
+.clueask{margin-top:8px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px;padding:10px 12px;border:1.5px solid var(--red);border-radius:10px;background:var(--red-soft);font-size:15px}
+.clueask .btn-line{min-height:40px;padding:0 18px}
