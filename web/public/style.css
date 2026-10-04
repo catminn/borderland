@@ -433,10 +433,10 @@ body.login #scene{display:block;position:absolute;left:0;top:0;width:100%;height
 #scene .glow{position:absolute;inset:0;background:radial-gradient(ellipse 30% 22% at 50% 100%,rgba(140,14,22,.28),transparent 70%),radial-gradient(ellipse 22% 40% at 17% 62%,rgba(60,170,150,.10),transparent 70%),radial-gradient(ellipse 22% 40% at 83% 62%,rgba(60,170,150,.10),transparent 70%)}
 #scene .fogb{position:absolute;left:-12%;right:-12%;bottom:0;height:52%;--o:.55;animation:fogBreath 14s ease-in-out infinite}
 #scene .fogf{position:absolute;left:-10%;right:-10%;bottom:-60px;height:260px;--o:.5;animation:fogBreath 11s ease-in-out infinite}
-#scene .fogb img,#scene .fogf img{width:100%;height:100%;object-fit:cover;mix-blend-mode:screen;-webkit-mask-image:linear-gradient(to top,#000 30%,transparent);mask-image:linear-gradient(to top,#000 30%,transparent)}
+#scene .fogb img,#scene .fogf img{width:100%;height:100%;object-fit:cover;-webkit-mask-image:linear-gradient(to top,#000 30%,transparent);mask-image:linear-gradient(to top,#000 30%,transparent)}
 #scene .fogb img{object-position:60% 60%;filter:brightness(.55) saturate(.9);animation:fogDrift 30s ease-in-out infinite reverse}
 #scene .fogf img{object-position:50% 70%;filter:brightness(.7);animation:fogDrift 24s ease-in-out infinite}
-#scene .doll{position:absolute;bottom:10px;height:min(52vh,calc(34vw*1.5));width:auto;mix-blend-mode:lighten;filter:brightness(.82) saturate(.9);-webkit-mask-image:linear-gradient(to bottom,#000 72%,transparent 96%);mask-image:linear-gradient(to bottom,#000 72%,transparent 96%)}
+#scene .doll{position:absolute;bottom:10px;height:min(52vh,calc(34vw*1.5));width:auto;filter:brightness(.82) saturate(.9);-webkit-mask-image:linear-gradient(to bottom,#000 72%,transparent 96%);mask-image:linear-gradient(to bottom,#000 72%,transparent 96%)}
 #scene .doll.l{left:7vw}
 #scene .doll.r{right:7vw}
 @media (min-width:720px){.lg{zoom:1.25}}
