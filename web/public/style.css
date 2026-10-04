@@ -866,9 +866,3 @@ button.sk.on{background:var(--accent);border-color:var(--accent);color:var(--acc
   .wen .w-num{font-size:20px}
   .wen .w-seal{width:68px;transform:translate(6px,0) rotate(-4deg)}
 }
-
-/* scale-to-fill for fixed one-screen staff pages (see fitPage in app.js) */
-@media (min-width:720px){
-  body:not(.login):not(.screen) .wrap{max-width:calc(1440px*var(--pk,1))}
-  body:not(.login):not(.screen) #view>.page{zoom:var(--pk,1)}
-}
