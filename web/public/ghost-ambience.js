@@ -94,11 +94,13 @@ class GhostAmbience extends HTMLElement{
         trail:login&&i<2?[]:null,trailT:0};}).sort((a,b)=>a.z-b.z);
     const slots=login?(this.mob?EYE_M:EYE_D):[];
     this.eyes=slots.map(([x,y,s,r])=>({nx:x,ny:y,s:s?s*.85:rnd(.8,1.15),red:s?!!r:Math.random()<.35,ang:0,sq:0,tilt:rnd(.06,.16),state:'closed',open:0,t:0,hold:0,blink:0,lx:0,ly:0}));
-    if(login&&this.eyes.length&&this.dataset.ok!=='1'){const n0=this.mob?3:4;this.eyes.slice().sort(()=>Math.random()-.5).slice(0,n0).forEach(e=>{e.state='opening';e.open=-rnd(0,.45);e.t=0;e.hold=rnd(2.5,5);e.blink=rnd(.8,e.hold-.5);});}
+    if(login&&this.eyes.length&&this.dataset.ok!=='1'){const n0=this.mob?3:4;const pick=[];this.eyes.slice().sort(()=>Math.random()-.5).forEach(e=>{if(pick.length<n0&&!pick.some(o=>this.eyeHit(e,o)))pick.push(e);});pick.forEach(e=>{e.state='opening';e.open=-rnd(0,.45);e.t=0;e.hold=rnd(2.5,5);e.blink=rnd(.8,e.hold-.5);});}
     this.fog=false?Array.from({length:this.mob?2:5},()=>({x:rnd(0,1),y:rnd(.84,1.02),rx:rnd(.25,.5),ry:rnd(40,90),sp:rnd(.006,.014),a:rnd(.05,.1)})):[];
     this.paper=[];
     this.nextSpawn=rnd(.9,1.8);
   }
+  eyeBox(e){const k=e.s*(this.mob?.82:1),w=150*k*.9,hh=150*k*119/256;return{x:e.nx*this.w,y:e.ny*this.h,w,h:hh};}
+  eyeHit(a,b){const A=this.eyeBox(a),B=this.eyeBox(b);return Math.abs(A.x-B.x)<(A.w+B.w)/2+10&&Math.abs(A.y-B.y)<(A.h+B.h)/2+10;}
   keepRect(){const k=(this.dataset.keep||'').split(',').map(Number);return k.length===4&&!k.some(isNaN)?k:null;}
   inKeep(x,y,pad=0){if(y<+(this.dataset.top||0)+pad)return true;const k=this.keepRect();if(!k)return false;
     return x>k[0]-pad&&x<k[0]+k[2]+pad&&y>k[1]-pad&&y<k[1]+k[3]+pad;}
@@ -142,7 +144,7 @@ class GhostAmbience extends HTMLElement{
       const maxOpen=Math.min(this.eyes.length,(this.mob?2:3)+Math.floor(this.len/(this.mob?3:2))+(active?(this.mob?3:5):0)+(this.dataset.more==='1'?2:0));
       this.nextSpawn-=dt;
       if(this.nextSpawn<0&&openCount<maxOpen){const c=this.eyes.filter(e=>e.state==='closed');
-        const c2=c.filter(e=>!this.inKeep(e.nx*w,e.ny*h,30));
+        const c2=c.filter(e=>!this.inKeep(e.nx*w,e.ny*h,30)&&!this.eyes.some(o=>o!==e&&o.state!=='closed'&&this.eyeHit(e,o)));
         if(c2.length&&this.dataset.free==='1'){const e=c2[0],k=e.s*(this.mob?.82:1)*36,T=Math.min(h-40,+(this.dataset.top||0))+30;let ok=false;
           for(let i=0;i<20&&!ok;i++){const x=rnd(.06,.94)*w,y=rnd(T,h-30);if(this.isFree(x,y)&&this.isFree(x-k,y)&&this.isFree(x+k,y)&&this.isFree(x-k*.5,y-9)&&this.isFree(x+k*.5,y+9)){e.nx=x/w;e.ny=y/h;ok=true;}}
           if(!ok)c2.length=0;}
@@ -151,7 +153,7 @@ class GhostAmbience extends HTMLElement{
         this.nextSpawn=rnd(1.4,3.2)/(1+this.len*.3)/(active?4:1);}
       for(const e of this.eyes){
         if(e.state==='opening'){e.open+=dt*3;if(e.open>=1){e.open=1;e.state='open';e.t=0;}}
-        else if(e.state==='open'){e.t+=dt;if(active&&this.target){const dist=Math.hypot(e.nx*w-this.target.x,e.ny*h-this.target.y);if(dist<w*.3)e.hold=Math.max(e.hold,e.t+1.2);else if(dist>w*.45&&!e.far){e.far=1;e.hold=Math.min(e.hold,e.t+.5);}}const b=e.t-e.blink;e.open=b>0&&b<.2?Math.abs(b-.1)/.1:1;if(e.t>e.hold)e.state='closing';}
+        else if(e.state==='open'){e.t+=dt;if(active&&this.target){const dist=Math.hypot(e.nx*w-this.target.x,e.ny*h-this.target.y);if(dist<w*.3&&e.t<7)e.hold=Math.max(e.hold,e.t+1.2);else if(dist>w*.45&&!e.far){e.far=1;e.hold=Math.min(e.hold,e.t+.5);}}const b=e.t-e.blink;e.open=b>0&&b<.2?Math.abs(b-.1)/.1:1;if(e.t>e.hold)e.state='closing';}
         else if(e.state==='closing'||e.state==='stare'){e.open-=dt;if(e.open<=0){e.open=0;e.state='closed';}}
       }
     }
@@ -212,7 +214,8 @@ class GhostAmbience extends HTMLElement{
     else if(e.open<.98)i=Math.round(Math.max(0,e.open)*8);
     else if(e.ang>.02)i=9+Math.round(e.ang*11);
     else{let b=1e9;i=21;const gx=EYE_GC[0]+e.lx*EYE_GC[2],gy=EYE_GC[1]+e.ly*EYE_GC[3];
-      for(const g of EYE_GAZE){const d=((g[0]-gx)/EYE_GC[2])**2+((g[1]-gy)/EYE_GC[3])**2;if(d<b){b=d;i=g[2];}}}
+      let dc=1e9;for(const g of EYE_GAZE){const d=((g[0]-gx)/EYE_GC[2])**2+((g[1]-gy)/EYE_GC[3])**2;if(d<b){b=d;i=g[2];}if(g[2]===e.gi)dc=d;}
+      if(dc<b+.04)i=e.gi;e.gi=i;}
     c.save();c.globalAlpha=Math.min(1,e.open*3)*.95;
     c.drawImage(A.img,(i%9)*A.fw,Math.floor(i/9)*A.fh,A.fw,A.fh,x+(e.ang>.5?0:e.lx*2.5*k),y+dh*(1-sy)/2+(e.ang>.5?0:e.ly*3*k),dw,dh*sy);
     c.restore();
