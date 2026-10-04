@@ -442,7 +442,7 @@ body.login #scene{display:block;position:absolute;left:0;top:0;width:100%;height
 @media (min-width:720px){.lg{zoom:1.25}}
 @keyframes fogDrift{0%,100%{transform:translateX(0)}50%{transform:translateX(-3.5%)}}
 @keyframes fogBreath{0%,100%{opacity:var(--o)}50%{opacity:calc(var(--o)*.6)}}
-@media (max-width:719px){#scene{height:100vh;height:100dvh}body.login{overflow:hidden}body.login .wrap{min-height:100vh;min-height:100dvh;justify-content:flex-start;padding-top:13vh;padding-top:13dvh}#scene .doll{height:30vh;height:30dvh;bottom:0}#scene .doll.l{left:3vw}#scene .doll.r{right:3vw}#scene .fogb{height:42%}#scene .fogf{bottom:-40px;height:180px;--o:.45}}
+@media (max-width:719px){#scene .doll{height:27vh;height:27dvh;bottom:0}#scene .doll.l{left:3vw}#scene .doll.r{right:3vw}#scene .fogb{height:42%}#scene .fogf{bottom:-40px;height:180px;--o:.45}}
 body.login #amb{position:fixed;inset:0;height:auto}
 body.login header.top,body.login nav.pages{display:none}
 body.login .wrap{min-height:100vh;justify-content:center;align-items:center;padding:20px}
@@ -881,3 +881,6 @@ button.sk.on{background:var(--accent);border-color:var(--accent);color:var(--acc
   .wen .w-num{font-size:20px}
   .wen .w-seal{width:68px;transform:translate(6px,0) rotate(-4deg)}
 }
+
+/* phone login: fit the visible area (Safari toolbars included) — card and dolls sit high enough to be fully seen */
+@media (max-width:719px){body.login #scene{height:100vh;height:100dvh}body.login{overflow:hidden}body.login .wrap{min-height:100vh;min-height:100dvh;justify-content:flex-start;padding-top:0}body.login #view{margin-top:17vh;margin-top:17dvh}}
