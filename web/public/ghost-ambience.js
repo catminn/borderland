@@ -1,5 +1,5 @@
 // Ghost-fire ambience from the Claude Design handoff, lightened for phones: 1x canvas on the login page, 30 fps,
-// no canvas blur filter, cached fog gradients; the edge vignette is drawn by CSS (body.login #amb).
+// no procedural smoke or trails; the edge vignette is drawn by CSS (body.login #amb).
 (()=>{
 if(customElements.get('ghost-ambience'))return;
 const RM=window.matchMedia?matchMedia('(prefers-reduced-motion: reduce)'):{matches:false};
@@ -93,16 +93,14 @@ class GhostAmbience extends HTMLElement{
     const b=bands[0];return{x:rnd(b[0],b[2]),y:rnd(b[1],b[3])};}
   init(){
     const login=this.mode!=='page';
-    if(this.light){this.flames=[];this.eyes=[];this.fog=[];
+    if(this.light){this.flames=[];this.eyes=[];
       this.paper=Array.from({length:this.mode==='screen'?(this.mob?9:18):(this.mob?4:7)},()=>this.newPaper(rnd(-.1,1)));this.nextSpawn=9;return;}
     const n=this.mode==='screen'?(this.mob?3:5):login?0:(this.mob?1:2);
     this.flames=Array.from({length:n},(_,i)=>{const z=rnd(.3,1),size=login?(this.mob?10+z*13:13+z*19):(this.mob?9+z*8:11+z*11);
-      return{...this.spot(),form:Math.floor(rnd(0,3)),ft:0,z,size,seed:rnd(0,100),bobA:rnd(5,13),bobS:rnd(.35,.7),swA:rnd(2,6),swS:rnd(.5,1.1),phase:'on',a:login?1:.9,timer:rnd(4,16),dip:0,lean:0,rise:this.mode==='page'?rnd(5,10):rnd(12,26),
-        trail:null,trailT:0};}).sort((a,b)=>a.z-b.z);
+      return{...this.spot(),form:Math.floor(rnd(0,3)),ft:0,z,size,seed:rnd(0,100),bobA:rnd(5,13),bobS:rnd(.35,.7),swA:rnd(2,6),swS:rnd(.5,1.1),phase:'on',a:login?1:.9,timer:rnd(4,16),dip:0,lean:0,rise:this.mode==='page'?rnd(5,10):rnd(12,26)};}).sort((a,b)=>a.z-b.z);
     const slots=this.mode==='login'?(this.mob?EYE_M:EYE_D):[]; // no eyes inside the app pages for now
     this.eyes=slots.map(([x,y,s,r])=>({nx:x,ny:y,s:s?s*.85:rnd(.8,1.15),red:s?!!r:Math.random()<.35,ang:0,sq:0,dw:0,near:false,tilt:rnd(.06,.16),state:'closed',open:0,t:0,hold:0,blink:0,lx:0,ly:0}));
     if(this.mode==='login'&&this.eyes.length&&this.dataset.ok!=='1'){const n0=this.mob?3:4;const pick=[];this.eyes.slice().sort(()=>Math.random()-.5).forEach(e=>{if(pick.length<n0&&!pick.some(o=>this.eyeHit(e,o)))pick.push(e);});pick.forEach(e=>{e.state='opening';e.open=-rnd(0,.45);e.t=0;e.hold=rnd(2.5,5);e.blink=rnd(.8,e.hold-.5);});}
-    this.fog=false?Array.from({length:this.mob?2:5},()=>({x:rnd(0,1),y:rnd(.84,1.02),rx:rnd(.25,.5),ry:rnd(40,90),sp:rnd(.006,.014),a:rnd(.05,.1)})):[];
     this.paper=[];
     this.nextSpawn=this.mode==='login'?rnd(.9,1.8):rnd(3,8);
   }
@@ -126,7 +124,7 @@ class GhostAmbience extends HTMLElement{
         continue;}
       if(f.phase==='on'){f.timer-=dt;if(f.timer<0)f.phase='fade';}
       else if(f.phase==='fade'){f.ft=(f.ft||0)+dt;if(f.ft>=FL_DIS_N[f.form]/8){f.ft=0;f.a=0;f.phase='off';f.off=rnd(.8,2.6);}} // plays this form's dissolve clip
-      else if(f.phase==='off'){f.off-=dt;if(f.off<0){Object.assign(f,this.spot());f.form=Math.floor(rnd(0,3));if(f.trail)f.trail=[];f.phase='in';}}
+      else if(f.phase==='off'){f.off-=dt;if(f.off<0){Object.assign(f,this.spot());f.form=Math.floor(rnd(0,3));f.phase='in';}}
       else if(f.phase==='in'){f.a+=dt*.7;if(f.a>=1){f.a=1;f.phase='on';f.timer=rnd(6,18);}}
       if(Math.random()<dt*.18)f.dip=1;f.dip=Math.max(0,f.dip-dt*2.6);
       if(f.rise){f.y-=f.rise*dt; // drift upward; fade out near the top or when touching the big screen's content
@@ -136,11 +134,8 @@ class GhostAmbience extends HTMLElement{
     }
     if(this.hit){const H=this.hit;this.hit=null;for(const f of this.flames){if(f.phase!=='on'&&f.phase!=='in')continue;const hs=f.size*6.5,fw=hs*FL.fw/FL.fh,fx=f.cx||f.x,top=f.tip||f.y-hs*.7,bot=f.y+hs*.2,pad=H.tap?18:0;
       if(Math.abs(H.x-fx)<fw*.45+pad&&H.y>top-pad&&H.y<bot+pad){f.phase='fade';f.ft=0;}}}
-    for(const f of this.flames)if(f.trail){f.trailT+=dt;if(f.trailT>.09&&f.a>.2){f.trailT=0;f.trail.push({x:f.cx||f.x,y:(f.tip||f.y),a:.9*f.a});if(f.trail.length>22)f.trail.shift();}
-      for(const p of f.trail){p.y-=16*dt;p.x+=Math.sin(t*1.7+p.y*.05)*6*dt;p.a-=dt*.45;}f.trail=f.trail.filter(p=>p.a>0);}
     for(const p of this.paper){const sp=.5+.5*p.z,sw=Math.cos(t*p.sw+p.ph); // falling leaf: swings side to side, slows at the ends of each swing
       p.y+=p.vy*sp*(.55+.45*Math.abs(sw))*dt/h;p.x+=(p.vx*sp+sw*p.swA)*dt/w;p.rot=Math.sin(t*p.sw+p.ph)*.6+p.seed;if(p.y>1.08||p.x>1.12)Object.assign(p,this.newPaper(-.06));}
-    for(const b of this.fog){b.x+=b.sp*dt;if(b.x-b.rx>1)b.x=-b.rx;}
     if(this.mode==='page')return;
     let gx=this.target?this.target.x:w/2,gy=this.target?this.target.y:h*.56;
     if(this.okMode){const k=this.okT;gx=cx;gy=cy;
@@ -211,11 +206,7 @@ class GhostAmbience extends HTMLElement{
     const c=this.ctx,w=this.w,h=this.h,t=this.t,k=this.okMode?this.okT:-1;c.clearRect(0,0,w,h);
     c.save();
     if(k>.58&&k<.9){const a=(1-(k-.58)/.32)*3.2;c.translate(Math.sin(k*95)*a,Math.cos(k*80)*a*.6);}
-    for(const b of this.fog){const R=b.rx*w;if(!b.g||b.gw!==w){b.g=c.createRadialGradient(0,0,0,0,0,R);b.g.addColorStop(0,`rgba(150,190,182,${b.a})`);b.g.addColorStop(1,'rgba(150,190,182,0)');b.gw=w;}
-      c.save();c.translate(b.x*w,b.y*h);c.scale(1,b.ry/R);c.fillStyle=b.g;c.beginPath();c.arc(0,0,R,0,Math.PI*2);c.fill();c.restore();}
     for(const p of this.paper)this.drawPaper(p,t);
-    for(const f of this.flames)if(f.trail)for(const p of f.trail){const rr=4+(1-p.a)*12;
-      c.fillStyle=`rgba(150,185,185,${(.07*p.a).toFixed(3)})`;c.beginPath();c.arc(p.x,p.y,rr,0,Math.PI*2);c.fill();}
     for(const f of this.flames)this.drawFlame(f,t);
     c.restore();
     if(this.mode==='screen'&&this.dataset.tone!=='light')for(const e of this.eyes)if(e.open>.01)this.drawEyes(e);

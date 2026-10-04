@@ -121,7 +121,7 @@ function viewBoard(){
 function incense(){
   const p=Math.min(1,Math.max(0,S.t/9000)),cur=Math.min(4,Math.floor(S.t/1800));
   return '<div class="xiang" style="--p:'+p.toFixed(4)+'" role="img" aria-label="进度 '+Math.round(p*100)+'%"><div class="stick"><i class="ash"></i></div>'
-    +'<i class="ember"><b class="smoke"></b><b class="smoke s2"></b></i>'
+    +'<i class="ember"></i>'
     +'<div class="watch">'+['一更','二更','三更','四更','五更'].map((w,i)=>'<span class="'+(i===cur?'on':i<cur?'past':'')+'">'+w+'</span>').join('')+'</div></div>';
 }
 function fitStage(){
@@ -577,19 +577,10 @@ function loginError(msg){
   syncBoxes(true);const g=$('#amb ghost-ambience');if(g)g.setAttribute('data-err',String(++errKey));document.body.classList.add('lgerr');clearTimeout(lgerrT);lgerrT=setTimeout(()=>document.body.classList.remove('lgerr'),2800);
   buzz([70,50,70]);shakeEl($('#lgcard'),'eshake');
 }
-const SEAL_PATH='M18 4 H132 Q146 4 146 18 V132 Q146 146 132 146 H18 Q4 146 4 132 V18 Q4 4 18 4 Z M23 13 Q15 13 15 22 V127 Q15 136 23 136 H130 Q138 136 138 128 V21 Q138 12 130 12 Z';
-const SEAL_STROKES=['M32 42 Q46 52 38 68','M30 90 Q48 98 38 118','M62 44 Q66 32 84 30 Q96 29 102 22','M62 44 V124','M90 40 V118','M66 56 H120','M66 76 H116','M66 96 H116','M62 122 H122'];
-function sealSvg(id){const ink='#bd3a2c';
-  return '<svg viewBox="0 0 150 150" aria-hidden="true"><defs><filter id="'+id+'" x="-10%" y="-10%" width="120%" height="120%"><feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="2" seed="4" result="w"/>'
-    +'<feDisplacementMap in="SourceGraphic" in2="w" scale="5" xChannelSelector="R" yChannelSelector="G"/></filter></defs><g filter="url(#'+id+')"><path fill="'+ink+'" fill-rule="evenodd" d="'+SEAL_PATH+'"/>'
-    +'<rect x="94" y="1" width="16" height="13" fill="#0c1214"/><rect x="1" y="101" width="15" height="12" fill="#0c1214"/>'
-    +'<g fill="none" stroke="'+ink+'" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">'+SEAL_STROKES.map(d=>'<path d="'+d+'"/>').join('')+'</g></g></svg>';}
 function showSeal(){
   const c=$('#lgcard');if(!c)return;
   const chars=[...'验明正身·准入阴司'].map((ch,i)=>'<span style="animation-delay:'+(1.3+i*.12).toFixed(2)+'s">'+ch+'</span>').join('');
-  c.insertAdjacentHTML('beforeend','<div class="okv"><div class="seal"><div class="rp"></div><div class="rp b"></div><div class="sl"><div class="bl">'+sealSvg('sealB')+'</div>'+sealSvg('sealA')
-    +'<svg viewBox="0 0 150 150" style="pointer-events:none"><path class="drip" d="M48 145 q1.5 5 .5 9 q-1 5 .8 10" fill="none" stroke="#bd3a2c" stroke-width="1.6" stroke-linecap="round" opacity=".85"/>'
-    +'<path class="drip b" d="M108 145 q-1 4 0 7 q1 3 -.4 6" fill="none" stroke="#bd3a2c" stroke-width="1.2" stroke-linecap="round" opacity=".7"/></svg></div></div>'
+  c.insertAdjacentHTML('beforeend','<div class="okv"><div class="seal"><div class="sl"><img src="img/seal-zhun.png" alt="准" width="1200" height="960"></div></div>'
     +'<div class="sealtx">'+chars+'</div></div>');
   c.classList.add('shake');setTimeout(()=>buzz(110),600); // the seal lands at 0.6 s
   const g=$('#amb ghost-ambience');if(g)g.setAttribute('data-ok','1');
