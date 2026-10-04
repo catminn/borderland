@@ -559,7 +559,8 @@ body.login .notice{display:none}
 @media (min-width:720px){
   body:not(.login):not(.screen){height:100vh;overflow:hidden}
   body:not(.login):not(.screen) .wrap{height:100vh;padding:14px 28px 0;gap:12px}
-  body:not(.login):not(.screen) #view{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding-bottom:20px;scrollbar-gutter:stable}
+  body:not(.login):not(.screen) #view{flex:0 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;padding-bottom:20px;scrollbar-gutter:stable}
+  body:not(.login):not(.screen) .wrap{justify-content:center}
   header.top{padding-bottom:10px}
   .logo{font-size:26px}
   .page,.cols2,.cols-dealer,.pubcols,.pcols,.stack{gap:14px}
