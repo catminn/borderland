@@ -867,27 +867,3 @@ button.sk.on{background:var(--accent);border-color:var(--accent);color:var(--acc
   .wen .w-num{font-size:20px}
   .wen .w-seal{width:68px;transform:translate(6px,0) rotate(-4deg)}
 }
-
-/* ===== 装饰层 #decor（登录页、大屏、深色全屏页）：装饰区的氛围，永远在面板下面；面板不透明，功能区不受影响 ===== */
-#decor{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;display:none}
-body.login #decor,body.board #decor,:root[data-theme="dark"] body.fullamb #decor{display:block}
-#decor img{display:block;-webkit-user-drag:none;user-select:none}
-/* 底部彼岸花丛 */
-#decor .dc-lilies{position:absolute;left:0;right:0;bottom:0;display:flex;overflow:hidden;height:clamp(110px,18vh,190px)}
-#decor .dc-lilies img{height:100%;width:auto;flex:none}
-#decor .dc-lilies img.fl{transform:scaleX(-1)}
-/* 淡雾（只在登录页）：贴着地面，向上渐隐，慢慢左右漂 */
-#decor .dc-fog{position:absolute;left:0;right:0;bottom:0;height:46%;overflow:hidden;opacity:.17;-webkit-mask-image:linear-gradient(to top,#000 30%,transparent 100%);mask-image:linear-gradient(to top,#000 30%,transparent 100%)}
-#decor .dc-fog img{position:absolute;left:-15%;bottom:-6%;width:130%;height:auto;animation:dcfog 80s ease-in-out infinite alternate}
-@keyframes dcfog{from{transform:translateX(-5%)}to{transform:translateX(5%)}}
-/* 骨花（只在登录页）：从右下的花丛里长出来，茎在画面外 */
-#decor .dc-bone{position:absolute;right:-2vw;bottom:-5vh;width:clamp(220px,25vw,410px);height:auto;opacity:.93;filter:drop-shadow(0 0 16px rgba(160,255,230,.16))}
-/* 功能页（大屏、深色全屏页）：只留一条低矮的花丛，不要雾和骨花 */
-body:not(.login) #decor .dc-fog,body:not(.login) #decor .dc-bone{display:none}
-body:not(.login) #decor .dc-lilies{height:clamp(44px,7vh,76px);opacity:.7}
-@media (max-width:719px){
-  #decor .dc-lilies{height:clamp(84px,14vh,140px)}
-  #decor .dc-bone{width:46vw;right:-6vw;bottom:-2vh}
-  body:not(.login) #decor .dc-lilies{height:clamp(40px,6vh,60px)}
-}
-@media (prefers-reduced-motion:reduce){#decor .dc-fog img{animation:none}}
