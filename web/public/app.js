@@ -553,7 +553,7 @@ function render(){
 }
 
 // ---------- login ----------
-let entering=false,errKey=0;
+let entering=false,errKey=0,lgerrT=0;
 function renderLogin(){
   $('#tabs').hidden=true;$('#modal').innerHTML='';
   if($('#loginf'))return;
@@ -574,7 +574,7 @@ function loginMsg(msg){const e=$('#lgmsg');if(!e)return;e.classList.toggle('err'
 function loginError(msg){
   if(!$('#lgmsg'))return;
   loginMsg(msg==='PIN 不正确'?'PIN 不正确，请核对名牌卡或邮件':msg);
-  syncBoxes(true);const g=$('#amb ghost-ambience');if(g)g.setAttribute('data-err',String(++errKey));
+  syncBoxes(true);const g=$('#amb ghost-ambience');if(g)g.setAttribute('data-err',String(++errKey));document.body.classList.add('lgerr');clearTimeout(lgerrT);lgerrT=setTimeout(()=>document.body.classList.remove('lgerr'),2800);
   buzz([70,50,70]);shakeEl($('#lgcard'),'eshake');
 }
 const SEAL_PATH='M18 4 H132 Q146 4 146 18 V132 Q146 146 132 146 H18 Q4 146 4 132 V18 Q4 4 18 4 Z M23 13 Q15 13 15 22 V127 Q15 136 23 136 H130 Q138 136 138 128 V21 Q138 12 130 12 Z';
