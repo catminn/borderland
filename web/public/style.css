@@ -442,7 +442,7 @@ body.login #scene{display:block;position:absolute;left:0;top:0;width:100%;height
 @media (min-width:720px){.lg{zoom:1.25}}
 @keyframes fogDrift{0%,100%{transform:translateX(0)}50%{transform:translateX(-3.5%)}}
 @keyframes fogBreath{0%,100%{opacity:var(--o)}50%{opacity:calc(var(--o)*.6)}}
-@media (max-width:719px){#scene .doll{height:27vh;height:27dvh;bottom:0}#scene .doll.l{left:3vw}#scene .doll.r{right:3vw}#scene .fogb{height:42%}#scene .fogf{bottom:-40px;height:180px;--o:.45}}
+@media (max-width:719px){#scene .doll{height:46vh;height:46dvh;bottom:-20vh;bottom:-20dvh}#scene .doll.l{left:-9vw}#scene .doll.r{right:-9vw}#scene .fogb{left:-35%;right:-35%;height:58%}#scene .fogf{left:-35%;right:-35%;bottom:-30px;height:250px;--o:.5}}
 body.login #amb{position:fixed;inset:0;height:auto}
 body.login header.top,body.login nav.pages{display:none}
 body.login .wrap{min-height:100vh;justify-content:center;align-items:center;padding:20px}
