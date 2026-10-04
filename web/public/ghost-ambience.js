@@ -142,7 +142,8 @@ class GhostAmbience extends HTMLElement{
         if(c2.length&&this.dataset.free==='1'){const e=c2[0],k=e.s*(this.mob?.82:1)*36,T=Math.min(h-40,+(this.dataset.top||0))+30;let ok=false;
           for(let i=0;i<20&&!ok;i++){const x=rnd(.06,.94)*w,y=rnd(T,h-30);if(this.isFree(x,y)&&this.isFree(x-k,y)&&this.isFree(x+k,y)&&this.isFree(x-k*.5,y-9)&&this.isFree(x+k*.5,y+9)){e.nx=x/w;e.ny=y/h;ok=true;}}
           if(!ok)c2.length=0;}
-        if(c2.length){const e=c2[this.dataset.free==='1'?0:Math.floor(Math.random()*c2.length)];e.state='opening';e.t=0;e.hold=rnd(1.6,3.4);e.blink=rnd(.5,e.hold-.4);e.lx=0;e.ly=0;}
+        if(c2.length){let e;if(this.target&&active){const px=this.target.x;const s2=c2.slice().sort((p,q)=>Math.abs(p.nx*w-px)-Math.abs(q.nx*w-px));e=s2[Math.floor(Math.random()*Math.min(3,s2.length))];} // eyes wake up on the side the pointer is on
+          else e=c2[this.dataset.free==='1'?0:Math.floor(Math.random()*c2.length)];e.state='opening';e.t=0;e.hold=rnd(1.6,3.4);e.blink=rnd(.5,e.hold-.4);e.lx=0;e.ly=0;}
         this.nextSpawn=rnd(2.6,5.5)/(1+this.len*.3)/(active?3:1);}
       for(const e of this.eyes){
         if(e.state==='opening'){e.open+=dt;if(e.open>=1){e.open=1;e.state='open';e.t=0;}}

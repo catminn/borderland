@@ -436,9 +436,10 @@ body.login #scene{display:block;position:absolute;left:0;top:0;width:100%;height
 #scene .fogb img,#scene .fogf img{width:100%;height:100%;object-fit:cover;mix-blend-mode:screen;-webkit-mask-image:linear-gradient(to top,#000 30%,transparent);mask-image:linear-gradient(to top,#000 30%,transparent)}
 #scene .fogb img{object-position:60% 60%;filter:brightness(.55) saturate(.9);animation:fogDrift 30s ease-in-out infinite reverse}
 #scene .fogf img{object-position:50% 70%;filter:brightness(.7);animation:fogDrift 24s ease-in-out infinite}
-#scene .doll{position:absolute;bottom:10px;height:min(69vh,calc(44vw*1.5));width:auto;mix-blend-mode:lighten;filter:brightness(.82) saturate(.9);-webkit-mask-image:linear-gradient(to bottom,#000 72%,transparent 96%);mask-image:linear-gradient(to bottom,#000 72%,transparent 96%)}
-#scene .doll.l{left:5vw}
-#scene .doll.r{right:5vw}
+#scene .doll{position:absolute;bottom:10px;height:min(52vh,calc(34vw*1.5));width:auto;mix-blend-mode:lighten;filter:brightness(.82) saturate(.9);-webkit-mask-image:linear-gradient(to bottom,#000 72%,transparent 96%);mask-image:linear-gradient(to bottom,#000 72%,transparent 96%)}
+#scene .doll.l{left:7vw}
+#scene .doll.r{right:7vw}
+@media (min-width:720px){.lg{zoom:1.25}}
 @keyframes fogDrift{0%,100%{transform:translateX(0)}50%{transform:translateX(-3.5%)}}
 @keyframes fogBreath{0%,100%{opacity:var(--o)}50%{opacity:calc(var(--o)*.6)}}
 @media (max-width:719px){#scene .doll{height:42vh;bottom:-14vh;-webkit-mask-image:none;mask-image:none;filter:brightness(.8) saturate(.9)}#scene .doll.l{left:-15vw}#scene .doll.r{right:-15vw}#scene .fogb{height:42%}#scene .fogf{bottom:-40px;height:180px;--o:.45}}
