@@ -882,5 +882,14 @@ button.sk.on{background:var(--accent);border-color:var(--accent);color:var(--acc
   .wen .w-seal{width:68px;transform:translate(6px,0) rotate(-4deg)}
 }
 
-/* phone login: fit the visible area (Safari toolbars included) — card and dolls sit high enough to be fully seen */
-@media (max-width:719px){body.login #scene{height:100vh;height:100dvh}body.login{overflow:hidden}body.login .wrap{min-height:100vh;min-height:100dvh;justify-content:flex-start;padding-top:0}body.login #view{margin-top:17vh;margin-top:17dvh}}
+/* phone login: the page scrolls; the scene stretches over the whole page, so the dolls are shown in full at the bottom */
+@media (max-width:719px){
+  body.login{position:relative;min-height:100vh;overflow-x:hidden;overflow-y:auto}
+  body.login #scene{height:auto;left:0;right:0;top:0;bottom:0}
+  body.login .wrap{min-height:100vh;justify-content:flex-start;padding-top:0;padding-bottom:calc(46vw*1.5 + 24px)}
+  body.login #view{margin-top:15vh}
+  #scene .doll{width:46vw;height:auto;bottom:6px}
+  #scene .doll.l{left:2vw}#scene .doll.r{right:2vw}
+  #scene .fogb{left:-35%;right:-35%;height:min(75%,640px)}
+  #scene .fogf{left:-35%;right:-35%;bottom:-30px;height:250px}
+}
