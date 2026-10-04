@@ -161,7 +161,9 @@ class GhostAmbience extends HTMLElement{
         else if(e.state==='open'){e.t+=dt;if(this.target){const dist=Math.hypot(e.nx*w-this.target.x,e.ny*h-this.target.y);e.near=dist<R;
           if(e.near){e.hold=Math.max(e.hold,e.t+1.5);e.dw+=dt;} // the pointer is close: keep staring, and squint the longer it stays
           else{e.dw=Math.max(0,e.dw-dt*2);if(active&&dist>w*.45&&!e.far){e.far=1;e.hold=Math.min(e.hold,e.t+.5);}}}
-        else{e.near=false;e.dw=0;}let b=e.t-e.blink;if(b>.2){e.blink=e.t+rnd(2.2,4.5);b=-1;}e.open=b>0&&b<.2?Math.abs(b-.1)/.1:1;if(e.t>e.hold)e.state='closing';}
+        else{e.near=false;e.dw=0;}
+        if(this.len>0&&e.sq>.1)e.hold=Math.max(e.hold,e.t+1.5); // typing a PIN: eyes that are squinting keep watching
+        let b=e.t-e.blink;if(b>.2){e.blink=e.t+rnd(2.2,4.5);b=-1;}e.open=b>0&&b<.2?Math.abs(b-.1)/.1:1;if(e.t>e.hold)e.state='closing';}
         else if(e.state==='closing'||e.state==='stare'){e.open-=dt;if(e.open<=0){e.open=0;e.state='closed';}}
       }
     }
@@ -225,7 +227,7 @@ class GhostAmbience extends HTMLElement{
       let dc=1e9;for(const g of EYE_GAZE){const d=((g[0]-gx)/EYE_GC[2])**2+((g[1]-gy)/EYE_GC[3])**2;if(d<b){b=d;i=g[2];}if(g[2]===e.gi)dc=d;}
       if(dc<b+.04)i=e.gi;e.gi=i;}
     c.save();c.globalAlpha=Math.min(1,e.open*3)*.95;
-    c.drawImage(A.img,(i%9)*A.fw,Math.floor(i/9)*A.fh,A.fw,A.fh,x+(e.ang>.5?0:e.lx*2.5*k),y+dh*(1-sy)/2+(e.ang>.5?0:e.ly*3*k),dw,dh*sy);
+    c.drawImage(A.img,(i%9)*A.fw,Math.floor(i/9)*A.fh,A.fw,A.fh,x+(e.ang>.5?0:e.lx*(e.sq>.04?5:2.5)*k),y+dh*(1-sy)/2+(e.ang>.5?0:e.ly*(e.sq>.04?5:3)*k),dw,dh*sy);
     c.restore();
   }
   drawStatic(){if(!this.flames)return;const c=this.ctx;c.clearRect(0,0,this.w,this.h);(this.paper||[]).forEach(p=>this.drawPaper(p,0));this.flames.forEach(f=>{f.a=this.okMode?0:1;f.dip=0;f.lean=0;this.drawFlame(f,0);});}
