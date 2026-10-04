@@ -442,7 +442,7 @@ body.login #scene{display:block;position:fixed;inset:0;overflow:hidden;pointer-e
 @media (min-width:720px){.lg{zoom:1.25}}
 @keyframes fogDrift{0%,100%{transform:translateX(0)}50%{transform:translateX(-3.5%)}}
 @keyframes fogBreath{0%,100%{opacity:var(--o)}50%{opacity:calc(var(--o)*.6)}}
-@media (max-width:719px){#scene .doll{height:clamp(140px,32vh,260px);height:clamp(140px,32dvh,260px);bottom:0}#scene .doll.l{left:-3vw}#scene .doll.r{right:-3vw}#scene .fogb{left:-35%;right:-35%;height:58%}#scene .fogf{left:-35%;right:-35%;bottom:-30px;height:250px;--o:.5}}
+@media (max-width:719px){#scene .doll{height:46vh;height:46dvh;bottom:-20vh;bottom:-20dvh}#scene .doll.l{left:-9vw}#scene .doll.r{right:-9vw}#scene .fogb{left:-35%;right:-35%;height:58%}#scene .fogf{left:-35%;right:-35%;bottom:-30px;height:250px;--o:.5}}
 body.login #amb{position:fixed;inset:0;height:auto}
 body.login header.top,body.login nav.pages{display:none}
 body.login .wrap{min-height:100vh;min-height:100dvh;justify-content:center;align-items:center;padding:20px}
@@ -882,9 +882,5 @@ button.sk.on{background:var(--accent);border-color:var(--accent);color:var(--acc
   .wen .w-seal{width:68px;transform:translate(6px,0) rotate(-4deg)}
 }
 
-/* Use one viewport height for the phone shell; allow scrolling on short screens or with the keyboard open. */
-@media (max-width:719px){
-  body.login{overflow-x:hidden;overflow-y:auto}
-  body.login .wrap{justify-content:flex-start;padding: max(20px,env(safe-area-inset-top)) max(20px,env(safe-area-inset-right)) max(20px,env(safe-area-inset-bottom)) max(20px,env(safe-area-inset-left))}
-  body.login #view{width:100%;max-width:400px;margin-top:clamp(0px,8vh,64px);margin-top:clamp(0px,8dvh,64px)}
-}
+/* phone login: keep the original composition while the fixed scene covers the visible area */
+@media(max-width:719px){body.login{overflow:hidden}body.login .wrap{justify-content:flex-start;padding-top:0}body.login #view{margin-top:17vh;margin-top:17dvh}}
