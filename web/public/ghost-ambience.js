@@ -9,6 +9,8 @@ const EYE_D=[[.082,.085,1.1],[.26,.061,.7],[.463,.11,.8],[.735,.053,.9],[.919,.1
 const EYE_M=[[.12,.055,.8],[.5,.04,.6],[.88,.06,.85],[.28,.115,.75],[.74,.12,.7],[.5,.145,.55]];
 
 const EYE_SQLR=[[-0.176,87],[-0.127,88],[-0.09,89],[-0.028,90],[0.02,91],[0.05,92],[0.094,93],[0.147,94],[0.193,95],[0.243,96]]; // squinted eyes looking left..right: [pupil x, frame]
+const FL={fw:80,fh:202,cols:12,ok:false,img:new Image()};FL.img.onload=()=>{FL.ok=true;};FL.img.src='img/flames.webp'; // 3 ghost-flame forms (40-frame loops) + their matching dissolve clips
+const FL_DIS_BASE=[120,134,158],FL_DIS_N=[14,24,24];
 const EYE_GAZE=[[-0.019,0.152,21],[0.046,-0.104,22],[-0.228,0.081,23],[0.161,0.158,24],[0.032,0.027,25],[-0.144,0.162,26],[-0.107,0.066,27],[0.11,0.085,28],[0.069,0.183,29],[-0.048,0.23,30],[-0.042,-0.019,31],[-0.028,0.086,32],[0.041,0.1,33],[-0.076,0.121,34],[-0.091,0.189,35],[-0.037,0.038,36],[0.001,0.208,37],[-0.185,0.13,38],[-0.183,0.056,39],[0.072,0.137,40],[-0.126,0.117,41],[-0.04,0.189,42],[0.115,0.149,43],[0.14,0.193,44],[0.003,0.0,45],[-0.068,0.087,46],[-0.069,0.156,47],[-0.014,0.119,48],[0.032,0.139,49],[-0.075,0.036,50],[-0.183,0.162,51],[0.093,0.056,52],[0.056,0.071,53],[-0.132,0.045,54],[-0.007,0.064,55],[0.099,0.193,56],[-0.012,0.179,57],[0.016,0.115,58],[0.154,0.133,59],[-0.05,0.137,60]];const EYE_GC=[-0.021,0.144,0.194,0.168]; // gaze table: [pupil x, pupil y, frame] + centre/half-range
 const EYE_ATLAS={fw:256,fh:119,ok:false,img:new Image()};EYE_ATLAS.img.onload=()=>{EYE_ATLAS.ok=true;};EYE_ATLAS.img.src='img/eyes.webp';
 
@@ -89,9 +91,9 @@ class GhostAmbience extends HTMLElement{
     const login=this.mode!=='page';
     if(this.light){this.flames=[];this.eyes=[];this.fog=[];
       this.paper=Array.from({length:this.mode==='screen'?(this.mob?9:18):(this.mob?4:7)},()=>this.newPaper(rnd(-.1,1)));this.nextSpawn=9;return;}
-    const n=this.mode==='screen'?(this.mob?4:9):login?0:(this.mob?2:3);
+    const n=this.mode==='screen'?(this.mob?3:5):login?0:(this.mob?1:2);
     this.flames=Array.from({length:n},(_,i)=>{const z=rnd(.3,1),size=login?(this.mob?10+z*13:13+z*19):(this.mob?9+z*8:11+z*11);
-      return{...this.spot(),z,size,seed:rnd(0,100),bobA:rnd(5,13),bobS:rnd(.35,.7),swA:rnd(2,6),swS:rnd(.5,1.1),phase:'on',a:login?1:.9,timer:rnd(4,16),dip:0,lean:0,rise:this.mode==='page'?rnd(5,10):rnd(12,26),
+      return{...this.spot(),form:Math.floor(rnd(0,3)),ft:0,z,size,seed:rnd(0,100),bobA:rnd(5,13),bobS:rnd(.35,.7),swA:rnd(2,6),swS:rnd(.5,1.1),phase:'on',a:login?1:.9,timer:rnd(4,16),dip:0,lean:0,rise:this.mode==='page'?rnd(5,10):rnd(12,26),
         trail:login&&i<2?[]:null,trailT:0};}).sort((a,b)=>a.z-b.z);
     const slots=login?(this.mob?EYE_M:EYE_D):[];
     this.eyes=slots.map(([x,y,s,r])=>({nx:x,ny:y,s:s?s*.85:rnd(.8,1.15),red:s?!!r:Math.random()<.35,ang:0,sq:0,dw:0,near:false,tilt:rnd(.06,.16),state:'closed',open:0,t:0,hold:0,blink:0,lx:0,ly:0}));
@@ -118,8 +120,8 @@ class GhostAmbience extends HTMLElement{
         if(f.phase==='off'||f.phase==='in'){f.a=0;}
         continue;}
       if(f.phase==='on'){f.timer-=dt;if(f.timer<0)f.phase='fade';}
-      else if(f.phase==='fade'){f.a-=dt*1.7;if(f.a<=0){f.a=0;f.phase='off';f.off=rnd(.8,2.6);}}
-      else if(f.phase==='off'){f.off-=dt;if(f.off<0){Object.assign(f,this.spot());if(f.trail)f.trail=[];f.phase='in';}}
+      else if(f.phase==='fade'){f.ft=(f.ft||0)+dt;if(f.ft>=FL_DIS_N[f.form]/8){f.ft=0;f.a=0;f.phase='off';f.off=rnd(.8,2.6);}} // plays this form's dissolve clip
+      else if(f.phase==='off'){f.off-=dt;if(f.off<0){Object.assign(f,this.spot());f.form=Math.floor(rnd(0,3));if(f.trail)f.trail=[];f.phase='in';}}
       else if(f.phase==='in'){f.a+=dt*.7;if(f.a>=1){f.a=1;f.phase='on';f.timer=rnd(6,18);}}
       if(Math.random()<dt*.18)f.dip=1;f.dip=Math.max(0,f.dip-dt*2.6);
       if(f.rise){f.y-=f.rise*dt; // drift upward; fade out near the top or when touching the big screen's content
@@ -178,25 +180,17 @@ class GhostAmbience extends HTMLElement{
       e.lx+=(dx/d-e.lx)*Math.min(1,dt*sp);e.ly+=(dy/d-e.ly)*Math.min(1,dt*sp);}
   }
   drawFlame(f,t){
-    const c=this.ctx,page=this.dataset.tone==='light'||(this.mode==='page'&&this.dataset.tone!=='dark'),br=(.78+.22*nz(t*2.2,f.seed))*(1-.75*f.dip);
+    if(!FL.ok)return;
+    const c=this.ctx,br=.88+.12*nz(t*2.2,f.seed),fadeOut=f.phase==='fade';
     const cx=f.x+Math.sin(t*f.swS+f.seed)*f.swA+nz(t*1.1,f.seed+3)*2,by=f.y+Math.sin(t*f.bobS+f.seed)*f.bobA;
-    const r=f.size*.36*(1+.08*nz(t*6,f.seed)),hg=f.size*1.55*(1+.16*nz(t*4.3,f.seed+5));
-    const tdx=nz(t*3.2,f.seed+9)*r*.7+(f.lean||0)*Math.sign(this.w/2-cx)*r*1.8;
-    f.cx=cx+tdx;f.tip=by-hg;
-    const A=f.a*(page?.6:(.45+.55*f.z))*br;if(A<=.01)return;
-    c.save();c.globalAlpha=A;
-    const hr=f.size*(page?1.6:2.1),halo=c.createRadialGradient(cx,by-hg*.25,0,cx,by-hg*.25,hr);
-    halo.addColorStop(0,page?'rgba(11,118,88,.18)':'rgba(80,220,195,.3)');halo.addColorStop(.5,page?'rgba(11,118,88,.06)':'rgba(60,160,210,.1)');halo.addColorStop(1,'rgba(40,120,200,0)');
-    c.fillStyle=halo;c.beginPath();c.arc(cx,by-hg*.25,hr,0,Math.PI*2);c.fill();
-    c.shadowColor=page?'rgba(11,118,88,.55)':'rgba(110,240,210,.9)';c.shadowBlur=page?8:10+f.z*8;
-    const wr=1+.12*nz(t*5.3,f.seed+11),wl=1+.12*nz(t*4.7,f.seed+17);
-    c.beginPath();c.moveTo(cx+tdx,by-hg);
-    c.bezierCurveTo(cx+r*1.15*wr,by-hg*.45,cx+r*1.05*wr,by+r*.25,cx,by+r);
-    c.bezierCurveTo(cx-r*1.05*wl,by+r*.25,cx-r*1.15*wl,by-hg*.45,cx+tdx,by-hg);
-    const g=c.createRadialGradient(cx,by-r*.15,0,cx,by-hg*.3,hg*.95);
-    if(page){g.addColorStop(0,'rgba(230,255,246,.95)');g.addColorStop(.25,'rgba(70,205,165,.8)');g.addColorStop(.6,'rgba(11,118,88,.5)');g.addColorStop(1,'rgba(20,80,130,0)');}
-    else{g.addColorStop(0,'rgba(255,255,255,.97)');g.addColorStop(.16,'rgba(205,255,240,.92)');g.addColorStop(.4,'rgba(80,225,190,.78)');g.addColorStop(.72,'rgba(40,115,205,.45)');g.addColorStop(1,'rgba(30,50,160,0)');}
-    c.fillStyle=g;c.fill();
+    const H=f.size*6.5,W=H*FL.fw/FL.fh,ax=.58,ay=.7;
+    let i;
+    if(fadeOut)i=FL_DIS_BASE[f.form]+Math.min(FL_DIS_N[f.form]-1,Math.floor((f.ft||0)*8));
+    else{const n=40,p=2*n-2,s=Math.floor((t+f.seed)*8)%p;i=f.form*40+(s<n?s:p-s);}
+    f.cx=cx;f.tip=by-ay*H;
+    const A=f.a*(.5+.5*f.z)*br*(1-.6*f.dip);if(A<=.01)return;
+    c.save();c.globalAlpha=Math.min(1,A);
+    c.drawImage(FL.img,(i%FL.cols)*FL.fw,Math.floor(i/FL.cols)*FL.fh,FL.fw,FL.fh,cx-ax*W,by-ay*H,W,H);
     c.restore();
   }
   drawPaper(p,t){const c=this.ctx,x=p.x*this.w,y=p.y*this.h,s=this.mode==='screen'?9+p.z*8:6+p.z*5;c.save();c.translate(x,y);c.rotate(p.rot);c.scale(.25+.75*Math.abs(Math.cos(t*.55+p.seed)),1);
