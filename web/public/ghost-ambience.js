@@ -216,8 +216,11 @@ class GhostAmbience extends HTMLElement{
     else{let b=1e9;i=21;const gx=EYE_GC[0]+e.lx*EYE_GC[2],gy=EYE_GC[1]+e.ly*EYE_GC[3];
       let dc=1e9;for(const g of EYE_GAZE){const d=((g[0]-gx)/EYE_GC[2])**2+((g[1]-gy)/EYE_GC[3])**2;if(d<b){b=d;i=g[2];}if(g[2]===e.gi)dc=d;}
       if(dc<b+.04)i=e.gi;e.gi=i;}
-    c.save();c.globalAlpha=Math.min(1,e.open*3)*.95;
-    c.drawImage(A.img,(i%9)*A.fw,Math.floor(i/9)*A.fh,A.fw,A.fh,x+(e.ang>.5?0:e.lx*2.5*k),y+dh*(1-sy)/2+(e.ang>.5?0:e.ly*3*k),dw,dh*sy);
+    const dx=x+(e.ang>.5?0:e.lx*2.5*k),dy=y+dh*(1-sy)/2+(e.ang>.5?0:e.ly*3*k),a=Math.min(1,e.open*3);
+    c.save();c.globalAlpha=a*(this.mode==='login'?1:.95);
+    if(this.mode==='login'){c.shadowColor=e.ang>.5?'rgba(255,90,70,.78)':'rgba(125,255,236,.72)';c.shadowBlur=this.mob?12:14;}
+    c.drawImage(A.img,(i%9)*A.fw,Math.floor(i/9)*A.fh,A.fw,A.fh,dx,dy,dw,dh*sy);
+    if(this.mode==='login'){c.globalCompositeOperation='screen';c.globalAlpha=a*.24;c.drawImage(A.img,(i%9)*A.fw,Math.floor(i/9)*A.fh,A.fw,A.fh,dx,dy,dw,dh*sy);}
     c.restore();
   }
   drawStatic(){if(!this.flames)return;const c=this.ctx;c.clearRect(0,0,this.w,this.h);(this.paper||[]).forEach(p=>this.drawPaper(p,0));this.flames.forEach(f=>{f.a=this.okMode?0:1;f.dip=0;f.lean=0;this.drawFlame(f,0);});}
