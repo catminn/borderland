@@ -868,43 +868,26 @@ button.sk.on{background:var(--accent);border-color:var(--accent);color:var(--acc
   .wen .w-seal{width:68px;transform:translate(6px,0) rotate(-4deg)}
 }
 
-/* ===== 装饰层 #decor（登录页、大屏、深色全屏页）：做足氛围，但永远在面板下面；面板不透明，功能区不受影响 ===== */
+/* ===== 装饰层 #decor（登录页、大屏、深色全屏页）：装饰区的氛围，永远在面板下面；面板不透明，功能区不受影响 ===== */
 #decor{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;display:none}
 body.login #decor,body.board #decor,:root[data-theme="dark"] body.fullamb #decor{display:block}
-#decor svg{position:absolute;display:block}
-#decor .dc-ground{left:0;right:0;bottom:0;width:100%;height:clamp(120px,27vh,300px)}
-#decor .dc-corner{top:0;width:clamp(150px,23vw,380px);height:auto;opacity:.9}
-#decor .dc-corner.l{left:0}#decor .dc-corner.r{right:0}
-#decor .dc-drape{right:clamp(54px,9vw,160px);top:0;height:clamp(180px,46vh,460px);width:auto;opacity:.82}
-/* 彼岸花 */
-#decor .ls{fill:none;stroke:#6e1a14;stroke-width:2;stroke-linecap:round}
-#decor .lp{fill:none;stroke:#d9382a;stroke-linecap:round;filter:drop-shadow(0 0 3px rgba(255,64,40,.55))}
-#decor .lt{fill:none;stroke:#ff7a5c;stroke-width:1;stroke-linecap:round;opacity:.9}
-#decor .ld{fill:#ffc4b3}
-/* 铜钱 */
-#decor .cn{fill:#17110b;stroke:#cbb68a;stroke-width:1.2;opacity:.62}
-#decor .cn2{fill:none;stroke:#cbb68a;stroke-width:.6;opacity:.35}
-#decor .ch{fill:#070605;stroke:#cbb68a;stroke-width:.8;opacity:.7}
-/* 红绸 */
-#decor .sk{fill:none;stroke:#8e1b16;stroke-linecap:round;opacity:.92}
-#decor .sk2{fill:none;stroke:rgba(255,150,130,.34);stroke-linecap:round;transform:translate(0,-3px)}
-/* 骨花藤蔓 */
-#decor .bn{stroke:#d9d2c0;stroke-linecap:round;fill:none;opacity:.92}
-#decor .bk{fill:#ece6d6;stroke:#6e6757;stroke-width:1}
-#decor .bp{fill:#ece6d6;stroke:#7d7664;stroke-width:1;stroke-linejoin:round}
-#decor .bc{fill:#3a3427;stroke:#b8b09b;stroke-width:1}
-#decor .bn,#decor .bk,#decor .bp,#decor .bc{filter:drop-shadow(0 0 4px rgba(190,255,235,.28))}
-/* 雾：两层缓慢横移 */
-#decor .dc-fog{position:absolute;left:-30%;width:160%;height:46%;bottom:0;background:radial-gradient(ellipse 40% 50% at 30% 60%,rgba(120,190,170,.13),transparent 70%),radial-gradient(ellipse 35% 45% at 72% 55%,rgba(120,170,190,.1),transparent 70%);animation:dcfog 70s linear infinite alternate}
-#decor .dc-fog.b{height:60%;opacity:.7;animation-duration:105s;animation-direction:alternate-reverse}
-@keyframes dcfog{from{transform:translateX(-6%)}to{transform:translateX(6%)}}
+#decor img{display:block;-webkit-user-drag:none;user-select:none}
+/* 底部彼岸花丛 */
+#decor .dc-lilies{position:absolute;left:0;right:0;bottom:0;display:flex;overflow:hidden;height:clamp(110px,18vh,190px)}
+#decor .dc-lilies img{height:100%;width:auto;flex:none}
+#decor .dc-lilies img.fl{transform:scaleX(-1)}
+/* 淡雾（只在登录页）：贴着地面，向上渐隐，慢慢左右漂 */
+#decor .dc-fog{position:absolute;left:0;right:0;bottom:0;height:46%;overflow:hidden;opacity:.17;-webkit-mask-image:linear-gradient(to top,#000 30%,transparent 100%);mask-image:linear-gradient(to top,#000 30%,transparent 100%)}
+#decor .dc-fog img{position:absolute;left:-15%;bottom:-6%;width:130%;height:auto;animation:dcfog 80s ease-in-out infinite alternate}
+@keyframes dcfog{from{transform:translateX(-5%)}to{transform:translateX(5%)}}
+/* 骨花（只在登录页）：从右下的花丛里长出来，茎在画面外 */
+#decor .dc-bone{position:absolute;right:-2vw;bottom:-5vh;width:clamp(220px,25vw,410px);height:auto;opacity:.93;filter:drop-shadow(0 0 16px rgba(160,255,230,.16))}
+/* 功能页（大屏、深色全屏页）：只留一条低矮的花丛，不要雾和骨花 */
+body:not(.login) #decor .dc-fog,body:not(.login) #decor .dc-bone{display:none}
+body:not(.login) #decor .dc-lilies{height:clamp(44px,7vh,76px);opacity:.7}
 @media (max-width:719px){
-  #decor .dc-corner{width:44vw}
-  #decor .dc-drape{height:30vh;right:6vw;opacity:.7}
-  #decor .dc-ground{height:clamp(90px,17vh,170px)}
+  #decor .dc-lilies{height:clamp(84px,14vh,140px)}
+  #decor .dc-bone{width:46vw;right:-6vw;bottom:-2vh}
+  body:not(.login) #decor .dc-lilies{height:clamp(40px,6vh,60px)}
 }
-@media (prefers-reduced-motion:reduce){#decor .dc-fog{animation:none}}
-/* 功能页（大屏、深色全屏页）：内容铺满，角落枝蔓和红绸只留给登录页；底部花丛压低，不挡内容 */
-body:not(.login) #decor .dc-corner,body:not(.login) #decor .dc-drape{display:none}
-body:not(.login) #decor .dc-ground{height:clamp(84px,13vh,150px);opacity:.8}
-@media (max-width:719px){body:not(.login) #decor .dc-ground{height:clamp(64px,10vh,100px)}}
+@media (prefers-reduced-motion:reduce){#decor .dc-fog img{animation:none}}
