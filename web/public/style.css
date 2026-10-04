@@ -427,6 +427,13 @@ body.screen .stage-wrap{border-radius:0}
 
 /* ---------- 登录 ---------- */
 body.login{background-color:#0a1012}
+#scene{display:none}
+body.login #scene{display:block;position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none}
+#scene .fog{position:absolute;left:0;bottom:0;width:100%;height:62%;object-fit:cover;object-position:bottom;mix-blend-mode:screen;opacity:.75;-webkit-mask-image:linear-gradient(transparent,#000 45%);mask-image:linear-gradient(transparent,#000 45%)}
+#scene .doll{position:absolute;bottom:-3vh;height:min(88vh,calc(46vw*1.5));width:auto;opacity:.95}
+#scene .doll.l{left:max(2vw,calc(50% - 780px))}
+#scene .doll.r{right:max(2vw,calc(50% - 780px))}
+@media (max-width:719px){#scene .doll{height:31vh;bottom:0;opacity:.95}#scene .doll.l{left:1vw}#scene .doll.r{right:1vw}#scene .fog{height:42%}}
 body.login #amb{position:fixed;inset:0;height:auto}
 body.login #amb{background:radial-gradient(ellipse at center,rgba(0,0,0,0) 40%,rgba(0,0,0,.74) 100%)}
 body.login header.top,body.login nav.pages{display:none}

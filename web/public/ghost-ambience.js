@@ -5,8 +5,8 @@ if(customElements.get('ghost-ambience'))return;
 const RM=window.matchMedia?matchMedia('(prefers-reduced-motion: reduce)'):{matches:false};
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const nz=(t,s)=>Math.sin(t*1.3+s)*.5+Math.sin(t*2.7+s*1.7)*.3+Math.sin(t*5.1+s*3.1)*.2;
-const EYE_D=[[.05,.1],[.95,.12],[.04,.48],[.96,.42],[.07,.88],[.93,.9],[.18,.05],[.82,.95],[.03,.28],[.97,.7]];
-const EYE_M=[[.15,.085],[.85,.1],[.14,.94],[.86,.955],[.5,.975]];
+const EYE_D=[[.06,.09],[.94,.11],[.2,.05],[.8,.06],[.36,.1],[.64,.085],[.5,.04]];
+const EYE_M=[[.15,.06],[.85,.075],[.5,.035]];
 
 class GhostAmbience extends HTMLElement{
   static get observedAttributes(){return['data-len','data-err','data-ok','data-keep','data-top','data-tone'];}
@@ -85,13 +85,13 @@ class GhostAmbience extends HTMLElement{
     const login=this.mode!=='page';
     if(this.light){this.flames=[];this.eyes=[];this.fog=[];
       this.paper=Array.from({length:this.mode==='screen'?(this.mob?9:18):(this.mob?4:7)},()=>this.newPaper(rnd(-.1,1)));this.nextSpawn=9;return;}
-    const n=this.mode==='screen'?(this.mob?4:9):login?9:(this.mob?2:3);
+    const n=this.mode==='screen'?(this.mob?4:9):login?0:(this.mob?2:3);
     this.flames=Array.from({length:n},(_,i)=>{const z=rnd(.3,1),size=login?(this.mob?10+z*13:13+z*19):(this.mob?9+z*8:11+z*11);
       return{...this.spot(),z,size,seed:rnd(0,100),bobA:rnd(5,13),bobS:rnd(.35,.7),swA:rnd(2,6),swS:rnd(.5,1.1),phase:'on',a:login?1:.9,timer:rnd(4,16),dip:0,lean:0,rise:this.mode==='page'?rnd(5,10):rnd(12,26),
         trail:login&&i<2?[]:null,trailT:0};}).sort((a,b)=>a.z-b.z);
     const slots=login?(this.mob?EYE_M:EYE_D):[];
     this.eyes=slots.map(([x,y])=>({nx:x,ny:y,s:rnd(.8,1.15),red:Math.random()<.35,tilt:rnd(.06,.16),state:'closed',open:0,t:0,hold:0,blink:0,lx:0,ly:0}));
-    this.fog=login?Array.from({length:this.mob?2:5},()=>({x:rnd(0,1),y:rnd(.84,1.02),rx:rnd(.25,.5),ry:rnd(40,90),sp:rnd(.006,.014),a:rnd(.05,.1)})):[];
+    this.fog=false?Array.from({length:this.mob?2:5},()=>({x:rnd(0,1),y:rnd(.84,1.02),rx:rnd(.25,.5),ry:rnd(40,90),sp:rnd(.006,.014),a:rnd(.05,.1)})):[];
     this.paper=[];
     this.nextSpawn=rnd(1.2,2.6);
   }
@@ -140,7 +140,7 @@ class GhostAmbience extends HTMLElement{
       if(this.nextSpawn<0&&openCount<maxOpen){const c=this.eyes.filter(e=>e.state==='closed');
         const c2=c.filter(e=>!this.inKeep(e.nx*w,e.ny*h,30));
         if(c2.length&&this.dataset.free==='1'){const e=c2[0],k=e.s*(this.mob?.82:1)*36,T=Math.min(h-40,+(this.dataset.top||0))+30;let ok=false;
-          for(let i=0;i<20&&!ok;i++){const x=rnd(.06,.94)*w,y=rnd(T,h-30);if(this.isFree(x,y)&&this.isFree(x-k,y)&&this.isFree(x+k,y)&&this.isFree(x-k*.5,y-9)&&this.isFree(x+k*.5,y+9)){e.nx=x/w;e.ny=y/h;ok=true;}}
+          for(let i=0;i<20&&!ok;i++){const x=rnd(.06,.94)*w,y=rnd(T,this.mode==='login'?Math.max(T+20,h*.2):h-30);if(this.isFree(x,y)&&this.isFree(x-k,y)&&this.isFree(x+k,y)&&this.isFree(x-k*.5,y-9)&&this.isFree(x+k*.5,y+9)){e.nx=x/w;e.ny=y/h;ok=true;}}
           if(!ok)c2.length=0;}
         if(c2.length){const e=c2[this.dataset.free==='1'?0:Math.floor(Math.random()*c2.length)];e.state='opening';e.t=0;e.hold=rnd(1.6,3.4);e.blink=rnd(.5,e.hold-.4);e.lx=0;e.ly=0;}
         this.nextSpawn=rnd(2.6,5.5)/(1+this.len*.3)/(active?3:1);}
