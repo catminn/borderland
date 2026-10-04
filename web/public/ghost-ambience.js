@@ -33,6 +33,10 @@ class GhostAmbience extends HTMLElement{
       this.onLeave=e=>{if(e.pointerType!=='touch')this.target=null;}; // a finger lifts off, but the eyes keep looking at where it was
       this.frame.addEventListener('pointermove',this.onMove);this.frame.addEventListener('pointerdown',this.onMove);this.frame.addEventListener('pointerleave',this.onLeave);
     }
+    if(this.mode!=='login'){ // a flame dissolves when the pointer passes over it, or a tap lands on it
+      this.onPtr=e=>{if(e.type==='pointermove'&&e.pointerType==='touch')return;const r=this.getBoundingClientRect();this.hit={x:e.clientX-r.left,y:e.clientY-r.top,tap:e.type==='pointerdown'};};
+      addEventListener('pointermove',this.onPtr,{passive:true});addEventListener('pointerdown',this.onPtr,{passive:true});
+    }
     this.reduced=RM.matches;
     this.resize();
     if(this.reduced)return;
@@ -43,7 +47,7 @@ class GhostAmbience extends HTMLElement{
       if(this.visible&&this.w>0&&this.flames&&!document.hidden){this.t+=dt;this.update(dt);this.draw();}};
     this.raf=requestAnimationFrame(this.loop);
   }
-  disconnectedCallback(){cancelAnimationFrame(this.raf);this.ro&&this.ro.disconnect();this.io&&this.io.disconnect();
+  disconnectedCallback(){removeEventListener('pointermove',this.onPtr);removeEventListener('pointerdown',this.onPtr);cancelAnimationFrame(this.raf);this.ro&&this.ro.disconnect();this.io&&this.io.disconnect();
     if(this.frame){this.frame.removeEventListener('pointermove',this.onMove);this.frame.removeEventListener('pointerdown',this.onMove);this.frame.removeEventListener('pointerleave',this.onLeave);}}
   attributeChangedCallback(n,o,v){
     if(!this.ctx||!this.flames)return;
@@ -95,7 +99,7 @@ class GhostAmbience extends HTMLElement{
     this.flames=Array.from({length:n},(_,i)=>{const z=rnd(.3,1),size=login?(this.mob?10+z*13:13+z*19):(this.mob?9+z*8:11+z*11);
       return{...this.spot(),form:Math.floor(rnd(0,3)),ft:0,z,size,seed:rnd(0,100),bobA:rnd(5,13),bobS:rnd(.35,.7),swA:rnd(2,6),swS:rnd(.5,1.1),phase:'on',a:login?1:.9,timer:rnd(4,16),dip:0,lean:0,rise:this.mode==='page'?rnd(5,10):rnd(12,26),
         trail:login&&i<2?[]:null,trailT:0};}).sort((a,b)=>a.z-b.z);
-    const slots=login?(this.mob?EYE_M:EYE_D):[];
+    const slots=this.mode==='login'?(this.mob?EYE_M:EYE_D):[]; // no eyes inside the app pages for now
     this.eyes=slots.map(([x,y,s,r])=>({nx:x,ny:y,s:s?s*.85:rnd(.8,1.15),red:s?!!r:Math.random()<.35,ang:0,sq:0,dw:0,near:false,tilt:rnd(.06,.16),state:'closed',open:0,t:0,hold:0,blink:0,lx:0,ly:0}));
     if(this.mode==='login'&&this.eyes.length&&this.dataset.ok!=='1'){const n0=this.mob?3:4;const pick=[];this.eyes.slice().sort(()=>Math.random()-.5).forEach(e=>{if(pick.length<n0&&!pick.some(o=>this.eyeHit(e,o)))pick.push(e);});pick.forEach(e=>{e.state='opening';e.open=-rnd(0,.45);e.t=0;e.hold=rnd(2.5,5);e.blink=rnd(.8,e.hold-.5);});}
     this.fog=false?Array.from({length:this.mob?2:5},()=>({x:rnd(0,1),y:rnd(.84,1.02),rx:rnd(.25,.5),ry:rnd(40,90),sp:rnd(.006,.014),a:rnd(.05,.1)})):[];
@@ -130,6 +134,8 @@ class GhostAmbience extends HTMLElement{
         if(f.phase==='on'&&(f.y-f.size<top||(this.mode==='screen'&&this.inKeep(f.x,f.y-f.size*1.5,0))))f.phase='fade';
         if(f.phase==='on'&&this.dataset.free==='1'&&(f.chk=(f.chk||rnd(0,.4))-dt)<0){f.chk=.4;if(!this.isFree(f.x,f.y-f.size))f.phase='fade';}}
     }
+    if(this.hit){const H=this.hit;this.hit=null;for(const f of this.flames){if(f.phase!=='on'&&f.phase!=='in')continue;const hs=f.size*6.5,fw=hs*FL.fw/FL.fh,fx=f.cx||f.x,top=f.tip||f.y-hs*.7,bot=f.y+hs*.2,pad=H.tap?18:0;
+      if(Math.abs(H.x-fx)<fw*.45+pad&&H.y>top-pad&&H.y<bot+pad){f.phase='fade';f.ft=0;}}}
     for(const f of this.flames)if(f.trail){f.trailT+=dt;if(f.trailT>.09&&f.a>.2){f.trailT=0;f.trail.push({x:f.cx||f.x,y:(f.tip||f.y),a:.9*f.a});if(f.trail.length>22)f.trail.shift();}
       for(const p of f.trail){p.y-=16*dt;p.x+=Math.sin(t*1.7+p.y*.05)*6*dt;p.a-=dt*.45;}f.trail=f.trail.filter(p=>p.a>0);}
     for(const p of this.paper){const sp=.5+.5*p.z,sw=Math.cos(t*p.sw+p.ph); // falling leaf: swings side to side, slows at the ends of each swing
