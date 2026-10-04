@@ -561,7 +561,7 @@ function renderLogin(){
     +'<form id="loginf" style="display:flex;flex-direction:column;gap:inherit"><label class="k" for="pin">输入 6 位 PIN</label>'
     +'<div class="boxes" id="boxes">'+'<div class="bx"></div>'.repeat(6)+'<input id="pin" inputmode="numeric" autocomplete="one-time-code" maxlength="6" aria-label="PIN"></div>'
     +'<button class="go">进入</button></form><div class="h" id="lgmsg" role="status">PIN 在你的名牌卡或邮件里</div></div>';
-  syncBoxes();$('#pin').focus();
+  syncBoxes();$('#pin').focus({preventScroll:true});
 }
 function syncBoxes(err){
   const v=$('#pin')?$('#pin').value:'',bx=document.querySelectorAll('#boxes .bx');

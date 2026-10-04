@@ -428,8 +428,8 @@ body.screen .stage-wrap{border-radius:0}
 /* ---------- 登录 ---------- */
 body.login{background-color:#0a1012}
 #scene{display:none}
-body.login{background:radial-gradient(ellipse 60% 55% at 50% 42%,#0d1e20 0%,#071011 55%,#030707 100%) fixed #030707}
-body.login #scene{display:block;position:absolute;left:0;top:0;width:100%;height:100vh;overflow:hidden;pointer-events:none}
+body.login{min-height:100vh;min-height:100dvh;background:radial-gradient(ellipse 60% 55% at 50% 42%,#0d1e20 0%,#071011 55%,#030707 100%) fixed #030707}
+body.login #scene{display:block;position:fixed;inset:0;overflow:hidden;pointer-events:none}
 #scene .glow{position:absolute;inset:0;background:radial-gradient(ellipse 30% 22% at 50% 100%,rgba(140,14,22,.28),transparent 70%),radial-gradient(ellipse 22% 40% at 17% 62%,rgba(60,170,150,.10),transparent 70%),radial-gradient(ellipse 22% 40% at 83% 62%,rgba(60,170,150,.10),transparent 70%)}
 #scene .fogb{position:absolute;left:-12%;right:-12%;bottom:0;height:52%;--o:.55;animation:fogBreath 14s ease-in-out infinite}
 #scene .fogf{position:absolute;left:-10%;right:-10%;bottom:-60px;height:260px;--o:.5;animation:fogBreath 11s ease-in-out infinite}
@@ -442,10 +442,10 @@ body.login #scene{display:block;position:absolute;left:0;top:0;width:100%;height
 @media (min-width:720px){.lg{zoom:1.25}}
 @keyframes fogDrift{0%,100%{transform:translateX(0)}50%{transform:translateX(-3.5%)}}
 @keyframes fogBreath{0%,100%{opacity:var(--o)}50%{opacity:calc(var(--o)*.6)}}
-@media (max-width:719px){#scene .doll{height:46vh;height:46dvh;bottom:-20vh;bottom:-20dvh}#scene .doll.l{left:-9vw}#scene .doll.r{right:-9vw}#scene .fogb{left:-35%;right:-35%;height:58%}#scene .fogf{left:-35%;right:-35%;bottom:-30px;height:250px;--o:.5}}
+@media (max-width:719px){#scene .doll{height:clamp(140px,32vh,260px);height:clamp(140px,32dvh,260px);bottom:0}#scene .doll.l{left:-3vw}#scene .doll.r{right:-3vw}#scene .fogb{left:-35%;right:-35%;height:58%}#scene .fogf{left:-35%;right:-35%;bottom:-30px;height:250px;--o:.5}}
 body.login #amb{position:fixed;inset:0;height:auto}
 body.login header.top,body.login nav.pages{display:none}
-body.login .wrap{min-height:100vh;justify-content:center;align-items:center;padding:20px}
+body.login .wrap{min-height:100vh;min-height:100dvh;justify-content:center;align-items:center;padding:20px}
 body.login .notice{display:none}
 .lg{position:relative;width:100%;max-width:400px;background:#101a1d;border:1px solid #22363c;border-radius:20px;box-shadow:0 30px 80px rgba(0,0,0,.5);padding:clamp(22px,4.5vh,36px) 24px clamp(18px,3.5vh,26px);display:flex;flex-direction:column;gap:clamp(10px,1.8vh,16px);color:#e6f0ea}
 .lg.shake{animation:shake .32s ease-out .6s 1}
@@ -882,5 +882,9 @@ button.sk.on{background:var(--accent);border-color:var(--accent);color:var(--acc
   .wen .w-seal{width:68px;transform:translate(6px,0) rotate(-4deg)}
 }
 
-/* phone login: fit the visible area (Safari toolbars included) — card and dolls sit high enough to be fully seen */
-@media (max-width:719px){body.login #scene{height:100vh;height:100dvh}body.login{overflow:hidden}body.login .wrap{min-height:100vh;min-height:100dvh;justify-content:flex-start;padding-top:0}body.login #view{margin-top:17vh;margin-top:17dvh}}
+/* Use one viewport height for the phone shell; allow scrolling on short screens or with the keyboard open. */
+@media (max-width:719px){
+  body.login{overflow-x:hidden;overflow-y:auto}
+  body.login .wrap{justify-content:flex-start;padding: max(20px,env(safe-area-inset-top)) max(20px,env(safe-area-inset-right)) max(20px,env(safe-area-inset-bottom)) max(20px,env(safe-area-inset-left))}
+  body.login #view{width:100%;max-width:400px;margin-top:clamp(0px,8vh,64px);margin-top:clamp(0px,8dvh,64px)}
+}
