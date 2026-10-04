@@ -8,6 +8,9 @@ const nz=(t,s)=>Math.sin(t*1.3+s)*.5+Math.sin(t*2.7+s*1.7)*.3+Math.sin(t*5.1+s*3
 const EYE_D=[[0.082,0.085,1.1,0],[0.260,0.061,0.7,1],[0.463,0.110,0.8,0],[0.735,0.053,0.9,0],[0.919,0.103,1.2,1],[0.971,0.481,0.7,0],[0.036,0.559,0.8,1],[0.324,0.906,0.75,0],[0.685,0.882,0.9,1],[0.835,0.280,0.6,0]]; // [x,y,size,red] from the 登录页 纸人版 layout
 const EYE_M=[[0.097,0.025,0.8,0],[0.482,0.019,0.6,1],[0.869,0.032,0.85,0],[0.487,0.833,0.7,1],[0.490,0.958,0.55,0]];
 
+const EYE_GAZE=[[0.002,-0.147,21],[-0.22,-0.129,22],[0.224,-0.149,23],[-0.004,-0.207,24],[-0.107,-0.14,25],[0.108,-0.162,26],[-0.03,-0.177,27],[-0.157,-0.122,28],[0.169,-0.162,29],[-0.058,-0.153,30],[0.055,-0.158,31],[-0.062,-0.13,32],[-0.052,-0.196,33],[0.016,-0.168,34],[0.015,-0.189,35],[-0.17,-0.137,36],[-0.192,-0.121,37],[0.202,-0.161,38],[-0.136,-0.136,39],[-0.026,-0.154,40],[-0.098,-0.155,41],[-0.023,-0.191,42],[-0.011,-0.166,43],[0.133,-0.156,44]];
+const EYE_ATLAS={fw:256,fh:119,ok:false,img:new Image()};EYE_ATLAS.img.onload=()=>{EYE_ATLAS.ok=true;};EYE_ATLAS.img.src='img/eyes.webp';
+
 class GhostAmbience extends HTMLElement{
   static get observedAttributes(){return['data-len','data-err','data-ok','data-keep','data-top','data-tone'];}
   // Light pages: paper money drifting down at a slant. Dark pages and login: ghost fire rising from below.
@@ -90,7 +93,7 @@ class GhostAmbience extends HTMLElement{
       return{...this.spot(),z,size,seed:rnd(0,100),bobA:rnd(5,13),bobS:rnd(.35,.7),swA:rnd(2,6),swS:rnd(.5,1.1),phase:'on',a:login?1:.9,timer:rnd(4,16),dip:0,lean:0,rise:this.mode==='page'?rnd(5,10):rnd(12,26),
         trail:login&&i<2?[]:null,trailT:0};}).sort((a,b)=>a.z-b.z);
     const slots=login?(this.mob?EYE_M:EYE_D):[];
-    this.eyes=slots.map(([x,y,s,r])=>({nx:x,ny:y,s:s?s*.85:rnd(.8,1.15),red:s?!!r:Math.random()<.35,tilt:rnd(.06,.16),state:'closed',open:0,t:0,hold:0,blink:0,lx:0,ly:0}));
+    this.eyes=slots.map(([x,y,s,r])=>({nx:x,ny:y,s:s?s*.85:rnd(.8,1.15),red:s?!!r:Math.random()<.35,ang:s&&r?1:0,tilt:rnd(.06,.16),state:'closed',open:0,t:0,hold:0,blink:0,lx:0,ly:0}));
     this.fog=false?Array.from({length:this.mob?2:5},()=>({x:rnd(0,1),y:rnd(.84,1.02),rx:rnd(.25,.5),ry:rnd(40,90),sp:rnd(.006,.014),a:rnd(.05,.1)})):[];
     this.paper=[];
     this.nextSpawn=rnd(1.2,2.6);
@@ -151,6 +154,7 @@ class GhostAmbience extends HTMLElement{
         else if(e.state==='closing'||e.state==='stare'){e.open-=dt;if(e.open<=0){e.open=0;e.state='closed';}}
       }
     }
+    for(const e of this.eyes){const want=this.errMode||e.red?1:0;e.ang+=(want-e.ang)*Math.min(1,dt*(want?2.2:4));if(Math.abs(want-e.ang)<.01)e.ang=want;}
     for(const e of this.eyes){if(e.open<=0)continue;const ex=e.nx*w,ey=e.ny*h,dx=gx-ex,dy=gy-ey,d=Math.hypot(dx,dy)||1,sp=this.okMode||this.errMode?6:4;
       e.lx+=(dx/d-e.lx)*Math.min(1,dt*sp);e.ly+=(dy/d-e.ly)*Math.min(1,dt*sp);}
   }
@@ -197,14 +201,18 @@ class GhostAmbience extends HTMLElement{
       if(k>=0){c.fillStyle=`rgba(0,0,0,${Math.min(.5,k/.3*.5).toFixed(3)})`;c.fillRect(0,0,w,h);}
       for(const e of this.eyes)if(e.open>.01)this.drawEyes(e);}
   }
+  // Eyes are frames from the generated cat-eye clips (img/eyes.webp: 9 blink frames closed->open, 12 cyan->red angry frames, 24 gaze frames).
   drawEyes(e){
-    const c=this.ctx,x=e.nx*this.w,y=e.ny*this.h,k=e.s*(this.mob?.82:1),ew=27*k,gap=18*k,eh=ew*.32*e.open;
-    const col=e.red?['#ff8a5c','#8a2414','rgba(255,90,50,.75)']:['#f6dc86','#a87a22','rgba(240,200,90,.75)'];
-    [-1,1].forEach(sd=>{const ex=x+sd*(gap/2+ew/2);c.save();c.translate(ex,y);c.rotate(sd*-e.tilt);
-      c.beginPath();c.moveTo(-ew/2,0);c.quadraticCurveTo(0,-eh*1.25,ew/2,0);c.quadraticCurveTo(0,eh*1.25,-ew/2,0);c.closePath();
-      c.shadowColor=col[2];c.shadowBlur=20;c.globalAlpha=Math.min(1,e.open*1.5)*.92;
-      const g=c.createRadialGradient(0,0,0,0,0,ew*.6);g.addColorStop(0,col[0]);g.addColorStop(1,col[1]);c.fillStyle=g;c.fill();
-      c.shadowBlur=0;c.clip();c.fillStyle='#120806';c.beginPath();c.ellipse(e.lx*ew*.38,e.ly*eh*.55,ew*.075,Math.max(.5,eh*.92),0,0,Math.PI*2);c.fill();c.restore();});
+    const A=EYE_ATLAS;if(!A.ok)return;
+    const c=this.ctx,k=e.s*(this.mob?.82:1),dw=150*k,dh=dw*A.fh/A.fw,x=e.nx*this.w-dw/2,y=e.ny*this.h-dh/2;let i,sy=1;
+    if(e.ang>.5){i=9+Math.round(e.ang*11);sy=Math.max(.05,e.open);}
+    else if(e.open<.98)i=Math.round(Math.max(0,e.open)*8);
+    else if(e.ang>.02)i=9+Math.round(e.ang*11);
+    else{let b=1e9;i=21;const gx=e.lx*.22,gy=-.165+e.ly*.04;
+      for(const g of EYE_GAZE){const d=(g[0]-gx)*(g[0]-gx)+(g[1]-gy)*(g[1]-gy)*4;if(d<b){b=d;i=g[2];}}}
+    c.save();c.globalAlpha=Math.min(1,e.open*3)*.95;
+    c.drawImage(A.img,(i%9)*A.fw,Math.floor(i/9)*A.fh,A.fw,A.fh,x,y+dh*(1-sy)/2,dw,dh*sy);
+    c.restore();
   }
   drawStatic(){if(!this.flames)return;const c=this.ctx;c.clearRect(0,0,this.w,this.h);(this.paper||[]).forEach(p=>this.drawPaper(p,0));this.flames.forEach(f=>{f.a=this.okMode?0:1;f.dip=0;f.lean=0;this.drawFlame(f,0);});}
 }
