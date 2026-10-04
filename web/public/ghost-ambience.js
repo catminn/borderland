@@ -5,8 +5,8 @@ if(customElements.get('ghost-ambience'))return;
 const RM=window.matchMedia?matchMedia('(prefers-reduced-motion: reduce)'):{matches:false};
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const nz=(t,s)=>Math.sin(t*1.3+s)*.5+Math.sin(t*2.7+s*1.7)*.3+Math.sin(t*5.1+s*3.1)*.2;
-const EYE_D=[[0.082,0.085,1.1,0],[0.260,0.061,0.7,1],[0.463,0.110,0.8,0],[0.735,0.053,0.9,0],[0.919,0.103,1.2,1],[0.971,0.481,0.7,0],[0.036,0.559,0.8,1],[0.324,0.906,0.75,0],[0.685,0.882,0.9,1],[0.835,0.280,0.6,0]]; // [x,y,size,red] from the 登录页 纸人版 layout
-const EYE_M=[[0.097,0.025,0.8,0],[0.482,0.019,0.6,1],[0.869,0.032,0.85,0],[0.487,0.833,0.7,1],[0.490,0.958,0.55,0]];
+const EYE_D=[[.082,.085,1.1],[.26,.061,.7],[.463,.11,.8],[.735,.053,.9],[.919,.103,1.2],[.971,.481,.7],[.835,.28,.6],[.3,.22,.8],[.64,.2,.7],[.04,.3,.8],[.17,.17,.7]]; // upper part of the page only (above the fog)
+const EYE_M=[[.1,.03,.8],[.5,.02,.6],[.88,.035,.85],[.3,.085,.75],[.7,.09,.7],[.5,.075,.55]];
 
 const EYE_GAZE=[[-0.019,0.152,21],[0.046,-0.104,22],[-0.228,0.081,23],[0.161,0.158,24],[0.032,0.027,25],[-0.144,0.162,26],[-0.107,0.066,27],[0.11,0.085,28],[0.069,0.183,29],[-0.048,0.23,30],[-0.042,-0.019,31],[-0.028,0.086,32],[0.041,0.1,33],[-0.076,0.121,34],[-0.091,0.189,35],[-0.037,0.038,36],[0.001,0.208,37],[-0.185,0.13,38],[-0.183,0.056,39],[0.072,0.137,40],[-0.126,0.117,41],[-0.04,0.189,42],[0.115,0.149,43],[0.14,0.193,44],[0.003,0.0,45],[-0.068,0.087,46],[-0.069,0.156,47],[-0.014,0.119,48],[0.032,0.139,49],[-0.075,0.036,50],[-0.183,0.162,51],[0.093,0.056,52],[0.056,0.071,53],[-0.132,0.045,54],[-0.007,0.064,55],[0.099,0.193,56],[-0.012,0.179,57],[0.016,0.115,58],[0.154,0.133,59],[-0.05,0.137,60]];const EYE_GC=[-0.021,0.144,0.194,0.168]; // gaze table: [pupil x, pupil y, frame] + centre/half-range
 const EYE_ATLAS={fw:256,fh:119,ok:false,img:new Image()};EYE_ATLAS.img.onload=()=>{EYE_ATLAS.ok=true;};EYE_ATLAS.img.src='img/eyes.webp';
@@ -26,7 +26,7 @@ class GhostAmbience extends HTMLElement{
     this.io=new IntersectionObserver(es=>{this.visible=es[0].isIntersecting;});this.io.observe(this);
     this.frame=this.closest('[data-ga-frame]');
     if(this.frame){
-      this.onMove=e=>{const r=this.getBoundingClientRect();this.target={x:e.clientX-r.left,y:e.clientY-r.top};this.lastMove=this.t;};
+      this.onMove=e=>{const r=this.getBoundingClientRect();this.target={x:e.clientX-r.left,y:e.clientY-r.top};this.lastMove=this.t;this.nextSpawn=Math.min(this.nextSpawn,.25);};
       this.onLeave=e=>{if(e.pointerType!=='touch')this.target=null;}; // a finger lifts off, but the eyes keep looking at where it was
       this.frame.addEventListener('pointermove',this.onMove);this.frame.addEventListener('pointerdown',this.onMove);this.frame.addEventListener('pointerleave',this.onLeave);
     }
@@ -93,10 +93,11 @@ class GhostAmbience extends HTMLElement{
       return{...this.spot(),z,size,seed:rnd(0,100),bobA:rnd(5,13),bobS:rnd(.35,.7),swA:rnd(2,6),swS:rnd(.5,1.1),phase:'on',a:login?1:.9,timer:rnd(4,16),dip:0,lean:0,rise:this.mode==='page'?rnd(5,10):rnd(12,26),
         trail:login&&i<2?[]:null,trailT:0};}).sort((a,b)=>a.z-b.z);
     const slots=login?(this.mob?EYE_M:EYE_D):[];
-    this.eyes=slots.map(([x,y,s,r])=>({nx:x,ny:y,s:s?s*.85:rnd(.8,1.15),red:s?!!r:Math.random()<.35,ang:0,tilt:rnd(.06,.16),state:'closed',open:0,t:0,hold:0,blink:0,lx:0,ly:0}));
+    this.eyes=slots.map(([x,y,s,r])=>({nx:x,ny:y,s:s?s*.85:rnd(.8,1.15),red:s?!!r:Math.random()<.35,ang:0,sq:0,tilt:rnd(.06,.16),state:'closed',open:0,t:0,hold:0,blink:0,lx:0,ly:0}));
+    if(login&&this.eyes.length&&this.dataset.ok!=='1'){const n0=this.mob?3:4;this.eyes.slice().sort(()=>Math.random()-.5).slice(0,n0).forEach(e=>{e.state='opening';e.open=-rnd(0,.45);e.t=0;e.hold=rnd(2.5,5);e.blink=rnd(.8,e.hold-.5);});}
     this.fog=false?Array.from({length:this.mob?2:5},()=>({x:rnd(0,1),y:rnd(.84,1.02),rx:rnd(.25,.5),ry:rnd(40,90),sp:rnd(.006,.014),a:rnd(.05,.1)})):[];
     this.paper=[];
-    this.nextSpawn=rnd(1.2,2.6);
+    this.nextSpawn=rnd(.9,1.8);
   }
   keepRect(){const k=(this.dataset.keep||'').split(',').map(Number);return k.length===4&&!k.some(isNaN)?k:null;}
   inKeep(x,y,pad=0){if(y<+(this.dataset.top||0)+pad)return true;const k=this.keepRect();if(!k)return false;
@@ -138,22 +139,23 @@ class GhostAmbience extends HTMLElement{
     }else{
       const openCount=this.eyes.filter(e=>e.state!=='closed').length;
       const active=this.lastMove!=null&&this.t-this.lastMove<2.5; // the pointer is moving: more eyes wake up to watch it
-      const maxOpen=Math.min(this.eyes.length,(this.mob?1:2)+Math.floor(this.len/(this.mob?3:2))+(active?(this.mob?2:3):0)+(this.dataset.more==='1'?2:0));
+      const maxOpen=Math.min(this.eyes.length,(this.mob?2:3)+Math.floor(this.len/(this.mob?3:2))+(active?(this.mob?3:5):0)+(this.dataset.more==='1'?2:0));
       this.nextSpawn-=dt;
       if(this.nextSpawn<0&&openCount<maxOpen){const c=this.eyes.filter(e=>e.state==='closed');
         const c2=c.filter(e=>!this.inKeep(e.nx*w,e.ny*h,30));
         if(c2.length&&this.dataset.free==='1'){const e=c2[0],k=e.s*(this.mob?.82:1)*36,T=Math.min(h-40,+(this.dataset.top||0))+30;let ok=false;
           for(let i=0;i<20&&!ok;i++){const x=rnd(.06,.94)*w,y=rnd(T,h-30);if(this.isFree(x,y)&&this.isFree(x-k,y)&&this.isFree(x+k,y)&&this.isFree(x-k*.5,y-9)&&this.isFree(x+k*.5,y+9)){e.nx=x/w;e.ny=y/h;ok=true;}}
           if(!ok)c2.length=0;}
-        if(c2.length){let e;if(this.target&&active){const px=this.target.x;const s2=c2.slice().sort((p,q)=>Math.abs(p.nx*w-px)-Math.abs(q.nx*w-px));e=s2[Math.floor(Math.random()*Math.min(3,s2.length))];} // eyes wake up on the side the pointer is on
-          else e=c2[this.dataset.free==='1'?0:Math.floor(Math.random()*c2.length)];e.state='opening';e.t=0;e.hold=rnd(1.6,3.4);e.blink=rnd(.5,e.hold-.4);e.lx=0;e.ly=0;}
-        this.nextSpawn=rnd(2.6,5.5)/(1+this.len*.3)/(active?3:1);}
+        if(c2.length){let e;if(this.target&&active){const px=this.target.x;const py=this.target.y,dd=p=>Math.hypot(p.nx*w-px,p.ny*h-py);const s2=c2.slice().sort((p,q)=>dd(p)-dd(q));e=s2[Math.floor(Math.random()*Math.min(2,s2.length))];} // eyes wake up on the side the pointer is on
+          else e=c2[this.dataset.free==='1'?0:Math.floor(Math.random()*c2.length)];e.state='opening';e.far=0;e.t=0;e.hold=rnd(2.2,4.2);e.blink=rnd(.5,e.hold-.4);e.lx=0;e.ly=0;}
+        this.nextSpawn=rnd(1.4,3.2)/(1+this.len*.3)/(active?4:1);}
       for(const e of this.eyes){
-        if(e.state==='opening'){e.open+=dt;if(e.open>=1){e.open=1;e.state='open';e.t=0;}}
-        else if(e.state==='open'){e.t+=dt;const b=e.t-e.blink;e.open=b>0&&b<.2?Math.abs(b-.1)/.1:1;if(e.t>e.hold)e.state='closing';}
+        if(e.state==='opening'){e.open+=dt*3;if(e.open>=1){e.open=1;e.state='open';e.t=0;}}
+        else if(e.state==='open'){e.t+=dt;if(active&&this.target){const dist=Math.hypot(e.nx*w-this.target.x,e.ny*h-this.target.y);if(dist<w*.3)e.hold=Math.max(e.hold,e.t+1.2);else if(dist>w*.45&&!e.far){e.far=1;e.hold=Math.min(e.hold,e.t+.5);}}const b=e.t-e.blink;e.open=b>0&&b<.2?Math.abs(b-.1)/.1:1;if(e.t>e.hold)e.state='closing';}
         else if(e.state==='closing'||e.state==='stare'){e.open-=dt;if(e.open<=0){e.open=0;e.state='closed';}}
       }
     }
+    for(const e of this.eyes){const tsq=this.errMode||this.mode!=='login'?0:Math.min(1,this.len?.25+.15*this.len:0);e.sq+=(tsq-e.sq)*Math.min(1,dt*(this.errMode?12:3));}
     for(const e of this.eyes){const want=this.errMode?1:0;e.ang+=(want-e.ang)*Math.min(1,dt*(want?2.2:4));if(Math.abs(want-e.ang)<.01)e.ang=want;}
     for(const e of this.eyes){if(e.open<=0)continue;const ex=e.nx*w,ey=e.ny*h,dx=gx-ex,dy=gy-ey,d=Math.hypot(dx,dy)||1,sp=this.okMode||this.errMode?6:4;
       e.lx+=(dx/d-e.lx)*Math.min(1,dt*sp);e.ly+=(dy/d-e.ly)*Math.min(1,dt*sp);}
@@ -206,6 +208,7 @@ class GhostAmbience extends HTMLElement{
     const A=EYE_ATLAS;if(!A.ok)return;
     const c=this.ctx,k=e.s*(this.mob?.82:1),dw=150*k,dh=dw*A.fh/A.fw,x=e.nx*this.w-dw/2,y=e.ny*this.h-dh/2;let i,sy=1;
     if(e.ang>.5){i=9+Math.round(e.ang*11);sy=Math.max(.05,e.open);}
+    else if(e.sq>.04){i=61+Math.round(e.sq*7);sy=e.open<.98?Math.max(.05,e.open):1;}
     else if(e.open<.98)i=Math.round(Math.max(0,e.open)*8);
     else if(e.ang>.02)i=9+Math.round(e.ang*11);
     else{let b=1e9;i=21;const gx=EYE_GC[0]+e.lx*EYE_GC[2],gy=EYE_GC[1]+e.ly*EYE_GC[3];
