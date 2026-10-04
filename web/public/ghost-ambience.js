@@ -168,6 +168,9 @@ class GhostAmbience extends HTMLElement{
         else if(e.state==='closing'||e.state==='stare'){e.open-=dt;if(e.open<=0){e.open=0;e.state='closed';}}
       }
     }
+    if(this.mode==='login'&&!this.okMode&&!this.errMode){this.nextGlitch=(this.nextGlitch==null?rnd(2,4):this.nextGlitch)-dt;
+      if(this.nextGlitch<0){const op=this.eyes.filter(e=>e.state==='open'&&e.open>.98&&!e.gl&&e.ang<.1);if(op.length)op[Math.floor(Math.random()*op.length)].gl={s:Math.random()<.45?'A':'B',t:0};this.nextGlitch=rnd(2.2,5);}}
+    for(const e of this.eyes){if(e.gl){e.gl.t+=dt;if(e.gl.t>(e.gl.s==='A'?.72:.36)||this.errMode||this.okMode)e.gl=null;}}
     for(const e of this.eyes){const tsq=this.errMode||this.mode!=='login'?0:Math.max(Math.min(1,this.len?.25+.15*this.len:0),e.near&&e.state==='open'?Math.min(.9,Math.max(0,((e.dw||0)-1.2)/3)):0);e.sq+=(tsq-e.sq)*Math.min(1,dt*(this.errMode?12:3));}
     for(const e of this.eyes){const want=this.errMode?1:0;e.ang+=(want-e.ang)*Math.min(1,dt*(want?2.2:4));if(Math.abs(want-e.ang)<.01)e.ang=want;}
     for(const e of this.eyes){if(e.open<=0)continue;const ex=e.nx*w,ey=e.ny*h,dx=gx-ex,dy=gy-ey,d=Math.hypot(dx,dy)||1,sp=this.okMode||this.errMode?6:4;
@@ -220,7 +223,9 @@ class GhostAmbience extends HTMLElement{
   drawEyes(e){
     const A=EYE_ATLAS;if(!A.ok)return;
     const c=this.ctx,k=e.s*(this.mob?.82:1),dw=150*k,dh=dw*A.fh/A.fw,x=e.nx*this.w-dw/2,y=e.ny*this.h-dh/2;let i,sy=1;
-    if(e.ang>.5){i=9+Math.round(e.ang*11);sy=Math.max(.05,e.open);}
+    let jx=0;
+    if(e.gl&&e.ang<.2&&e.open>.9){const G=e.gl;if(G.s==='A'){i=69+Math.min(13,Math.floor(G.t*20));}else{i=83+Math.min(3,Math.floor(G.t*12));jx=(Math.random()-.5)*6*k;}if(G.s==='A'&&G.t<.35)jx=(Math.random()-.5)*4*k;}
+    else if(e.ang>.5){i=9+Math.round(e.ang*11);sy=Math.max(.05,e.open);}
     else if(e.sq>.04){i=61+Math.round(e.sq*7);sy=e.open<.98?Math.max(.05,e.open):1;}
     else if(e.open<.98)i=Math.round(Math.max(0,e.open)*8);
     else if(e.ang>.02)i=9+Math.round(e.ang*11);
@@ -228,7 +233,7 @@ class GhostAmbience extends HTMLElement{
       let dc=1e9;for(const g of EYE_GAZE){const d=((g[0]-gx)/EYE_GC[2])**2+((g[1]-gy)/EYE_GC[3])**2;if(d<b){b=d;i=g[2];}if(g[2]===e.gi)dc=d;}
       if(dc<b+.04)i=e.gi;e.gi=i;}
     c.save();c.globalAlpha=Math.min(1,e.open*3)*.95;
-    c.drawImage(A.img,(i%9)*A.fw,Math.floor(i/9)*A.fh,A.fw,A.fh,x+(e.ang>.5?0:e.lx*(e.sq>.04?5:2.5)*k),y+dh*(1-sy)/2+(e.ang>.5?0:e.ly*(e.sq>.04?5:3)*k),dw,dh*sy);
+    c.drawImage(A.img,(i%9)*A.fw,Math.floor(i/9)*A.fh,A.fw,A.fh,x+jx+(e.ang>.5?0:e.lx*(e.sq>.04?5:2.5)*k),y+dh*(1-sy)/2+(e.ang>.5?0:e.ly*(e.sq>.04?5:3)*k),dw,dh*sy);
     c.restore();
   }
   drawStatic(){if(!this.flames)return;const c=this.ctx;c.clearRect(0,0,this.w,this.h);(this.paper||[]).forEach(p=>this.drawPaper(p,0));this.flames.forEach(f=>{f.a=this.okMode?0:1;f.dip=0;f.lean=0;this.drawFlame(f,0);});}
