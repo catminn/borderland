@@ -9,7 +9,7 @@ const EYE_D=[[.082,.085,1.1],[.26,.061,.7],[.463,.11,.8],[.735,.053,.9],[.919,.1
 const EYE_M=[[.12,.055,.8],[.5,.04,.6],[.88,.06,.85],[.28,.115,.75],[.74,.12,.7],[.5,.145,.55]];
 
 const EYE_SQLR=[[-0.176,87],[-0.127,88],[-0.09,89],[-0.028,90],[0.02,91],[0.05,92],[0.094,93],[0.147,94],[0.193,95],[0.243,96]]; // squinted eyes looking left..right: [pupil x, frame]
-const FL={fw:80,fh:202,cols:12,ok:false,img:new Image()};FL.img.onload=()=>{FL.ok=true;};FL.img.src='img/flames.webp?v=3'; // 3 ghost-flame forms (40-frame loops) + their matching dissolve clips
+const FL={fw:80,fh:202,cols:12,ok:false,img:new Image()};FL.img.onload=()=>{FL.ok=true;};FL.img.src='img/flames.webp?v=4'; // 3 ghost-flame forms (40-frame loops) + their matching dissolve clips
 const FL_DIS_BASE=[120,134,158],FL_DIS_N=[14,24,24];
 const EYE_GAZE=[[-0.019,0.152,21],[0.046,-0.104,22],[-0.228,0.081,23],[0.161,0.158,24],[0.032,0.027,25],[-0.144,0.162,26],[-0.107,0.066,27],[0.11,0.085,28],[0.069,0.183,29],[-0.048,0.23,30],[-0.042,-0.019,31],[-0.028,0.086,32],[0.041,0.1,33],[-0.076,0.121,34],[-0.091,0.189,35],[-0.037,0.038,36],[0.001,0.208,37],[-0.185,0.13,38],[-0.183,0.056,39],[0.072,0.137,40],[-0.126,0.117,41],[-0.04,0.189,42],[0.115,0.149,43],[0.14,0.193,44],[0.003,0.0,45],[-0.068,0.087,46],[-0.069,0.156,47],[-0.014,0.119,48],[0.032,0.139,49],[-0.075,0.036,50],[-0.183,0.162,51],[0.093,0.056,52],[0.056,0.071,53],[-0.132,0.045,54],[-0.007,0.064,55],[0.099,0.193,56],[-0.012,0.179,57],[0.016,0.115,58],[0.154,0.133,59],[-0.05,0.137,60]];const EYE_GC=[-0.021,0.144,0.194,0.168]; // gaze table: [pupil x, pupil y, frame] + centre/half-range
 const EYE_ATLAS={fw:256,fh:119,ok:false,img:new Image()};EYE_ATLAS.img.onload=()=>{EYE_ATLAS.ok=true;};EYE_ATLAS.img.src='img/eyes.webp';
@@ -76,11 +76,11 @@ class GhostAmbience extends HTMLElement{
     if(this.dataset.free!=='1')return true;
     const r=this.getBoundingClientRect();let n=document.elementFromPoint(r.left+x,r.top+y);if(!n)return true;
     for(;n&&n!==document.body&&n!==document.documentElement;n=n.parentElement){
-      if(/^(H1|H2|H3|P|SPAN|B|BUTTON|LABEL|INPUT|TEXTAREA|NAV|HEADER|TABLE|A)$/.test(n.tagName))return false;
+      if(/^(H1|H2|H3|P|SPAN|B|BUTTON|LABEL|INPUT|TEXTAREA|TABLE|A)$/.test(n.tagName))return false; // NAV / HEADER are only containers: their empty space is free too
       const bg=getComputedStyle(n).backgroundColor;if(bg&&bg!=='transparent'&&!/rgba\([^)]*,\s*0\)$/.test(bg))return false;}
     return true;}
-  freeSpot(){const w=this.w,h=this.h,T=Math.min(h-40,+(this.dataset.top||0))+20; // bottom-heavy, only where no panel covers it
-    for(let i=0;i<24;i++){const y=T+(h-T-10)*(1-Math.pow(Math.random(),2.2)),x=rnd(.03,.97)*w;if(this.isFree(x,y)&&this.isFree(x,y-24))return{x,y};}
+  freeSpot(){const w=this.w,h=this.h,T=Math.min(h-40,16); // anywhere no panel covers it, a little more toward the bottom
+    for(let i=0;i<30;i++){const y=T+(h-T-10)*(1-Math.pow(Math.random(),1.5)),x=rnd(.03,.97)*w;if(this.isFree(x,y)&&this.isFree(x,y-24))return{x,y};}
     return{x:rnd(.03,.97)*w,y:h-rnd(6,30)};}
   rawSpot(){const w=this.w,h=this.h;
     const k=this.keepRect(),T=Math.min(h-20,+(this.dataset.top||0)),pad=12;
@@ -98,7 +98,7 @@ class GhostAmbience extends HTMLElement{
     const n=this.mode==='screen'?(this.mob?3:5):login?0:(this.mob?1:2);
     this.flames=Array.from({length:n},(_,i)=>{const z=rnd(.3,1),size=login?(this.mob?10+z*13:13+z*19):(this.mob?9+z*8:11+z*11);
       return{...this.spot(),form:Math.floor(rnd(0,3)),ft:0,z,size,seed:rnd(0,100),bobA:rnd(5,13),bobS:rnd(.35,.7),swA:rnd(2,6),swS:rnd(.5,1.1),phase:'on',a:login?1:.9,timer:rnd(4,16),dip:0,lean:0,rise:this.mode==='page'?rnd(5,10):rnd(12,26),
-        trail:login&&i<2?[]:null,trailT:0};}).sort((a,b)=>a.z-b.z);
+        trail:null,trailT:0};}).sort((a,b)=>a.z-b.z);
     const slots=this.mode==='login'?(this.mob?EYE_M:EYE_D):[]; // no eyes inside the app pages for now
     this.eyes=slots.map(([x,y,s,r])=>({nx:x,ny:y,s:s?s*.85:rnd(.8,1.15),red:s?!!r:Math.random()<.35,ang:0,sq:0,dw:0,near:false,tilt:rnd(.06,.16),state:'closed',open:0,t:0,hold:0,blink:0,lx:0,ly:0}));
     if(this.mode==='login'&&this.eyes.length&&this.dataset.ok!=='1'){const n0=this.mob?3:4;const pick=[];this.eyes.slice().sort(()=>Math.random()-.5).forEach(e=>{if(pick.length<n0&&!pick.some(o=>this.eyeHit(e,o)))pick.push(e);});pick.forEach(e=>{e.state='opening';e.open=-rnd(0,.45);e.t=0;e.hold=rnd(2.5,5);e.blink=rnd(.8,e.hold-.5);});}
@@ -130,7 +130,7 @@ class GhostAmbience extends HTMLElement{
       else if(f.phase==='in'){f.a+=dt*.7;if(f.a>=1){f.a=1;f.phase='on';f.timer=rnd(6,18);}}
       if(Math.random()<dt*.18)f.dip=1;f.dip=Math.max(0,f.dip-dt*2.6);
       if(f.rise){f.y-=f.rise*dt; // drift upward; fade out near the top or when touching the big screen's content
-        const top=this.mode==='page'?16:this.mode==='login'?h*.04:Math.min(h-20,+(this.dataset.top||0))+12;
+        const top=this.mode==='page'?16:this.mode==='login'?h*.04:this.dataset.free==='1'?10:Math.min(h-20,+(this.dataset.top||0))+12;
         if(f.phase==='on'&&(f.y-f.size<top||(this.mode==='screen'&&this.inKeep(f.x,f.y-f.size*1.5,0))))f.phase='fade';
         if(f.phase==='on'&&this.dataset.free==='1'&&(f.chk=(f.chk||rnd(0,.4))-dt)<0){f.chk=.4;if(!this.isFree(f.x,f.y-f.size))f.phase='fade';}}
     }
