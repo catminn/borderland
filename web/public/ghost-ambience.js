@@ -150,7 +150,7 @@ class GhostAmbience extends HTMLElement{
       if(this.target&&this.mode==='login'&&!this.okMode){const T=this.target;
         if(!this.eyes.some(e=>e.state!=='closed'&&Math.hypot(e.nx*w-T.x,e.ny*h-T.y)<R)){this.wakeNear=(this.wakeNear||0)-dt;
           if(this.wakeNear<0){this.wakeNear=.8;let best=null,bd=R*1.8;for(const e of this.eyes){if(e.state!=='closed')continue;const d=Math.hypot(e.nx*w-T.x,e.ny*h-T.y);if(d<bd&&!this.eyes.some(o=>o!==e&&o.state!=='closed'&&this.eyeHit(e,o))){bd=d;best=e;}}
-            if(best){best.state='opening';best.far=0;best.dw=0;best.t=0;best.hold=rnd(3,5);best.blink=rnd(1,2.5);best.lx=0;best.ly=0;}}}}
+            if(best){best.state='opening';best.far=0;best.dw=0;best.t=0;best.hold=rnd(3,5)*(active?1:4);best.blink=rnd(1,2.5);best.lx=0;best.ly=0;}}}}
       const calm=this.mode!=='login'; // big screen / staff / player pages: only an occasional pair, upper half, never on a flame
       const maxOpen=calm?(active?2:1):Math.min(this.eyes.length,(this.mob?2:3)+Math.floor(this.len/(this.mob?3:2))+(active?(this.mob?3:5):0)+(this.dataset.more==='1'?2:0));
       this.nextSpawn-=dt;
@@ -161,14 +161,14 @@ class GhostAmbience extends HTMLElement{
           if(!ok)c2.length=0;}
         if(chase&&this.dataset.free!=='1')c2.splice(0,c2.length,...c2.filter(p=>Math.hypot(p.nx*w-this.target.x,p.ny*h-this.target.y)<RF));
         if(c2.length){let e;if(this.target&&active){const px=this.target.x;const py=this.target.y,dd=p=>Math.hypot(p.nx*w-px,p.ny*h-py);const s2=c2.slice().sort((p,q)=>dd(p)-dd(q));e=s2[Math.floor(Math.random()*Math.min(2,s2.length))];} // eyes wake up on the side the pointer is on
-          else e=c2[this.dataset.free==='1'?0:Math.floor(Math.random()*c2.length)];e.state='opening';e.far=0;e.dw=0;e.t=0;e.hold=rnd(2.2,4.2);e.blink=rnd(.5,e.hold-.4);e.lx=0;e.ly=0;}
-        this.nextSpawn=calm?rnd(7,16)/(active?2:1):rnd(1.4,3.2)/(1+this.len*.3)/(active?4:1);}
+          else e=c2[this.dataset.free==='1'?0:Math.floor(Math.random()*c2.length)];e.state='opening';e.far=0;e.dw=0;e.t=0;e.hold=rnd(2.2,4.2)*(this.target&&!active&&!calm?4:1);e.blink=rnd(.5,e.hold-.4);e.lx=0;e.ly=0;}
+        this.nextSpawn=calm?rnd(7,16)/(active?2:1):rnd(1.4,3.2)/(1+this.len*.3)/(active?4:1)*(this.target&&!active?3:1);}
       for(const e of this.eyes){
         if(e.state==='opening'){e.open+=dt*3;if(e.open>=1){e.open=1;e.state='open';e.t=0;}}
         else if(e.state==='open'){e.t+=dt;if(this.target){const dist=Math.hypot(e.nx*w-this.target.x,e.ny*h-this.target.y);e.near=dist<R;
           if(calm&&this.nearFlame(e.nx*w,e.ny*h))e.hold=Math.min(e.hold,e.t+.3);
           if(e.near&&!calm){e.hold=Math.max(e.hold,e.t+1.5);e.dw+=dt;} // the pointer is close: keep staring, and squint the longer it stays
-          else{e.dw=Math.max(0,e.dw-dt*2);if(active&&dist>RF&&!e.far){e.far=1;e.hold=Math.min(e.hold,e.t+.2);}}}
+          else{e.dw=Math.max(0,e.dw-dt*2);if(active&&dist>RF&&!e.far){e.far=1;e.hold=Math.min(e.hold,e.t+.2);}else if(!active&&!calm&&dist<RF)e.hold=Math.max(e.hold,e.t+1.5);}} // pointer resting: eyes within RF stay put instead of churning
         else{e.near=false;e.dw=0;}
         if(this.len>0&&e.sq>.1)e.hold=Math.max(e.hold,e.t+1.5); // typing a PIN: eyes that are squinting keep watching
         let b=e.t-e.blink;if(b>.2){e.blink=e.t+rnd(2.2,4.5);b=-1;}e.open=b>0&&b<.2?Math.abs(b-.1)/.1:1;if(e.t>e.hold)e.state='closing';}
