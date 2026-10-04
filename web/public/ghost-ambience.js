@@ -97,11 +97,12 @@ class GhostAmbience extends HTMLElement{
         trail:login&&i<2?[]:null,trailT:0};}).sort((a,b)=>a.z-b.z);
     const slots=login?(this.mob?EYE_M:EYE_D):[];
     this.eyes=slots.map(([x,y,s,r])=>({nx:x,ny:y,s:s?s*.85:rnd(.8,1.15),red:s?!!r:Math.random()<.35,ang:0,sq:0,dw:0,near:false,tilt:rnd(.06,.16),state:'closed',open:0,t:0,hold:0,blink:0,lx:0,ly:0}));
-    if(login&&this.eyes.length&&this.dataset.ok!=='1'){const n0=this.mob?3:4;const pick=[];this.eyes.slice().sort(()=>Math.random()-.5).forEach(e=>{if(pick.length<n0&&!pick.some(o=>this.eyeHit(e,o)))pick.push(e);});pick.forEach(e=>{e.state='opening';e.open=-rnd(0,.45);e.t=0;e.hold=rnd(2.5,5);e.blink=rnd(.8,e.hold-.5);});}
+    if(this.mode==='login'&&this.eyes.length&&this.dataset.ok!=='1'){const n0=this.mob?3:4;const pick=[];this.eyes.slice().sort(()=>Math.random()-.5).forEach(e=>{if(pick.length<n0&&!pick.some(o=>this.eyeHit(e,o)))pick.push(e);});pick.forEach(e=>{e.state='opening';e.open=-rnd(0,.45);e.t=0;e.hold=rnd(2.5,5);e.blink=rnd(.8,e.hold-.5);});}
     this.fog=false?Array.from({length:this.mob?2:5},()=>({x:rnd(0,1),y:rnd(.84,1.02),rx:rnd(.25,.5),ry:rnd(40,90),sp:rnd(.006,.014),a:rnd(.05,.1)})):[];
     this.paper=[];
-    this.nextSpawn=rnd(.9,1.8);
+    this.nextSpawn=this.mode==='login'?rnd(.9,1.8):rnd(3,8);
   }
+  nearFlame(x,y){return this.flames.some(f=>f.phase!=='off'&&f.a>.05&&Math.hypot(f.x-x,f.y-f.size*2.5-y)<160);}
   eyeBox(e){const k=e.s*(this.mob?.82:1),w=150*k*.9,hh=150*k*119/256;return{x:e.nx*this.w,y:e.ny*this.h,w,h:hh};}
   eyeHit(a,b){const A=this.eyeBox(a),B=this.eyeBox(b);return Math.abs(A.x-B.x)<(A.w+B.w)/2+10&&Math.abs(A.y-B.y)<(A.h+B.h)/2+10;}
   keepRect(){const k=(this.dataset.keep||'').split(',').map(Number);return k.length===4&&!k.some(isNaN)?k:null;}
@@ -142,28 +143,30 @@ class GhostAmbience extends HTMLElement{
       for(const e of this.eyes){e.open=e2<.25?Math.min(1,e.open+dt/.18):e2<2.4?1:Math.max(0,e.open-dt/.25);}
       if(e2>2.7){this.errMode=false;this.eyes.forEach(e=>{e.state='closed';e.open=0;});this.nextSpawn=rnd(1.5,3);}
     }else{
-      const openCount=this.eyes.filter(e=>e.state!=='closed').length;
+      const openCount=this.eyes.filter(e=>e.state==='opening'||e.state==='open').length;
       const active=this.lastMove!=null&&this.t-this.lastMove<2.5; // the pointer is moving: more eyes wake up to watch it
       const R=Math.min(w,h)*.4,RF=R*1.6,chase=!!(this.target&&active); // while the pointer moves, only eyes within RF of it stay lit
       if(this.target&&this.mode==='login'&&!this.okMode){const T=this.target;
         if(!this.eyes.some(e=>e.state!=='closed'&&Math.hypot(e.nx*w-T.x,e.ny*h-T.y)<R)){this.wakeNear=(this.wakeNear||0)-dt;
           if(this.wakeNear<0){this.wakeNear=.8;let best=null,bd=R*1.8;for(const e of this.eyes){if(e.state!=='closed')continue;const d=Math.hypot(e.nx*w-T.x,e.ny*h-T.y);if(d<bd&&!this.eyes.some(o=>o!==e&&o.state!=='closed'&&this.eyeHit(e,o))){bd=d;best=e;}}
             if(best){best.state='opening';best.far=0;best.dw=0;best.t=0;best.hold=rnd(3,5);best.blink=rnd(1,2.5);best.lx=0;best.ly=0;}}}}
-      const maxOpen=Math.min(this.eyes.length,(this.mob?2:3)+Math.floor(this.len/(this.mob?3:2))+(active?(this.mob?3:5):0)+(this.dataset.more==='1'?2:0));
+      const calm=this.mode!=='login'; // big screen / staff / player pages: only an occasional pair, upper half, never on a flame
+      const maxOpen=calm?(active?2:1):Math.min(this.eyes.length,(this.mob?2:3)+Math.floor(this.len/(this.mob?3:2))+(active?(this.mob?3:5):0)+(this.dataset.more==='1'?2:0));
       this.nextSpawn-=dt;
       if(this.nextSpawn<0&&openCount<maxOpen){const c=this.eyes.filter(e=>e.state==='closed');
-        const c2=c.filter(e=>!this.inKeep(e.nx*w,e.ny*h,30)&&!this.eyes.some(o=>o!==e&&o.state!=='closed'&&this.eyeHit(e,o)));
+        const c2=c.filter(e=>!this.inKeep(e.nx*w,e.ny*h,30)&&!this.eyes.some(o=>o!==e&&o.state!=='closed'&&this.eyeHit(e,o))&&(!calm||(e.ny<.5&&!this.nearFlame(e.nx*w,e.ny*h))));
         if(c2.length&&this.dataset.free==='1'){const e=c2[0],k=e.s*(this.mob?.82:1)*36,T=Math.min(h-40,+(this.dataset.top||0))+30;let ok=false;
-          for(let i=0;i<20&&!ok;i++){const x=rnd(.06,.94)*w,y=rnd(T,h-30);if((!chase||Math.hypot(x-this.target.x,y-this.target.y)<RF)&&this.isFree(x,y)&&this.isFree(x-k,y)&&this.isFree(x+k,y)&&this.isFree(x-k*.5,y-9)&&this.isFree(x+k*.5,y+9)){e.nx=x/w;e.ny=y/h;ok=true;}}
+          for(let i=0;i<20&&!ok;i++){const x=rnd(.06,.94)*w,y=calm?rnd(T,Math.max(T+60,h*.5)):rnd(T,h-30);if((!calm||(!this.nearFlame(x,y)&&!this.inKeep(x,y,40)))&&(!chase||Math.hypot(x-this.target.x,y-this.target.y)<RF)&&this.isFree(x,y)&&this.isFree(x-k,y)&&this.isFree(x+k,y)&&this.isFree(x-k*.5,y-9)&&this.isFree(x+k*.5,y+9)){e.nx=x/w;e.ny=y/h;ok=true;}}
           if(!ok)c2.length=0;}
         if(chase&&this.dataset.free!=='1')c2.splice(0,c2.length,...c2.filter(p=>Math.hypot(p.nx*w-this.target.x,p.ny*h-this.target.y)<RF));
         if(c2.length){let e;if(this.target&&active){const px=this.target.x;const py=this.target.y,dd=p=>Math.hypot(p.nx*w-px,p.ny*h-py);const s2=c2.slice().sort((p,q)=>dd(p)-dd(q));e=s2[Math.floor(Math.random()*Math.min(2,s2.length))];} // eyes wake up on the side the pointer is on
           else e=c2[this.dataset.free==='1'?0:Math.floor(Math.random()*c2.length)];e.state='opening';e.far=0;e.dw=0;e.t=0;e.hold=rnd(2.2,4.2);e.blink=rnd(.5,e.hold-.4);e.lx=0;e.ly=0;}
-        this.nextSpawn=rnd(1.4,3.2)/(1+this.len*.3)/(active?4:1);}
+        this.nextSpawn=calm?rnd(7,16)/(active?2:1):rnd(1.4,3.2)/(1+this.len*.3)/(active?4:1);}
       for(const e of this.eyes){
         if(e.state==='opening'){e.open+=dt*3;if(e.open>=1){e.open=1;e.state='open';e.t=0;}}
         else if(e.state==='open'){e.t+=dt;if(this.target){const dist=Math.hypot(e.nx*w-this.target.x,e.ny*h-this.target.y);e.near=dist<R;
-          if(e.near){e.hold=Math.max(e.hold,e.t+1.5);e.dw+=dt;} // the pointer is close: keep staring, and squint the longer it stays
+          if(calm&&this.nearFlame(e.nx*w,e.ny*h))e.hold=Math.min(e.hold,e.t+.3);
+          if(e.near&&!calm){e.hold=Math.max(e.hold,e.t+1.5);e.dw+=dt;} // the pointer is close: keep staring, and squint the longer it stays
           else{e.dw=Math.max(0,e.dw-dt*2);if(active&&dist>RF&&!e.far){e.far=1;e.hold=Math.min(e.hold,e.t+.2);}}}
         else{e.near=false;e.dw=0;}
         if(this.len>0&&e.sq>.1)e.hold=Math.max(e.hold,e.t+1.5); // typing a PIN: eyes that are squinting keep watching
