@@ -134,7 +134,7 @@ class GhostAmbience extends HTMLElement{
     if(this.mode==='page')return;
     let gx=this.target?this.target.x:w/2,gy=this.target?this.target.y:h*.56;
     if(this.okMode){const k=this.okT;gx=cx;gy=cy;
-      for(const e of this.eyes){e.open=k<2.3?Math.min(1,e.open+dt/.15):Math.max(0,e.open-dt/.25);}
+      for(const e of this.eyes){e.open=Math.max(0,e.open-dt/.35);if(e.open<=0)e.state='closed';} // PIN accepted: every eye shuts
     }else if(this.errMode){this.errT+=dt;const e2=this.errT;gx=cx;gy=cy;
       for(const e of this.eyes){e.open=e2<.25?Math.min(1,e.open+dt/.18):e2<2.4?1:Math.max(0,e.open-dt/.25);}
       if(e2>2.7){this.errMode=false;this.eyes.forEach(e=>{e.state='closed';e.open=0;});this.nextSpawn=rnd(1.5,3);}
