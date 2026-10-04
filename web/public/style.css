@@ -437,13 +437,13 @@ body.login #scene{display:block;position:absolute;left:0;top:0;width:100%;height
 #scene .fogb img{object-position:60% 60%;filter:brightness(.55) saturate(.9);animation:fogDrift 30s ease-in-out infinite reverse}
 #scene .fogf img{object-position:50% 70%;filter:brightness(.7);animation:fogDrift 24s ease-in-out infinite}
 #scene .doll{position:absolute;bottom:10px;height:min(52vh,calc(34vw*1.5));width:auto}
-#scene .doll img{display:block;height:100%;width:auto;filter:brightness(.82) saturate(.9);-webkit-mask-image:linear-gradient(to bottom,#000 72%,transparent 96%);mask-image:linear-gradient(to bottom,#000 72%,transparent 96%)}
+#scene .doll>img:first-child{display:block;height:100%;width:auto;filter:brightness(.82) saturate(.9);-webkit-mask-image:linear-gradient(to bottom,#000 72%,transparent 96%);mask-image:linear-gradient(to bottom,#000 72%,transparent 96%)}
 #scene .doll.l{left:7vw}
 #scene .doll.r{right:7vw}
 @media (min-width:720px){.lg{zoom:1.25}}
 @keyframes fogDrift{0%,100%{transform:translateX(0)}50%{transform:translateX(-3.5%)}}
 @keyframes fogBreath{0%,100%{opacity:var(--o)}50%{opacity:calc(var(--o)*.6)}}
-@media (max-width:719px){#scene .doll{height:46vh;height:46dvh;bottom:-20vh;bottom:-20dvh}#scene .doll img{-webkit-mask-image:none;mask-image:none}#scene .doll.l{left:-9vw}#scene .doll.r{right:-9vw}#scene .fogb{left:-35%;right:-35%;height:58%}#scene .fogf{left:-35%;right:-35%;bottom:-30px;height:250px;--o:.5}}
+@media (max-width:719px){#scene .doll{height:46vh;height:46dvh;bottom:-20vh;bottom:-20dvh}#scene .doll>img:first-child{-webkit-mask-image:none;mask-image:none}#scene .doll.l{left:-9vw}#scene .doll.r{right:-9vw}#scene .fogb{left:-35%;right:-35%;height:58%}#scene .fogf{left:-35%;right:-35%;bottom:-30px;height:250px;--o:.5}}
 body.login #amb{position:fixed;inset:0;height:auto}
 body.login header.top,body.login nav.pages{display:none}
 body.login .wrap{min-height:100vh;justify-content:center;align-items:center;padding:20px}
@@ -890,21 +890,21 @@ button.sk.on{background:var(--accent);border-color:var(--accent);color:var(--acc
   body.login .wrap{min-height:100vh;justify-content:flex-start;padding-top:0;padding-bottom:calc(46vw*1.5 + 24px)}
   body.login #view{margin-top:15vh}
   #scene .doll{width:46vw;height:auto;bottom:6px}
-  #scene .doll img{width:100%;height:auto}
+  #scene .doll>img:first-child{width:100%;height:auto}
   #scene .doll.l{left:2vw}#scene .doll.r{right:2vw}
   #scene .fogb{left:-35%;right:-35%;height:min(75%,640px)}
   #scene .fogf{left:-35%;right:-35%;bottom:-30px;height:250px}
 }
 
 /* wrong PIN: the dolls' eyes glow red, the whole scene washes red, the button turns red */
-#scene .ge{position:absolute;width:5.2%;height:2.6%;border-radius:50%;transform:translate(-50%,-50%);background:radial-gradient(circle,#ffd0c8 0,#ff3b2a 45%,rgba(255,40,20,0) 75%);box-shadow:0 0 16px 8px rgba(255,40,25,.75);opacity:0;transition:opacity .3s}
+#scene .ge{position:absolute;left:36.38%;top:22.02%;width:21.21%;height:auto;opacity:0;transition:opacity .3s;filter:drop-shadow(0 0 6px rgba(200,10,10,.95)) drop-shadow(0 0 14px rgba(170,0,0,.7))}
 #scene .redwash{position:absolute;inset:0;opacity:0;transition:opacity .45s;background:radial-gradient(ellipse 80% 70% at 50% 62%,rgba(200,24,28,.28),rgba(95,0,10,.55))}
 #scene .fogb img,#scene .fogf img{transition:filter .5s}
-body.lgerr #scene .ge{opacity:1;animation:geFlick .5s steps(2) infinite}
+body.lgerr #scene .ge{opacity:1;animation:geFlick .6s steps(2) infinite}
 body.lgerr #scene .redwash{opacity:1}
 body.lgerr #scene .fogb img{filter:hue-rotate(-155deg) saturate(1.8) brightness(1.1)}
 body.lgerr #scene .fogf img{filter:hue-rotate(-155deg) saturate(1.8) brightness(1.1)}
 .lg .go{transition:background .3s,box-shadow .3s,color .3s}
 body.lgerr .lg .go{background:#d9402c;color:#fff4f0;box-shadow:0 0 26px rgba(230,50,35,.55)}
 body.lgerr .lg{border-color:#7a2a26}
-@keyframes geFlick{0%{opacity:1}50%{opacity:.78}}
+@keyframes geFlick{0%{opacity:1}50%{opacity:.82}}
