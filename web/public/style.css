@@ -428,14 +428,21 @@ body.screen .stage-wrap{border-radius:0}
 /* ---------- 登录 ---------- */
 body.login{background-color:#0a1012}
 #scene{display:none}
-body.login #scene{display:block;position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none}
-#scene .fog{position:absolute;left:0;bottom:0;width:100%;height:62%;object-fit:cover;object-position:bottom;mix-blend-mode:screen;opacity:.75;-webkit-mask-image:linear-gradient(transparent,#000 45%);mask-image:linear-gradient(transparent,#000 45%)}
-#scene .doll{position:absolute;bottom:-3vh;height:min(88vh,calc(46vw*1.5));width:auto;opacity:.95}
-#scene .doll.l{left:max(2vw,calc(50% - 780px))}
-#scene .doll.r{right:max(2vw,calc(50% - 780px))}
-@media (max-width:719px){#scene .doll{height:31vh;bottom:0;opacity:.95}#scene .doll.l{left:1vw}#scene .doll.r{right:1vw}#scene .fog{height:42%}}
+body.login{background:radial-gradient(ellipse 60% 55% at 50% 42%,#0d1e20 0%,#071011 55%,#030707 100%) fixed #030707}
+body.login #scene{display:block;position:absolute;left:0;top:0;width:100%;height:100vh;overflow:hidden;pointer-events:none}
+#scene .glow{position:absolute;inset:0;background:radial-gradient(ellipse 30% 22% at 50% 100%,rgba(140,14,22,.28),transparent 70%),radial-gradient(ellipse 22% 40% at 17% 62%,rgba(60,170,150,.10),transparent 70%),radial-gradient(ellipse 22% 40% at 83% 62%,rgba(60,170,150,.10),transparent 70%)}
+#scene .fogb{position:absolute;left:-12%;right:-12%;bottom:0;height:52%;--o:.55;animation:fogBreath 14s ease-in-out infinite}
+#scene .fogf{position:absolute;left:-10%;right:-10%;bottom:-60px;height:260px;--o:.5;animation:fogBreath 11s ease-in-out infinite}
+#scene .fogb img,#scene .fogf img{width:100%;height:100%;object-fit:cover;mix-blend-mode:screen;-webkit-mask-image:linear-gradient(to top,#000 30%,transparent);mask-image:linear-gradient(to top,#000 30%,transparent)}
+#scene .fogb img{object-position:60% 60%;filter:brightness(.55) saturate(.9);animation:fogDrift 30s ease-in-out infinite reverse}
+#scene .fogf img{object-position:50% 70%;filter:brightness(.7);animation:fogDrift 24s ease-in-out infinite}
+#scene .doll{position:absolute;bottom:10px;height:min(69vh,calc(44vw*1.5));width:auto;mix-blend-mode:lighten;filter:brightness(.82) saturate(.9);-webkit-mask-image:linear-gradient(to bottom,#000 72%,transparent 96%);mask-image:linear-gradient(to bottom,#000 72%,transparent 96%)}
+#scene .doll.l{left:5vw}
+#scene .doll.r{right:5vw}
+@keyframes fogDrift{0%,100%{transform:translateX(0)}50%{transform:translateX(-3.5%)}}
+@keyframes fogBreath{0%,100%{opacity:var(--o)}50%{opacity:calc(var(--o)*.6)}}
+@media (max-width:719px){#scene .doll{height:42vh;bottom:-14vh;-webkit-mask-image:none;mask-image:none;filter:brightness(.8) saturate(.9)}#scene .doll.l{left:-15vw}#scene .doll.r{right:-15vw}#scene .fogb{height:42%}#scene .fogf{bottom:-40px;height:180px;--o:.45}}
 body.login #amb{position:fixed;inset:0;height:auto}
-body.login #amb{background:radial-gradient(ellipse at center,rgba(0,0,0,0) 40%,rgba(0,0,0,.74) 100%)}
 body.login header.top,body.login nav.pages{display:none}
 body.login .wrap{min-height:100vh;justify-content:center;align-items:center;padding:20px}
 body.login .notice{display:none}
