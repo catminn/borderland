@@ -1029,3 +1029,12 @@ body.inmk::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:6
 .mask-art{height:150px;width:140px}
 .mask-art img{height:100%;width:auto}
 @media(max-width:719px){.lantern-art{height:80px}.mask-art{height:110px}.board-art .lily-corner{width:100px;opacity:1}}
+
+/* Full-width market canopy and central Wuchang mask. */
+:root[data-theme="dark"] .lantern-art{width:100vw;max-width:none;height:auto;margin:0 0 24px;margin-left:calc(50% - 50vw);overflow:hidden}
+.lantern-art img{width:100%;height:auto;object-fit:contain;mix-blend-mode:screen;-webkit-mask-image:linear-gradient(to bottom,#000 75%,transparent 100%);mask-image:linear-gradient(to bottom,#000 75%,transparent 100%)}
+:root[data-theme="dark"] .wuchang-layout{grid-template-columns:minmax(0,1fr) minmax(260px,.9fr) minmax(0,1fr);gap:24px;align-items:start}
+:root[data-theme="dark"] .wuchang-layout .mask-art{width:100%;height:auto;margin:0;align-self:start;mix-blend-mode:screen}
+.wuchang-layout .mask-art img{width:100%;height:auto;max-height:650px;object-fit:contain;-webkit-mask-image:radial-gradient(ellipse 70% 65% at 50% 48%,#000 65%,transparent 100%);mask-image:radial-gradient(ellipse 70% 65% at 50% 48%,#000 65%,transparent 100%)}
+@media(max-width:959px){:root[data-theme="dark"] .wuchang-layout{grid-template-columns:minmax(0,1fr) minmax(180px,.7fr) minmax(0,1fr);gap:12px}}
+@media(max-width:719px){:root[data-theme="dark"] .wuchang-layout{grid-template-columns:minmax(0,1fr)}:root[data-theme="dark"] .wuchang-layout .mask-art{grid-row:1;width:min(75vw,340px);justify-self:center}.wuchang-layout .mask-art img{max-height:420px}:root[data-theme="dark"] .lantern-art{width:calc(100% + 28px);margin-left:-14px;margin-right:-14px}.lantern-art img{max-width:none}}

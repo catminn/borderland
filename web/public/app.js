@@ -372,7 +372,7 @@ function viewWuchang(){
     +(wait.length?'<div class="mlist">'+wait.map(p=>'<div class="mrow">'+meta(p)+'<button class="btn-main glow" data-a="pickup" data-p="'+p.id+'">接到了</button></div>').join('')+'</div>':'<div class="empty">现在没有人需要接。</div>')+'</section>';
   const right='<section class="mcol"><div class="shrow"><h2 class="sh">送入鬼市 / 确认</h2><span class="hint">已接到的人送去鬼市；孟婆已登记的人在这里确认</span></div>'
     +(go.length?'<div class="mlist">'+go.map(p=>'<div class="mrow ok">'+meta(p)+(p.chk&&!p.chk.ok?chkBit(p):'<button class="btn-main glow" data-a="checkin" data-p="'+p.id+'">送入鬼市</button>')+'</div>').join('')+'</div>':'<div class="empty">没有需要送入或确认的人。</div>')+'</section>';
-  return '<div class="page-art mask-art" aria-hidden="true"><img src="img/mask-paper.webp" alt=""></div><div class="page mkt eq">'+left+right+'</div>';
+  return '<div class="page mkt eq wuchang-layout">'+left+'<div class="page-art mask-art" aria-hidden="true"><img src="img/mask-paper.webp" alt=""></div>'+right+'</div>';
 }
 
 // ---------- 生死簿 ----------
