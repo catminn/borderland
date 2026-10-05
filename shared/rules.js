@@ -38,7 +38,7 @@ const PER_TEAM=6, PROTECT=600, MIN_STAY=0, COIN_GOAL=500, COIN_START=200, CARRY_
 const RSV=120, GAME_HINT=480, RESET_HINT=120;
 // Scavenger：每次 100 分，任意滚动 10 分钟最多 2 题，全场最多 600 分。
 const SCAV_PTS=100, SCAV_WIN=600, SCAV_N=2, SCAV_CAP=600, DUR0=7200;
-const KINDS=['公告','鬼门开','sidequest'];
+const KINDS=['公告','鬼门开','sidequest','custom'];
 const ROLE_LABEL={wuchang:'黑白无常',mengpo:'孟婆',ctrl:'总控'};
 // Lines of the log that go on the big screen's 全场播报 (players get only these, so their first page matches the screen).
 const BCAST=[/^(\S+) 被.队鬼门开奖励淘汰/,/^(\S+) 被(.)队勾魂/,/^(\S+) 输了 (\S+) 被抽签淘汰/,/^(\S+) 喝下孟婆汤/,/^(\S+) 赢下 (\S+)，\+(\d+) 冥币/,/^判官记录 (\S+) 率先完成任务「(.+)」/];
@@ -77,7 +77,7 @@ function matches(n,p){
 function targetLabel(n){return n.target==='all'?'全体玩家':n.target==='team'?team(n.ids[0]).name:n.target==='player'?(n.ids.length<=4?n.ids.join('、'):n.ids.slice(0,3).join('、')+' 等 '+n.ids.length+' 人'):n.target==='market'?'鬼市中的人':'存活玩家';}
 const rewardTxt=n=>n.reward?'+'+n.reward+' 冥币':'';
 const teamOf=id=>id.includes('-')?id.split('-')[0]:id;
-const kindLabel=n=>n.kind==='任务'?(n.sub==='side'?'Scavenger Hunt':'鬼门开'):n.kind;
+const kindLabel=n=>n.kind==='任务'?(n.sub==='side'?'Scavenger Hunt':n.sub==='custom'?'自定义任务':'鬼门开'):n.kind;
 const isFirst=n=>(n.mode||'first')==='first';
 const indiv=n=>n.target==='player'||n.target==='market';
 const lab=id=>id.includes('-')?id:team(id).name;
@@ -104,6 +104,7 @@ function publish(f){f=f||{};const str=(v,n)=>String(v==null?'':v).slice(0,n);f={
     if(!['all','team','player','alive','market'].includes(target))return no('发布对象不对');
     if(!f.title.trim())return no('先写标题');
     if(target==='team'){if(!team(f.team))return no('先选队伍');ids=[f.team];}
+    if(f.kind==='custom'){sub='custom';mode='each';reward=Math.max(0,Math.min(5000,Math.round(+f.reward||0)));}
     if(target==='player'){const want=Array.isArray(f.players)?f.players:f.player?[f.player]:[];ids=[...new Set(want)].filter(id=>S.players.some(p=>p.id===id));if(!ids.length)return no('先选队员');}
   }
   pushNotice({kind:f.kind==='公告'?'公告':'任务',sub,title:f.title.trim(),body:f.body.trim(),target,ids,mins:Math.max(0,+f.mins||0),mode,reward,q:qid});

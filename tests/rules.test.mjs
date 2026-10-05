@@ -53,4 +53,10 @@ T('ctrl forces final', ap('ctrl', { type: 'final', tid: t.id, on: true }).ok && 
   T('custom scavenger publish', P.ok && G.notices[0].title === '临时题');
   T('custom gate publish', R.apply(G, { role: 'ctrl' }, { type: 'publish', f: { kind: '鬼门开', gate: 'custom', title: '临时门' } }).ok);
 }
+{ // 自定义任务
+  const G = R.newGame(false); R.use(G); G.t = 10; const C = a => R.apply(G, { role: 'ctrl' }, a);
+  const p = C({ type: 'publish', f: { kind: 'custom', target: 'team', team: 'B', title: '找到三楼的钥匙', body: 'x', reward: 150 } });
+  const n = G.notices[0]; const d = R.apply(G, { role: 'judge' }, { type: 'done', nid: n.id, cid: 'B' });
+  T('custom task: one team, judge completes, +150', p.ok && n.sub === 'custom' && n.mode === 'each' && d.ok && G.teams.find(t => t.id === 'B').score === 150 && !G.gp);
+}
 console.log(bad ? bad + ' FAILED' : 'RULES PASSED'); process.exit(bad ? 1 : 0);

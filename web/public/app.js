@@ -76,8 +76,8 @@ function dd(k,valLabel,placeholder,valColor,options,multi){
 const teamPick=(k,cur,off,small)=>S.teams.map(t=>cb({k,v:t.id,on:cur===t.id,off:off&&off(t.id),c:TC[t.id][0],label:t.name,small:small&&small(t.id)})).join('');
 function countdown(n,short){if(!n.due)return '';const r=n.due-S.t;return r>0?(short?mmss(r):'剩余 '+mmss(r)):'已截止';}
 const qTitle=id=>(QUESTS.find(q=>q.id===id)||{title:String(id).replace(/^x:/,'')}).title;
-const kindOf=n=>n.kind==='通知'?['通知','alert']:n.kind==='公告'?['公告','']:n.sub==='side'?['Scavenger Hunt','secret']:['鬼门开','task'];
-const modeOf=n=>n.kind==='任务'&&n.sub!=='side'?'先到先得':'';
+const kindOf=n=>n.kind==='通知'?['通知','alert']:n.kind==='公告'?['公告','']:n.sub==='side'?['Scavenger Hunt','secret']:n.sub==='custom'?['自定义任务','task']:['鬼门开','task'];
+const modeOf=n=>n.kind==='任务'&&n.sub==='gate'?'先到先得':'';
 
 // ---------- 大屏 ----------
 function broadcast(){
@@ -466,7 +466,7 @@ function pubPanel(){
   const toName=gate?'全场':side?(f.sqTeam?team(f.sqTeam).name+'的':'队伍的'):f.target==='team'?team(f.team).name:f.target==='player'?(!pl.length?'某位队员':pl.length<=3?pl.join('、'):pl.slice(0,2).join('、')+' 等 '+pl.length+' 人'):{all:'全场',alive:'存活的',market:'鬼市里的'}[f.target];
   // Scavenger Hunt: one team only, teams that are short of people first, with how many are left
   const sqTeams=[...S.teams].sort((a,b)=>alive(a.id).length-alive(b.id).length);
-  const target=K==='公告'?'<div class="fgrid"><div class="fld"><span>发给谁</span>'+dd('pub.to',(to.find(([v])=>toOn(v))||[])[1],'选择对象',f.target==='team'?TC[f.team][0]:null,to.map(([v,l,id])=>({v,label:l,c:id?TC[id][0]:null})))+'</div>'
+  const target=K==='公告'||K==='custom'?'<div class="fgrid"><div class="fld"><span>发给谁</span>'+dd('pub.to',(to.find(([v])=>toOn(v))||[])[1],'选择对象',f.target==='team'?TC[f.team][0]:null,to.map(([v,l,id])=>({v,label:l,c:id?TC[id][0]:null})))+'</div>'
       +(f.target==='player'?'<div class="fld"><span>选择队员（可多选）</span>'+dd('pub.players',pl.length?pl.length+' 人':'','选择队员',null,S.teams.flatMap(t=>[{group:t.name},...S.players.filter(p=>p.team===t.id).map(p=>({v:p.id,label:p.id,c:TC[t.id][0],note:p.st==='alive'?'':'已淘汰'}))]),true)
         +(pl.length?'<div class="selchips">'+pl.map(id=>'<button class="selchip" data-a="unpick" data-k="pub.players" data-v="'+id+'" aria-label="去掉 '+id+'"><span class="sw" style="--c:'+TC[teamOf(id)][0]+'"></span>'+id+'<b>×</b></button>').join('')+'</div>':'')+'</div>':'')+'</div>'
     :gate?'<div class="fld"><span>题库</span>'+dd('pub.gate',gq?gq.title:f.gate==='custom'?'自定义':'','选择鬼门开',null,[...GATES.map(x=>({v:x.id,label:esc(x.title)})),{v:'custom',label:'自定义'}])+'</div>'+(gq?'<div class="lot">'+esc(gq.body)+'</div>':'')
@@ -474,13 +474,14 @@ function pubPanel(){
       +'<div class="fld"><span>题库</span>'+dd('pub.quest',q?q.title:f.quest==='custom'?'自定义':'','选择题目',null,[...QUESTS.map(x=>({v:x.id,label:esc(x.title),note:'+'+x.reward+' 分'})),{v:'custom',label:'自定义'}])+'</div></div>'
       +(q?'<div class="lot">'+esc(q.body)+'</div>':'');
   const form='<div class="pn" style="gap:14px">'
-    +'<div class="fld"><span>类型</span><div class="seg3">'+['公告','鬼门开','sidequest'].map(k=>'<button class="sbtn'+(K===k?' on':'')+(k==='sidequest'?' secret':'')+'" data-a="pick" data-k="pub.kind" data-v="'+k+'" aria-pressed="'+(K===k)+'">'+(k==='sidequest'?'Scavenger Hunt':k)+'</button>').join('')+'</div></div>'
+    +'<div class="fld"><span>类型</span><div class="seg3">'+['公告','鬼门开','custom'].map(k=>'<button class="sbtn'+(K===k?' on':'')+(k==='custom'?' secret':'')+'" data-a="pick" data-k="pub.kind" data-v="'+k+'" aria-pressed="'+(K===k)+'">'+(k==='custom'?'自定义任务':k)+'</button>').join('')+'</div></div>'
     +target
     +'<div class="fgrid"><label class="fld"><span>限时（分钟）</span><input class="in mono" id="pm" data-m="pub.mins" value="'+esc(f.mins)+'" inputmode="numeric"></label>'
+    +(K==='custom'?'<label class="fld"><span>完成奖励（冥币，可为 0）</span><input class="in mono" id="prw" data-m="pub.reward" value="'+esc(f.reward)+'" inputmode="numeric"></label>':'')
     +'</div>'
     +((side&&f.quest!=='custom')||(gate&&f.gate!=='custom')?'':'<label class="fld"><span>标题</span><input class="in" id="pti" data-m="pub.title" value="'+esc(f.title)+'" placeholder="例如：鬼门开：还原鬼片海报"></label>'
     +'<label class="fld"><span>内容</span><textarea class="in" id="pb" data-m="pub.body" rows="3" placeholder="玩家手机上看到的说明：任务要求、集合地点…">'+esc(f.body)+'</textarea></label>')
-    +'<button class="btn-main" data-a="publish">发布'+(side?' Scavenger Hunt':gate?'鬼门开':'')+'到'+esc(toName)+'玩家手机</button></div>';
+    +'<button class="btn-main" data-a="publish">发布'+(K==='custom'?'自定义任务':gate?'鬼门开':'')+'到'+esc(toName)+'玩家手机</button></div>';
   const list=S.notices.filter(n=>n.kind!=='通知').slice(0,10).map(n=>{
     const aud=S.players.filter(p=>matches(n,p)),acked=aud.filter(p=>n.acks[p.id]).length,[kl,kc]=kindOf(n),ds=Object.keys(n.done);
     return '<div class="li"><div class="grow" style="gap:4px"><div class="thead"><span class="kb '+kc+'" style="font-size:12px;padding:0 7px">'+kl+'</span><b style="font-size:17px">'+esc(n.title)+'</b></div>'
@@ -489,7 +490,7 @@ function pubPanel(){
       +(ui.revokeAsk===n.id?'<span class="btns"><button class="btn-line fillred" data-a="revokeok" data-n="'+n.id+'">确认撤销</button><button class="btn-line" data-a="revokeno">取消</button></span>'
         +'<span class="small" style="flex-basis:100%">玩家手机上会删除'+(Object.values(n.done).some(d=>d.pts)?'，奖励扣回':'')+'</span>'
         :'<button class="btn-line" data-a="revoke" data-n="'+n.id+'">撤销发布</button>')+'</div>';}).join('');
-  return '<h2 class="sh">发布公告 / 鬼门开 / Scavenger Hunt</h2><div class="pubcols">'+form+'<div class="pn" style="gap:0"><h3 style="padding-bottom:8px">已发布</h3>'+(list||'<div class="li small">还没有发布过。</div>')+'</div></div>';
+  return '<h2 class="sh">发布公告 / 鬼门开 / 自定义任务</h2><div class="pubcols">'+form+'<div class="pn" style="gap:0"><h3 style="padding-bottom:8px">已发布</h3>'+(list||'<div class="li small">还没有发布过。</div>')+'</div></div>';
 }
 function adminPanel(){
   const A=ui.admin,c=A.counts,run=CLOCK&&CLOCK.running;
