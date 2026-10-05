@@ -814,7 +814,7 @@ async function login(pin){
   if(!$('#lgcard')){entering=false;render();say(null);return;}
   showSeal();
   const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
-  setTimeout(()=>{entering=false;$('#view').innerHTML='';render();say(null);},reduce?1200:4800);
+  setTimeout(()=>{entering=false;$('#view').innerHTML='';render();say(null);},reduce?1200:3600);
 }
 function logout(msg){
   SESSION=null;store.set(null);setMe(null);S=null;CLOCK=null;connected=false;entering=false;

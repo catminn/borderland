@@ -1052,7 +1052,7 @@ body.inmk::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:6
 
 /* 黑白无常：中间大面具（绳子向上接到页头那条线），左右各一栏 */
 .wc-mask{pointer-events:none;user-select:none;display:flex;justify-content:center;align-items:flex-start}
-.wc-in{position:relative;width:min(100%,calc((100vh - 90px)*.754))}
+.wc-in{position:relative;width:min(100%,calc((100vh - 165px)*.754))}
 .wc-in img{display:block;width:100%;height:auto}
 .wc-in::before,.wc-in::after{content:"";position:absolute;bottom:100%;width:2px;height:var(--wup,0px);background:linear-gradient(rgba(160,180,175,.6),rgba(160,180,175,.45))}
 .wc-in::before{left:30.3%}.wc-in::after{left:70.3%}
