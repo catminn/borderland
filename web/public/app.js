@@ -84,7 +84,8 @@ function broadcast(){
   const out=[];
   for(const l of S.log){
     let m,x=null,c='';
-    if((m=/^(\S+) 被(.)队勾魂/.exec(l.text))){x=m[1]+' 被勾魂';c='hook';}
+    if((m=/^(\S+) 被(.)队通过「鬼门开」任务淘汰/.exec(l.text))){x=m[1]+' 被'+m[2]+'队通过「鬼门开」任务淘汰';c='hook';}
+    else if((m=/^(\S+) 被(.)队勾魂/.exec(l.text))){x=m[1]+' 被勾魂';c='hook';}
     else if((m=/^(\S+) 被.队鬼门开奖励淘汰/.exec(l.text))){x=m[1]+' 被鬼门开奖励淘汰';c='hook';}
     else if((m=/^(\S+) 输了 (\S+) 被抽签淘汰/.exec(l.text))){x=m[1]+' 抽签淘汰';c='hook';}
     else if((m=/^(\S+) 喝下孟婆汤/.exec(l.text)))x=m[1]+' 买命回队';
@@ -249,7 +250,7 @@ function scavPanel(){
 
 function hookLog(){
   const out=[];
-  for(const l of S.log){const m=/^(\S+) 被(.)队勾魂/.exec(l.text);if(m)out.push({t:l.t,pid:m[1],by:(S.teams.find(t=>t.name===m[2]+'队')||{}).id});}
+  for(const l of S.log){const m=/^(\S+) 被(.)队(?:勾魂|通过「鬼门开」任务淘汰)/.exec(l.text);if(m)out.push({t:l.t,pid:m[1],by:(S.teams.find(t=>t.name===m[2]+'队')||{}).id});}
   return out;
 }
 function viewNpc(){

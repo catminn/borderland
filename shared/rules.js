@@ -41,7 +41,7 @@ const SCAV_PTS=100, SCAV_WIN=600, SCAV_N=2, SCAV_CAP=600, DUR0=7200;
 const KINDS=['公告','鬼门开','sidequest','custom'];
 const ROLE_LABEL={wuchang:'黑白无常',mengpo:'孟婆',ctrl:'总控'};
 // Lines of the log that go on the big screen's 全场播报 (players get only these, so their first page matches the screen).
-const BCAST=[/^(\S+) 被.队鬼门开奖励淘汰/,/^(\S+) 被(.)队勾魂/,/^(\S+) 输了 (\S+) 被抽签淘汰/,/^(\S+) 喝下孟婆汤/,/^(\S+) 赢下 (\S+)，\+(\d+) 冥币/,/^判官记录 (\S+) 率先完成任务「(.+)」/];
+const BCAST=[/^(\S+) 被.队通过「鬼门开」任务淘汰/,/^(\S+) 被.队鬼门开奖励淘汰/,/^(\S+) 被(.)队勾魂/,/^(\S+) 输了 (\S+) 被抽签淘汰/,/^(\S+) 喝下孟婆汤/,/^(\S+) 赢下 (\S+)，\+(\d+) 冥币/,/^判官记录 (\S+) 率先完成任务「(.+)」/];
 const isBcast=l=>BCAST.some(re=>re.test(l.text));
 
 // Player states: alive 在场 · out 刚淘汰，原地等黑白无常 · picked 已被黑白无常接到 · market 已登记进鬼市（计时、领 300 冥币）
@@ -285,7 +285,7 @@ function hook(actorId,pid,where){
   if(p.st!=='alive')return no(p.id+' 已被淘汰');
   if(team(p.team).final)return no(team(p.team).name+'已进入终极任务，不能勾魂');
   if(protectedLeft(p)>0)return no(p.id+' 刚复活，保护期还剩 '+Math.ceil(protectedLeft(p)/60)+' 分钟');
-  S.gate++; eliminate(p,'被'+team(actorId).name+'勾魂（第 '+S.gate+' 次勾魂）',String(where||'').trim().slice(0,40));
+  S.gate++; eliminate(p,'被'+team(actorId).name+'通过「鬼门开」任务淘汰',String(where||'').trim().slice(0,40));
   return ok(team(actorId).name+'勾走了 '+p.id);
 }
 function revive(pid){
@@ -312,7 +312,7 @@ function gateReward(pid){const g=S.gp;if(!g)return no('现在没有进行中的�
     g.res=true;S.gp=null;log('鬼门开结束，房间恢复开放');return ok(p.id+' 已免费复活，鬼门开结束');}
   if(p.team===wt.id)return no('请选别队的存活队员');if(p.st!=='alive')return no(p.id+' 已被淘汰');
   if(team(p.team).final)return no(team(p.team).name+'已进入终极任务，不能被淘汰');
-  eliminate(p,'被'+wt.name+'鬼门开奖励淘汰','');
+  eliminate(p,'被'+wt.name+'通过「鬼门开」任务淘汰','');
   g.res=true;S.gp=null;log('鬼门开结束，房间恢复开放');return ok(wt.name+'淘汰了 '+p.id+'，鬼门开结束');}
 function gateEnd(){if(!S.gp)return no('现在没有进行中的鬼门开');S.gp=null;log('鬼门开结束，房间恢复开放');return ok('鬼门开已结束，房间恢复开放');}
 function setDur(secs){secs=Math.round(+secs);if(!(secs>=60&&secs<=86400))return no('总时长要在 1 分钟到 24 小时之间');S.dur=secs;log('总控把总时长设为 '+Math.floor(secs/60)+' 分钟');return ok('总时长已设为 '+Math.floor(secs/60)+' 分钟');}
