@@ -1016,39 +1016,6 @@ body.inmk::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:6
 @media (max-width:719px){#scene .ge{-webkit-mask-image:none;mask-image:none}}
 
 /* ===== 2026-10-05 剪纸素材：透明图，不加框，不用混合模式 ===== */
-.board-art,.lantern-band{pointer-events:none;user-select:none}
-.board-art{display:none}
-:root[data-theme="dark"] .board-art{display:block;position:fixed;inset:0;overflow:hidden;z-index:0}
-.board-art .lily-corner{position:absolute;height:auto;-webkit-mask-image:radial-gradient(closest-side,#000 62%,transparent 100%);mask-image:radial-gradient(closest-side,#000 62%,transparent 100%)}
-.board-art .lc-a{width:clamp(220px,19vw,380px);bottom:-3%;opacity:.55}
-.board-art .lc-b{width:clamp(170px,14vw,280px);top:30%;opacity:.42}
-.board-art .lc-c{width:clamp(130px,10vw,200px);top:4%;opacity:.3}
-.board-art .lc-left{left:-2vw;transform:scaleX(-1)}
-.board-art .lc-right{right:-2vw}
-.board-art .lc-left.lc-b{left:-4vw;transform:scaleX(-1) rotate(-12deg)}
-.board-art .lc-right.lc-b{right:-4vw;transform:rotate(-12deg)}
-.board-art .lc-left.lc-c{left:5vw;transform:scaleX(-1) rotate(14deg)}
-.board-art .lc-right.lc-c{right:5vw;transform:rotate(14deg)}
-/* 灯笼：浅色用纯红，深色用青红；整条在内容上方，内容整体下移，不压字 */
-.lantern-band{position:relative;display:block;width:100vw;margin:0 0 6px calc(50% - 50vw);height:clamp(150px,14vw,210px);overflow:hidden;
-  -webkit-mask-image:linear-gradient(to bottom,#000 72%,transparent 100%);mask-image:linear-gradient(to bottom,#000 72%,transparent 100%)}
-.lantern-band img{position:absolute;left:50%;top:-10%;width:max(100vw,1100px);height:auto;max-width:none;transform:translateX(-50%);transform-origin:50% 0;animation:lsway 7s ease-in-out infinite alternate}
-.lantern-band .lt-d{display:none}
-:root[data-theme="dark"] .lantern-band .lt-l{display:none}
-:root[data-theme="dark"] .lantern-band .lt-d{display:block}
-@keyframes lsway{from{transform:translateX(-50%) rotate(-.5deg)}to{transform:translateX(-50%) rotate(.5deg)}}
-@media (prefers-reduced-motion:reduce){.lantern-band img{animation:none}}
-@media (max-width:719px){.lantern-band{height:150px}.lantern-band img{width:310vw;top:-17px}}
-
-/* ===== 大屏：纸纹理（排名柱、香、整体淡淡纸纤维）===== */
-.stage .bcol .b{border-radius:0;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.02 .55' numOctaves='3' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1.1 -.42'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)' opacity='.55'/%3E%3C/svg%3E"),
-  url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' seed='3'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .9 -.3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='.35'/%3E%3C/svg%3E");
-  clip-path:polygon(0 5px,8% 1px,19% 6px,31% 0,44% 5px,58% 1px,71% 6px,84% 2px,93% 5px,100% 0,100% 100%,0 100%)}
-.stage .bcol:nth-child(3n+2) .b{clip-path:polygon(0 2px,12% 6px,26% 1px,40% 5px,55% 0,68% 5px,80% 1px,92% 6px,100% 3px,100% 100%,0 100%)}
-.stage .bcol:nth-child(3n) .b{clip-path:polygon(0 6px,10% 2px,24% 5px,37% 0,52% 6px,63% 2px,77% 6px,88% 1px,100% 5px,100% 100%,0 100%)}
-.xiang .stick{background-image:repeating-linear-gradient(90deg,rgba(255,255,255,.07) 0 2px,transparent 2px 9px),repeating-linear-gradient(180deg,rgba(0,0,0,.18) 0 1px,transparent 1px 3px),linear-gradient(180deg,#4f7268,#2a463f);border-radius:2px}
-.xiang .ash{background-image:repeating-linear-gradient(90deg,#a3b3ad 0 7px,#84958f 7px 10px),url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='20'%3E%3Cfilter id='h'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' seed='5'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 -.4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23h)' opacity='.4'/%3E%3C/svg%3E");background-blend-mode:normal}
 .stage::after{content:"";position:absolute;inset:0;z-index:3;pointer-events:none;opacity:.07;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.012 .5' numOctaves='3' seed='11'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1.2 -.45'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23p)'/%3E%3C/svg%3E")}
 
 /* ===== 玩家手机页：下方一级菜单（大屏/本队），上方二级菜单（本队/任务/鬼市/房间，只在「本队」出现） ===== */
@@ -1061,14 +1028,53 @@ body.inmk::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:6
   body[data-role="player"] .subtabs.top button{flex:none;min-height:34px;padding:0 14px;border:1px solid var(--line);border-radius:999px;font-size:13px;font-weight:700;background:transparent;color:var(--sub)}
   body[data-role="player"] .subtabs.top button[aria-selected="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:900}
 }
-@media (max-width:719px){.board-art .lc-b,.board-art .lc-c{display:none}.board-art .lc-a{width:130px;opacity:.35}}
 @media (max-width:819px){.stage .rh{flex-wrap:wrap;gap:2px 12px}.stage .rh b{white-space:nowrap}}
 /* 大屏在总控/开发者窗口里：舞台按宽高缩放，不出现内部滚动条 */
 @media (min-width:820px){body.board:not(.screen) #view{overflow-y:hidden;scrollbar-gutter:auto}}
-.stage .bcol .b{min-height:46px}
-/* 16:9 全屏时两侧没有空边：花只贴着屏幕边，更淡，不压标题和播报 */
-@media (max-aspect-ratio:17/9){
-  .board-art .lc-b,.board-art .lc-c{display:none}
-  .board-art .lc-a{opacity:.3;width:clamp(180px,14vw,300px)}
-  .board-art .lc-left.lc-a{left:-7vw}.board-art .lc-right.lc-a{right:-7vw}
-}
+
+/* ===== 2026-10-05 第三轮 ===== */
+/* 灯笼：缩小，居中整条；手机从最左边开始截取（不截中间）；底部不再黑色渐隐，流苏完整 */
+.lantern-band{pointer-events:none;user-select:none;position:relative;display:flex;justify-content:center;width:100vw;margin:0 0 8px calc(50% - 50vw);overflow:hidden}
+.lantern-band img{flex:none;display:block;width:clamp(760px,62vw,1000px);height:auto;max-width:none;transform-origin:50% 0;animation:lsway 7s ease-in-out infinite alternate;
+  -webkit-mask-image:linear-gradient(to right,transparent,#000 7%,#000 93%,transparent);mask-image:linear-gradient(to right,transparent,#000 7%,#000 93%,transparent)}
+.lantern-band .lt-d{display:none}
+:root[data-theme="dark"] .lantern-band .lt-l{display:none}
+:root[data-theme="dark"] .lantern-band .lt-d{display:block}
+@keyframes lsway{from{transform:rotate(-.4deg)}to{transform:rotate(.4deg)}}
+@media (prefers-reduced-motion:reduce){.lantern-band img{animation:none}}
+@media (max-width:719px){.lantern-band{justify-content:flex-start;height:150px}.lantern-band img{width:250vw;margin-top:-26px;-webkit-mask-image:none;mask-image:none}}
+
+/* 大屏排名柱：顶边只留很轻的起伏；纸纹用上传的纸 */
+.stage .bcol .b{border-radius:0;min-height:46px;background-image:url(img/paper.webp);background-size:cover;background-blend-mode:multiply;
+  clip-path:polygon(0 3px,25% 0,50% 3px,75% 1px,100% 3px,100% 100%,0 100%)}
+.xiang .stick{background-image:url(img/paper.webp);background-size:cover;background-blend-mode:multiply;background-color:#4f7268;border-radius:2px}
+
+/* 黑白无常：中间大面具，左右各一栏 */
+.wc-mask{pointer-events:none;user-select:none;display:flex;justify-content:center;align-items:flex-start}
+.wc-mask img{display:block;width:100%;max-width:560px;height:auto}
+:root .wuchang-layout{grid-template-columns:minmax(0,1fr) minmax(300px,.95fr) minmax(0,1fr);gap:24px;align-items:start}
+@media (max-width:959px){:root .wuchang-layout{grid-template-columns:minmax(0,1fr) minmax(200px,.7fr) minmax(0,1fr);gap:12px}}
+@media (max-width:719px){:root .wuchang-layout{grid-template-columns:minmax(0,1fr)}.wc-mask{grid-row:1}.wc-mask img{max-width:70vw}}
+
+/* 玩家本队页：终极任务进度 */
+.fin3{display:flex;flex-direction:column;gap:12px;margin-bottom:12px}
+.fhd{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:var(--panel)}
+.fhd .ft{display:flex;align-items:baseline;gap:12px}
+.fhd .fn{font:800 40px var(--mono);color:var(--accent);line-height:1}
+.fhd .fn i{font-style:normal;font-size:20px;color:var(--sub)}
+.fhd .fs{font-size:15px;font-weight:700;color:var(--ink);flex:1 1 200px;text-align:right}
+.fcs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.fc{border:1.5px dashed var(--line2);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0;background:var(--panel)}
+.fc.ok{border-style:solid;border-color:var(--accent);background:var(--cb)}
+.fc .fh{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.fc .fh b{font-size:15px;font-weight:900}
+.fc .fk{font-size:12px;font-weight:800;color:var(--sub);white-space:nowrap}
+.fc.ok .fk{color:var(--accent)}
+.fc .fx{font-size:14px;font-weight:800;color:var(--sub)}
+.fc.ok .fx{color:var(--accent)}
+.fc .fscore{font-size:34px;font-weight:800;line-height:1.1;color:var(--ink)}
+.fc.ok .fscore{color:var(--accent)}
+.fc .suits4{gap:6px}
+.fc .s4{padding:5px 10px}
+.fc .dt{width:18px;height:18px}
+@media (max-width:719px){.fcs{grid-template-columns:minmax(0,1fr)}.fhd .fs{text-align:left}}

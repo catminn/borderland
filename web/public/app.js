@@ -128,13 +128,13 @@ function viewBoard(){
       +'<div class="su">'+SUITS.map(s=>'<span class="'+(t.cards.some(c=>c.includes(s))?'got ':'')+(isRed(s)?'sr':'')+'">'+s+'</span>').join('')+'</div></div>';}).join('');
   const bc=broadcast();
   const run=CLOCK&&CLOCK.running;
-  return '<div class="board-art" aria-hidden="true"><img class="lily-corner lc-left lc-a" src="img/lily-paper.webp" alt=""><img class="lily-corner lc-left lc-b" src="img/lily-paper.webp" alt=""><img class="lily-corner lc-left lc-c" src="img/lily-paper.webp" alt=""><img class="lily-corner lc-right lc-a" src="img/lily-paper.webp" alt=""><img class="lily-corner lc-right lc-b" src="img/lily-paper.webp" alt=""><img class="lily-corner lc-right lc-c" src="img/lily-paper.webp" alt=""></div><div class="stage-wrap"><div class="stage">'
+  return '<div class="stage-wrap"><div class="stage">'
     +'<div class="left"><div class="hd"><div class="ttl">百鬼夜行</div><div class="en">CORNELL CSSA 万圣夜</div></div>'
     +'<div class="clock"><span class="cap">'+(run?'剩余时间':'已暂停 · 剩余时间')+'</span><span class="ck mono'+(run?'':' paused')+'" id="sclk">'+remStr(S.t)+'</span>'
     +incense()+(S.gp?'<div class="gatebar"><b>鬼门开</b><span>各房间暂停预约与入场，已开始的可打完当前一局'+(S.gp.win?'；'+team(S.gp.win).name+'已率先完成':'')+'</span></div>':'')+'</div>'
     +'<div class="cast"><span class="cap" style="padding-bottom:8px">全场播报</span>'
     +(bc.length?bc.map(b=>'<div class="bc '+b.c+'"><span class="t">'+fmt(b.t)+'</span><span class="x">'+esc(b.x)+'</span></div>').join(''):'<div class="bc"><span class="x muted">暂无播报</span></div>')+'</div></div>'
-    +'<div class="right"><div class="rank"><div class="rh"><b>队伍冥币排名</b><span>终极：四色齐 · 全员活 · 积分 ≥ '+FINAL_SCORE+'</span></div><div class="bars">'+bars+'</div></div>'
+    +'<div class="right"><div class="rank"><div class="rh"><b>队伍冥币排名</b></div><div class="bars">'+bars+'</div></div>'
     +'<div class="rgrid">'+ROOMS.map(r=>roomCard(r,pt,cap)).join('')+'</div></div>'
     +'</div></div>';
 }
@@ -372,7 +372,7 @@ function viewWuchang(){
     +(wait.length?'<div class="mlist">'+wait.map(p=>'<div class="mrow">'+meta(p)+'<button class="btn-main glow" data-a="pickup" data-p="'+p.id+'">接到了</button></div>').join('')+'</div>':'<div class="empty">现在没有人需要接。</div>')+'</section>';
   const right='<section class="mcol"><div class="shrow"><h2 class="sh">送入鬼市 / 确认</h2><span class="hint">已接到的人送去鬼市；孟婆已登记的人在这里确认</span></div>'
     +(go.length?'<div class="mlist">'+go.map(p=>'<div class="mrow ok">'+meta(p)+(p.chk&&!p.chk.ok?chkBit(p):'<button class="btn-main glow" data-a="checkin" data-p="'+p.id+'">送入鬼市</button>')+'</div>').join('')+'</div>':'<div class="empty">没有需要送入或确认的人。</div>')+'</section>';
-  return '<div class="page mkt eq wuchang-layout">'+left+right+'</div>';
+  return '<div class="page mkt eq wuchang-layout">'+left+'<div class="wc-mask" aria-hidden="true"><img src="img/mask-tongue.webp" alt=""></div>'+right+'</div>';
 }
 
 // ---------- 生死簿 ----------
@@ -569,10 +569,19 @@ function viewPlayer(){
     return '<div class="hrow"><span class="mono">'+fmt(h.t0)+'</span><b>'+cardG(r)+' '+(r.n===4?'简单':'困难')+'</b><span class="hres '+(h.res==='win'?'w':h.res==='lose'?'l':'')+'">'+res+'</span></div>';}).join('');
   const histSec=hist?'<div class="pn histp"><h3>房间记录</h3>'+hist+'</div>':'';
   const fin=st.k==='free'?'<div class="fin ok">'+st.txt+'</div>':'';
-  const teamSec='<div class="tsum"><div class="mini"><span class="cap">队伍冥币</span><span class="cv">'+t.score+'</span></div>'
-    +'<div class="mini" style="gap:8px"><span class="cap">存活 <span class="mono" style="font-weight:700;font-size:14px;color:var(--ink)">'+a+' / '+size(t.id)+'</span></span><div class="dots">'+dots+'</div></div>'
-    +'<div class="mini frag"><span class="cap">花色</span><div class="suits4">'+suits+'</div>'+fin+'</div></div>'+histSec
-    
+  // 终极任务进度：三个条件各一张卡，一眼看出离终极还差什么
+  const gotN=SUITS.filter(x=>t.cards.some(c=>c.includes(x))).length,sz=size(t.id);
+  const okS=gotN===SUITS.length,okA=a===sz,okP=t.score>=FINAL_SCORE,doneN=[okS,okA,okP].filter(Boolean).length;
+  const cc=(ok,ttl,body)=>'<div class="fc'+(ok?' ok':'')+'"><div class="fh"><b>'+ttl+'</b><span class="fk">'+(ok?'✓ 已达成':'未达成')+'</span></div>'+body+'</div>';
+  const need=[!okS?'再集齐 '+(SUITS.length-gotN)+' 种花色':'',!okA?'复活 '+(sz-a)+' 名队友':'',!okP?'再赚 '+(FINAL_SCORE-t.score)+' 冥币':''].filter(Boolean);
+  const finSec='<div class="fin3"><div class="fhd"><div class="ft"><span class="cap">终极任务进度</span><b class="fn">'+doneN+'<i> / 3</i></b></div>'
+    +'<div class="fs">'+(st.k==='free'?st.txt:doneN===3?'三个条件都已满足，等待总控放行。':'还差：'+need.join('、'))+'</div></div>'
+    +'<div class="fcs">'
+    +cc(okS,'集齐四种花色','<div class="suits4">'+suits+'</div><div class="fx mono">'+gotN+' / '+SUITS.length+'</div>')
+    +cc(okA,'全员存活','<div class="dots">'+dots+'</div><div class="fx mono">'+a+' / '+sz+'</div>')
+    +cc(okP,'队伍冥币 ≥ '+FINAL_SCORE,'<div class="fscore mono">'+t.score+'</div><div class="bar"><span class="ok" style="width:'+Math.min(100,t.score/FINAL_SCORE*100)+'%"></span></div><div class="fx mono">'+t.score+' / '+FINAL_SCORE+(okP?'':'（差 '+(FINAL_SCORE-t.score)+'）')+'</div>')
+    +'</div></div>';
+  const teamSec=finSec+histSec
   ;const skillsPart=!FEATURES.cards?'':''
     +'<div class="skrow"><span class="cap">本队技能卡</span>'+(t.skills.length?'<div class="skills">'+t.skills.map(k=>'<button class="sk'+(ui.skillOpen===k.sid?' on':'')+'" data-a="skill" data-v="'+k.sid+'" aria-expanded="'+(ui.skillOpen===k.sid)+'">'+esc(k.name)+'</button>').join('')+'</div>':'<span class="muted small">暂无。鬼市里的人可用个人冥币购买。</span>')+'</div>'
     +((sk=>sk?'<div class="skd"><b>'+esc(sk.name)+'</b>'+(sk.desc?'<span class="d">'+esc(sk.desc)+'</span>':'')+'<span class="small">'+esc(sk.by)+' 于 '+fmt(sk.t)+' 在鬼市买入</span><span class="small">使用时找工作人员出示这一页。</span></div>':'')(t.skills.find(k=>k.sid===ui.skillOpen)));
@@ -608,10 +617,10 @@ function viewPlayer(){
         +'<button data-a="donate" data-p="'+p.id+'">冥币助力</button></div>':'')+'</div>';};
   const mkSec='<div class="shrow"><h2 class="sh" style="font-size:22px">被淘汰的队友</h2></div>'
     +(mk.length?mk.map(p=>mate(p,p.id===me.id)).join(''):'<div class="pn"><span class="muted">本队现在没有人被淘汰。</span></div>');
-  if(me.st!=='alive'&&ui.sub.player==='market')ui.sub.player='team';
-  const tabs=[['team','本队'],['task','任务'+(unread?'<b class="cnt">'+unread+'</b>':'')],...(me.st==='alive'?[['market','鬼市'+(mk.length?'<b class="cnt">'+mk.length+'</b>':'')]]:[])];
+  if(ui.sub.player==='market')ui.sub.player='team';
+  const tabs=[['team','本队'],['task','任务'+(unread?'<b class="cnt">'+unread+'</b>':'')],];
   return (me.st!=='alive'?LANTERNS:'')+'<div class="page tabbed toptabs allin">'+sub('player',tabs,'top')
-    +'<div class="pcol l">'+wen+sec('player','team',teamSec)+(me.st==='alive'?sec('player','market',mkSec).replace('class="sec','class="sec'+(mk.length?'':' mk0')):'')+(skillsPart?sec('player','team',skillsPart):'')+'</div>'
+    +'<div class="pcol l">'+wen+sec('player','team',teamSec)+(me.st==='alive'?sec('player','team',mkSec).replace('class="sec','class="sec'+(mk.length?'':' mk0')):'')+(skillsPart?sec('player','team',skillsPart):'')+'</div>'
     +'<div class="pcol r">'+sec('player','task',taskSec)+'</div></div>';
 }
 // 预约按钮置灰时点击：弹窗说明现在为什么不能预约
@@ -677,7 +686,7 @@ const THEME_KEY=r=>'borderland.theme.'+r;
 const themeKey=()=>ui.tab==='board'?'screen':ME&&ME.role==='player'?'player':'staff';
 // 被淘汰、已被接到或在鬼市：整页红色提示，强制深色
 const inMarketNow=()=>{const p=ME&&ME.role==='player'&&S&&S.players.find(x=>x.id===ME.pid);return !!(p&&p.st!=='alive');};
-function themeFor(){const r=themeKey();if(r==='player'&&inMarketNow())return 'dark';let v=null;try{v=localStorage.getItem(THEME_KEY(r));}catch{/* private mode */}
+function themeFor(){const r=themeKey();if(ME&&(ME.role==='mengpo'||ME.role==='wuchang'))return 'dark';if(r==='player'&&inMarketNow())return 'dark';let v=null;try{v=localStorage.getItem(THEME_KEY(r));}catch{/* private mode */}
   return v||(r==='screen'?'dark':'light');}
 const themed=()=>true;
 
@@ -719,7 +728,7 @@ function render(){
   $('#logout').hidden=false;$('#conn').hidden=false;
   const run=CLOCK&&CLOCK.running;
   const cc=$('#clockctl');cc.hidden=ME.role!=='ctrl';cc.textContent=run?'暂停计时':'开始计时';
-  const th=$('#theme');th.hidden=!themed()||(themeKey()==='player'&&inMarketNow());th.textContent=themeFor()==='dark'?'浅色':'深色';
+  const th=$('#theme');th.hidden=!themed()||(themeKey()==='player'&&inMarketNow())||ME.role==='mengpo'||ME.role==='wuchang';th.textContent=themeFor()==='dark'?'浅色':'深色';
   $('.clk').classList.toggle('paused',!run);$('#clkdot').className='gd'+(run?'':' off');
   if(!S){$('#view').innerHTML='<section class="pn muted">正在连接服务器…</section>';return;}
   R.use(S);S.t=nowT();$('#clk').textContent=fmt(S.t);

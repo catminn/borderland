@@ -8,7 +8,7 @@
   --cutz:polygon(0 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,calc(100% - 14px) calc(100% - 7px),calc(100% - 21px) 100%,calc(100% - 28px) calc(100% - 7px),calc(100% - 35px) 100%,0 calc(100% - 7px)); /* 锯齿底边 */
 
   /* ② 纸纹：只给大面积底色与卡片，透明度 .09 */
-  --grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .25 0 0 0 0 .22 0 0 0 0 .15 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.09'/%3E%3C/svg%3E");
+  --grain:url(img/paper.webp);
 
   /* ③ 剪纸饱和色块：只做点缀（下垫纸、窗花、胶带、图钉），队伍 8 色不动 */
   --vm:#d6412b; --in:#2c4577; --gd:#e2ad2f; --paper:#f3eedf;
@@ -30,13 +30,15 @@
 }
 
 
-body{background-image:var(--grain),var(--tex,none)}
+body{background-image:var(--grain),var(--tex,none);background-size:cover,auto;background-repeat:no-repeat,no-repeat;background-attachment:fixed,scroll;background-blend-mode:multiply,normal}
+body.board,body.screen{background-image:var(--tex,none)}
 /* 大面板只加一层很淡的纸纹，不改形状 */
-.pn:not(.dash),.hero,.tcard,.mate,.note,.mini,.room,.rt{background-image:var(--grain)}
+.pn:not(.dash),.hero,.tcard,.mate,.note,.mini,.room,.rt,.fc,.fhd{background-image:var(--grain);background-size:cover;background-repeat:no-repeat;background-blend-mode:multiply}
+.stage .room,.stage .rt{background-image:none}
 /* 通行证 / 登录卡：整张纸，一圈手剪边 + 一层硬投影（全站只有这两处有） */
 .wen,.lg{position:relative;isolation:isolate;background:none!important;border-color:transparent!important;border-radius:0!important;box-shadow:none!important}
 .wen{--pb:var(--wpaper);--pe:var(--wline)}
 .lg{--pb:#101a1d;--pe:#22363c;--edge:rgba(95,224,180,.3)}
 :is(.wen,.lg)::before,:is(.wen,.lg)::after{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;clip-path:var(--cut2)}
-:is(.wen,.lg)::before{background:var(--grain),linear-gradient(var(--pb),var(--pb));box-shadow:inset 0 0 0 1px var(--pe),inset 0 0 0 3px var(--edge)}
+:is(.wen,.lg)::before{background:var(--grain),linear-gradient(var(--pb),var(--pb));background-size:cover,auto;background-repeat:no-repeat;background-blend-mode:multiply;box-shadow:inset 0 0 0 1px var(--pe),inset 0 0 0 3px var(--edge)}
 :is(.wen,.lg)::after{z-index:-2;background:var(--shadow);transform:translate(3px,4px)}
