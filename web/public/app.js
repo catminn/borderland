@@ -33,7 +33,7 @@ let ui={ddOpen:null,don:{},tab:null,room:'3S',pick:'',res:{},settled:null,hookTe
   pub:{kind:'鬼门开',reward:0,title:'',body:'',target:'all',team:'R',players:[],mins:10,to:'all',sqTeam:'',quest:''},
   admin:{pins:null,snaps:null,counts:{dealer:8,judge:3,mengpo:2,wuchang:1,ctrl:2,screen:1},ask:null,resetTxt:''}};
 const $=s=>document.querySelector(s);
-const ROLE_TABS={ctrl:['ctrl','board','dealer','npc','market','wuchang'],dealer:['dealer'],judge:['npc'],mengpo:['market'],wuchang:['wuchang'],screen:['board'],player:['board','player']};
+const ROLE_TABS={ctrl:['board','ctrl','dealer','npc','market','wuchang'],dealer:['dealer'],judge:['npc'],mengpo:['market'],wuchang:['wuchang'],screen:['board'],player:['board','player']};
 const TAB_NAME={board:'大屏',player:'本队',dealer:'Dealer',ctrl:'生死簿',npc:'判官',market:'鬼市',wuchang:'黑白无常'};
 const ROLE_NAME={player:'玩家',dealer:'Dealer',judge:'判官',mengpo:'孟婆',wuchang:'黑白无常',ctrl:'总控',screen:'大屏'};
 const nowT=()=>!CLOCK?0:CLOCK.running?CLOCK.base+Math.floor((Date.now()+OFFSET-CLOCK.at)/1000):CLOCK.base;
@@ -245,7 +245,7 @@ function inboundPanel(){
   const rows=wait.map(p=>'<div class="mrow'+(p.st==='picked'?' ok':'')+'"><div class="l1"><span class="id">'+p.id+'</span>'+tchip(p.team)
     +'<span class="stay">'+(p.st==='picked'?'<b>已被黑白无常接到</b>':'等黑白无常来接')+'</span></div>'
     +'<div class="l1"><span class="stay">淘汰位置：<b>'+esc(p.at||'未记录')+'</b>　已等 <b class="mono">'+mm(S.t-p.outAt)+'</b></span></div>'
-    +'<button class="btn-main'+(p.st==='picked'?' glow':'')+'" data-a="checkin" data-p="'+p.id+'">登记入鬼市（check-in）</button></div>').join('');
+    +'<button class="btn-main'+(p.st==='picked'?' glow':'')+'" data-a="checkin" data-p="'+p.id+'">登记入鬼市</button></div>').join('');
   return '<section class="mcol"><div class="shrow"><h2 class="sh">待入鬼市</h2><span class="hint">登记后开始计时并领 300 冥币，另一方确认</span></div>'
     +(rows?'<div class="mlist">'+rows+'</div>':'<div class="empty">现在没有等着入鬼市的人。</div>')+'</section>';
 }
@@ -328,17 +328,17 @@ function teamRows(){
   const parts=list.map(t=>{const st=teamStatus(t),a=alive(t.id).length;
     const dots=S.players.filter(p=>p.team===t.id).map(p=>'<span class="dt'+(p.st==='alive'?'':' out')+'" title="'+p.id+(p.st==='alive'?'':'（鬼市）')+'"></span>').join('');
     const sq=SUITS.map(s=>'<span class="sq'+(t.cards.some(c=>c.includes(s))?' got':'')+'" title="'+TYPE[s]+'"><span class="'+(isRed(s)?'sr':'')+'">'+s+'</span></span>').join('');
-    const sk=!FEATURES.cards?downTxt(t.id):t.skills.length?t.skills.map(k=>'<button class="sk'+(ui.tskOpen===k.sid?' on':'')+'" data-a="tsk" data-v="'+k.sid+'" aria-expanded="'+(ui.tskOpen===k.sid)+'">'+esc(k.name)+'</button>').join(''):'<span class="small">无</span>';
+    const sk=!FEATURES.cards?'':t.skills.length?t.skills.map(k=>'<button class="sk'+(ui.tskOpen===k.sid?' on':'')+'" data-a="tsk" data-v="'+k.sid+'" aria-expanded="'+(ui.tskOpen===k.sid)+'">'+esc(k.name)+'</button>').join(''):'<span class="small">无</span>';
     const ok=t.skills.find(k=>k.sid===ui.tskOpen);
     const det=ok?'<div class="skd"><b>'+esc(ok.name)+'</b>'+(ok.desc?'<span class="d">'+esc(ok.desc)+'</span>':'<span class="small">没有效果说明</span>')+'<span class="small">'+esc(ok.by)+' 于 '+fmt(ok.t)+' 在鬼市买入</span></div>':'';
-    const fin='<span class="pill '+(st.k==='free'?'free':st.k==='bad'?'bad':'')+'">'+st.txt+'</span>'+(t.final?'<button class="btn-line" data-a="final" data-v="'+t.id+'" data-off="1">取消终极任务</button>':st.k==='free'?'<button class="btn-line fill" data-a="final" data-v="'+t.id+'">开启终极任务</button>':'');
+    const fin='<button class="btn-line'+(st.k==='free'?' fill':'')+'" data-a="final" data-v="'+t.id+'"'+(st.k!=='free'||t.final?' disabled':'')+(t.final?' title="终极任务已开启"':'')+'>'+(st.k==='free'?'开启终极任务':'未达成条件')+'</button>';
     return {t,a,dots,sq,sk,fin,det};});
-  const tbl='<div class="tbl"><div class="tr th"><span>队伍</span><span>存活</span><span>冥币</span><span>四色花色</span><span>'+(FEATURES.cards?'技能卡':'淘汰状态')+'</span><span>终极</span></div>'
+  const tbl='<div class="tbl'+(FEATURES.cards?'':' no-skills')+'"><div class="tr th"><span>队伍</span><span>存活</span><span>冥币</span><span>四色花色</span>'+(FEATURES.cards?'<span>技能卡</span>':'')+'<span>终极</span></div>'
     +parts.map(({t,a,dots,sq,sk,fin,det})=>'<div class="trg" style="'+tv(t.id)+'"><div class="tr"><span class="tn">'+tsq(t.id)+t.name+'</span><span class="dots">'+dots+'<span class="mono" style="font-weight:700;font-size:14px;margin-left:6px">'+a+'/'+size(t.id)+'</span></span>'
-      +'<span class="cn">'+t.score+'</span><span class="sqs">'+sq+'</span><span class="tags">'+sk+'</span><span>'+fin+'</span></div>'+(det?'<div class="skdrow">'+det+'</div>':'')+'</div>').join('')+'</div>';
+      +'<span class="cn">'+t.score+'</span><span class="sqs">'+sq+'</span>'+(FEATURES.cards?'<span class="tags">'+sk+'</span>':'')+'<span>'+fin+'</span></div>'+(det?'<div class="skdrow">'+det+'</div>':'')+'</div>').join('')+'</div>';
   const cards='<div class="tcards">'+parts.map(({t,a,dots,sq,sk,fin,det})=>'<div class="tcard" style="'+tv(t.id)+'"><div class="r">'+tsq(t.id,32)+'<b style="font-size:18px">'+t.name+'</b><span class="cn">'+t.score+'</span></div>'
     +'<div class="r dots">'+dots+'<span class="small" style="margin-left:4px">存活 <span class="mono" style="color:var(--ink)">'+a+'/'+size(t.id)+'</span></span></div>'
-    +'<div class="r"><span class="sqs">'+sq+'</span><span style="margin-left:auto">'+fin+'</span></div><div class="tags">'+sk+'</div>'+det+'</div>').join('')+'</div>';
+    +'<div class="r"><span class="sqs">'+sq+'</span><span style="margin-left:auto">'+fin+'</span></div>'+(FEATURES.cards?'<div class="tags">'+sk+'</div>':'')+det+'</div>').join('')+'</div>';
   return tbl+cards;
 }
 function coinAmt(){const v=parseInt(String(ui.coinAmt).replace(/[^\d-]/g,''),10);return Number.isFinite(v)?v:0;}
@@ -376,7 +376,7 @@ function pubPanel(){
       +(f.target==='player'?'<div class="fld"><span>选择队员（可多选）</span>'+dd('pub.players',pl.length?pl.length+' 人':'','选择队员',null,S.teams.flatMap(t=>[{group:t.name},...S.players.filter(p=>p.team===t.id).map(p=>({v:p.id,label:p.id,c:TC[t.id][0],note:p.st==='alive'?'':'已淘汰'}))]),true)
         +(pl.length?'<div class="selchips">'+pl.map(id=>'<button class="selchip" data-a="unpick" data-k="pub.players" data-v="'+id+'" aria-label="去掉 '+id+'"><span class="sw" style="--c:'+TC[teamOf(id)][0]+'"></span>'+id+'<b>×</b></button>').join('')+'</div>':'')+'</div>':'')+'</div>'
     :gate?'<span class="small">发给全场玩家，先到先得，被完成时全场播报。</span>'
-    :'<div class="fld"><span>发给哪个队伍（剩余人数少的排前面）</span><div class="chips c2">'+sqTeams.map(t=>cb({k:'pub.sqTeam',v:t.id,on:f.sqTeam===t.id,c:TC[t.id][0],label:t.name,small:'剩余 '+alive(t.id).length+'/'+size(t.id)+' 人'})).join('')+'</div></div>'
+    :'<div class="fld"><span>发给哪个队伍</span><div class="chips c2">'+sqTeams.map(t=>cb({k:'pub.sqTeam',v:t.id,on:f.sqTeam===t.id,c:TC[t.id][0],label:t.name,small:'剩余 '+alive(t.id).length+'/'+size(t.id)+' 人'})).join('')+'</div></div>'
       +'<div class="fld"><span>题库</span><div class="chips c2">'+QUESTS.map(x=>cb({k:'pub.quest',v:x.id,on:f.quest===x.id,label:esc(x.title),small:'+'+x.reward+' 冥币'})).join('')+'</div></div>'
       +(q?'<div class="lot">'+esc(q.body)+'</div>':'');
   const form='<div class="pn" style="gap:14px">'
@@ -414,7 +414,7 @@ function adminPanel(){
     +'<span class="small" style="font-weight:700;color:'+(run?'var(--accent)':'var(--sub)')+'">'+(run?'● 计时中':'❚❚ 已暂停')+'</span></div>'
     +'<div class="pn"><h3>开局</h3><span class="small">8 队随机分到 8 个房间。只有还没有队伍进过房间时才能用。</span><div class="btns"><button class="btn-line acc" data-a="assign">开局随机分房</button></div></div>'
     +'<div class="pn"><div class="shrow"><h3>PIN</h3><span class="small">按数量补齐工作人员 PIN</span></div>'
-    +'<div class="cnts">'+num('dealer','Dealer（固定）',1)+num('judge','判官')+num('mengpo','孟婆')+num('wuchang','黑白无常（固定）',1)+num('ctrl','总控')+num('screen','大屏')+'</div>'
+    +'<div class="cnts">'+num('dealer','Dealer（固定）',1)+num('judge','判官')+num('mengpo','孟婆')+num('wuchang','黑白无常',1)+num('ctrl','总控')+num('screen','大屏')+'</div>'
     +'<div class="btns"><button class="btn-line acc" data-a="adm-gen">生成 PIN</button><button class="btn-line" data-a="adm-pins">查看全部 PIN</button></div>'+pins+'</div></div>';
   const rs=A.resetTxt==='重置';
   const right='<div class="stack"><div class="pn"><h3>备份与恢复</h3><span class="small">每 10 次操作自动备份一次；重置、恢复、载入演示数据前都会先备份当前数据。</span>'

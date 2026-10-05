@@ -938,3 +938,6 @@ body.inmk::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:6
 .cnts{grid-template-columns:repeat(auto-fit,minmax(104px,1fr));align-items:end}
 .cnts .fld>span{white-space:nowrap}
 .cnts{grid-template-columns:repeat(3,minmax(0,1fr))}
+
+/* Team status table without the disabled skill-card column. */
+.tbl.no-skills .tr{grid-template-columns:minmax(110px,.8fr) minmax(150px,1.2fr) minmax(80px,.6fr) minmax(130px,1fr) minmax(150px,1fr)}
