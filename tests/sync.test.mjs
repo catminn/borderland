@@ -178,9 +178,13 @@ await admin.act({ type: 'admin.reset', demo: false });
     await sleep(300);
     T('shared demo: second user sees the same game', sb.S.teams.find(t => t.id === 'R').score === 4242);
     T('shared demo does not touch the real game', admin.S.teams.find(t => t.id === 'R').score === realR);
-    T('shared demo may use clock + reset only', !(await sa.act({ type: 'admin.genpins', counts: {}, as: { role: 'ctrl' } })).ok && (await sa.act({ type: 'admin.reset', demo: true, as: { role: 'ctrl' } })).ok);
-    await sleep(300);
+    const realPins = (await admin.act({ type: 'admin.pins' })).data.length;
+    const gp = await sa.act({ type: 'admin.genpins', counts: { judge: 1 }, as: { role: 'ctrl' } });
+    T('shared demo can generate its own PINs (not login-able, real PIN list untouched)', gp.ok && gp.data.length > 48 && (await admin.act({ type: 'admin.pins' })).data.length === realPins);
+    T('shared demo reset', (await sa.act({ type: 'admin.reset', demo: true, as: { role: 'ctrl' } })).ok); await sleep(300);
     T('shared reset reaches the other user', sb.S.teams.find(t => t.id === 'R').score !== 4242);
+    const sn = (await sa.act({ type: 'admin.snaps', as: { role: 'ctrl' } })).data;
+    T('shared demo restore from backup reaches the other user', sn.length >= 1 && (await sa.act({ type: 'admin.restore', key: sn[0].key, as: { role: 'ctrl' } })).ok && (await sleep(300), sb.S.teams.find(t => t.id === 'R').score === 4242));
     [sa, sb].forEach(c => c.close());
     // several demo PINs, each with its own sandbox
     T('second demo pin (shared, write)', (await dv.act({ type: 'dev.setdemo', pin: '246802', mode: 'shared', write: true })).ok);

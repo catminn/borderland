@@ -8,6 +8,7 @@ const ROLE_NAME = { player: '玩家', dealer: 'Dealer', judge: '判官', mengpo:
 const STAFF_ROLES = ['dealer', 'judge', 'mengpo', 'wuchang', 'ctrl', 'screen'];
 const FIXED = { dealer: 8, wuchang: 1 };   // 8 个房间一人一间；黑白无常只有 1 个人
 const SNAP_EVERY = 10, SNAP_KEEP = 30, LOG_KEEP = 1500;
+const SBOX_SNAP_KEEP = 8, SBOX_LOG_KEEP = 300, DEMO_MAX = 30;   // a shared demo game stays small: few backups, short log, capped number of 展示 PINs
 
 const json = (o, status = 200) => new Response(JSON.stringify(o), {
   status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
@@ -40,18 +41,20 @@ export class Game extends DurableObject {
   async getD(pin) {
     if (!this.Ds[pin]) {
       let d = await this.ctx.storage.get('sandbox:' + pin);
-      if (!d) { const g = R.newGame(true); d = { S: g, clock: { running: false, base: g.t, at: Date.now() } }; await this.ctx.storage.put('sandbox:' + pin, d); }
+      if (!d) { const g = R.newGame(true); d = { S: g, clock: { running: false, base: g.t, at: Date.now() } }; }
+      d.pins = d.pins || {}; d.snaps = d.snaps || [];
+      await this.ctx.storage.put('sandbox:' + pin, d);
       this.Ds[pin] = d;
     }
     return this.Ds[pin];
   }
   async sandbox(pin, fn) {   // run fn against that 展示 PIN's shared demo game instead of the real one
-    const D = await this.getD(pin), keep = { S: this.S, clock: this.clock };
-    this.S = D.S; this.clock = D.clock; this.inSandbox = true;
-    try { return await fn(); } finally { D.S = this.S; D.clock = this.clock; this.S = keep.S; this.clock = keep.clock; this.inSandbox = false; }
+    const D = await this.getD(pin), keep = { S: this.S, clock: this.clock, auth: this.auth };
+    this.S = D.S; this.clock = D.clock; this.auth = { ...this.auth, pins: D.pins }; this.inSandbox = D;   // this game's own PIN list + backups
+    try { return await fn(); } finally { D.S = this.S; D.clock = this.clock; if (D.S.log.length > SBOX_LOG_KEEP) D.S.log.length = SBOX_LOG_KEEP; this.S = keep.S; this.clock = keep.clock; this.auth = keep.auth; this.inSandbox = null; }
   }
   async snapshot(tag) {
-    if (this.inSandbox) return;
+    if (this.inSandbox) { const D = this.inSandbox; D.snaps.unshift({ at: Date.now(), t: this.now(), tag, S: JSON.parse(JSON.stringify(this.S)), clock: { ...this.clock } }); D.snaps.length = Math.min(D.snaps.length, SBOX_SNAP_KEEP); return; }
     await this.ctx.storage.put('snap:' + String(Date.now()).padStart(15, '0'), { S: this.S, clock: this.clock, tag, t: this.now() });
     const keys = [...(await this.ctx.storage.list({ prefix: 'snap:', keysOnly: true })).keys()];
     if (keys.length > SNAP_KEEP) await this.ctx.storage.delete(keys.slice(0, keys.length - SNAP_KEEP));
@@ -156,6 +159,7 @@ export class Game extends DurableObject {
         return done('已删除展示 PIN ' + pin);
       }
       const pin = String(a.pin || '').trim(), old = String(a.old || '');
+      if (!old && Object.keys(this.auth.demos).length >= DEMO_MAX) return R.no('展示 PIN 最多 ' + DEMO_MAX + ' 个，先删掉不用的');
       if (!/^\d{6}$/.test(pin)) return R.no('展示 PIN 要是 6 位数字');
       if ((this.env.ADMIN_PIN && pin === String(this.env.ADMIN_PIN)) || (this.env.DEV_PIN && pin === String(this.env.DEV_PIN)) || this.auth.pins[pin] || (this.auth.demos[pin] && pin !== old)) return R.no('这个 PIN 已被别的身份用了，换一个');
       if (old && old !== pin && this.auth.demos[old]) { kick(old); delete this.auth.demos[old]; delete this.Ds[old]; await this.ctx.storage.delete('sandbox:' + old); }
@@ -173,7 +177,7 @@ export class Game extends DurableObject {
       delete a.as;
     }
     if (typeof a.type === 'string' && a.type.startsWith('admin.')) {
-      if (isDemo && !(isShared && (a.type === 'admin.clock' || a.type === 'admin.reset'))) return R.no('展示模式不能用这个总控工具');
+      if (isDemo && !isShared) return R.no('展示模式不能用总控工具');
       if (s.role !== 'ctrl') return R.no('只有总控能做这个操作');
       return this.admin(a);
     }
@@ -234,10 +238,16 @@ export class Game extends DurableObject {
         return ok((v.pid || v.label) + ' 的新 PIN：' + pin, { changed: false, auth: true, data: this.pinList() });
       }
       case 'admin.snaps': {
+        if (this.inSandbox) return ok('', { changed: false, data: this.inSandbox.snaps.map(x => ({ key: 's' + x.at, at: x.at, t: x.t, tag: x.tag })) });
         const list = await this.ctx.storage.list({ prefix: 'snap:' });
         return ok('', { changed: false, data: [...list].reverse().map(([key, v]) => ({ key, at: +key.slice(5), t: v.t, tag: v.tag })) });
       }
       case 'admin.restore': {
+        if (this.inSandbox) {
+          const D = this.inSandbox, x = D.snaps.find(y => 's' + y.at === String(a.key)); if (!x) return R.no('找不到这个备份');
+          await this.snapshot('恢复前'); this.S = JSON.parse(JSON.stringify(x.S)); this.clock = { ...x.clock, running: false, base: x.t, at: Date.now() };
+          return ok('已恢复到备份（计时暂停，确认无误后再开始）');
+        }
         const snap = await this.ctx.storage.get(String(a.key || ''));
         if (!snap || !String(a.key).startsWith('snap:')) return R.no('找不到这个备份');
         await this.snapshot('恢复前');
