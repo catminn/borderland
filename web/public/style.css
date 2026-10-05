@@ -1016,7 +1016,19 @@ body.inmk::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:6
 @media (max-width:719px){#scene .ge{-webkit-mask-image:none;mask-image:none}}
 
 /* ===== 2026-10-05 剪纸素材：透明图，不加框，不用混合模式 ===== */
-.lantern-band{pointer-events:none;user-select:none}
+.board-art,.lantern-band{pointer-events:none;user-select:none}
+.board-art{display:none}
+:root[data-theme="dark"] .board-art{display:block;position:fixed;inset:0;overflow:hidden;z-index:0}
+.board-art .lily-corner{position:absolute;height:auto;-webkit-mask-image:radial-gradient(closest-side,#000 62%,transparent 100%);mask-image:radial-gradient(closest-side,#000 62%,transparent 100%)}
+.board-art .lc-a{width:clamp(220px,19vw,380px);bottom:-3%;opacity:.55}
+.board-art .lc-b{width:clamp(170px,14vw,280px);top:30%;opacity:.42}
+.board-art .lc-c{width:clamp(130px,10vw,200px);top:4%;opacity:.3}
+.board-art .lc-left{left:-2vw;transform:scaleX(-1)}
+.board-art .lc-right{right:-2vw}
+.board-art .lc-left.lc-b{left:-4vw;transform:scaleX(-1) rotate(-12deg)}
+.board-art .lc-right.lc-b{right:-4vw;transform:rotate(-12deg)}
+.board-art .lc-left.lc-c{left:5vw;transform:scaleX(-1) rotate(14deg)}
+.board-art .lc-right.lc-c{right:5vw;transform:rotate(14deg)}
 /* 灯笼：浅色用纯红，深色用青红；整条在内容上方，内容整体下移，不压字 */
 .lantern-band{position:relative;display:block;width:100vw;margin:0 0 6px calc(50% - 50vw);height:clamp(150px,14vw,210px);overflow:hidden;
   -webkit-mask-image:linear-gradient(to bottom,#000 72%,transparent 100%);mask-image:linear-gradient(to bottom,#000 72%,transparent 100%)}
@@ -1029,15 +1041,34 @@ body.inmk::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:6
 @media (max-width:719px){.lantern-band{height:150px}.lantern-band img{width:310vw;top:-17px}}
 
 /* ===== 大屏：纸纹理（排名柱、香、整体淡淡纸纤维）===== */
+.stage .bcol .b{border-radius:0;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.02 .55' numOctaves='3' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1.1 -.42'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)' opacity='.55'/%3E%3C/svg%3E"),
+  url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' seed='3'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .9 -.3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='.35'/%3E%3C/svg%3E");
+  clip-path:polygon(0 5px,8% 1px,19% 6px,31% 0,44% 5px,58% 1px,71% 6px,84% 2px,93% 5px,100% 0,100% 100%,0 100%)}
+.stage .bcol:nth-child(3n+2) .b{clip-path:polygon(0 2px,12% 6px,26% 1px,40% 5px,55% 0,68% 5px,80% 1px,92% 6px,100% 3px,100% 100%,0 100%)}
+.stage .bcol:nth-child(3n) .b{clip-path:polygon(0 6px,10% 2px,24% 5px,37% 0,52% 6px,63% 2px,77% 6px,88% 1px,100% 5px,100% 100%,0 100%)}
 .xiang .stick{background-image:repeating-linear-gradient(90deg,rgba(255,255,255,.07) 0 2px,transparent 2px 9px),repeating-linear-gradient(180deg,rgba(0,0,0,.18) 0 1px,transparent 1px 3px),linear-gradient(180deg,#4f7268,#2a463f);border-radius:2px}
 .xiang .ash{background-image:repeating-linear-gradient(90deg,#a3b3ad 0 7px,#84958f 7px 10px),url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='20'%3E%3Cfilter id='h'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' seed='5'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 -.4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23h)' opacity='.4'/%3E%3C/svg%3E");background-blend-mode:normal}
+.stage::after{content:"";position:absolute;inset:0;z-index:3;pointer-events:none;opacity:.07;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.012 .5' numOctaves='3' seed='11'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1.2 -.45'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23p)'/%3E%3C/svg%3E")}
 
 /* ===== 玩家手机页：下方一级菜单（大屏/本队），上方二级菜单（本队/任务/鬼市/房间，只在「本队」出现） ===== */
-@media (max-width:719px){body[data-role="player"]:not(.login) .wrap{padding-bottom:96px}}
+@media (max-width:719px){
+  body[data-role="player"]:not(.login) #tabs{position:fixed;left:0;right:0;bottom:0;z-index:41;margin:0;gap:0;overflow:visible;background:var(--panel2);border-top:1px solid var(--line);padding:0 6px calc(env(safe-area-inset-bottom) + 8px)}
+  body[data-role="player"]:not(.login) #tabs button{flex:1 1 0;min-height:64px;border:none;border-top:3px solid transparent;border-radius:0;background:transparent;font-size:19px;justify-content:center;color:var(--sub)}
+  body[data-role="player"]:not(.login) #tabs button[aria-selected="true"]{border-top-color:var(--accent);color:var(--accent);font-weight:900;background:transparent}
+  body[data-role="player"]:not(.login) .wrap{padding-bottom:96px}
+  body[data-role="player"] .subtabs.top{position:static;display:flex;gap:6px;flex-wrap:nowrap;overflow-x:auto;background:none;border:0;padding:0;grid-column:1/-1}
+  body[data-role="player"] .subtabs.top button{flex:none;min-height:34px;padding:0 14px;border:1px solid var(--line);border-radius:999px;font-size:13px;font-weight:700;background:transparent;color:var(--sub)}
+  body[data-role="player"] .subtabs.top button[aria-selected="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:900}
+}
+@media (max-width:719px){.board-art .lc-b,.board-art .lc-c{display:none}.board-art .lc-a{width:130px;opacity:.35}}
 @media (max-width:819px){.stage .rh{flex-wrap:wrap;gap:2px 12px}.stage .rh b{white-space:nowrap}}
-
-/* 彼岸花（paper.css 的 .fl）：用真透明图，普通混合 */
-.stage .fl{mix-blend-mode:normal;opacity:.34;filter:none}
+/* 大屏在总控/开发者窗口里：舞台按宽高缩放，不出现内部滚动条 */
+@media (min-width:820px){body.board:not(.screen) #view{overflow-y:hidden;scrollbar-gutter:auto}}
 .stage .bcol .b{min-height:46px}
-/* 纸片卡片各自成层后，展开的下拉要盖在后面的卡片上 */
-:is(.pn,.tcard,.hero,.mini,.note,.room,.mate,.skd):has(.dd.open){z-index:50}
+/* 16:9 全屏时两侧没有空边：花只贴着屏幕边，更淡，不压标题和播报 */
+@media (max-aspect-ratio:17/9){
+  .board-art .lc-b,.board-art .lc-c{display:none}
+  .board-art .lc-a{opacity:.3;width:clamp(180px,14vw,300px)}
+  .board-art .lc-left.lc-a{left:-7vw}.board-art .lc-right.lc-a{right:-7vw}
+}

@@ -128,7 +128,7 @@ function viewBoard(){
       +'<div class="su">'+SUITS.map(s=>'<span class="'+(t.cards.some(c=>c.includes(s))?'got ':'')+(isRed(s)?'sr':'')+'">'+s+'</span>').join('')+'</div></div>';}).join('');
   const bc=broadcast();
   const run=CLOCK&&CLOCK.running;
-  return '<div class="stage-wrap"><div class="stage"><div class="fl l" aria-hidden="true"><img src="img/lily-paper.webp" alt=""></div><div class="fl r" aria-hidden="true"><img src="img/lily-paper.webp" alt=""></div>'
+  return '<div class="board-art" aria-hidden="true"><img class="lily-corner lc-left lc-a" src="img/lily-paper.webp" alt=""><img class="lily-corner lc-left lc-b" src="img/lily-paper.webp" alt=""><img class="lily-corner lc-left lc-c" src="img/lily-paper.webp" alt=""><img class="lily-corner lc-right lc-a" src="img/lily-paper.webp" alt=""><img class="lily-corner lc-right lc-b" src="img/lily-paper.webp" alt=""><img class="lily-corner lc-right lc-c" src="img/lily-paper.webp" alt=""></div><div class="stage-wrap"><div class="stage">'
     +'<div class="left"><div class="hd"><div class="ttl">百鬼夜行</div><div class="en">CORNELL CSSA 万圣夜</div></div>'
     +'<div class="clock"><span class="cap">'+(run?'剩余时间':'已暂停 · 剩余时间')+'</span><span class="ck mono'+(run?'':' paused')+'" id="sclk">'+remStr(S.t)+'</span>'
     +incense()+(S.gp?'<div class="gatebar"><b>鬼门开</b><span>各房间暂停预约与入场，已开始的可打完当前一局'+(S.gp.win?'；'+team(S.gp.win).name+'已率先完成':'')+'</span></div>':'')+'</div>'

@@ -202,7 +202,8 @@ npm run dev:pages                             # 正式部署的路径（Pages+Wo
 - **玩家手机页菜单**：下方固定一级（大屏 / 本队，大）；上方二级（本队 / 任务 / 鬼市 / 房间，小号胶囊，只在「本队」页出现）。电脑不变。
 - 测试注意：联测里「展示模式 PIN」几项依赖干净状态（`rm -rf worker/.wrangler/state` 且服务器停着时清）和环境变量 `DEV_PIN`（= `worker/.dev.vars` 里的值）；全场播报断言已放宽到现在的日志用词。
 
-## 7.7 Design 剪纸风稿接入（2026-10-05）
+## 7.7 Design 剪纸风稿接入（2026-10-05，已精简）
 
-- Design 导出包的核心是 `web/public/paper.css`（已加入仓库，`index.html` 里在 `style.css` 之后加载）：不改 DOM，用 `::before/::after` 给卡片、按钮、通行证、房间卡、大屏底板做手剪纸边 + 纸纹 + 硬投影，排名柱手撕顶边；手机玩家页下方一级/上方二级菜单也以它为准。包里的 app.js/style.css 是旧快照，**以仓库源码为准**，没有照搬。
-- 彼岸花改用 paper.css 的 `.stage .fl l/r`（在舞台内，`viewBoard` 里加了两个 div）；删掉 `board-art` 和我之前的排名柱纹理 / 手机菜单 CSS。灯笼（`LANTERNS`）保留。`.tape`、`.stack`、`.asset` 等 paper.css 里的件目前没有使用。
+- Design 导出包里的 `paper.css` 加进了仓库（`index.html` 在 `style.css` 之后加载），但用户反馈「剪纸边太多、太琐碎」，所以**只保留纸纹**（body 和面板的淡颗粒）和**两处纸片边**（酆都通行证 `.wen`、登录卡 `.lg`：手剪边 + 一层硬投影）。按钮、标签、卡片、房间卡、大屏底板/排名柱/房间卡全部回到 7e99230 的样子（大屏用 §7.6 的排名柱纹理 + 手剪顶边，不用 paper.css 的版面改动）。包里的 app.js/style.css 是旧快照，以仓库源码为准。
+- 彼岸花：回到 `.board-art` 固定背景，每侧 3 朵（下大、中、上小，半透明、径向渐隐，不再有硬裁边）；16:9 全屏时只留两侧最下面两朵、更淡。
+- 总控/开发者窗口看大屏时 `#view` 不再出现内部滚动条（`body.board:not(.screen) #view{overflow-y:hidden}`）；之前滚动条是 paper.css 额外的 padding 撑出来的。
