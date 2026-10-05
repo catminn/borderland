@@ -25,6 +25,7 @@ export class Game extends DurableObject {
       this.S = await ctx.storage.get('state');
       this.clock = (await ctx.storage.get('clock')) || { running: false, base: 0, at: Date.now() };
       this.auth = (await ctx.storage.get('auth')) || { pins: {}, sessions: {} };
+      if (this.S && R.needsReset(this.S)) { await ctx.storage.put('snap:' + String(Date.now()).padStart(15, '0'), { S: this.S, clock: this.clock, tag: '规则升级前', t: this.S.t || 0 }); this.S = null; this.clock = { running: false, base: 0, at: Date.now() }; await ctx.storage.put('clock', this.clock); }
       if (!this.S) { this.S = R.newGame(false); await this.persist(true); }
       // 展示模式: any number of 展示 PINs {pin: {mode, write}}. 共享 mode = one demo game per PIN (this.Ds), never touching the real game.
       this.Ds = {};
@@ -41,7 +42,7 @@ export class Game extends DurableObject {
   async getD(pin) {
     if (!this.Ds[pin]) {
       let d = await this.ctx.storage.get('sandbox:' + pin);
-      if (!d) { const g = R.newGame(true); d = { S: g, clock: { running: false, base: g.t, at: Date.now() } }; }
+      if (!d || R.needsReset(d.S)) { const g = R.newGame(true); d = { S: g, clock: { running: false, base: g.t, at: Date.now() } }; }
       d.pins = d.pins || {}; d.snaps = d.snaps || [];
       await this.ctx.storage.put('sandbox:' + pin, d);
       this.Ds[pin] = d;

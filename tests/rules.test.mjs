@@ -1,0 +1,42 @@
+// Pure rules tests (no server): time-dependent behaviour.
+import * as R from '../shared/rules.js';
+let bad = 0; const T = (n, c) => { console.log((c ? 'ok   ' : 'FAIL ') + n); if (!c) bad++; };
+const me = r => ({ role: r }), A = (r, a) => R.apply(S, me(r), a);
+const S = R.newGame(false);
+// reservation expires after 2 minutes, no other timeout
+R.use(S); S.t = 100;
+T('reserve', A('ctrl', { type: 'reserve', tid: 'R', rid: '4S' }).ok);
+S.t = 100 + 119; T('still reserved at 119s', R.rstate(S.rooms[0]) === 'rsv');
+S.t = 100 + 120; T('lapsed at 120s', R.rstate(S.rooms[0]) === 'open' && A('ctrl', { type: 'reserve', tid: 'B', rid: '4S' }).ok);
+S.t = 5000; A('ctrl', { type: 'enter', tid: 'B', rid: '4S' }); S.t = 5000 + 3600;
+T('game never auto-ends', S.rooms[0].st === 'play' && A('ctrl', { type: 'finish', rid: '4S', results: { B: 'win' } }).ok);
+S.t += 9999; A('ctrl', { type: 'ping' }); T('reset never auto-reopens', S.rooms[0].st === 'reset');
+// scavenger: 2 per rolling 10 min, 600 cap, no repeats
+const give = (q, t) => { S.t = t; const p = A('ctrl', { type: 'publish', f: { kind: 'sidequest', team: 'K', quest: q } }); if (!p.ok) return p; return A('judge', { type: 'done', nid: S.notices[0].id, cid: 'K' }); };
+const base = 20000;
+T('q1 ok', give('q1', base).ok); T('q2 ok', give('q2', base + 60).ok);
+T('3rd within 10 min refused', !give('q3', base + 300).ok);
+const inf = R.scavInfo('K'); T('next time = oldest + 600', inf.nextAt === base + 600 && inf.left === 400);
+T('rolling, not fixed blocks: ok again at base+600', give('q3', base + 600).ok);
+T('two recent (q2 at +60, q3 at +600): base+650 still refused', !give('q4', base + 650).ok);
+T('q4 ok at base+660', give('q4', base + 660).ok);
+T('q5 ok', give('q5', base + 1300).ok); T('q6 ok (600 reached)', give('q6', base + 1300 + 5).ok);
+T('capped: no more points', !give('q7', base + 5000).ok && R.scavInfo('K').capped && S.teams.find(t => t.id === 'K').score === 600);
+// undo restores quota and removes the record
+const nid = S.notices.find(n => n.q === 'q6').id; A('judge', { type: 'undone', nid, cid: 'K' });
+T('undo frees quota', R.scavInfo('K').left === 100 && S.teams.find(t => t.id === 'K').score === 500);
+// market: initial 200, threshold 500, carry <= 100, no farming
+const S2 = R.newGame(false); R.use(S2); S2.t = 10;
+const ap = (r, a) => R.apply(S2, me(r), a);
+ap('ctrl', { type: 'enter', tid: 'R', rid: '4S' }); ap('ctrl', { type: 'finish', rid: '4S', results: { R: 'lose' }, picks: { R: 'R-02' } });
+T('mengpo-first check-in keeps player in out', ap('mengpo', { type: 'checkin', pid: 'R-02' }).ok && S2.players.find(p => p.id === 'R-02').st === 'out');
+T('initiator cannot confirm', !ap('mengpo', { type: 'confirm', pid: 'R-02' }).ok);
+T('wuchang confirms -> market 200', ap('wuchang', { type: 'confirm', pid: 'R-02' }).ok && S2.players.find(p => p.id === 'R-02').coins === 200);
+ap('mengpo', { type: 'coin', pid: 'R-02', coins: 900 });
+T('900 -> carry capped at 100', ap('mengpo', { type: 'coin', pid: 'R-02', coins: 950 }).ok === false);
+const sc0 = S2.teams[0].score; ap('mengpo', { type: 'revive', pid: 'R-02' });
+T('revive: 500 spent, only 100 returns', S2.teams[0].score === sc0 + 100 && S2.players.find(p => p.id === 'R-02').st === 'alive');
+// final: forced entry lists unmet conditions
+const t = S2.teams[1]; T('finalMiss lists unmet items (score, suits)', R.finalMiss(t).length === 2);
+T('ctrl forces final', ap('ctrl', { type: 'final', tid: t.id, on: true }).ok && t.final);
+console.log(bad ? bad + ' FAILED' : 'RULES PASSED'); process.exit(bad ? 1 : 0);
