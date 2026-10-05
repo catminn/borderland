@@ -128,7 +128,7 @@ function viewBoard(){
       +'<div class="su">'+SUITS.map(s=>'<span class="'+(t.cards.some(c=>c.includes(s))?'got ':'')+(isRed(s)?'sr':'')+'">'+s+'</span>').join('')+'</div></div>';}).join('');
   const bc=broadcast();
   const run=CLOCK&&CLOCK.running;
-  return '<div class="board-art" aria-hidden="true"><img class="lily-corner lc-left" src="img/lily-paper.webp" alt=""><img class="lily-corner lc-right" src="img/lily-paper.webp" alt=""></div><div class="stage-wrap"><div class="stage">'
+  return '<div class="board-art" aria-hidden="true"><img class="lily-corner lc-left" src="img/lily-paper.webp" alt=""><img class="lily-corner lc-right" src="img/lily-paper.webp" alt=""><img class="lily-corner lc-left lc-up" src="img/lily-paper.webp" alt=""><img class="lily-corner lc-right lc-up" src="img/lily-paper.webp" alt=""></div><div class="stage-wrap"><div class="stage">'
     +'<div class="left"><div class="hd"><div class="ttl">百鬼夜行</div><div class="en">CORNELL CSSA 万圣夜</div></div>'
     +'<div class="clock"><span class="cap">'+(run?'剩余时间':'已暂停 · 剩余时间')+'</span><span class="ck mono'+(run?'':' paused')+'" id="sclk">'+remStr(S.t)+'</span>'
     +incense()+(S.gp?'<div class="gatebar"><b>鬼门开</b><span>各房间暂停预约与入场，已开始的可打完当前一局'+(S.gp.win?'；'+team(S.gp.win).name+'已率先完成':'')+'</span></div>':'')+'</div>'
@@ -326,7 +326,7 @@ function viewMarket(){
         :'<button class="btn-main'+(ok?' glow':'')+'" data-a="revive" data-p="'+p.id+'"'+(ok?'':' disabled')+'>'+(ok?'买命回队':'差 '+(COIN_GOAL-tot))+'</button>')+'</div></div>';}).join('');
   const left='<section class="mcol"><div class="shrow"><h2 class="sh">孟婆买命</h2><span class="hint">凑够 '+COIN_GOAL+' 即可回队；回队扣 '+COIN_GOAL+'，多出的最多 '+R.CARRY_MAX+' 存回队伍，凑够后不能再刷分</span></div>'
     +(rows?'<div class="mlist">'+rows+'</div>':'<div class="empty">鬼市现在没有人。</div>')+'</section>';
-  return '<div class="page-art lantern-art" aria-hidden="true"><img src="img/lantern-paper.webp" alt=""></div><div class="page mkt">'+left+(FEATURES.cards?cardsPanel(mk):inboundPanel())+'</div>';
+  return ''+LANTERNS+'<div class="page mkt">'+left+(FEATURES.cards?cardsPanel(mk):inboundPanel())+'</div>';
 }
 // 技能卡商铺（暂时关闭，FEATURES.cards 打开后恢复）
 function cardsPanel(mk){
@@ -372,7 +372,7 @@ function viewWuchang(){
     +(wait.length?'<div class="mlist">'+wait.map(p=>'<div class="mrow">'+meta(p)+'<button class="btn-main glow" data-a="pickup" data-p="'+p.id+'">接到了</button></div>').join('')+'</div>':'<div class="empty">现在没有人需要接。</div>')+'</section>';
   const right='<section class="mcol"><div class="shrow"><h2 class="sh">送入鬼市 / 确认</h2><span class="hint">已接到的人送去鬼市；孟婆已登记的人在这里确认</span></div>'
     +(go.length?'<div class="mlist">'+go.map(p=>'<div class="mrow ok">'+meta(p)+(p.chk&&!p.chk.ok?chkBit(p):'<button class="btn-main glow" data-a="checkin" data-p="'+p.id+'">送入鬼市</button>')+'</div>').join('')+'</div>':'<div class="empty">没有需要送入或确认的人。</div>')+'</section>';
-  return '<div class="page mkt eq wuchang-layout">'+left+'<div class="page-art mask-art" aria-hidden="true"><img src="img/mask-paper.webp" alt=""></div>'+right+'</div>';
+  return '<div class="page mkt eq wuchang-layout">'+left+right+'</div>';
 }
 
 // ---------- 生死簿 ----------
@@ -537,6 +537,7 @@ function downBanner(me){
   if(me.st==='market')return '<div class="oban mk" role="status"><b>你在鬼市</b><span>已待 <i class="mono">'+mm(S.t-me.inAt)+'</i> 　合计冥币 <i class="mono">'+(me.coins+me.bail)+'</i> / '+COIN_GOAL+'</span></div>';
   return '<div class="oban" role="status"><b>你已被淘汰</b><span>'+(me.st==='picked'?'黑白无常已接到你，正在送你去鬼市':'留在原地，等黑白无常来接你')+'</span></div>';
 }
+const LANTERNS='<div class="lantern-band" aria-hidden="true"><img class="lt-l" src="img/lantern-light.webp" alt=""><img class="lt-d" src="img/lantern-dark.webp" alt=""></div>';
 function viewPlayer(){
   const me=S.players.find(p=>p.id===ME.pid),t=team(me.team);
   if(t.final)return viewFinal(me,t);
@@ -609,7 +610,7 @@ function viewPlayer(){
     +(mk.length?mk.map(p=>mate(p,p.id===me.id)).join(''):'<div class="pn"><span class="muted">本队现在没有人被淘汰。</span></div>');
   if(me.st!=='alive'&&ui.sub.player==='market')ui.sub.player='team';
   const tabs=[['team','本队'],['task','任务'+(unread?'<b class="cnt">'+unread+'</b>':'')],...(me.st==='alive'?[['market','鬼市'+(mk.length?'<b class="cnt">'+mk.length+'</b>':'')]]:[])];
-  return '<div class="page tabbed toptabs allin">'+sub('player',tabs,'top')
+  return (me.st!=='alive'?LANTERNS:'')+'<div class="page tabbed toptabs allin">'+sub('player',tabs,'top')
     +'<div class="pcol l">'+wen+sec('player','team',teamSec)+(me.st==='alive'?sec('player','market',mkSec).replace('class="sec','class="sec'+(mk.length?'':' mk0')):'')+(skillsPart?sec('player','team',skillsPart):'')+'</div>'
     +'<div class="pcol r">'+sec('player','task',taskSec)+'</div></div>';
 }

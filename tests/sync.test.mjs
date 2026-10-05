@@ -80,7 +80,7 @@ await admin.act({ type: 'gateend' });
 const pc = await client(P.player);
 T('player cannot hook', !(await pc.act({ type: 'hook', actor: 'B', pid: 'R-01' })).ok);
 T('player cannot use admin', !(await pc.act({ type: 'admin.reset', demo: false })).ok);
-T('player view: only broadcast log lines, no shop', pc.S.shop.length === 0 && pc.S.log.length > 0 && pc.S.log.every(l => /勾魂|抽签淘汰|孟婆汤|赢下|率先完成/.test(l.text)));
+T('player view: only broadcast log lines, no shop', pc.S.shop.length === 0 && pc.S.log.length > 0 && pc.S.log.every(l => /勾魂|淘汰|买命|拿下|率先完成|鬼门开|赢下/.test(l.text)));
 
 // dealer -> screen
 if (await dealer.$('[data-a=room]')) await dealer.click('[data-a=room][data-v="8D"]'); await dealer.click('[data-a=pick][data-k=pick][data-v=C]'); await dealer.click('[data-a=enter]');

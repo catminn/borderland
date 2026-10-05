@@ -192,3 +192,12 @@ npm run dev:pages                             # 正式部署的路径（Pages+Wo
 - `web/functions/api/[[path]].js` — Pages 转发
 - `web/wrangler.jsonc` — Pages 配置（DO 绑定 script_name=borderland-game）
 - `tests/` — 联测
+
+## 7.6 剪纸风视觉修订（2026-10-05，已实现）
+
+- 素材一律**不加框、不用混合模式**（`mix-blend-mode:screen` 在 fixed/层叠上下文里会出黑方块）：`web/public/img/` 里的 `lily-paper.webp`、`lantern-light.webp`（纯红，浅色用）、`lantern-dark.webp`（青红，深色用）都是真透明图（黑 = 透明转成 alpha）。已删除乱贴的素材：鬼市灯笼旧图、黑白无常页的面具（`mask-paper.webp` 文件还在但不再引用）。登录页纸人保持无框站立。
+- **彼岸花**：大屏（深色）`.board-art` 固定背景，左右各两朵（下方大一朵 + 偏上小一朵），半透明、裁在屏幕边缘，在内容下面；手机只留底部两朵、更淡。
+- **灯笼**（`LANTERNS`，app.js）：鬼市页顶部整条；玩家被淘汰/在鬼市时（玩家页强制深色）也在页面顶部；买命回队后消失。浅色显示 `lt-l`，深色显示 `lt-d`；整条在文档流里，内容整体下移，不压字；底部渐隐（流苏不盖按钮）；手机约 6 个、居中；轻微摆动，`prefers-reduced-motion` 关闭。
+- **大屏纹理**：排名柱纸纤维 + 手剪不齐的顶边（`clip-path`，按 3 种循环），香有纤维纹，整个舞台一层很淡的纸纹（`.stage::after`，普通混合）。大屏手机窄屏标题允许换行。
+- **玩家手机页菜单**：下方固定一级（大屏 / 本队，大）；上方二级（本队 / 任务 / 鬼市 / 房间，小号胶囊，只在「本队」页出现）。电脑不变。
+- 测试注意：联测里「展示模式 PIN」几项依赖干净状态（`rm -rf worker/.wrangler/state` 且服务器停着时清）和环境变量 `DEV_PIN`（= `worker/.dev.vars` 里的值）；全场播报断言已放宽到现在的日志用词。

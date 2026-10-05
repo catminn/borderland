@@ -1015,26 +1015,51 @@ body.inmk::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:6
 #scene .ge{left:0;top:0;width:100%;height:100%;filter:brightness(.82) saturate(.9);-webkit-mask-image:linear-gradient(to bottom,#000 72%,transparent 96%);mask-image:linear-gradient(to bottom,#000 72%,transparent 96%)}
 @media (max-width:719px){#scene .ge{-webkit-mask-image:none;mask-image:none}}
 
-/* Paper-cut decorations: dark-mode pages only, no interaction hitboxes. */
-.board-art,.page-art{display:none;pointer-events:none;user-select:none}
-:root[data-theme="dark"] .board-art{display:block;position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:0}
-.board-art .lily-corner{position:absolute;width:clamp(140px,12vw,260px);bottom:-12px;opacity:1;mix-blend-mode:screen;clip-path:inset(0 0 6% 0)}
-.board-art .lc-left{left:0;transform:scaleX(-1)}
-.board-art .lc-right{right:0;transform:none}
-.stage>.left,.stage>.right{position:relative;z-index:1}
-:root[data-theme="dark"] .page-art{display:flex;justify-content:center;align-items:center;margin:0 auto 14px;mix-blend-mode:screen;opacity:1}
-.page-art img{display:block;max-width:100%;object-fit:contain}
-.lantern-art{width:min(100%,1000px);height:130px}
-.lantern-art img{width:100%;height:100%}
-.mask-art{height:150px;width:140px}
-.mask-art img{height:100%;width:auto}
-@media(max-width:719px){.lantern-art{height:80px}.mask-art{height:110px}.board-art .lily-corner{width:100px;opacity:1}}
+/* ===== 2026-10-05 剪纸素材：透明图，不加框，不用混合模式 ===== */
+.board-art,.lantern-band{pointer-events:none;user-select:none}
+.board-art{display:none}
+:root[data-theme="dark"] .board-art{display:block;position:fixed;inset:0;overflow:hidden;z-index:0}
+.board-art .lily-corner{position:absolute;bottom:-4%;width:clamp(190px,17vw,330px);height:auto;opacity:.5}
+.board-art .lc-left{left:-7vw;transform:scaleX(-1) rotate(8deg)}
+.board-art .lc-right{right:-7vw;transform:rotate(8deg)}
+.board-art .lc-up{bottom:auto;top:24%;width:clamp(130px,11vw,220px);opacity:.38}
+.board-art .lc-left.lc-up{left:-5vw;transform:scaleX(-1) rotate(-10deg)}
+.board-art .lc-right.lc-up{right:-5vw;transform:rotate(-10deg)}
+/* 灯笼：浅色用纯红，深色用青红；整条在内容上方，内容整体下移，不压字 */
+.lantern-band{position:relative;display:block;width:100vw;margin:0 0 6px calc(50% - 50vw);height:clamp(150px,14vw,210px);overflow:hidden;
+  -webkit-mask-image:linear-gradient(to bottom,#000 72%,transparent 100%);mask-image:linear-gradient(to bottom,#000 72%,transparent 100%)}
+.lantern-band img{position:absolute;left:50%;top:-10%;width:max(100vw,1100px);height:auto;max-width:none;transform:translateX(-50%);transform-origin:50% 0;animation:lsway 7s ease-in-out infinite alternate}
+.lantern-band .lt-d{display:none}
+:root[data-theme="dark"] .lantern-band .lt-l{display:none}
+:root[data-theme="dark"] .lantern-band .lt-d{display:block}
+@keyframes lsway{from{transform:translateX(-50%) rotate(-.5deg)}to{transform:translateX(-50%) rotate(.5deg)}}
+@media (prefers-reduced-motion:reduce){.lantern-band img{animation:none}}
+@media (max-width:719px){.lantern-band{height:150px}.lantern-band img{width:310vw;top:-17px}}
 
-/* Full-width market canopy and central Wuchang mask. */
-:root[data-theme="dark"] .lantern-art{width:100vw;max-width:none;height:auto;margin:0 0 24px;margin-left:calc(50% - 50vw);overflow:hidden}
-.lantern-art img{width:100%;height:auto;object-fit:contain;mix-blend-mode:screen;-webkit-mask-image:linear-gradient(to bottom,#000 75%,transparent 100%);mask-image:linear-gradient(to bottom,#000 75%,transparent 100%)}
-:root[data-theme="dark"] .wuchang-layout{grid-template-columns:minmax(0,1fr) minmax(260px,.9fr) minmax(0,1fr);gap:24px;align-items:start}
-:root[data-theme="dark"] .wuchang-layout .mask-art{width:100%;height:auto;margin:0;align-self:start;mix-blend-mode:screen}
-.wuchang-layout .mask-art img{width:100%;height:auto;max-height:650px;object-fit:contain;-webkit-mask-image:radial-gradient(ellipse 70% 65% at 50% 48%,#000 65%,transparent 100%);mask-image:radial-gradient(ellipse 70% 65% at 50% 48%,#000 65%,transparent 100%)}
-@media(max-width:959px){:root[data-theme="dark"] .wuchang-layout{grid-template-columns:minmax(0,1fr) minmax(180px,.7fr) minmax(0,1fr);gap:12px}}
-@media(max-width:719px){:root[data-theme="dark"] .wuchang-layout{grid-template-columns:minmax(0,1fr)}:root[data-theme="dark"] .wuchang-layout .mask-art{grid-row:1;width:min(75vw,340px);justify-self:center}.wuchang-layout .mask-art img{max-height:420px}:root[data-theme="dark"] .lantern-art{width:calc(100% + 28px);margin-left:-14px;margin-right:-14px}.lantern-art img{max-width:none}}
+/* ===== 大屏：纸纹理（排名柱、香、整体淡淡纸纤维）===== */
+.stage .bcol .b{border-radius:0;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.02 .55' numOctaves='3' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1.1 -.42'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)' opacity='.55'/%3E%3C/svg%3E"),
+  url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' seed='3'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .9 -.3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='.35'/%3E%3C/svg%3E");
+  clip-path:polygon(0 5px,8% 1px,19% 6px,31% 0,44% 5px,58% 1px,71% 6px,84% 2px,93% 5px,100% 0,100% 100%,0 100%)}
+.stage .bcol:nth-child(3n+2) .b{clip-path:polygon(0 2px,12% 6px,26% 1px,40% 5px,55% 0,68% 5px,80% 1px,92% 6px,100% 3px,100% 100%,0 100%)}
+.stage .bcol:nth-child(3n) .b{clip-path:polygon(0 6px,10% 2px,24% 5px,37% 0,52% 6px,63% 2px,77% 6px,88% 1px,100% 5px,100% 100%,0 100%)}
+.xiang .stick{background-image:repeating-linear-gradient(90deg,rgba(255,255,255,.07) 0 2px,transparent 2px 9px),repeating-linear-gradient(180deg,rgba(0,0,0,.18) 0 1px,transparent 1px 3px),linear-gradient(180deg,#4f7268,#2a463f);border-radius:2px}
+.xiang .ash{background-image:repeating-linear-gradient(90deg,#a3b3ad 0 7px,#84958f 7px 10px),url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='20'%3E%3Cfilter id='h'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' seed='5'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 -.4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23h)' opacity='.4'/%3E%3C/svg%3E");background-blend-mode:normal}
+.stage::after{content:"";position:absolute;inset:0;z-index:3;pointer-events:none;opacity:.07;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.012 .5' numOctaves='3' seed='11'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1.2 -.45'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23p)'/%3E%3C/svg%3E")}
+
+/* ===== 玩家手机页：下方一级菜单（大屏/本队），上方二级菜单（本队/任务/鬼市/房间，只在「本队」出现） ===== */
+@media (max-width:719px){
+  body[data-role="player"]:not(.login) #tabs{position:fixed;left:0;right:0;bottom:0;z-index:41;margin:0;gap:0;overflow:visible;background:var(--panel2);border-top:1px solid var(--line);padding:0 6px calc(env(safe-area-inset-bottom) + 8px)}
+  body[data-role="player"]:not(.login) #tabs button{flex:1 1 0;min-height:64px;border:none;border-top:3px solid transparent;border-radius:0;background:transparent;font-size:19px;justify-content:center;color:var(--sub)}
+  body[data-role="player"]:not(.login) #tabs button[aria-selected="true"]{border-top-color:var(--accent);color:var(--accent);font-weight:900;background:transparent}
+  body[data-role="player"]:not(.login) .wrap{padding-bottom:96px}
+  body[data-role="player"] .subtabs.top{position:static;display:flex;gap:6px;flex-wrap:nowrap;overflow-x:auto;background:none;border:0;padding:0;grid-column:1/-1}
+  body[data-role="player"] .subtabs.top button{flex:none;min-height:34px;padding:0 14px;border:1px solid var(--line);border-radius:999px;font-size:13px;font-weight:700;background:transparent;color:var(--sub)}
+  body[data-role="player"] .subtabs.top button[aria-selected="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:900}
+}
+@media (max-width:719px){
+  .board-art .lc-up{display:none}
+  .board-art .lily-corner{width:120px;opacity:.32}
+  .board-art .lc-left{left:-40px}.board-art .lc-right{right:-40px}
+}
+@media (max-width:819px){.stage .rh{flex-wrap:wrap;gap:2px 12px}.stage .rh b{white-space:nowrap}}
