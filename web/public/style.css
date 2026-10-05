@@ -1009,3 +1009,8 @@ body.inmk::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:6
 .li .x.svx{display:flex;align-items:center;gap:6px 12px;flex-wrap:wrap}
 .li .x.svx b{font-weight:900}
 .li .x.svx .mono{font-size:14px}
+
+/* Replacement artwork uses the same 2:3 canvas and existing doll positions. */
+#scene .doll{mix-blend-mode:screen}
+#scene .ge{left:0;top:0;width:100%;height:100%;filter:brightness(.82) saturate(.9);-webkit-mask-image:linear-gradient(to bottom,#000 72%,transparent 96%);mask-image:linear-gradient(to bottom,#000 72%,transparent 96%)}
+@media (max-width:719px){#scene .ge{-webkit-mask-image:none;mask-image:none}}
