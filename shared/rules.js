@@ -164,7 +164,7 @@ function checkIn(pid,role){const p=S.players.find(x=>x.id===pid);
   return ok('已登记，等待另一方确认');}
 function confirmIn(pid,role){const p=S.players.find(x=>x.id===pid);
   if(!p||!['picked','market'].includes(p.st)||!p.chk)return no('没有待确认的登记');if(p.chk.ok)return no('已经确认过了');
-  const expected=p.chk.by==='mengpo'?'wuchang':p.chk.by==='wuchang'?'mengpo':null;
+  const expected=p.chk.by==='mengpo'?'wuchang':['wuchang','ctrl'].includes(p.chk.by)?'mengpo':null;
   if(!expected||role!==expected)return no('要由另一方确认，不能自己确认自己的登记');
   p.st='market';p.inAt=S.t;p.coins=300;p.bail=0;p.chk.ok=true;p.chk.by2=role;
   log(p.id+' 正式进入鬼市，由'+ROLE_LABEL[role]+'确认，领 300 冥币','back');
