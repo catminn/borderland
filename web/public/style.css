@@ -947,9 +947,6 @@ body.inmk::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:6
 .wen .w-lab b{font-weight:800;color:inherit;opacity:1}
 .wen[data-st="market"] .w-hint{color:var(--red)}
 
-.stage .bcol.mine{background:color-mix(in srgb,var(--c) 14%,transparent);box-shadow:0 0 0 3px var(--c),0 0 28px color-mix(in srgb,var(--c) 55%,transparent);border-radius:14px}
 .stage .bcol .nm .me{font-style:normal;font-size:16px;font-weight:900;padding:2px 8px;border-radius:6px;background:var(--c);color:#fff}
 
-.stage .bcol.mine{position:relative}
 .stage .bcol .nm span{white-space:nowrap}
-.stage .bcol .me{position:absolute;left:50%;bottom:-12px;transform:translateX(-50%);font-style:normal;font-size:15px;font-weight:900;padding:2px 10px;border-radius:6px;background:var(--c);color:#fff;white-space:nowrap}

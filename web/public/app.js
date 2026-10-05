@@ -101,10 +101,9 @@ function viewBoard(){
   const list=[...S.teams].sort((a,b)=>b.score-a.score),max=Math.max(1,list[0].score);
   let rk=0,prev=null;
   const bars=list.map((t,i)=>{if(t.score!==prev){rk=i+1;prev=t.score;}
-    const mine=ME&&ME.role==='player'&&ME.pid&&ME.pid.split('-')[0]===t.id;
-    return '<div class="bcol'+(mine?' mine':'')+'" style="'+tv(t.id)+'"><span class="v">'+t.score+'</span>'
+    return '<div class="bcol" style="'+tv(t.id)+'"><span class="v">'+t.score+'</span>'
       +'<div class="b" style="height:calc(var(--b0,56px) + '+(t.score/max).toFixed(3)+' * var(--b1,214px))" role="img" aria-label="'+t.name+' 第 '+rk+' 名，'+t.score+' 冥币">'+rk+'</div>'
-      +'<div class="nm">'+tsq(t.id)+'<span>'+t.name+'</span>'+'</div>'+(mine?'<em class="me">本队</em>':'')
+      +'<div class="nm">'+tsq(t.id)+'<span>'+t.name+'</span>'+'</div>'
       +'<div class="su">'+SUITS.map(s=>'<span class="'+(t.cards.some(c=>c.includes(s))?'got ':'')+(isRed(s)?'sr':'')+'">'+s+'</span>').join('')+'</div></div>';}).join('');
   const bc=broadcast();
   const run=CLOCK&&CLOCK.running;
@@ -514,9 +513,10 @@ function viewPlayer(){
     +(mk.length?mk.map(p=>mate(p,p.id===me.id)).join(''):'<div class="pn"><span class="muted">本队现在没有人被淘汰。</span></div>')
     +'<span class="small">花本队冥币 '+RATE+':1 换助力（队伍现有 <span class="mono" style="color:var(--ink)">'+t.score+'</span>）</span>';
   const roomSec='<h2 class="sh" style="font-size:22px">全部房间</h2><div class="prooms">'+ROOMS.map(r=>roomCard(r,t.id)).join('')+'</div>';
-  const tabs=[['team','本队'],['task','任务'+(unread?'<b class="cnt">'+unread+'</b>':'')],['market','鬼市'+(mk.length?'<b class="cnt">'+mk.length+'</b>':'')],['rooms','房间']];
+  if(me.st!=='alive'&&ui.sub.player==='market')ui.sub.player='team';
+  const tabs=[['team','本队'],['task','任务'+(unread?'<b class="cnt">'+unread+'</b>':'')],...(me.st==='alive'?[['market','鬼市'+(mk.length?'<b class="cnt">'+mk.length+'</b>':'')]]:[]),['rooms','房间']];
   return '<div class="page tabbed toptabs allin">'+sub('player',tabs,'top')
-    +'<div class="pcol l">'+wen+sec('player','team',teamSec)+sec('player','market',mkSec).replace('class="sec','class="sec'+(mk.length?'':' mk0'))+(skillsPart?sec('player','team',skillsPart):'')+sec('player','rooms',roomSec)+'</div>'
+    +'<div class="pcol l">'+wen+sec('player','team',teamSec)+(me.st==='alive'?sec('player','market',mkSec).replace('class="sec','class="sec'+(mk.length?'':' mk0')):'')+(skillsPart?sec('player','team',skillsPart):'')+sec('player','rooms',roomSec)+'</div>'
     +'<div class="pcol r">'+sec('player','task',taskSec)+'</div></div>';
 }
 function modalHtml(){
