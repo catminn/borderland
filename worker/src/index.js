@@ -25,9 +25,9 @@ export class Game extends DurableObject {
       this.clock = (await ctx.storage.get('clock')) || { running: false, base: 0, at: Date.now() };
       this.auth = (await ctx.storage.get('auth')) || { pins: {}, sessions: {} };
       if (!this.S) { this.S = R.newGame(false); await this.persist(true); }
-      // 展示模式·共享: one demo game that everyone using the 展示 PIN sees together (never touches the real game)
-      this.D = await ctx.storage.get('sandbox');
-      if (!this.D) { const g = R.newGame(true); this.D = { S: g, clock: { running: false, base: g.t, at: Date.now() } }; await ctx.storage.put('sandbox', this.D); }
+      // 展示模式: any number of 展示 PINs {pin: {mode, write}}. 共享 mode = one demo game per PIN (this.Ds), never touching the real game.
+      this.Ds = {};
+      if (!this.auth.demos) { this.auth.demos = {}; if (this.auth.demo && this.auth.demo.pin) this.auth.demos[this.auth.demo.pin] = { mode: this.auth.demo.mode, write: this.auth.demo.write }; delete this.auth.demo; await ctx.storage.put('auth', this.auth); }
     });
   }
 
@@ -37,10 +37,18 @@ export class Game extends DurableObject {
     if (this.S.log.length > LOG_KEEP) this.S.log.length = LOG_KEEP;
     await this.ctx.storage.put(withAuth ? { state: this.S, clock: this.clock, auth: this.auth } : { state: this.S, clock: this.clock });
   }
-  async sandbox(fn) {   // run fn against the shared demo game instead of the real one
-    const keep = { S: this.S, clock: this.clock };
-    this.S = this.D.S; this.clock = this.D.clock; this.inSandbox = true;
-    try { return await fn(); } finally { this.D.S = this.S; this.D.clock = this.clock; this.S = keep.S; this.clock = keep.clock; this.inSandbox = false; }
+  async getD(pin) {
+    if (!this.Ds[pin]) {
+      let d = await this.ctx.storage.get('sandbox:' + pin);
+      if (!d) { const g = R.newGame(true); d = { S: g, clock: { running: false, base: g.t, at: Date.now() } }; await this.ctx.storage.put('sandbox:' + pin, d); }
+      this.Ds[pin] = d;
+    }
+    return this.Ds[pin];
+  }
+  async sandbox(pin, fn) {   // run fn against that 展示 PIN's shared demo game instead of the real one
+    const D = await this.getD(pin), keep = { S: this.S, clock: this.clock };
+    this.S = D.S; this.clock = D.clock; this.inSandbox = true;
+    try { return await fn(); } finally { D.S = this.S; D.clock = this.clock; this.S = keep.S; this.clock = keep.clock; this.inSandbox = false; }
   }
   async snapshot(tag) {
     if (this.inSandbox) return;
@@ -55,8 +63,8 @@ export class Game extends DurableObject {
     // Developer mode: read-only, sees every page. Only on when the Worker secret DEV_PIN is set.
     if (this.env.DEV_PIN && pin === String(this.env.DEV_PIN)) return { role: 'dev', label: '开发者' };
     // 展示模式 PIN: set by the developer from the page. Same viewpoints as developer mode; 本地 = the browser runs its own demo game, 服务器 = the real game.
-    const d = this.auth.demo;
-    if (d && d.pin && pin === d.pin) return { role: 'dev', demo: true, dmode: ['local', 'shared'].includes(d.mode) ? d.mode : 'server', dwrite: !!d.write, label: '展示' };
+    const d = (this.auth.demos || {})[pin];
+    if (d) return { role: 'dev', demo: true, dmode: ['local', 'shared'].includes(d.mode) ? d.mode : 'server', dwrite: !!d.write, label: '展示' };
     return this.auth.pins[pin] || null;
   }
   sessionOf(token) {
@@ -65,10 +73,11 @@ export class Game extends DurableObject {
     const id = this.identity(s.pin);
     return id ? { ...id, pin: s.pin } : null;   // PIN reset or deleted -> session no longer valid
   }
+  demoList() { return Object.entries(this.auth.demos || {}).map(([pin, v]) => ({ pin, mode: ['local', 'shared'].includes(v.mode) ? v.mode : 'server', write: !!v.write })); }
   me(s) {
     const m = { role: s.role, pid: s.pid || null, label: s.label || ROLE_NAME[s.role], rooms: s.role === 'dealer' && Array.isArray(s.rooms) ? s.rooms : null };
     if (s.demo) { m.demo = true; m.dmode = s.dmode; m.dwrite = s.dwrite; }
-    else if (s.role === 'dev') m.demoCfg = { pin: (this.auth.demo || {}).pin || '', mode: ['local', 'shared'].includes((this.auth.demo || {}).mode) ? this.auth.demo.mode : 'server', write: !!(this.auth.demo || {}).write };
+    else if (s.role === 'dev') m.demoCfg = this.demoList();
     return m;
   }
 
@@ -92,15 +101,15 @@ export class Game extends DurableObject {
     return json({ token, me: this.me(id) });
   }
 
-  connect(req, url) {
+  async connect(req, url) {
     if (req.headers.get('Upgrade') !== 'websocket') return json({ error: 'expected websocket' }, 426);
     const token = url.searchParams.get('token') || '', s = this.sessionOf(token);
     const [client, server] = Object.values(new WebSocketPair());
     this.ctx.acceptWebSocket(server);
     if (!s) { server.close(4001, 'login expired'); return new Response(null, { status: 101, webSocket: client }); }
     server.serializeAttachment({ token });
-    const sh = s.demo && s.dmode === 'shared';
-    server.send(JSON.stringify({ t: 'hello', me: this.me(s), S: sh ? this.D.S : R.viewFor(this.S, s), clock: sh ? this.D.clock : this.clock, now: Date.now() }));
+    const sh = s.demo && s.dmode === 'shared', D = sh ? await this.getD(s.pin) : null;
+    server.send(JSON.stringify({ t: 'hello', me: this.me(s), S: sh ? D.S : R.viewFor(this.S, s), clock: sh ? D.clock : this.clock, now: Date.now() }));
     return new Response(null, { status: 101, webSocket: client });
   }
 
@@ -113,9 +122,9 @@ export class Game extends DurableObject {
     if (m.t !== 'act') return;
     let r;
     const shared = !!(s.demo && s.dmode === 'shared');
-    try { r = shared ? await this.sandbox(() => this.handle(s, m.a || {})) : await this.handle(s, m.a || {}); } catch (e) { r = R.no('服务器出错：' + (e && e.message)); }
+    try { r = shared ? await this.sandbox(s.pin, () => this.handle(s, m.a || {})) : await this.handle(s, m.a || {}); } catch (e) { r = R.no('服务器出错：' + (e && e.message)); }
     ws.send(JSON.stringify({ t: 'res', id: m.id, ok: !!r.ok, msg: r.msg, data: r.data }));
-    if (shared) { if (r.ok && r.changed !== false) { await this.ctx.storage.put('sandbox', this.D); this.broadcast('sandbox'); } }
+    if (shared) { if (r.ok && r.changed !== false) { await this.ctx.storage.put('sandbox:' + s.pin, this.Ds[s.pin]); this.broadcast(s.pin); } }
     else if (r.ok && r.changed !== false) { await this.persist(r.auth); this.broadcast(); }
     else if (r.ok && r.auth) await this.ctx.storage.put('auth', this.auth);
   }
@@ -125,26 +134,34 @@ export class Game extends DurableObject {
   broadcast(which) {
     const base = { t: 'state', clock: this.clock, now: Date.now() };
     const staff = JSON.stringify({ ...base, S: this.S });
-    const sbox = JSON.stringify({ t: 'state', clock: this.D.clock, now: Date.now(), S: this.D.S });
+    const sbox = which && this.Ds[which] ? JSON.stringify({ t: 'state', clock: this.Ds[which].clock, now: Date.now(), S: this.Ds[which].S }) : '';
     for (const ws of this.ctx.getWebSockets()) {
       const s = this.sessionOf(ws.deserializeAttachment()?.token);
       if (!s) { try { ws.close(4001, 'login expired'); } catch { /* ignore */ } continue; }
       const sh = !!(s.demo && s.dmode === 'shared');
-      if (sh !== (which === 'sandbox')) continue;   // real-game changes go to real sockets, shared-demo changes to shared-demo sockets
+      if (sh ? s.pin !== which : !!which) continue;   // real-game changes go to real sockets; a shared-demo change goes only to sockets on that 展示 PIN
       if (sh) { try { ws.send(sbox); } catch { /* socket gone */ } continue; }
       try { ws.send(s.role === 'player' ? JSON.stringify({ ...base, S: R.viewFor(this.S, s) }) : staff); } catch { /* socket gone */ }
     }
   }
 
   async handle(s, a) {
-    if (a.type === 'dev.setdemo') {   // only the real developer PIN may change the 展示模式 PIN
+    if (a.type === 'dev.setdemo' || a.type === 'dev.deldemo') {   // only the real developer PIN may change the 展示模式 PINs
       if (s.role !== 'dev' || s.demo) return R.no('只有开发者能改展示模式');
-      const pin = String(a.pin || '').trim();
+      const kick = pin => { for (const ws of this.ctx.getWebSockets()) { const t = this.sessionOf(ws.deserializeAttachment()?.token); if (t && t.demo && t.pin === pin) { try { ws.close(4001, 'demo changed'); } catch { /* ignore */ } } } };
+      const done = msg => ({ ok: true, msg, changed: false, auth: true, data: this.demoList() });
+      if (a.type === 'dev.deldemo') {
+        const pin = String(a.pin || ''); if (!this.auth.demos[pin]) return R.no('没有这个展示 PIN');
+        kick(pin); delete this.auth.demos[pin]; delete this.Ds[pin]; await this.ctx.storage.delete('sandbox:' + pin);
+        return done('已删除展示 PIN ' + pin);
+      }
+      const pin = String(a.pin || '').trim(), old = String(a.old || '');
       if (!/^\d{6}$/.test(pin)) return R.no('展示 PIN 要是 6 位数字');
-      if ((this.env.ADMIN_PIN && pin === String(this.env.ADMIN_PIN)) || (this.env.DEV_PIN && pin === String(this.env.DEV_PIN)) || this.auth.pins[pin]) return R.no('这个 PIN 已被别的身份用了，换一个');
-      this.auth.demo = { pin, mode: ['local', 'shared'].includes(a.mode) ? a.mode : 'server', write: !!a.write };
-      for (const ws of this.ctx.getWebSockets()) { const t = this.sessionOf(ws.deserializeAttachment()?.token); if (t && t.demo) { try { ws.close(4001, 'demo changed'); } catch { /* ignore */ } } }
-      return { ok: true, msg: '展示模式已保存', changed: false, auth: true, data: { pin, mode: this.auth.demo.mode, write: this.auth.demo.write } };
+      if ((this.env.ADMIN_PIN && pin === String(this.env.ADMIN_PIN)) || (this.env.DEV_PIN && pin === String(this.env.DEV_PIN)) || this.auth.pins[pin] || (this.auth.demos[pin] && pin !== old)) return R.no('这个 PIN 已被别的身份用了，换一个');
+      if (old && old !== pin && this.auth.demos[old]) { kick(old); delete this.auth.demos[old]; delete this.Ds[old]; await this.ctx.storage.delete('sandbox:' + old); }
+      this.auth.demos[pin] = { mode: ['local', 'shared'].includes(a.mode) ? a.mode : 'server', write: !!a.write };
+      kick(pin);
+      return done('展示模式已保存');
     }
     if (s.demo && (!s.dwrite || s.dmode === 'local')) return R.no(s.dmode === 'local' ? '本地展示模式不连服务器' : '展示模式现在是只读');
     const isDemo = !!s.demo, isShared = isDemo && s.dmode === 'shared';
@@ -192,7 +209,7 @@ export class Game extends DurableObject {
       case 'admin.genpins': {
         const counts = a.counts || {}, pins = this.auth.pins, taken = new Set(Object.keys(pins));
         if (this.env.ADMIN_PIN) taken.add(String(this.env.ADMIN_PIN));
-        if (this.auth.demo && this.auth.demo.pin) taken.add(this.auth.demo.pin);
+        for (const dp of Object.keys(this.auth.demos || {})) taken.add(dp);
         let made = 0;
         const have = new Set(Object.values(pins).filter(v => v.pid).map(v => v.pid));
         for (const p of this.S.players) if (!have.has(p.id)) { pins[newPin(taken)] = { role: 'player', pid: p.id, label: p.id }; made++; }

@@ -29,7 +29,7 @@ function buzz(p){
   a.forEach((d,i)=>{if(i%2===0)setTimeout(iosTick,t);t+=d;});}
 function shakeEl(el,cls){if(!el)return;el.classList.remove(cls);void el.offsetWidth;el.classList.add(cls);}
 let ui={ddOpen:null,don:{},tab:null,room:'3S',pick:'',res:{},settled:null,hookTeam:'',hookTarget:'',hookWhere:'',pickOut:{},doneSel:{},revokeAsk:null,
-  coinTeam:'',coinAmt:'',buyer:'',mkTab:'buy',ncOpen:false,as:'ctrl',devOps:false,demo:null,devAck:new Set(),nc:{name:'',desc:'',price:'',stock:''},
+  coinTeam:'',coinAmt:'',buyer:'',mkTab:'buy',ncOpen:false,as:'ctrl',devOps:false,demoRows:null,devAck:new Set(),nc:{name:'',desc:'',price:'',stock:''},
   sub:{dealer:'info',npc:'task',market:'buy',ctrl:'status',player:'team'},
   pub:{kind:'鬼门开',reward:0,title:'',body:'',target:'all',team:'R',players:[],mins:10,to:'all',sqTeam:'',quest:''},
   admin:{pins:null,snaps:null,counts:{dealer:8,judge:3,mengpo:2,wuchang:1,ctrl:2,screen:1},ask:null,resetTxt:''}};
@@ -327,13 +327,19 @@ function downPanel(){
 }
 function demoPanel(){
   if(!DEVME||DEVME.demo)return '';
-  const c=DEVME.demoCfg||{pin:'',mode:'server',write:false};if(!ui.demo)ui.demo={pin:c.pin,mode:c.mode,write:c.write};const d=ui.demo;d.write=d.write===true||d.write==='true';
-  const ok=/^\d{6}$/.test(d.pin),dirty=d.pin!==c.pin||d.mode!==c.mode||d.write!==c.write;
-  return '<div class="pn" style="margin-top:16px"><div class="shrow"><h3>展示模式 PIN</h3><span class="small">开发者专用；用这个 PIN 登录的人可以看任意视角，发给别人试用</span></div>'
-    +'<div class="fld"><span>PIN（6 位数字）</span><div class="btns"><input class="in mono" data-m="demo.pin" value="'+esc(d.pin)+'" inputmode="numeric" maxlength="6" placeholder="未设置＝关闭" style="max-width:180px"><button class="btn-line" data-a="demo-rand">随机</button>'+(c.pin?'<button class="btn-line" data-a="demo-copy">复制登录链接</button>':'')+'</div></div>'
-    +'<div class="fld"><span>模式</span><div class="chips c2" style="grid-template-columns:repeat(3,minmax(0,1fr))">'+cb({k:'demo.mode',v:'server',on:d.mode==='server',label:'连接服务器',small:'看的是真实游戏',t:false})+cb({k:'demo.mode',v:'shared',on:d.mode==='shared',label:'共享演示局',small:'同一 PIN 的人看同一场演示（不是真实游戏）',t:false})+cb({k:'demo.mode',v:'local',on:d.mode==='local',label:'本地',small:'各自一局演示数据，互不影响',t:false})+'</div></div>'
-    +'<div class="fld"><span>权限</span><div class="chips c2">'+cb({k:'demo.write',v:false,on:!d.write,label:'只读',t:false})+cb({k:'demo.write',v:true,on:d.write,label:'可修改',small:d.mode==='server'?'会改动真实游戏':d.mode==='shared'?'改的是共享演示局':'',t:false})+'</div></div>'
-    +'<div class="btns"><button class="btn-main" data-a="demo-save"'+(ok&&dirty?'':' disabled')+'>保存</button><span class="small">'+(c.pin?'当前：'+c.pin+' · '+({local:'本地',shared:'共享演示局'}[c.mode]||'服务器')+' · '+(c.write?'可修改':'只读'):'当前：未启用')+'　保存后正在用展示 PIN 的人需要重新登录</span></div></div>';
+  if(!ui.demoRows)ui.demoRows=(DEVME.demoCfg||[]).map(c=>({...c,old:c.pin}));
+  const rows=ui.demoRows;
+  const one=(d,i)=>{d.write=d.write===true||d.write==='true';
+    const c=(DEVME.demoCfg||[]).find(x=>x.pin===d.old)||{},ok=/^\d{6}$/.test(d.pin),dirty=!d.old||d.pin!==c.pin||d.mode!==c.mode||d.write!==c.write,k='demoRows.'+i;
+    return '<div class="pn" style="gap:10px"><div class="btns"><input class="in mono" data-m="demoRow.pin" data-i="'+i+'" value="'+esc(d.pin)+'" inputmode="numeric" maxlength="6" placeholder="6 位数字" style="max-width:160px"><button class="btn-line" data-a="demo-rand" data-i="'+i+'">随机</button>'
+      +(d.old?'<button class="btn-line" data-a="demo-copy" data-i="'+i+'">复制登录链接</button>':'')+'<button class="btn-line" data-a="demo-del" data-i="'+i+'">删除</button></div>'
+      +'<div class="chips c2" style="grid-template-columns:repeat(3,minmax(0,1fr))">'+cb({k:k+'.mode',v:'server',on:d.mode==='server',label:'连接服务器',small:'看的是真实游戏',t:false})
+      +cb({k:k+'.mode',v:'shared',on:d.mode==='shared',label:'共享演示局',small:'同一 PIN 的人看同一场演示',t:false})+cb({k:k+'.mode',v:'local',on:d.mode==='local',label:'本地',small:'各自一局，互不影响',t:false})+'</div>'
+      +'<div class="chips c2">'+cb({k:k+'.write',v:false,on:!d.write,label:'只读',t:false})+cb({k:k+'.write',v:true,on:d.write,label:'可修改',small:d.mode==='server'?'会改动真实游戏':d.mode==='shared'?'改的是这个 PIN 的共享演示局':'',t:false})+'</div>'
+      +'<div class="btns"><button class="btn-main" data-a="demo-save" data-i="'+i+'"'+(ok&&dirty?'':' disabled')+'>'+(d.old?'保存':'创建')+'</button>'+(d.old?'<span class="small">保存后正在用这个 PIN 的人需要重新登录</span>':'')+'</div></div>';};
+  return '<div class="pn" style="margin-top:16px"><div class="shrow"><h3>展示模式 PIN</h3><span class="small">开发者专用；可建多个，每个 PIN 各自选模式和权限，发给不同的人</span></div>'
+    +(rows.length?rows.map(one).join(''):'<span class="small">还没有展示 PIN。</span>')
+    +'<div class="btns"><button class="btn-line acc" data-a="demo-add">+ 新增展示 PIN</button></div></div>';
 }
 function teamRows(){
   const list=[...S.teams].sort((a,b)=>b.score-a.score);
@@ -807,9 +813,11 @@ document.addEventListener('click',e=>{
   else if(a==='copypin'){copyText(v).then(()=>say({ok:true,msg:'已复制 PIN '+v}),()=>say(no('复制失败，请手动选中 PIN')));}
   else if(a==='theme'){const r=themeKey(),nx=themeFor()==='dark'?'light':'dark';try{localStorage.setItem(THEME_KEY(r),nx);}catch{/* private mode */}}
   else if(a==='logout'){logout();return;}
-  else if(a==='demo-rand'){if(ui.demo)ui.demo.pin=String(Math.floor(100000+Math.random()*900000));}
-  else if(a==='demo-copy'){const l=location.origin+'/?pin='+(DEVME.demoCfg||{}).pin;copyText(l).then(()=>say({ok:true,msg:'已复制链接 '+l}),()=>say(no('复制失败')));}
-  else if(a==='demo-save'){const d=ui.demo;send({type:'dev.setdemo',pin:d.pin,mode:d.mode,write:d.write},m=>{DEVME.demoCfg=m.data;SESSION.me=DEVME;store.set(SESSION);ui.demo=null;});}
+  else if(a==='demo-add'){(ui.demoRows=ui.demoRows||[]).push({pin:String(Math.floor(100000+Math.random()*900000)),old:'',mode:'shared',write:false});}
+  else if(a==='demo-rand'){const r=ui.demoRows[+b.dataset.i];if(r)r.pin=String(Math.floor(100000+Math.random()*900000));}
+  else if(a==='demo-copy'){const r=ui.demoRows[+b.dataset.i],l=location.origin+'/?pin='+r.old;copyText(l).then(()=>say({ok:true,msg:'已复制链接 '+l}),()=>say(no('复制失败')));}
+  else if(a==='demo-save'){const r=ui.demoRows[+b.dataset.i];send({type:'dev.setdemo',pin:r.pin,old:r.old,mode:r.mode,write:r.write},m=>{DEVME.demoCfg=m.data;SESSION.me=DEVME;store.set(SESSION);ui.demoRows=null;});}
+  else if(a==='demo-del'){const i=+b.dataset.i,r=ui.demoRows[i];if(!r.old)ui.demoRows.splice(i,1);else send({type:'dev.deldemo',pin:r.old},m=>{DEVME.demoCfg=m.data;SESSION.me=DEVME;store.set(SESSION);ui.demoRows=null;});}
   else if(a==='devops'){if(DEVME.demo)return;ui.devOps=!ui.devOps;say({ok:true,msg:ui.devOps?'开发者模式：可操作（以当前视角的身份）':'开发者模式：只读'});}
   else if(a==='clockctl'){send({type:'admin.clock',op:CLOCK&&CLOCK.running?'pause':'start'});}
   else if(a==='room'){ui.room=v;ui.pick='';ui.res={};ui.pickOut={};ui.settled=null;}
@@ -869,7 +877,7 @@ document.addEventListener('input',e=>{
   if(m==='coin'){const q=S.players.find(x=>x.id===e.target.dataset.p);if(q){q.coins=Math.max(0,parseInt(v,10)||0);const tot=q.coins+q.bail,el=document.getElementById('tot-'+q.id),bar=document.getElementById('bar-'+q.id);
     if(el)el.textContent=tot+' / '+COIN_GOAL;if(bar)bar.style.width=Math.min(100,tot/COIN_GOAL*100)+'%';}}
   else if(m==='don'){ui.don[e.target.dataset.p]=parseInt(v,10)||0;}
-  else if(m==='demo.pin'){const el=e.target;el.value=el.value.replace(/\D/g,'').slice(0,6);if(ui.demo)ui.demo.pin=el.value;}
+  else if(m==='demoRow.pin'){const el=e.target,r=ui.demoRows&&ui.demoRows[+el.dataset.i];el.value=el.value.replace(/\D/g,'').slice(0,6);if(r)r.pin=el.value;}
   else if(m==='hookWhere'){ui.hookWhere=v;}
   else if(m==='coinAmt'){ui.coinAmt=v;const btn=$('#coinbtn');if(btn)btn.textContent=coinBtn();}
   else if(m.startsWith('nc.'))ui.nc[m.slice(3)]=v;
