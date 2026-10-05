@@ -19,10 +19,11 @@ T('admin login', admin.me.role === 'ctrl');
 T('load demo', (await admin.act({ type: 'admin.reset', demo: true })).ok);
 const gen = await admin.act({ type: 'admin.genpins', counts: { dealer: 2, judge: 2, mengpo: 1, ctrl: 1, screen: 1 } });
 const pins = gen.data, pinOf = f => pins.find(f).pin;
-T('pins generated (42 players + 7 staff)', pins.length === 49);
+T('pins generated (48 players + 8 dealers + 6 other staff incl. 1 wuchang)', pins.length === 48 + 8 + 2 + 1 + 1 + 1 + 1);
+T('dealers fixed one room each', pins.filter(p => p.role === 'dealer').every(p => p.rooms.length === 1) && new Set(pins.filter(p => p.role === 'dealer').map(p => p.rooms[0])).size === 8);
 T('pins unique', new Set(pins.map(p => p.pin)).size === pins.length);
 const P = { player: pinOf(p => p.pid === 'B-02'), judge: pinOf(p => p.role === 'judge'), judge2: pins.filter(p => p.role === 'judge')[1].pin,
-  dealer: pinOf(p => p.role === 'dealer' && p.rooms && p.rooms.includes('7H')), screen: pinOf(p => p.role === 'screen'), mengpo: pinOf(p => p.role === 'mengpo') };
+  dealer: pinOf(p => p.role === 'dealer' && p.rooms && p.rooms.includes('7H')), screen: pinOf(p => p.role === 'screen'), mengpo: pinOf(p => p.role === 'mengpo'), wuchang: pinOf(p => p.role === 'wuchang') };
 
 const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
 const errs = [];
@@ -37,7 +38,10 @@ const text = p => p.locator('#view').innerText();
 const ctrl = await page(ADMIN), judge = await page(P.judge), dealer = await page(P.dealer), screen = await page(P.screen), mengpo = await page(P.mengpo);
 const player = await page(P.player, 390);
 T('roles see only their tabs', (await judge.locator('#tabs').isHidden()) && (await text(judge)).includes('任务判定') && (await text(mengpo)).includes('孟婆买命'));
-{ const tx = await text(player); T('player sees own page', tx.includes('B-02') && tx.includes('蓝队')); }
+T('player first page is the big screen', (await text(player)).includes('全场播报'));
+await ack(player);
+await player.click('[data-a=tab][data-v=player]');
+{ const tx = await text(player); T('player sees own page (2nd tab)', tx.includes('B-02') && tx.includes('蓝队')); }
 await ack(player);
 
 // ctrl publishes -> player gets a popup
@@ -61,7 +65,7 @@ T('player gets broadcast', (await player.locator('#modal').innerText()).includes
 await ack(player);
 
 // race: two judges confirm the same first-come task at the same moment
-const pub2 = await admin.act({ type: 'publish', f: { kind: '任务', mode: 'first', title: '抢答', body: '', target: 'all', reward: 0, mins: 0 } });
+const pub2 = await admin.act({ type: 'publish', f: { kind: '鬼门开', title: '抢答', body: '', reward: 0, mins: 0 } });
 await sleep(300);
 const n2 = admin.S.notices.find(n => n.title === '抢答').id;
 const j1 = await client(P.judge), j2 = await client(P.judge2);
@@ -72,12 +76,12 @@ T('race: exactly one winner', pub2.ok && (r1.ok !== r2.ok));
 const pc = await client(P.player);
 T('player cannot hook', !(await pc.act({ type: 'hook', actor: 'B', pid: 'R-01' })).ok);
 T('player cannot use admin', !(await pc.act({ type: 'admin.reset', demo: false })).ok);
-T('player view hides log/shop', pc.S.log.length === 0 && pc.S.shop.length === 0);
+T('player view: only broadcast log lines, no shop', pc.S.shop.length === 0 && pc.S.log.length > 0 && pc.S.log.every(l => /勾魂|抽签淘汰|孟婆汤|赢下|率先完成/.test(l.text)));
 
 // dealer -> screen
-if (await dealer.$('[data-a=room]')) await dealer.click('[data-a=room][data-v="7H"]'); await dealer.click('[data-a=pick][data-k=pick][data-v=P]'); await dealer.click('[data-a=enter]');
+if (await dealer.$('[data-a=room]')) await dealer.click('[data-a=room][data-v="7H"]'); await dealer.click('[data-a=pick][data-k=pick][data-v=C]'); await dealer.click('[data-a=enter]');
 await sleep(500);
-T('screen shows room live', (await screen.locator('.rgrid').innerText()).includes('紫队'));
+T('screen shows room live', (await screen.locator('.rgrid').innerText()).includes('青队'));
 
 // clock
 await ctrl.click('#clockctl'); await sleep(2200);
@@ -96,6 +100,55 @@ T('wrong PIN rejected', bad.status === 401);
 const old = P.player; const rp = await admin.act({ type: 'admin.resetpin', pin: old });
 await player.waitForSelector('#loginf', { timeout: 5000 }).catch(() => {});
 T('PIN reset logs player out', rp.ok && await player.locator('#loginf').count() === 1);
+
+
+// ---- new rules (2026-10-04), through the real server ----
+await admin.act({ type: 'admin.reset', demo: false });
+const dealerOf = room => client(pinOf(p => p.role === 'dealer' && p.rooms[0] === room));
+const wc = await client(P.wuchang), mp = await client(P.mengpo), jd = await client(P.judge);
+const as1 = await admin.act({ type: 'assign' }); await sleep(200);
+T('opening assign puts each of 8 teams in its own room', as1.ok && admin.S.rooms.every(r => r.teams.length === 1) && new Set(admin.S.rooms.map(r => r.teams[0])).size === 8);
+T('assign only once', !(await admin.act({ type: 'assign' })).ok);
+{ const tid = admin.S.rooms.find(r => r.id === '3S').teams[0], d3 = await dealerOf('3S');
+  T('dealer cannot run other rooms', !(await d3.act({ type: 'finish', rid: '5S', results: {} })).ok);
+  T('lose needs a picked person', !(await d3.act({ type: 'finish', rid: '3S', results: { [tid]: 'lose' } })).ok);
+  T('pick must be on that team', !(await d3.act({ type: 'finish', rid: '3S', results: { [tid]: 'lose' }, picks: { [tid]: 'ZZ-01' } })).ok);
+  const victim = tid + '-03';
+  { const r = await d3.act({ type: 'finish', rid: '3S', results: { [tid]: 'lose' }, picks: { [tid]: victim } }); await sleep(250);
+    T('lose + pick eliminates that person (even in a 3-card room)', r.ok && admin.S.players.find(p => p.id === victim).st === 'out'); }
+  T('team not full cannot enter a room', !(await admin.act({ type: 'enter', tid, rid: '3S' })).ok);
+  { const bad = await mp.act({ type: 'pickup', pid: victim }), good = await wc.act({ type: 'pickup', pid: victim }); await sleep(250);
+    T('only wuchang picks up', !bad.ok && good.ok && admin.S.players.find(p => p.id === victim).st === 'picked'); }
+  { const r = await wc.act({ type: 'checkin', pid: victim }); await sleep(250); const v = admin.S.players.find(p => p.id === victim);
+    T('wuchang check-in starts the market clock and gives 300', r.ok && v.st === 'market' && v.coins === 300 && v.inAt != null); }
+  T('cannot confirm your own check-in', !(await wc.act({ type: 'confirm', pid: victim })).ok);
+  { const r = await mp.act({ type: 'confirm', pid: victim }); await sleep(250); T('the other side confirms', r.ok && admin.S.players.find(p => p.id === victim).chk.ok === true); }
+  await admin.act({ type: 'setscore', tid, v: 500 });
+  const mate = await client(pinOf(p => p.pid === tid + '-01')), g = await mate.act({ type: 'donate', pid: victim, amt: 200 }); await sleep(200);
+  T('teammate aid is 1:1', g.ok && admin.S.players.find(p => p.id === victim).bail === 200 && admin.S.teams.find(t => t.id === tid).score === 300);
+  T('skill cards are switched off', !(await mp.act({ type: 'buy', kid: 'k1', buyer: victim })).ok);
+  mate.close(); d3.close(); }
+await admin.act({ type: 'admin.reset', demo: false });
+{ const C = 'C', fin = a => admin.act({ type: 'final', tid: C, on: a });
+  const win = async (rid, extra = {}) => { await admin.act({ type: 'enter', tid: C, rid }); for (const k of Object.keys(extra)) await admin.act({ type: 'enter', tid: k, rid }); return admin.act({ type: 'finish', rid, results: { [C]: 'win', ...extra } }); };
+  await win('3S'); await win('4D'); await win('3C');
+  T('final needs four suits', !(await fin(true)).ok);
+  await win('5H', { K: 'win' });
+  T('final needs 2000 points', !(await fin(true)).ok);
+  await admin.act({ type: 'setscore', tid: C, v: 2000 });
+  const sq = await admin.act({ type: 'publish', f: { kind: 'sidequest', team: 'K', quest: 'q1', reward: 100 } }); await sleep(200);
+  const sqn = admin.S.notices.find(n => n.sub === 'side');
+  T('sidequest goes to exactly one team, no broadcast', sq.ok && sqn.target === 'team' && sqn.ids.length === 1 && sqn.ids[0] === 'K');
+  const jr = await jd.act({ type: 'done', nid: sqn.id, cid: 'K' }); await sleep(200);
+  T('sidequest done pays the team and is not broadcast', jr.ok && !jr.msg.includes('广播') && !admin.S.notices.some(n => n.title.includes('率先完成')) && admin.S.teams.find(t => t.id === 'K').score === 100 + 500);
+  T('one man short blocks the final', await (async () => { await admin.act({ type: 'hook', actor: 'R', pid: C + '-02', where: '走廊' }); const r = await fin(true); await admin.act({ type: 'admin.reset', demo: false }); return !r.ok; })());
+  await win('3S'); await win('4D'); await win('3C'); await win('5H', { K: 'win' }); await admin.act({ type: 'setscore', tid: C, v: 2000 });
+  { const r = await fin(true); await sleep(250); T('final can be opened by ctrl', r.ok && admin.S.teams.find(t => t.id === C).final === true); }
+  T('a final team cannot be hooked', !(await admin.act({ type: 'hook', actor: 'R', pid: C + '-04' })).ok);
+  const gate = await admin.act({ type: 'publish', f: { kind: '鬼门开', title: 'g', body: '', reward: 0, mins: 0 } });
+  await sleep(200);
+  T('gate publishes to all', gate.ok && admin.S.notices.find(n => n.title === 'g').target === 'all'); }
+[wc, mp, jd].forEach(c => c.close());
 
 T('no page errors', errs.length === 0); if (errs.length) console.log(errs);
 console.log(res.join('\n')); console.log(res.filter(x => x.startsWith('FAIL')).length ? 'SOME FAILED' : 'ALL PASSED');

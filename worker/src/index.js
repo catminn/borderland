@@ -4,8 +4,9 @@
 import { DurableObject } from 'cloudflare:workers';
 import * as R from '../../shared/rules.js';
 
-const ROLE_NAME = { player: '玩家', dealer: 'Dealer', judge: '判官', mengpo: '孟婆', ctrl: '总控', screen: '大屏', dev: '开发者' };
-const STAFF_ROLES = ['dealer', 'judge', 'mengpo', 'ctrl', 'screen'];
+const ROLE_NAME = { player: '玩家', dealer: 'Dealer', judge: '判官', mengpo: '孟婆', wuchang: '黑白无常', ctrl: '总控', screen: '大屏', dev: '开发者' };
+const STAFF_ROLES = ['dealer', 'judge', 'mengpo', 'wuchang', 'ctrl', 'screen'];
+const FIXED = { dealer: 8, wuchang: 1 };   // 8 个房间一人一间；黑白无常只有 1 个人
 const SNAP_EVERY = 10, SNAP_KEEP = 30, LOG_KEEP = 1500;
 
 const json = (o, status = 200) => new Response(JSON.stringify(o), {
@@ -159,31 +160,16 @@ export class Game extends DurableObject {
         const have = new Set(Object.values(pins).filter(v => v.pid).map(v => v.pid));
         for (const p of this.S.players) if (!have.has(p.id)) { pins[newPin(taken)] = { role: 'player', pid: p.id, label: p.id }; made++; }
         for (const role of STAFF_ROLES) {
-          const want = Math.max(0, Math.min(30, Math.round(+counts[role]) || 0));
+          const want = FIXED[role] != null ? FIXED[role] : Math.max(0, Math.min(30, Math.round(+counts[role]) || 0));
           let n = Object.values(pins).filter(v => v.role === role).length;
           while (n < want) { n++; const pin = newPin(taken); taken.add(pin); pins[pin] = { role, label: ROLE_NAME[role] + ' ' + n }; if (role === 'dealer') pins[pin].rooms = []; made++; }
         }
-        // Each room goes to one Dealer: rooms nobody holds yet are dealt out to Dealers that have none, round-robin.
+        // One Dealer per room, fixed: the i-th Dealer PIN runs the i-th room. No manual choice.
         const dealers = Object.values(pins).filter(v => v.role === 'dealer');
-        for (const v of dealers) if (!Array.isArray(v.rooms)) v.rooms = [];   // PINs made before room binding
-        const held = new Set(dealers.flatMap(v => v.rooms || []));
-        const free = R.ROOMS.map(r => r.id).filter(id => !held.has(id)), empty = dealers.filter(v => Array.isArray(v.rooms) && !v.rooms.length);
-        free.forEach((id, i) => { if (empty.length) empty[i % empty.length].rooms.push(id); });
-        for (const v of dealers) if (Array.isArray(v.rooms)) v.label = this.dealerLabel(v.rooms);
+        dealers.forEach((v, i) => { v.rooms = i < R.ROOMS.length ? [R.ROOMS[i].id] : []; v.label = this.dealerLabel(v.rooms); });
         return ok('新生成 ' + made + ' 个 PIN，共 ' + Object.keys(pins).length + ' 个', { changed: false, auth: true, data: this.pinList() });
       }
       case 'admin.pins': return ok('', { changed: false, data: this.pinList() });
-      case 'admin.setrooms': { // 总控 changes which rooms one Dealer PIN may run
-        const v = this.auth.pins[String(a.pin || '')];
-        if (!v || v.role !== 'dealer') return R.no('这不是 Dealer 的 PIN');
-        const ids = R.ROOMS.map(r => r.id), rooms = [...new Set(a.rooms || [])].filter(id => ids.includes(id));
-        v.rooms = ids.filter(id => rooms.includes(id)); v.label = this.dealerLabel(v.rooms);
-        for (const ws of this.ctx.getWebSockets()) { // reconnect that Dealer so the page shows the new rooms
-          const s = this.sessionOf(ws.deserializeAttachment()?.token);
-          if (s && s.pin === String(a.pin)) try { ws.close(4002, 'rooms changed'); } catch { /* gone */ }
-        }
-        return ok(v.label + (v.rooms.length ? '' : '（没有房间）'), { changed: false, auth: true, data: this.pinList() });
-      }
       case 'admin.resetpin': {
         const old = String(a.pin || ''), v = this.auth.pins[old];
         if (!v) return R.no('没有这个 PIN');

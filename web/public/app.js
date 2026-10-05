@@ -2,8 +2,8 @@
 // The server owns the game state; this page signs in with a PIN, keeps a live WebSocket, renders the pages
 // for the signed-in role, and sends actions. Rule helpers come from rules.js (same file the server runs).
 import * as R from './rules.js';
-const {ROOMS,FRAG,SUITS,RATE,PER_TEAM,MIN_STAY,COIN_GOAL,team,room,alive,inMarket,fmt,protectedLeft,esc,matches,targetLabel,
-  defMode,isFirst,indiv,lab,cands,whyNotEnter,gapOf,teamStatus,teamOf,no}=R;
+const {ROOMS,SUITS,RATE,PER_TEAM,MIN_STAY,COIN_GOAL,FINAL_SCORE,FINAL_MSG,QUESTS,FEATURES,team,room,alive,inMarket,fmt,protectedLeft,esc,matches,targetLabel,
+  isFirst,indiv,lab,cands,whyNotEnter,gapOf,teamStatus,teamOf,no}=R;
 
 let S=null, ME=null, CLOCK=null, OFFSET=0;
 // Developer mode: DEVME is the real (read-only) sign-in, FULL the full state; ME/S are swapped to the chosen viewpoint.
@@ -27,20 +27,20 @@ function buzz(p){
   if(!IOS)return;const a=Array.isArray(p)?p:[p];let t=0;
   a.forEach((d,i)=>{if(i%2===0)setTimeout(iosTick,t);t+=d;});}
 function shakeEl(el,cls){if(!el)return;el.classList.remove(cls);void el.offsetWidth;el.classList.add(cls);}
-let ui={ddOpen:null,don:{},tab:null,room:'3S',pick:'',res:{},settled:null,hookTeam:'',hookTarget:'',doneSel:{},revokeAsk:null,
+let ui={ddOpen:null,don:{},tab:null,room:'3S',pick:'',res:{},settled:null,hookTeam:'',hookTarget:'',hookWhere:'',pickOut:{},doneSel:{},revokeAsk:null,
   coinTeam:'',coinAmt:'',buyer:'',mkTab:'buy',ncOpen:false,as:'ctrl',devOps:false,devAck:new Set(),nc:{name:'',desc:'',price:'',stock:''},
   sub:{dealer:'info',npc:'task',market:'buy',ctrl:'status',player:'team'},
-  pub:{kind:'任务',mode:'first',reward:0,title:'',body:'',target:'all',team:'R',players:[],mins:10,to:'all'},
-  admin:{pins:null,snaps:null,counts:{dealer:8,judge:3,mengpo:2,ctrl:2,screen:1},ask:null,resetTxt:''}};
+  pub:{kind:'鬼门开',reward:0,title:'',body:'',target:'all',team:'R',players:[],mins:10,to:'all',sqTeam:'',quest:''},
+  admin:{pins:null,snaps:null,counts:{dealer:8,judge:3,mengpo:2,wuchang:1,ctrl:2,screen:1},ask:null,resetTxt:''}};
 const $=s=>document.querySelector(s);
-const ROLE_TABS={ctrl:['ctrl','board','dealer','npc','market'],dealer:['dealer'],judge:['npc'],mengpo:['market'],screen:['board'],player:['player']};
-const TAB_NAME={board:'大屏',player:'我的',dealer:'Dealer',ctrl:'生死簿',npc:'判官',market:'鬼市'};
-const ROLE_NAME={player:'玩家',dealer:'Dealer',judge:'判官',mengpo:'孟婆',ctrl:'总控',screen:'大屏'};
+const ROLE_TABS={ctrl:['ctrl','board','dealer','npc','market','wuchang'],dealer:['dealer'],judge:['npc'],mengpo:['market'],wuchang:['wuchang'],screen:['board'],player:['board','player']};
+const TAB_NAME={board:'大屏',player:'本队',dealer:'Dealer',ctrl:'生死簿',npc:'判官',market:'鬼市',wuchang:'黑白无常'};
+const ROLE_NAME={player:'玩家',dealer:'Dealer',judge:'判官',mengpo:'孟婆',wuchang:'黑白无常',ctrl:'总控',screen:'大屏'};
 const nowT=()=>!CLOCK?0:CLOCK.running?CLOCK.base+Math.floor((Date.now()+OFFSET-CLOCK.at)/1000):CLOCK.base;
 
 // ---------- look ----------
 // Team colours of the 1b design (display only; rules.js keeps its own ids and names).
-const TC={R:['#d0453a','#fff'],B:['#3d77c9','#fff'],G:['#3a9a6c','#fff'],Y:['#e2b33a','#1c150b'],P:['#9466b8','#fff'],O:['#e08a3c','#1c150b']};
+const TC={R:['#d0453a','#fff'],B:['#3d77c9','#fff'],G:['#3a9a6c','#fff'],Y:['#e2b33a','#1c150b'],P:['#9466b8','#fff'],O:['#e08a3c','#1c150b'],C:['#2a9d9a','#fff'],K:['#e0789f','#1c150b']};
 const TYPE={'♠':'体能','♦':'逻辑','♣':'默契','♥':'心理'};
 const tv=id=>'--c:'+TC[teamOf(id)][0]+';--ci:'+TC[teamOf(id)][1];
 const tsq=(id,s)=>'<span class="tsq" style="'+tv(id)+(s?';--s:'+s+'px':'')+'">'+team(id).name[0]+'</span>';
@@ -72,8 +72,8 @@ function dd(k,valLabel,placeholder,valColor,options,multi){
 }
 const teamPick=(k,cur,off,small)=>S.teams.map(t=>cb({k,v:t.id,on:cur===t.id,off:off&&off(t.id),c:TC[t.id][0],label:t.name,small:small&&small(t.id)})).join('');
 function countdown(n,short){if(!n.due)return '';const r=n.due-S.t;return r>0?(short?mmss(r):'剩余 '+mmss(r)):'已截止';}
-const kindOf=n=>n.kind==='通知'?['通知','alert']:n.kind==='公告'?['公告','']:n.secret?['秘密任务','secret']:['任务','task'];
-const modeOf=n=>n.kind==='任务'?(isFirst(n)?'先到先得':'各自完成'):'';
+const kindOf=n=>n.kind==='通知'?['通知','alert']:n.kind==='公告'?['公告','']:n.sub==='side'?['sidequest','secret']:['鬼门开','task'];
+const modeOf=n=>n.kind==='任务'&&n.sub!=='side'?'先到先得':'';
 
 // ---------- 大屏 ----------
 function broadcast(){
@@ -83,8 +83,8 @@ function broadcast(){
     if((m=/^(\S+) 被(.)队勾魂/.exec(l.text))){x=m[1]+' 被勾魂';c='hook';}
     else if((m=/^(\S+) 输了 (\S+) 被抽签淘汰/.exec(l.text))){x=m[1]+' 抽签淘汰';c='hook';}
     else if((m=/^(\S+) 喝下孟婆汤/.exec(l.text)))x=m[1]+' 买命回队';
-    else if((m=/^(\S+) 赢下 (\S+)，拿到扑克牌，\+(\d+)/.exec(l.text)))x=m[1]+'拿下 '+m[2]+'　+'+m[3];
-    else if((m=/^判官记录 (\S+) 率先完成任务「(.+)」/.exec(l.text))&&S.notices.some(n=>n.title===m[2]&&!n.secret)){x=m[1]+'率先完成任务「'+m[2]+'」';c='hot';}
+    else if((m=/^(\S+) 赢下 (\S+)，\+(\d+) 冥币/.exec(l.text)))x=m[1]+'拿下 '+m[2]+'　+'+m[3];
+    else if((m=/^判官记录 (\S+) 率先完成任务「(.+)」/.exec(l.text))){x=m[1]+'率先完成任务「'+m[2]+'」';c='hot';}
     if(x)out.push({t:l.t,x,c});
     if(out.length>=5)break;
   }
@@ -113,7 +113,7 @@ function viewBoard(){
     +incense()+'</div>'
     +'<div class="cast"><span class="cap" style="padding-bottom:8px">全场播报</span>'
     +(bc.length?bc.map(b=>'<div class="bc '+b.c+'"><span class="t">'+fmt(b.t)+'</span><span class="x">'+esc(b.x)+'</span></div>').join(''):'<div class="bc"><span class="x muted">暂无播报</span></div>')+'</div></div>'
-    +'<div class="right"><div class="rank"><div class="rh"><b>队伍冥币排名</b><span>四色齐可进决赛</span></div><div class="bars">'+bars+'</div></div>'
+    +'<div class="right"><div class="rank"><div class="rh"><b>队伍冥币排名</b><span>终极：四色齐 · 全员活 · 积分 ≥ '+FINAL_SCORE+'</span></div><div class="bars">'+bars+'</div></div>'
     +'<div class="rgrid">'+ROOMS.map(roomCard).join('')+'</div></div>'
     +'</div></div>';
 }
@@ -140,11 +140,14 @@ function fitStage(){
 addEventListener('resize',fitStage);
 
 // ---------- Dealer ----------
+// A losing team draws lots on site; the Dealer picks the person here.
+function outPick(tid){const a=alive(tid);
+  return '<div class="outpick"><span class="lbl">现场抽签：选出被淘汰的人</span>'+(a.length?'<div class="chips ids">'+a.map(p=>cb({cls:'id',k:'pickOut.'+tid,v:p.id,on:ui.pickOut[tid]===p.id,label:p.id,mark:false})).join('')+'</div>':'<span class="small">队里已无存活队员</span>')+'</div>';}
 function viewDealer(){
   const mine=ME.role==='dealer'&&Array.isArray(ME.rooms)?ME.rooms:null;
-  if(mine&&!mine.length)return '<div class="page"><div class="pn"><h2 class="sh">还没有分配房间</h2><span class="muted">请总控在「总控工具 › PIN」里给这个 Dealer PIN 绑定房间。</span></div></div>';
-  if(mine&&!mine.includes(ui.room)){ui.room=mine[0];ui.pick='';ui.res={};ui.settled=null;}
-  const r=room(ui.room),ts=S.rooms.find(x=>x.id===r.id).teams,cap=r.two?2:1,lottery=r.n>=5;
+  if(mine&&!mine.length)return '<div class="page"><div class="pn"><h2 class="sh">还没有房间</h2><span class="muted">这个 Dealer PIN 没有对应的房间（Dealer 只有 8 个，一人一间）。请总控在「总控工具」里重新生成 PIN。</span></div></div>';
+  if(mine&&!mine.includes(ui.room)){ui.room=mine[0];ui.pick='';ui.res={};ui.pickOut={};ui.settled=null;}
+  const r=room(ui.room),ts=S.rooms.find(x=>x.id===r.id).teams,cap=r.two?2:1;
   const done=ui.settled&&ui.settled.rid===r.id&&!ts.length;
   const rooms=mine&&mine.length===1?'':'<div class="sec on" style="gap:10px"><span class="lbl">'+(mine?'我负责的房间':'全部房间'+(ME.role==='ctrl'?'（总控视角）':''))+'</span><div class="rooms8">'+ROOMS.filter(x=>!mine||mine.includes(x.id)).map(x=>{const n=S.rooms.find(y=>y.id===x.id).teams.length;
     return '<button class="rbtn'+(x.id===ui.room?' on':'')+'" data-a="room" data-v="'+x.id+'" aria-pressed="'+(x.id===ui.room)+'"><span class="n">'+cardG(x)+'</span><span class="nm">'+x.name+'</span>'
@@ -157,22 +160,23 @@ function viewDealer(){
   if(ts.length<cap){
     if(ui.pick&&(ts.includes(ui.pick)||whyNotEnter(ui.pick,r.id)))ui.pick='';
     const btns=S.teams.filter(t=>!ts.includes(t.id)).map(t=>{const w=whyNotEnter(t.id,r.id);
-      return cb({cls:'big',k:'pick',v:t.id,on:ui.pick===t.id,off:!!w,c:w?'var(--line2)':TC[t.id][0],label:t.name,small:w||'存活 '+alive(t.id).length});}).join('');
+      return cb({cls:'big',k:'pick',v:t.id,on:ui.pick===t.id,off:!!w,c:w?'var(--line2)':TC[t.id][0],label:t.name,small:w||'存活 '+alive(t.id).length+'/'+PER_TEAM});}).join('');
     entry='<div class="chips c2">'+btns+'</div><button class="btn-main" data-a="enter"'+(ui.pick?'':' disabled')+'>'+(ui.pick?'放行 '+team(ui.pick).name+' 入场':'先选择可入场的队伍')+'</button>';
   }else entry='<div class="empty">房间已满，结算后再放行</div>';
   const info='<div class="pn" style="gap:14px"><h2 class="sh">规则与入场</h2><div class="rule">'+r.rule+'</div>'
-    +'<div class="lot'+(lottery?' hot':'')+'">'+(lottery?'输队抽签淘汰 1 人':'输了不淘汰')+'</div>'
-    +'<div class="need"><b>放行入场</b><span class="small">至少存活 <span class="mono" style="color:var(--ink)">'+r.min+'</span> 人</span></div>'+entry+'</div>';
-  const pending=ts.filter(t=>!ui.res[t]).length,ready=ts.length===cap&&!pending;
-  const hint=done?'本局已结算':!ts.length?'等待入场':pending?'还差 '+pending+' 队未选':ts.length<cap?'还需第二队入场':'胜负已选好';
+    +'<div class="lot hot">输队现场抽签淘汰 1 人，结算时在这里选出是谁</div>'
+    +'<div class="need"><b>放行入场</b><span class="small">队伍须满员：<span class="mono" style="color:var(--ink)">'+PER_TEAM+'</span> 人全部在场</span></div>'+entry+'</div>';
+  const lostTs=ts.filter(t=>ui.res[t]==='lose'),needPick=lostTs.filter(t=>alive(t).length&&!alive(t).some(p=>p.id===ui.pickOut[t]));
+  const pending=ts.filter(t=>!ui.res[t]).length,ready=ts.length===cap&&!pending&&!needPick.length;
+  const hint=done?'本局已结算':!ts.length?'等待入场':pending?'还差 '+pending+' 队未选':ts.length<cap?'还需第二队入场':needPick.length?'还差选出被淘汰的人':'胜负已选好';
   const rows=ts.map(tid=>{const t=team(tid),v=ui.res[tid]||'';
     return '<div class="rt"><div class="hd">'+tsq(tid,42)+'<div><b>'+t.name+'</b><span class="small">存活 <span class="mono" style="color:var(--ink)">'+alive(tid).length+'</span> 人</span></div></div>'
       +(v?'<span class="stamp">'+(v==='win'?'胜':'负')+'</span>':'')
       +'<div class="wl" role="group" aria-label="'+t.name+'结果"><button class="w" data-a="res" data-t="'+tid+'" data-v="win" aria-pressed="'+(v==='win')+'">赢</button>'
-      +'<button class="l" data-a="res" data-t="'+tid+'" data-v="lose" aria-pressed="'+(v==='lose')+'">输</button></div></div>';}).join('');
+      +'<button class="l" data-a="res" data-t="'+tid+'" data-v="lose" aria-pressed="'+(v==='lose')+'">输</button></div>'+(v==='lose'?outPick(tid):'')+'</div>';}).join('');
   const W=ts.filter(t=>ui.res[t]==='win').map(t=>team(t).name),L=ts.filter(t=>ui.res[t]==='lose').map(t=>team(t).name);
-  const summary=done?esc(ui.settled.msg):!ts.length?'':!ready?(ts.length<cap?'两队到齐才能结算':'为每队选赢或输')
-    :(W.length?W.join('、')+'赢：+'+r.n*100+' 冥币和 '+r.card:'无人获胜')+(L.length?'；'+L.join('、')+'输'+(lottery?'，抽签淘汰 1 人':''):'');
+  const summary=done?esc(ui.settled.msg):!ts.length?'':!ready?(ts.length<cap?'两队到齐才能结算':needPick.length&&!pending?'为输的队选出被淘汰的人':'为每队选赢或输')
+    :(W.length?W.join('、')+'赢：+'+r.n*100+' 冥币和 '+r.card:'无人获胜')+(L.length?'；'+L.join('、')+'输，淘汰 '+lostTs.map(t=>ui.pickOut[t]||'无').join('、'):'');
   const settle='<div class="pn" style="gap:14px"><div class="shrow"><h2 class="sh">房间内队伍</h2><span class="hint" style="font-weight:700;color:'+(ready?'var(--accent)':pending?'var(--warn)':'var(--sub)')+'">'+hint+'</span></div>'
     +(rows?'<div class="rteams">'+rows+'</div>':'<div class="empty">暂无队伍</div>')
     +'<span class="sum'+(ready||done?' ready':'')+'">'+summary+'</span>'
@@ -215,12 +219,13 @@ function viewNpc(){
   const tgt=ui.hookTarget&&S.players.find(x=>x.id===ui.hookTarget);
   const opts=S.teams.filter(t=>t.id!==ui.hookTeam).flatMap(t=>{
     return [{group:t.name},...S.players.filter(p=>p.team===t.id).map(p=>{const l=protectedLeft(p),gone=p.st!=='alive';
-      return {v:p.id,label:p.id,c:TC[t.id][0],off:gone||l>0,note:gone?'鬼市':l>0?'保护 '+Math.ceil(l/60)+' 分':''};})];});
+      return {v:p.id,label:p.id,c:TC[t.id][0],off:gone||l>0,note:gone?'已淘汰':l>0?'保护 '+Math.ceil(l/60)+' 分':''};})];});
   const ready=ui.hookTeam&&tgt;
   const counts={};const hl=hookLog();hl.forEach(h=>{if(h.by)counts[h.by]=(counts[h.by]||0)+1;});
   const hook='<div class="pn hook"><div class="two">'
     +'<div class="fld"><span>取得勾魂令的队伍</span>'+dd('hookTeam',ui.hookTeam&&team(ui.hookTeam).name,'选择队伍',ui.hookTeam&&TC[ui.hookTeam][0],S.teams.map(t=>({v:t.id,label:t.name,c:TC[t.id][0]})))+'</div>'
     +'<div class="fld"><span>被点名的队员</span>'+dd('hookTarget',tgt&&tgt.id,'选择别队队员',tgt&&TC[tgt.team][0],opts)+'</div></div>'
+    +'<label class="fld"><span>被勾魂时的位置（可不填，黑白无常会看到）</span><input class="in" id="hw" data-m="hookWhere" value="'+esc(ui.hookWhere)+'" placeholder="例如：二楼走廊"></label>'
     +'<button class="btn-main red" data-a="hook"'+(ready?'':' disabled')+' style="min-height:56px;display:flex;align-items:center;justify-content:center;gap:12px;font-size:18px">'
     +'<span style="width:34px;height:34px;border:2px solid currentColor;border-radius:6px;display:grid;place-items:center;font-family:var(--brush);font-size:24px;line-height:1;transform:rotate(-8deg);font-weight:400">勾</span>'
     +(ready?team(ui.hookTeam).name+' 勾魂 '+tgt.id:'先选队伍和队员')+'</button></div>'
@@ -232,14 +237,26 @@ function viewNpc(){
 }
 
 // ---------- 鬼市 ----------
+// 入鬼市登记：黑白无常或孟婆谁点都行，另一方确认。
+const canConfirm=p=>!!p.chk&&!p.chk.ok&&(ME.role==='ctrl'||p.chk.by!==ME.role);
+const chkBit=p=>!p.chk?'':p.chk.ok?'<span class="chk ok">登记已确认</span>':canConfirm(p)?'<button class="btn-line fill chkbtn" data-a="confirmin" data-p="'+p.id+'">确认入鬼市</button>':'<span class="chk wait">待'+(p.chk.by==='mengpo'?'黑白无常':'孟婆')+'确认</span>';
+function inboundPanel(){
+  const wait=S.players.filter(p=>p.st==='out'||p.st==='picked').sort((a,b)=>a.outAt-b.outAt);
+  const rows=wait.map(p=>'<div class="mrow'+(p.st==='picked'?' ok':'')+'"><div class="l1"><span class="id">'+p.id+'</span>'+tchip(p.team)
+    +'<span class="stay">'+(p.st==='picked'?'<b>已被黑白无常接到</b>':'等黑白无常来接')+'</span></div>'
+    +'<div class="l1"><span class="stay">淘汰位置：<b>'+esc(p.at||'未记录')+'</b>　已等 <b class="mono">'+mm(S.t-p.outAt)+'</b></span></div>'
+    +'<button class="btn-main'+(p.st==='picked'?' glow':'')+'" data-a="checkin" data-p="'+p.id+'">登记入鬼市（check-in）</button></div>').join('');
+  return '<section class="mcol"><div class="shrow"><h2 class="sh">待入鬼市</h2><span class="hint">登记后开始计时并领 300 冥币，另一方确认</span></div>'
+    +(rows?'<div class="mlist">'+rows+'</div>':'<div class="empty">现在没有等着入鬼市的人。</div>')+'</section>';
+}
 function viewMarket(){
-  const mk=S.players.filter(p=>p.st==='market').sort((a,b)=>a.outAt-b.outAt);
+  const mk=S.players.filter(p=>p.st==='market').sort((a,b)=>a.inAt-b.inAt);
   // Left (≈60%): one compact row per person in the market.
-  if(ui.reviveAsk){const q=S.players.find(x=>x.id===ui.reviveAsk);if(!q||q.st!=='market'||S.t-q.outAt<MIN_STAY||q.coins+q.bail<COIN_GOAL)ui.reviveAsk=null;}
-  const rows=mk.map(p=>{const stay=S.t-p.outAt,tOk=stay>=MIN_STAY,tot=p.coins+p.bail,cOk=tot>=COIN_GOAL,ok=tOk&&cOk,asking=ui.reviveAsk===p.id;
+  if(ui.reviveAsk){const q=S.players.find(x=>x.id===ui.reviveAsk);if(!q||q.st!=='market'||S.t-q.inAt<MIN_STAY||q.coins+q.bail<COIN_GOAL)ui.reviveAsk=null;}
+  const rows=mk.map(p=>{const stay=S.t-p.inAt,tOk=stay>=MIN_STAY,tot=p.coins+p.bail,cOk=tot>=COIN_GOAL,ok=tOk&&cOk,asking=ui.reviveAsk===p.id;
     return '<div class="mrow'+(ok?' ok':'')+(asking?' asking':'')+'"><div class="l1"><span class="id">'+p.id+'</span>'+tchip(p.team)
       +'<span class="stay'+(tOk?' okc':'')+'">已停留 <b class="mono">'+mm(stay)+'</b>/'+MIN_STAY/60+' 分钟</span>'
-      +'</div>'
+      +chkBit(p)+'</div>'
       +'<div class="l2"><label class="kv"><span class="k">本人冥币</span><span class="coin-in"><input class="in mono" id="c-'+p.id+'" data-m="coin" data-p="'+p.id+'" value="'+p.coins+'" inputmode="numeric" aria-label="'+p.id+' 本人冥币"><span class="cstep"><button type="button" data-a="mcoin" data-p="'+p.id+'" data-v="100" aria-label="增加 100">▲</button><button type="button" data-a="mcoin" data-p="'+p.id+'" data-v="-100" aria-label="减少 100">▼</button></span></span></label>'
       +'<div class="kv"><span class="k">队友助力</span><span class="v">+'+p.bail+'</span></div>'
       +'<div class="kv"><span class="k">合计</span><span class="v'+(cOk?' ok':'')+'" id="tot-'+p.id+'">'+tot+' / '+COIN_GOAL+'</span></div>'
@@ -247,6 +264,10 @@ function viewMarket(){
         :'<button class="btn-main'+(ok?' glow':'')+'" data-a="revive" data-p="'+p.id+'"'+(ok?'':' disabled')+'>'+(ok?'买命回队':!tOk?'时间未满':'差 '+(COIN_GOAL-tot))+'</button>')+'</div></div>';}).join('');
   const left='<section class="mcol"><div class="shrow"><h2 class="sh">孟婆买命</h2><span class="hint">满 '+MIN_STAY/60+' 分钟且凑够 '+COIN_GOAL+' 可回队</span></div>'
     +(rows?'<div class="mlist">'+rows+'</div>':'<div class="empty">鬼市现在没有人。</div>')+'</section>';
+  return '<div class="page mkt">'+left+(FEATURES.cards?cardsPanel(mk):inboundPanel())+'</div>';
+}
+// 技能卡商铺（暂时关闭，FEATURES.cards 打开后恢复）
+function cardsPanel(mk){
   // Right (≈40%): tabs 购买技能卡 / 各队持有.
   if(ui.buyer&&!mk.some(p=>p.id===ui.buyer))ui.buyer='';
   const by=ui.buyer&&S.players.find(p=>p.id===ui.buyer),held=S.teams.reduce((n,t)=>n+t.skills.length,0),tab=ui.mkTab==='hold'?'hold':'buy';
@@ -277,21 +298,45 @@ function viewMarket(){
     +'<label class="fld"><span>库存</span><input class="in mono" id="ncs" data-m="nc.stock" value="'+esc(ui.nc.stock)+'" inputmode="numeric"></label></div>'
     +'<label class="fld"><span>效果说明（可不填）</span><textarea class="in" id="ncd" data-m="nc.desc" rows="3">'+esc(ui.nc.desc)+'</textarea></label>'
     +'<div class="btns"><button class="btn-main" data-a="addcard">上架</button><button class="btn-line" data-a="ncclose">取消</button></div></div></div>':'';
-  return '<div class="page mkt">'+left+right+sheet+'</div>';
+  return right+sheet;
+}
+
+// ---------- 黑白无常 ----------
+function viewWuchang(){
+  const wait=S.players.filter(p=>p.st==='out'||p.st==='picked').sort((a,b)=>a.outAt-b.outAt);
+  const need=S.players.filter(p=>p.st==='market'&&p.chk&&!p.chk.ok).sort((a,b)=>a.inAt-b.inAt);
+  const row=p=>'<div class="mrow'+(p.st==='picked'?' ok':'')+'"><div class="l1"><span class="id">'+p.id+'</span>'+tchip(p.team)
+    +'<span class="stay">淘汰位置：<b>'+esc(p.at||'未记录')+'</b></span><span class="stay">已等 <b class="mono">'+mm(S.t-p.outAt)+'</b></span></div>'
+    +(p.st==='out'?'<button class="btn-main glow" data-a="pickup" data-p="'+p.id+'">接到了</button>'
+      :'<div class="l1"><span class="chk ok">已接到</span></div><button class="btn-main glow" data-a="checkin" data-p="'+p.id+'">送入鬼市</button>')+'</div>';
+  const left='<section class="mcol"><div class="shrow"><h2 class="sh">待接的人</h2><span class="hint">谁在哪里被淘汰了；接到后点「接到了」，送到鬼市后点「送入鬼市」</span></div>'
+    +(wait.length?'<div class="mlist">'+wait.map(row).join('')+'</div>':'<div class="empty">现在没有人需要接。</div>')+'</section>';
+  const right='<section class="mcol"><div class="shrow"><h2 class="sh">待你确认</h2><span class="hint">孟婆已登记入鬼市的人</span></div>'
+    +(need.length?'<div class="mlist">'+need.map(p=>'<div class="mrow"><div class="l1"><span class="id">'+p.id+'</span>'+tchip(p.team)+chkBit(p)+'</div></div>').join('')+'</div>':'<div class="empty">没有待确认的登记。</div>')+'</section>';
+  return '<div class="page mkt">'+left+right+'</div>';
 }
 
 // ---------- 生死簿 ----------
+// 一队里待接 / 已接到 / 在鬼市的人数
+function downTxt(tid){const c={out:0,picked:0,market:0};S.players.forEach(p=>{if(p.team===tid&&c[p.st]!=null)c[p.st]++;});
+  const b=[];if(c.out)b.push('待接 '+c.out);if(c.picked)b.push('已接到 '+c.picked);if(c.market)b.push('鬼市 '+c.market);
+  return b.length?'<span class="small" style="color:var(--red);font-weight:700">'+b.join('　')+'</span>':'<span class="small">全员在场</span>';}
+function downPanel(){
+  const l=S.players.filter(p=>p.st!=='alive').sort((a,b)=>(a.outAt||0)-(b.outAt||0)),nm={out:'等黑白无常',picked:'已接到',market:'在鬼市'};
+  return '<div class="pn" style="gap:0"><h3 style="padding-bottom:8px">淘汰与鬼市状态</h3>'+(l.length?l.map(p=>'<div class="li"><div class="grow"><span class="t">'+fmt(p.outAt||0)+'</span>'
+    +'<span class="x">'+p.id+'　'+nm[p.st]+(p.at?'　@'+esc(p.at):'')+(p.chk?'　'+(p.chk.ok?'登记已确认':'登记待确认'):'')+'</span></div></div>').join(''):'<div class="li small">现在没有人被淘汰。</div>')+'</div>';
+}
 function teamRows(){
   const list=[...S.teams].sort((a,b)=>b.score-a.score);
   const parts=list.map(t=>{const st=teamStatus(t),a=alive(t.id).length;
     const dots=S.players.filter(p=>p.team===t.id).map(p=>'<span class="dt'+(p.st==='alive'?'':' out')+'" title="'+p.id+(p.st==='alive'?'':'（鬼市）')+'"></span>').join('');
-    const sq=SUITS.map(s=>'<span class="sq'+(t.cards.some(c=>c.includes(s))?' got':'')+'" title="'+FRAG[s]+'"><span class="'+(isRed(s)?'sr':'')+'">'+s+'</span></span>').join('');
-    const sk=t.skills.length?t.skills.map(k=>'<button class="sk'+(ui.tskOpen===k.sid?' on':'')+'" data-a="tsk" data-v="'+k.sid+'" aria-expanded="'+(ui.tskOpen===k.sid)+'">'+esc(k.name)+'</button>').join(''):'<span class="small">无</span>';
+    const sq=SUITS.map(s=>'<span class="sq'+(t.cards.some(c=>c.includes(s))?' got':'')+'" title="'+TYPE[s]+'"><span class="'+(isRed(s)?'sr':'')+'">'+s+'</span></span>').join('');
+    const sk=!FEATURES.cards?downTxt(t.id):t.skills.length?t.skills.map(k=>'<button class="sk'+(ui.tskOpen===k.sid?' on':'')+'" data-a="tsk" data-v="'+k.sid+'" aria-expanded="'+(ui.tskOpen===k.sid)+'">'+esc(k.name)+'</button>').join(''):'<span class="small">无</span>';
     const ok=t.skills.find(k=>k.sid===ui.tskOpen);
     const det=ok?'<div class="skd"><b>'+esc(ok.name)+'</b>'+(ok.desc?'<span class="d">'+esc(ok.desc)+'</span>':'<span class="small">没有效果说明</span>')+'<span class="small">'+esc(ok.by)+' 于 '+fmt(ok.t)+' 在鬼市买入</span></div>':'';
-    const fin='<span class="pill '+(st.k==='free'?'free':st.k==='bad'?'bad':'')+'">'+(st.k==='free'?'可进决赛':st.txt)+'</span>';
+    const fin='<span class="pill '+(st.k==='free'?'free':st.k==='bad'?'bad':'')+'">'+st.txt+'</span>'+(t.final?'<button class="btn-line" data-a="final" data-v="'+t.id+'" data-off="1">取消终极任务</button>':st.k==='free'?'<button class="btn-line fill" data-a="final" data-v="'+t.id+'">开启终极任务</button>':'');
     return {t,a,dots,sq,sk,fin,det};});
-  const tbl='<div class="tbl"><div class="tr th"><span>队伍</span><span>存活</span><span>冥币</span><span>四色碎片</span><span>技能卡</span><span>决赛</span></div>'
+  const tbl='<div class="tbl"><div class="tr th"><span>队伍</span><span>存活</span><span>冥币</span><span>四色花色</span><span>'+(FEATURES.cards?'技能卡':'淘汰状态')+'</span><span>终极</span></div>'
     +parts.map(({t,a,dots,sq,sk,fin,det})=>'<div class="trg" style="'+tv(t.id)+'"><div class="tr"><span class="tn">'+tsq(t.id)+t.name+'</span><span class="dots">'+dots+'<span class="mono" style="font-weight:700;font-size:14px;margin-left:6px">'+a+'/'+PER_TEAM+'</span></span>'
       +'<span class="cn">'+t.score+'</span><span class="sqs">'+sq+'</span><span class="tags">'+sk+'</span><span>'+fin+'</span></div>'+(det?'<div class="skdrow">'+det+'</div>':'')+'</div>').join('')+'</div>';
   const cards='<div class="tcards">'+parts.map(({t,a,dots,sq,sk,fin,det})=>'<div class="tcard" style="'+tv(t.id)+'"><div class="r">'+tsq(t.id,32)+'<b style="font-size:18px">'+t.name+'</b><span class="cn">'+t.score+'</span></div>'
@@ -303,21 +348,18 @@ function coinAmt(){const v=parseInt(String(ui.coinAmt).replace(/[^\d-]/g,''),10)
 function coinBtn(){const t=ui.coinTeam&&team(ui.coinTeam),a=coinAmt();
   return t&&a?'确认 '+t.name+' '+(a>0?'+':'')+a+' → '+Math.max(0,t.score+a):'确认修改';}
 function editTeam(){
-  const ct=ui.coinTeam&&team(ui.coinTeam);if(ui.clueAsk&&ui.clueAsk.tid!==ui.coinTeam)ui.clueAsk=null;const q=ui.clueAsk;
-  return '<div class="pn" style="gap:12px"><h3>修改队伍</h3>'
+  const ct=ui.coinTeam&&team(ui.coinTeam);
+  return '<div class="pn" style="gap:12px"><h3>修改队伍冥币</h3>'
     +'<div class="coinrow"><div class="fld"><span>队伍</span>'+dd('coinTeam',ct&&ct.name,'选择队伍',ct&&TC[ct.id][0],S.teams.map(t=>({v:t.id,label:t.name,c:TC[t.id][0],note:t.score+' 冥币'})))+'</div>'
     +'<div class="fld"><span>冥币增减（▲▼ 每次 100）</span><span class="coin-in"><input class="in mono" type="number" step="100" id="cv" data-m="coinAmt" value="'+esc(ui.coinAmt)+'" placeholder="0" aria-label="冥币增减">'
     +'<span class="cstep"><button type="button" data-a="coinstep" data-v="100" aria-label="加 100">▲</button><button type="button" data-a="coinstep" data-v="-100" aria-label="减 100">▼</button></span></span></div>'
-    +'<button class="btn-main" id="coinbtn" data-a="setscore" style="min-height:48px;font-size:16px">'+coinBtn()+'</button></div>'
-    +'<div class="fld"><span>线索（扑克牌，点牌后再确认加上 / 去掉）</span><div class="clues">'+ROOMS.map(r=>{const has=!!(ct&&ct.cards.includes(r.card));
-      return '<button class="clue'+(has?' on':'')+(q&&q.card===r.card?' ask':'')+'" data-a="clue" data-v="'+r.card+'"'+(ct?'':' disabled')+' aria-pressed="'+has+'">'+cardG(r)+'</button>';}).join('')+'</div>'
-    +(q?'<div class="clueask"><span>确认给 <b>'+ct.name+'</b> '+(ct.cards.includes(q.card)?'去掉':'加上')+' <b>'+q.card+'</b>？</span><span class="btns"><button class="btn-line fill" data-a="clueok">确认</button><button class="btn-line" data-a="clueno">取消</button></span></div>':'')+'</div></div>';
+    +'<button class="btn-main" id="coinbtn" data-a="setscore" style="min-height:48px;font-size:16px">'+coinBtn()+'</button></div></div>';
 }
 function logTag(l){const x=l.text;
-  return /勾魂|抽签淘汰|被淘汰/.test(x)?['勾魂','var(--red)']:/孟婆汤|鬼市|助力/.test(x)&&!/技能卡/.test(x)?['鬼市','var(--accent)']:/技能卡/.test(x)?['技能卡','#6b4f9a']
+  return /勾魂|抽签淘汰|被淘汰/.test(x)?['勾魂','var(--red)']:/黑白无常/.test(x)?['无常','var(--red)']:/孟婆汤|鬼市|助力/.test(x)&&!/技能卡/.test(x)?['鬼市','var(--accent)']:/技能卡/.test(x)?['技能卡','#6b4f9a']
     :/发布|撤销发布/.test(x)?['发布','var(--ink2)']:/任务/.test(x)?['任务','var(--accent)']:/进入|赢下|输了/.test(x)?['房间','var(--ink2)']:/冥币/.test(x)?['冥币','var(--warn)']:['系统','var(--sub)'];}
 function viewCtrl(){
-  const status='<h2 class="sh">各队状态</h2>'+teamRows()
+  const status='<h2 class="sh">各队状态</h2>'+teamRows()+downPanel()
     +editTeam();
   return '<div class="page tabbed toptabs ledger">'+sub('ctrl',[['status','各队状态'],['pub','发布'],['log','全场日志'],['tools','总控工具']],'top col')
     +sec('ctrl','status',status)+sec('ctrl','pub',pubPanel())
@@ -326,21 +368,28 @@ function viewCtrl(){
     +sec('ctrl','tools',adminPanel())+'</div>';
 }
 function pubPanel(){
-  const f=ui.pub,task=f.kind!=='公告';f.to=f.target==='team'?'team:'+f.team:f.target;
+  const f=ui.pub,K=f.kind,gate=K==='鬼门开',side=K==='sidequest',task=K!=='公告';f.to=f.target==='team'?'team:'+f.team:f.target;
   const to=[['all','全场'],...S.teams.map(t=>['team:'+t.id,t.name,t.id]),['alive','存活的人'],['market','鬼市里的人'],['player','某位队员']];
   const toOn=v=>v==='team:'+f.team?f.target==='team':v===f.target;
-  const pl=f.players||[],toName=f.target==='team'?team(f.team).name:f.target==='player'?(!pl.length?'某位队员':pl.length<=3?pl.join('、'):pl.slice(0,2).join('、')+' 等 '+pl.length+' 人'):{all:'全场',alive:'存活的',market:'鬼市里的'}[f.target];
+  const pl=f.players||[],q=QUESTS.find(x=>x.id===f.quest);
+  const toName=gate?'全场':side?(f.sqTeam?team(f.sqTeam).name+'的':'队伍的'):f.target==='team'?team(f.team).name:f.target==='player'?(!pl.length?'某位队员':pl.length<=3?pl.join('、'):pl.slice(0,2).join('、')+' 等 '+pl.length+' 人'):{all:'全场',alive:'存活的',market:'鬼市里的'}[f.target];
+  // sidequest: one team only, teams that are short of people first, with how many are left
+  const sqTeams=[...S.teams].sort((a,b)=>alive(a.id).length-alive(b.id).length);
+  const target=K==='公告'?'<div class="fgrid"><div class="fld"><span>发给谁</span>'+dd('pub.to',(to.find(([v])=>toOn(v))||[])[1],'选择对象',f.target==='team'?TC[f.team][0]:null,to.map(([v,l,id])=>({v,label:l,c:id?TC[id][0]:null})))+'</div>'
+      +(f.target==='player'?'<div class="fld"><span>选择队员（可多选）</span>'+dd('pub.players',pl.length?pl.length+' 人':'','选择队员',null,S.teams.flatMap(t=>[{group:t.name},...S.players.filter(p=>p.team===t.id).map(p=>({v:p.id,label:p.id,c:TC[t.id][0],note:p.st==='alive'?'':'已淘汰'}))]),true)
+        +(pl.length?'<div class="selchips">'+pl.map(id=>'<button class="selchip" data-a="unpick" data-k="pub.players" data-v="'+id+'" aria-label="去掉 '+id+'"><span class="sw" style="--c:'+TC[teamOf(id)][0]+'"></span>'+id+'<b>×</b></button>').join('')+'</div>':'')+'</div>':'')+'</div>'
+    :gate?'<span class="small">发给全场玩家，先到先得，被完成时全场播报。</span>'
+    :'<div class="fld"><span>发给哪个队伍（剩余人数少的排前面）</span><div class="chips c2">'+sqTeams.map(t=>cb({k:'pub.sqTeam',v:t.id,on:f.sqTeam===t.id,c:TC[t.id][0],label:t.name,small:'剩余 '+alive(t.id).length+'/'+PER_TEAM+' 人'})).join('')+'</div></div>'
+      +'<div class="fld"><span>题库</span><div class="chips c2">'+QUESTS.map(x=>cb({k:'pub.quest',v:x.id,on:f.quest===x.id,label:esc(x.title),small:'+'+x.reward+' 冥币'})).join('')+'</div></div>'
+      +(q?'<div class="lot">'+esc(q.body)+'</div>':'');
   const form='<div class="pn" style="gap:14px">'
-    +'<div class="fld"><span>类型</span><div class="seg3">'+['公告','任务','秘密任务'].map(k=>'<button class="sbtn'+(f.kind===k?' on':'')+(k==='秘密任务'?' secret':'')+'" data-a="pick" data-k="pub.kind" data-v="'+k+'" aria-pressed="'+(f.kind===k)+'">'+k+'</button>').join('')+'</div></div>'
-    +'<div class="fgrid"><div class="fld"><span>发给谁</span>'+dd('pub.to',(to.find(([v])=>toOn(v))||[])[1],'选择对象',f.target==='team'?TC[f.team][0]:null,to.map(([v,l,id])=>({v,label:l,c:id?TC[id][0]:null})))+'</div>'
-    +(f.target==='player'?'<div class="fld"><span>选择队员（可多选）</span>'+dd('pub.players',pl.length?pl.length+' 人':'','选择队员',null,S.teams.flatMap(t=>[{group:t.name},...S.players.filter(p=>p.team===t.id).map(p=>({v:p.id,label:p.id,c:TC[t.id][0],note:p.st==='alive'?'':'鬼市'}))]),true)
-      +(pl.length?'<div class="selchips">'+pl.map(id=>'<button class="selchip" data-a="unpick" data-k="pub.players" data-v="'+id+'" aria-label="去掉 '+id+'"><span class="sw" style="--c:'+TC[teamOf(id)][0]+'"></span>'+id+'<b>×</b></button>').join('')+'</div>':'')+'</div>':'')+'</div>'
-    +'<div class="fgrid">'+(task?'<div class="fld"><span>完成方式</span><div class="seg2">'+[['first','先到先得'],['each','各自完成']].map(([v,l])=>'<button class="sbtn'+(f.mode===v?' on':'')+'" style="min-height:48px;font-size:15px" data-a="pick" data-k="pub.mode" data-v="'+v+'" aria-pressed="'+(f.mode===v)+'">'+l+'</button>').join('')+'</div></div>':'')
-    +'<label class="fld"><span>限时（分钟）</span><input class="in mono" id="pm" data-m="pub.mins" value="'+esc(f.mins)+'" inputmode="numeric"></label>'
+    +'<div class="fld"><span>类型</span><div class="seg3">'+['公告','鬼门开','sidequest'].map(k=>'<button class="sbtn'+(K===k?' on':'')+(k==='sidequest'?' secret':'')+'" data-a="pick" data-k="pub.kind" data-v="'+k+'" aria-pressed="'+(K===k)+'">'+k+'</button>').join('')+'</div></div>'
+    +target
+    +'<div class="fgrid"><label class="fld"><span>限时（分钟）</span><input class="in mono" id="pm" data-m="pub.mins" value="'+esc(f.mins)+'" inputmode="numeric"></label>'
     +(task?'<label class="fld"><span>奖励冥币</span><input class="in mono" id="prw" data-m="pub.reward" value="'+esc(f.reward)+'" inputmode="numeric"></label>':'')+'</div>'
-    +'<label class="fld"><span>标题</span><input class="in" id="pti" data-m="pub.title" value="'+esc(f.title)+'" placeholder="例如：鬼门开：还原鬼片海报"></label>'
-    +'<label class="fld"><span>内容</span><textarea class="in" id="pb" data-m="pub.body" rows="3" placeholder="玩家手机上看到的说明：任务要求、集合地点…">'+esc(f.body)+'</textarea></label>'
-    +'<button class="btn-main" data-a="publish">发布到'+esc(toName)+'玩家手机</button></div>';
+    +(side?'':'<label class="fld"><span>标题</span><input class="in" id="pti" data-m="pub.title" value="'+esc(f.title)+'" placeholder="例如：鬼门开：还原鬼片海报"></label>'
+    +'<label class="fld"><span>内容</span><textarea class="in" id="pb" data-m="pub.body" rows="3" placeholder="玩家手机上看到的说明：任务要求、集合地点…">'+esc(f.body)+'</textarea></label>')
+    +'<button class="btn-main" data-a="publish">发布'+(side?' sidequest':'')+'到'+esc(toName)+'玩家手机</button></div>';
   const list=S.notices.filter(n=>n.kind!=='通知').slice(0,10).map(n=>{
     const aud=S.players.filter(p=>matches(n,p)),acked=aud.filter(p=>n.acks[p.id]).length,[kl,kc]=kindOf(n),ds=Object.keys(n.done);
     return '<div class="li"><div class="grow" style="gap:4px"><div class="thead"><span class="kb '+kc+'" style="font-size:12px;padding:0 7px">'+kl+'</span><b style="font-size:17px">'+esc(n.title)+'</b></div>'
@@ -349,17 +398,15 @@ function pubPanel(){
       +(ui.revokeAsk===n.id?'<span class="btns"><button class="btn-line fillred" data-a="revokeok" data-n="'+n.id+'">确认撤销</button><button class="btn-line" data-a="revokeno">取消</button></span>'
         +'<span class="small" style="flex-basis:100%">玩家手机上会删除'+(Object.values(n.done).some(d=>d.pts)?'，奖励扣回':'')+'</span>'
         :'<button class="btn-line" data-a="revoke" data-n="'+n.id+'">撤销发布</button>')+'</div>';}).join('');
-  return '<h2 class="sh">发布公告 / 任务</h2><div class="pubcols">'+form+'<div class="pn" style="gap:0"><h3 style="padding-bottom:8px">已发布</h3>'+(list||'<div class="li small">还没有发布过。</div>')+'</div></div>';
+  return '<h2 class="sh">发布公告 / 鬼门开 / sidequest</h2><div class="pubcols">'+form+'<div class="pn" style="gap:0"><h3 style="padding-bottom:8px">已发布</h3>'+(list||'<div class="li small">还没有发布过。</div>')+'</div></div>';
 }
 function adminPanel(){
   const A=ui.admin,c=A.counts,run=CLOCK&&CLOCK.running;
-  const num=(k,l)=>'<label class="fld"><span>'+l+'</span><input class="in mono" type="number" id="adm-'+k+'" min="0" max="30" data-m="adm.'+k+'" value="'+c[k]+'"></label>';
+  const num=(k,l,fixed)=>'<label class="fld"><span>'+l+'</span><input class="in mono" type="number" id="adm-'+k+'" min="0" max="30" data-m="adm.'+k+'" value="'+c[k]+'"'+(fixed?' disabled':'')+'></label>';
   const pins=A.pins?'<div class="pins"><div class="pr h"><span>身份</span><span>编号 / 名称</span><span>PIN</span><span></span></div>'
     +A.pins.map(p=>'<div class="pr"><span>'+esc(p.roleName)+'</span><span class="mono" style="font-weight:700">'+esc(p.pid||p.label)+'</span><span class="pin">'+p.pin+'</span><span>'
       +(A.ask==='pin:'+p.pin?'<span class="btns" style="gap:4px"><button class="btn-line fillred" data-a="adm-resetpin" data-v="'+p.pin+'">确认</button><button class="btn-line" data-a="adm-cancel">取消</button></span>'
         :'<span class="btns" style="gap:4px"><button class="btn-line" data-a="copypin" data-v="'+p.pin+'">复制</button><button class="btn-line" data-a="adm-ask" data-v="pin:'+p.pin+'">重置</button></span>')+'</span>'
-      +(p.role==='dealer'?'<span class="rb"><span class="small">负责房间</span>'+ROOMS.map(x=>{const on=!!(p.rooms&&p.rooms.includes(x.id)),by=!on&&A.pins.find(q=>q.role==='dealer'&&q.rooms&&q.rooms.includes(x.id));
-        return '<button class="clue'+(on?' on':'')+'" data-a="adm-room" data-v="'+p.pin+'" data-k="'+x.id+'" aria-pressed="'+on+'" title="'+(by?'现在归 '+esc(by.label):'')+'">'+cardG(x)+'</button>';}).join('')+'</span>':'')
       +'</div>').join('')+'</div>'
     +'<div class="btns"><button class="btn-line" data-a="adm-csv">下载 PIN 表（CSV）</button><button class="btn-line" data-a="adm-hide">收起</button><span class="small">共 '+A.pins.length+' 个</span></div>':'';
   const snaps=A.snaps?(A.snaps.length?'<div class="list">'+A.snaps.map(s=>'<div class="li"><div class="grow"><span class="x" style="font-size:15px">'+new Date(s.at).toLocaleTimeString()+'</span><span class="small">游戏 '+fmt(s.t||0)+'　'+esc(s.tag||'')+'</span></div>'
@@ -368,28 +415,45 @@ function adminPanel(){
   const left='<div class="stack"><div class="pn"><span class="lbl" style="font-size:13px">游戏计时</span><div class="timer"><span class="big'+(run?'':' paused')+'" id="tclk">'+fmt(S.t)+'</span>'
     +'<button class="btn-line '+(run?'':'fill')+'" data-a="clockctl" style="min-height:52px;padding:0 24px;font-size:17px;font-weight:900">'+(run?'暂停':'开始')+'</button></div>'
     +'<span class="small" style="font-weight:700;color:'+(run?'var(--accent)':'var(--sub)')+'">'+(run?'● 计时中':'❚❚ 已暂停')+'</span></div>'
+    +'<div class="pn"><h3>开局</h3><span class="small">8 队随机分到 8 个房间。只有还没有队伍进过房间时才能用。</span><div class="btns"><button class="btn-line acc" data-a="assign">开局随机分房</button></div></div>'
     +'<div class="pn"><div class="shrow"><h3>PIN</h3><span class="small">按数量补齐工作人员 PIN</span></div>'
-    +'<div class="cnts">'+num('dealer','Dealer')+num('judge','判官')+num('mengpo','孟婆')+num('ctrl','总控')+num('screen','大屏')+'</div>'
+    +'<div class="cnts">'+num('dealer','Dealer（固定 8，一人一间）',1)+num('judge','判官')+num('mengpo','孟婆')+num('wuchang','黑白无常（固定 1）',1)+num('ctrl','总控')+num('screen','大屏')+'</div>'
     +'<div class="btns"><button class="btn-line acc" data-a="adm-gen">生成 PIN</button><button class="btn-line" data-a="adm-pins">查看全部 PIN</button></div>'+pins+'</div></div>';
   const rs=A.resetTxt==='重置';
   const right='<div class="stack"><div class="pn"><h3>备份与恢复</h3><span class="small">每 10 次操作自动备份一次；重置、恢复、载入演示数据前都会先备份当前数据。</span>'
     +'<div class="btns"><button class="btn-line" data-a="adm-snaps">查看备份</button>'
     +(A.ask==='reset:demo'?'<button class="btn-line fillred" data-a="adm-reset" data-v="demo">确认载入演示数据</button><button class="btn-line" data-a="adm-cancel">取消</button>'
       :'<button class="btn-line" data-a="adm-ask" data-v="reset:demo">载入演示数据</button>')+'</div>'+snaps+'</div>'
-    +'<div class="danger"><h3>危险操作</h3><p>重置会清空所有冥币、扑克牌、日志和鬼市记录（PIN 不变）。请在下方输入“重置”二字后再点按钮。</p>'
+    +'<div class="danger"><h3>危险操作</h3><p>重置会清空所有冥币、花色、日志和鬼市记录（PIN 不变）。请在下方输入“重置”二字后再点按钮。</p>'
     +'<input class="in" id="rst" data-m="adm.resetTxt" value="'+esc(A.resetTxt)+'" placeholder="输入“重置”" style="border-color:#d9b3aa">'
     +'<button class="btn-line '+(rs?'fillred':'')+'" id="rstbtn" data-a="adm-reset" data-v="blank"'+(rs?'':' disabled')+' style="min-height:48px;font-weight:900">重置为空白游戏</button></div></div>';
   return '<h2 class="sh">总控工具</h2><div class="cols2">'+left+right+'</div>';
 }
 
 // ---------- 玩家 ----------
+const meP=()=>S&&ME&&ME.role==='player'?S.players.find(p=>p.id===ME.pid):null;
+const finalNow=()=>{const p=meP(),t=p&&S.teams.find(x=>x.id===p.team);return !!(t&&t.final);};
+// 终极任务：队伍满足条件、总控开启后，玩家页只剩这一页。
+function viewFinal(me,t){
+  return '<div class="page final"><div class="fcard"><span class="fk">终极任务</span><h1>'+esc(t.name)+'</h1><p>'+esc(FINAL_MSG)+'</p>'
+    +'<div class="fm"><span class="mono">'+me.id+'</span>'+tchip(t.id)+'</div></div></div>';
+}
+// 被淘汰 / 在鬼市时，页面顶部一条醒目的红色提示（另有整页红边光晕，见 style.css 的 body.inmk）。
+function downBanner(me){
+  if(me.st==='alive')return '';
+  if(me.st==='market')return '<div class="oban mk" role="status"><b>你在鬼市</b><span>已待 <i class="mono">'+mm(S.t-me.inAt)+'</i> / '+MIN_STAY/60+' 分钟　合计冥币 <i class="mono">'+(me.coins+me.bail)+'</i> / '+COIN_GOAL+'</span></div>';
+  return '<div class="oban" role="status"><b>你已被淘汰</b><span>'+(me.st==='picked'?'黑白无常已接到你，正在送你去鬼市':'留在原地，等黑白无常来接你')+'</span></div>';
+}
 function viewPlayer(){
-  const me=S.players.find(p=>p.id===ME.pid),t=team(me.team),prot=protectedLeft(me),inMk=me.st==='market';
-  const stay=inMk?S.t-me.outAt:0;
+  const me=S.players.find(p=>p.id===ME.pid),t=team(me.team);
+  if(t.final)return viewFinal(me,t);
+  const prot=protectedLeft(me),inMk=me.st==='market',out=me.st==='out'||me.st==='picked';
+  const stay=inMk?S.t-me.inAt:0;
   // 酆都通行证: a clearance document, stamped with the current state
-  const wst=inMk?'market':prot?'protected':'alive';
-  const wseal={alive:'存活',protected:'保护中',market:'鬼市'}[wst];
+  const wst=inMk||out?'market':prot?'protected':'alive';
+  const wseal=out?'淘汰':{alive:'存活',protected:'保护中',market:'鬼市'}[wst];
   const wnote=wst==='alive'?'<span class="w-hint">小心勾魂</span>'
+    :out?'<span class="w-hint">'+(me.st==='picked'?'已被接到':'原地等候')+'</span>'
     :'<span class="w-lab">'+(wst==='market'?'已待':'保护期还剩')+'</span><span class="w-num">'+(wst==='market'?mm(stay):Math.ceil(prot/60)+' 分钟')+'</span>';
   const wch=[...wseal],wn=wch.length,wh=wn>2?78:58,wy=wn>2?[27,51,75]:[29,55];
   const wen='<div class="wen" data-st="'+wst+'"><svg class="w-grain" aria-hidden="true"><rect width="100%" height="100%" filter="url(#paperGrain)"></rect></svg>'
@@ -402,18 +466,20 @@ function viewPlayer(){
     +wch.map((c,i)=>'<text x="32" y="'+wy[i]+'" text-anchor="middle" font-size="'+(wn>2?24:28)+'">'+c+'</text>').join('')+'</g></svg></div></div>';
   // 本队
   const a=alive(t.id).length,st=teamStatus(t);
-  const dots=S.players.filter(p=>p.team===t.id).map(p=>'<span class="dt'+(p.st==='alive'?'':' out')+'" style="'+tv(t.id)+'" title="'+p.id+(p.st==='alive'?'':'（鬼市）')+'"></span>').join('');
+  const dots=S.players.filter(p=>p.team===t.id).map(p=>'<span class="dt'+(p.st==='alive'?'':' out')+'" style="'+tv(t.id)+'" title="'+p.id+(p.st==='alive'?'':'（淘汰）')+'"></span>').join('');
   const suits=SUITS.map(s=>{const has=t.cards.filter(c=>c.includes(s));
-    return '<div class="s4'+(has.length?' got':'')+'"><span class="g '+(isRed(s)?'sr':'')+'">'+s+'</span><span class="l">'+FRAG[s]+'</span><span class="c">'+(has.length?has.join(' '):'未获得')+'</span></div>';}).join('');
+    return '<div class="s4'+(has.length?' got':'')+'"><span class="g '+(isRed(s)?'sr':'')+'">'+s+'</span><span class="l">'+TYPE[s]+'</span><span class="c">'+(has.length?has.join(' '):'未获得')+'</span></div>';}).join('');
   const myRooms=S.rooms.filter(x=>x.teams.includes(t.id)).map(x=>{const r=room(x.id);
     return '<div class="myroom"><div class="cd">'+cardG(r)+'</div><div style="display:flex;flex-direction:column;gap:6px;min-width:0"><span class="on">● 本队进行中</span>'
       +'<div class="vs">'+x.teams.map(tchip).join('<span>vs</span>')+'</div><span class="small">赢 +'+r.n*100+' 冥币</span></div></div>';}).join('');
-  const fin='<div class="fin'+(st.k==='free'?' ok':'')+'">'+(st.k==='free'?'可进决赛':st.txt)+'</div>';
-  const teamSec='<div class="tsum"><div class="mini"><span class="cap">队伍冥币</span><span class="cv">'+t.score+'</span></div>'
+  const fin='<div class="fin'+(st.k==='free'?' ok':'')+'">'+st.txt+'</div>';
+  const downN=S.players.filter(p=>p.team===t.id&&p.st!=='alive').length,sqOpen=S.notices.filter(n=>n.sub==='side'&&matches(n,me)&&!n.done[t.id]);
+  const sqBox=downN?'<div class="sqbox"><b>队里有 '+downN+' 人被淘汰，暂时不能进房</b><span>'+(sqOpen.length?'去完成 sidequest 赚冥币，帮队友早点买命（见「任务」页）。':'等工作人员发布 sidequest，完成后赚冥币帮队友买命。')+'</span></div>':'';
+  const teamSec=sqBox+'<div class="tsum"><div class="mini"><span class="cap">队伍冥币</span><span class="cv">'+t.score+'</span></div>'
     +'<div class="mini" style="gap:8px"><span class="cap">存活 <span class="mono" style="font-weight:700;font-size:14px;color:var(--ink)">'+a+' / '+PER_TEAM+'</span></span><div class="dots">'+dots+'</div></div>'
-    +'<div class="mini frag"><span class="cap">四色碎片</span><div class="suits4">'+suits+'</div>'+fin+'</div></div>'
+    +'<div class="mini frag"><span class="cap">四色花色</span><div class="suits4">'+suits+'</div>'+fin+'</div></div>'
     +'<div class="mobonly">'+(myRooms||'<div class="pn" style="padding:14px"><span class="muted">本队现在没有在任何房间里。</span></div>')+'</div>'
-  ;const skillsPart=''
+  ;const skillsPart=!FEATURES.cards?'':''
     +'<div class="skrow"><span class="cap">本队技能卡</span>'+(t.skills.length?'<div class="skills">'+t.skills.map(k=>'<button class="sk'+(ui.skillOpen===k.sid?' on':'')+'" data-a="skill" data-v="'+k.sid+'" aria-expanded="'+(ui.skillOpen===k.sid)+'">'+esc(k.name)+'</button>').join('')+'</div>':'<span class="muted small">暂无。鬼市里的人可用个人冥币购买。</span>')+'</div>'
     +((sk=>sk?'<div class="skd"><b>'+esc(sk.name)+'</b>'+(sk.desc?'<span class="d">'+esc(sk.desc)+'</span>':'')+'<span class="small">'+esc(sk.by)+' 于 '+fmt(sk.t)+' 在鬼市买入</span><span class="small">使用时找工作人员出示这一页。</span></div>':'')(t.skills.find(k=>k.sid===ui.skillOpen)));
   // 通知与任务
@@ -421,7 +487,7 @@ function viewPlayer(){
   const nmeta=n=>{const key=indiv(n)?me.id:me.team,d=n.done[key],w=Object.keys(n.done)[0],lost=n.kind==='任务'&&!d&&isFirst(n)&&!!w;return{d,w,lost,live:n.kind==='任务'&&!d&&!lost};};
   const noteHtml=n=>{const acked=!!n.acks[me.id],[kl,kc]=kindOf(n),{d,w,lost}=nmeta(n);
     let ns='',nc='';
-    if(n.kind==='任务'){if(d){ns='已完成 '+fmt(d.t);nc='var(--accent)';}else if(lost){ns=n.secret?'任务已关闭':'已被'+lab(w)+'抢先';nc='var(--sub)';}else{ns='进行中';nc='var(--accent)';}}
+    if(n.kind==='任务'){if(d){ns='已完成 '+fmt(d.t);nc='var(--accent)';}else if(lost){ns='已被'+lab(w)+'抢先';nc='var(--sub)';}else{ns='进行中';nc='var(--accent)';}}
     return '<div class="note'+(acked?'':' new')+(lost?' lost':'')+'"><div class="nh"><span class="kb round '+kc+'" style="font-size:12px;padding:1px 10px">'+kl+'</span>'
       +(modeOf(n)?'<span class="mode">'+modeOf(n)+'</span>':'')+'<span class="mode mono">'+fmt(n.t)+'</span>'+(ns?'<span class="ns" style="color:'+nc+'">'+ns+'</span>':'')+'</div>'
       +'<div class="nt">'+esc(n.title)+'</div>'+(n.body?'<div class="nb">'+esc(n.body)+'</div>':'')
@@ -431,8 +497,11 @@ function viewPlayer(){
   const taskSec='<h2 class="sh" style="font-size:22px">当前任务与通知</h2>'+(curN.length?curN.map(noteHtml).join(''):'<div class="pn"><span class="muted">暂时没有新的通知或进行中的任务。</span></div>')
     +(histN.length?'<button class="histbtn" data-a="hist" aria-expanded="'+!!ui.histOpen+'">历史消息（'+histN.length+'）<span>'+(ui.histOpen?'收起 ▲':'展开 ▼')+'</span></button>'+(ui.histOpen?histN.map(noteHtml).join(''):''):'');
   // 鬼市
-  const mk=S.players.filter(p=>p.team===t.id&&p.st==='market').sort((x,y)=>x.outAt-y.outAt);
-  const mate=(p,mine)=>{const s=S.t-p.outAt,tot=p.coins+p.bail,tOk=s>=MIN_STAY,cOk=tot>=COIN_GOAL,gap=gapOf(p);
+  const mk=S.players.filter(p=>p.team===t.id&&p.st!=='alive').sort((x,y)=>x.outAt-y.outAt);
+  const mate=(p,mine)=>{
+    if(p.st!=='market')return '<div class="mate"'+(mine?' style="border-color:var(--red)"':'')+'><div class="r"><span class="id">'+p.id+(mine?' <span class="small" style="font-family:var(--sans)">（你）</span>':'')+'</span>'
+      +'<span class="small" style="font-weight:700;color:var(--red)">'+(p.st==='picked'?'已被黑白无常接到':'原地等黑白无常')+'</span></div></div>';
+    const s=S.t-p.inAt,tot=p.coins+p.bail,tOk=s>=MIN_STAY,cOk=tot>=COIN_GOAL,gap=gapOf(p);
     const line=tOk&&cOk?'可以找孟婆买命了':[tOk?'':'还需 '+mm(MIN_STAY-s),cOk?'':'差 '+(COIN_GOAL-tot)+' 冥币'].filter(Boolean).join('，');
     const def=Math.min(gap*RATE,t.score);
     return '<div class="mate"'+(mine?' style="border-color:var(--red)"':'')+'><div class="r"><span class="id">'+p.id+(mine?' <span class="small" style="font-family:var(--sans)">（你）</span>':'')+'</span>'
@@ -441,13 +510,13 @@ function viewPlayer(){
       +'<span class="small" style="font-weight:700;color:'+(tOk&&cOk?'var(--accent)':'var(--ink)')+'">'+line+'</span>'
       +(!mine&&me.st==='alive'&&gap>0?'<div class="give"><input class="in" id="d-'+p.id+'" data-m="don" data-p="'+p.id+'" value="'+(ui.don[p.id]!=null?ui.don[p.id]:def)+'" inputmode="numeric" placeholder="冥币数" aria-label="为 '+p.id+' 花掉的队伍冥币">'
         +'<button data-a="donate" data-p="'+p.id+'">冥币助力</button></div>':'')+'</div>';};
-  const mkSec='<div class="shrow"><h2 class="sh" style="font-size:22px">鬼市中的队友</h2><span class="hint">满 '+MIN_STAY/60+' 分钟且 '+COIN_GOAL+' 冥币可买命</span></div>'
-    +(mk.length?mk.map(p=>mate(p,p.id===me.id)).join(''):'<div class="pn"><span class="muted">本队现在没有人在鬼市。</span></div>')
+  const mkSec='<div class="shrow"><h2 class="sh" style="font-size:22px">被淘汰的队友</h2><span class="hint">满 '+MIN_STAY/60+' 分钟且 '+COIN_GOAL+' 冥币可买命</span></div>'
+    +(mk.length?mk.map(p=>mate(p,p.id===me.id)).join(''):'<div class="pn"><span class="muted">本队现在没有人被淘汰。</span></div>')
     +'<span class="small">花本队冥币 '+RATE+':1 换助力（队伍现有 <span class="mono" style="color:var(--ink)">'+t.score+'</span>）</span>';
   const roomSec='<h2 class="sh" style="font-size:22px">全部房间</h2><div class="prooms">'+ROOMS.map(r=>roomCard(r,t.id)).join('')+'</div>';
   const tabs=[['team','本队'],['task','任务'+(unread?'<b class="cnt">'+unread+'</b>':'')],['market','鬼市'+(mk.length?'<b class="cnt">'+mk.length+'</b>':'')],['rooms','房间']];
   return '<div class="page tabbed toptabs allin">'+sub('player',tabs,'top')
-    +'<div class="pcol l">'+wen+sec('player','team',teamSec)+sec('player','market',mkSec).replace('class="sec','class="sec'+(mk.length?'':' mk0'))+sec('player','team',skillsPart)+sec('player','rooms',roomSec)+'</div>'
+    +'<div class="pcol l">'+downBanner(me)+wen+sec('player','team',teamSec)+sec('player','market',mkSec).replace('class="sec','class="sec'+(mk.length?'':' mk0'))+(skillsPart?sec('player','team',skillsPart):'')+sec('player','rooms',roomSec)+'</div>'
     +'<div class="pcol r">'+sec('player','task',taskSec)+'</div></div>';
 }
 function modalHtml(){
@@ -455,7 +524,7 @@ function modalHtml(){
   const me=S.players.find(p=>p.id===ME.pid);
   const n=S.notices.find(x=>matches(x,me)&&!x.acks[me.id]&&!(DEVME&&ui.devAck.has(x.id+':'+me.id)));if(!n)return '';
   const [kl,kc]=kindOf(n),r=n.due?n.due-S.t:0;
-  return '<div class="ovl"><div class="dlg" data-n="'+n.id+'" data-k="'+(n.title==='你被淘汰了'?'out':'')+'" role="dialog" aria-modal="true" aria-labelledby="dt"><div class="new"><i></i>新通知</div>'
+  return '<div class="ovl" data-k="'+(n.tone==='out'?'out':'')+'"><div class="dlg" data-n="'+n.id+'" data-k="'+(n.tone==='out'?'out':'')+'" role="dialog" aria-modal="true" aria-labelledby="dt"><div class="new"><i></i>新通知</div>'
     +'<div class="bd"><span class="k '+(kc==='alert'?'alert':'')+'">'+kl+'</span>'+(modeOf(n)?'<span>'+modeOf(n)+'</span>':'')+'</div>'
     +'<h3 id="dt">'+esc(n.title)+'</h3>'+(n.body?'<div class="body">'+esc(n.body)+'</div>':'')
     +'<div class="foot">'+(n.due?'<span class="cap">剩余时间</span><span class="cd'+(r>0?'':' over')+'">'+(r>0?mmss(r):'已截止')+'</span>':'')
@@ -498,7 +567,8 @@ function setAmb(mode,tone){
 const THEME_KEY=r=>'borderland.theme.'+r;
 // Three remembered choices per device: big screen (default dark), player page and staff pages (default light).
 const themeKey=()=>ui.tab==='board'?'screen':ME&&ME.role==='player'?'player':'staff';
-const inMarketNow=()=>{const p=ME&&ME.role==='player'&&S&&S.players.find(x=>x.id===ME.pid);return !!(p&&p.st==='market');};
+// 被淘汰、已被接到或在鬼市：整页红色提示，强制深色
+const inMarketNow=()=>{const p=ME&&ME.role==='player'&&S&&S.players.find(x=>x.id===ME.pid);return !!(p&&p.st!=='alive');};
 function themeFor(){const r=themeKey();if(r==='player'&&inMarketNow())return 'dark';let v=null;try{v=localStorage.getItem(THEME_KEY(r));}catch{/* private mode */}
   return v||(r==='screen'?'dark':'light');}
 const themed=()=>true;
@@ -507,22 +577,23 @@ function render(){
   if(DEVME&&!entering){ME=devMe();if(FULL)S=ME.role==='player'?R.viewFor(FULL,ME):FULL;}
   const da=$('#devas');da.hidden=!DEVME||entering;
   const dop=$('#devops');dop.hidden=da.hidden;dop.textContent=ui.devOps?'可操作':'只读';dop.classList.toggle('on',ui.devOps);dop.setAttribute('aria-pressed',String(ui.devOps));
-  if(DEVME&&!entering){const src=FULL||S,h='<optgroup label="工作人员">'+['ctrl','dealer','judge','mengpo','screen'].map(r=>'<option value="'+r+'">'+ROLE_NAME[r]+'</option>').join('')+'</optgroup>'
+  if(DEVME&&!entering){const src=FULL||S,h='<optgroup label="工作人员">'+['ctrl','dealer','judge','mengpo','wuchang','screen'].map(r=>'<option value="'+r+'">'+ROLE_NAME[r]+'</option>').join('')+'</optgroup>'
       +(src?src.teams.map(t=>'<optgroup label="'+t.name+'">'+src.players.filter(p=>p.team===t.id).map(p=>'<option value="player:'+p.id+'">'+p.id+'</option>').join('')+'</optgroup>').join(''):'');
     if(da.dataset.h!==h){da.innerHTML=h;da.dataset.h=h;}if(da.value!==ui.as)da.value=ui.as;}
   const login=!ME||entering;
-  document.body.classList.toggle('login',login);document.body.classList.toggle('dev',!!DEVME&&!login);
+  document.body.classList.toggle('login',login);if(login)document.body.classList.remove('inmk');document.body.classList.toggle('dev',!!DEVME&&!login);
   document.body.classList.toggle('screen',!login&&ME.role==='screen');
   document.body.dataset.role=login?'':ME.role;
   if(login){document.documentElement.dataset.theme='dark';setAmb('login');renderLogin();return;}
-  const tabs=ROLE_TABS[ME.role]||[];
+  const tabs=ME.role==='player'&&finalNow()?['player']:(ROLE_TABS[ME.role]||[]);
   if(!tabs.includes(ui.tab))ui.tab=tabs[0];
   document.documentElement.dataset.theme=themed()?themeFor():'light';
   document.body.classList.toggle('board',ui.tab==='board');
+  document.body.classList.toggle('inmk',ME.role==='player'&&inMarketNow());
   document.body.classList.toggle('natscroll',ui.tab==='market'||(ui.tab==='player'&&ME&&ME.role==='player'));
   // Staff and player pages: the big screen's full-window background on computers, and on phones in dark mode;
   // flames and eyes only show where no panel covers them (data-free). Phones in light mode keep the header strip.
-  const userTab=['dealer','npc','market','ctrl','player'].includes(ui.tab),tone=themeFor(),full=userTab&&(innerWidth>=720||tone==='dark');
+  const userTab=['dealer','npc','market','wuchang','ctrl','player'].includes(ui.tab),tone=themeFor(),full=userTab&&(innerWidth>=720||tone==='dark');
   document.body.classList.toggle('fullamb',full);
   setAmb(ui.tab==='board'||full?'screen':userTab?'page':null,tone);
   {const g=$('#amb ghost-ambience');if(g){
@@ -543,7 +614,7 @@ function render(){
   $('.clk').classList.toggle('paused',!run);$('#clkdot').className='gd'+(run?'':' off');
   if(!S){$('#view').innerHTML='<section class="pn muted">正在连接服务器…</section>';return;}
   R.use(S);S.t=nowT();$('#clk').textContent=fmt(S.t);
-  morph($('#view'),ui.tab==='board'?viewBoard():ui.tab==='dealer'?viewDealer():ui.tab==='ctrl'?viewCtrl():ui.tab==='npc'?viewNpc():ui.tab==='market'?viewMarket():viewPlayer());
+  morph($('#view'),ui.tab==='board'?viewBoard():ui.tab==='dealer'?viewDealer():ui.tab==='ctrl'?viewCtrl():ui.tab==='npc'?viewNpc():ui.tab==='market'?viewMarket():ui.tab==='wuchang'?viewWuchang():viewPlayer());
   fitStage();
   const had=!!$('#modal .dlg');morph($('#modal'),modalHtml());
   const mb=$('#modal button');if(mb&&!had)mb.focus();
@@ -666,29 +737,30 @@ document.addEventListener('click',e=>{
   else if(a==='sub'){ui.sub[b.dataset.p]=v;scrollTo({top:0});$('#view').scrollTop=0;}
   else if(a==='dd'){ui.ddOpen=ui.ddOpen===v?null:v;}
   else if(a==='pick'){ui.ddOpen=null;const k=b.dataset.k,next=b.dataset.t&&getp(k)===v?'':v;setp(k,next);
-    if(k==='pub.target')ui.pub.mode=defMode(next);
-    if(k==='pub.to'){const t=next||'all';if(t.startsWith('team:')){ui.pub.target='team';ui.pub.team=t.slice(5);}else ui.pub.target=t;ui.pub.mode=defMode(ui.pub.target);}}
+    if(k==='pub.quest'){const q=QUESTS.find(x=>x.id===next);if(q)ui.pub.reward=q.reward;}
+    if(k==='pub.to'){const t=next||'all';if(t.startsWith('team:')){ui.pub.target='team';ui.pub.team=t.slice(5);}else ui.pub.target=t;}}
   else if(a==='mktab'){ui.mkTab=v;}
   else if(a==='ncopen'){ui.ncOpen=true;setTimeout(()=>{const e=$('#ncn');if(e)e.focus();},0);}
   else if(a==='ncclose'){ui.ncOpen=false;}
   else if(a==='skill'){ui.skillOpen=ui.skillOpen===+v?null:+v;}
   else if(a==='pickm'||a==='unpick'){const k=b.dataset.k,cur=getp(k)||[];setp(k,cur.includes(v)?cur.filter(x=>x!==v):a==='pickm'?[...cur,v]:cur);}
-  else if(a==='pubto'){if(v.startsWith('team:')){ui.pub.target='team';ui.pub.team=v.slice(5);}else ui.pub.target=v;ui.pub.mode=defMode(ui.pub.target);}
   else if(a==='coinstep'){ui.coinAmt=String(coinAmt()+(+v));}
-  else if(a==='clue'){if(ui.coinTeam)ui.clueAsk={tid:ui.coinTeam,card:v};}
-  else if(a==='clueno'){ui.clueAsk=null;}
-  else if(a==='clueok'){const q=ui.clueAsk,t=q&&team(q.tid);ui.clueAsk=null;if(t)send({type:'setcards',tid:t.id,card:q.card,on:!t.cards.includes(q.card)});}
   else if(a==='copypin'){copyText(v).then(()=>say({ok:true,msg:'已复制 PIN '+v}),()=>say(no('复制失败，请手动选中 PIN')));}
   else if(a==='theme'){const r=themeKey(),nx=themeFor()==='dark'?'light':'dark';try{localStorage.setItem(THEME_KEY(r),nx);}catch{/* private mode */}}
   else if(a==='logout'){logout();return;}
   else if(a==='devops'){ui.devOps=!ui.devOps;say({ok:true,msg:ui.devOps?'开发者模式：可操作（以当前视角的身份）':'开发者模式：只读'});}
   else if(a==='clockctl'){send({type:'admin.clock',op:CLOCK&&CLOCK.running?'pause':'start'});}
-  else if(a==='room'){ui.room=v;ui.pick='';ui.res={};ui.settled=null;}
-  else if(a==='res'){ui.res[b.dataset.t]=ui.res[b.dataset.t]===v?undefined:v;}
+  else if(a==='room'){ui.room=v;ui.pick='';ui.res={};ui.pickOut={};ui.settled=null;}
+  else if(a==='res'){ui.res[b.dataset.t]=ui.res[b.dataset.t]===v?undefined:v;delete ui.pickOut[b.dataset.t];}
   else if(a==='enter'){send({type:'enter',tid:ui.pick,rid:ui.room},()=>{ui.pick='';ui.settled=null;ui.sub.dealer='settle';});}
-  else if(a==='finish'){const rid=ui.room;send({type:'finish',rid,results:ui.res},m=>{ui.res={};ui.settled={rid,msg:m.msg};});}
-  else if(a==='hook'){send({type:'hook',actor:ui.hookTeam,pid:ui.hookTarget},()=>{ui.hookTarget='';});}
-  else if(a==='publish'){send({type:'publish',f:{...ui.pub,mins:+ui.pub.mins||0,reward:+ui.pub.reward||0}},()=>{ui.pub.title='';ui.pub.body='';});}
+  else if(a==='finish'){const rid=ui.room;send({type:'finish',rid,results:ui.res,picks:ui.pickOut},m=>{ui.res={};ui.pickOut={};ui.settled={rid,msg:m.msg};});}
+  else if(a==='hook'){send({type:'hook',actor:ui.hookTeam,pid:ui.hookTarget,where:ui.hookWhere},()=>{ui.hookTarget='';ui.hookWhere='';});}
+  else if(a==='publish'){const sq=ui.pub.kind==='sidequest';send({type:'publish',f:{...ui.pub,team:sq?ui.pub.sqTeam:ui.pub.team,mins:+ui.pub.mins||0,reward:+ui.pub.reward||0}},()=>{ui.pub.title='';ui.pub.body='';if(sq){ui.pub.quest='';ui.pub.sqTeam='';}});}
+  else if(a==='checkin'){send({type:'checkin',pid:b.dataset.p});}
+  else if(a==='pickup'){send({type:'pickup',pid:b.dataset.p});}
+  else if(a==='confirmin'){send({type:'confirm',pid:b.dataset.p});}
+  else if(a==='final'){send({type:'final',tid:v,on:!b.dataset.off});}
+  else if(a==='assign'){send({type:'assign'});}
   else if(a==='ack'&&DEVME&&!ui.devOps){ui.devAck.add(b.dataset.n+':'+ME.pid);}
   else if(a==='ack'){const nid=+b.dataset.n,n=S&&S.notices.find(x=>x.id===nid);
     if(n&&ME.pid&&!n.acks[ME.pid])n.acks[ME.pid]=S.t; // show the next notice right away; the server confirms
@@ -716,8 +788,6 @@ document.addEventListener('click',e=>{
   else if(a==='adm-gen'){send({type:'admin.genpins',counts:A.counts},m=>{A.pins=m.data;});}
   else if(a==='adm-pins'){send({type:'admin.pins'},m=>{A.pins=m.data;},true);}
   else if(a==='adm-hide'){A.pins=null;}
-  else if(a==='adm-room'){const p=(A.pins||[]).find(q=>q.pin===v),k=b.dataset.k;if(p){const cur=p.rooms||[];
-    send({type:'admin.setrooms',pin:v,rooms:cur.includes(k)?cur.filter(x=>x!==k):[...cur,k]},m=>{A.pins=m.data;});}}
   else if(a==='adm-resetpin'){A.ask=null;send({type:'admin.resetpin',pin:v},m=>{A.pins=m.data;});}
   else if(a==='adm-snaps'){send({type:'admin.snaps'},m=>{A.snaps=m.data;},true);}
   else if(a==='adm-restore'){A.ask=null;send({type:'admin.restore',key:v},()=>{A.snaps=null;});}
@@ -737,6 +807,7 @@ document.addEventListener('input',e=>{
   if(m==='coin'){const q=S.players.find(x=>x.id===e.target.dataset.p);if(q){q.coins=Math.max(0,parseInt(v,10)||0);const tot=q.coins+q.bail,el=document.getElementById('tot-'+q.id),bar=document.getElementById('bar-'+q.id);
     if(el)el.textContent=tot+' / '+COIN_GOAL;if(bar)bar.style.width=Math.min(100,tot/COIN_GOAL*100)+'%';}}
   else if(m==='don'){ui.don[e.target.dataset.p]=parseInt(v,10)||0;}
+  else if(m==='hookWhere'){ui.hookWhere=v;}
   else if(m==='coinAmt'){ui.coinAmt=v;const btn=$('#coinbtn');if(btn)btn.textContent=coinBtn();}
   else if(m.startsWith('nc.'))ui.nc[m.slice(3)]=v;
   else if(m==='adm.resetTxt'){ui.admin.resetTxt=v;const btn=$('#rstbtn');if(btn){btn.disabled=v!=='重置';btn.classList.toggle('fillred',v==='重置');}}
