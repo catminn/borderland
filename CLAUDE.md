@@ -201,3 +201,8 @@ npm run dev:pages                             # 正式部署的路径（Pages+Wo
 - **大屏纹理**：排名柱纸纤维 + 手剪不齐的顶边（`clip-path`，按 3 种循环），香有纤维纹，整个舞台一层很淡的纸纹（`.stage::after`，普通混合）。大屏手机窄屏标题允许换行。
 - **玩家手机页菜单**：下方固定一级（大屏 / 本队，大）；上方二级（本队 / 任务 / 鬼市 / 房间，小号胶囊，只在「本队」页出现）。电脑不变。
 - 测试注意：联测里「展示模式 PIN」几项依赖干净状态（`rm -rf worker/.wrangler/state` 且服务器停着时清）和环境变量 `DEV_PIN`（= `worker/.dev.vars` 里的值）；全场播报断言已放宽到现在的日志用词。
+
+## 7.7 Design 剪纸风稿接入（2026-10-05）
+
+- Design 导出包的核心是 `web/public/paper.css`（已加入仓库，`index.html` 里在 `style.css` 之后加载）：不改 DOM，用 `::before/::after` 给卡片、按钮、通行证、房间卡、大屏底板做手剪纸边 + 纸纹 + 硬投影，排名柱手撕顶边；手机玩家页下方一级/上方二级菜单也以它为准。包里的 app.js/style.css 是旧快照，**以仓库源码为准**，没有照搬。
+- 彼岸花改用 paper.css 的 `.stage .fl l/r`（在舞台内，`viewBoard` 里加了两个 div）；删掉 `board-art` 和我之前的排名柱纹理 / 手机菜单 CSS。灯笼（`LANTERNS`）保留。`.tape`、`.stack`、`.asset` 等 paper.css 里的件目前没有使用。

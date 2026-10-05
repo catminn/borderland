@@ -1,0 +1,216 @@
+/* 百鬼夜行 · 剪纸 / 纸扎层 paper.css
+   加载顺序：fonts.css → style.css → paper.css。只改外观：不动布局、字号、文案、颜色语义。
+   原理（不需要给 DOM 加包装）：
+     元素本身保持矩形、透明、不裁切（文字/焦点环/子元素不受影响）；
+     ::before = 纸片本体（clip-path 手剪边 + 纸纹 + 纸边亮线），::after = 硬投影 / 下垫纸（同形，偏移）。
+     用 isolation:isolate 把两层锁在元素内部，z-index -1 / -2。底板全部不透明。 */
+
+:root{
+  /* ① 纸边：手剪不规则（百分比 + px 混合，面板拉伸时抖动幅度不变） */
+  --cut1:polygon(0 3px,7% 0,23% 2px,48% 0,71% 2px,100% 0,calc(100% - 2px) 22%,100% 51%,calc(100% - 3px) 79%,100% 100%,77% calc(100% - 2px),52% 100%,28% calc(100% - 3px),9% 100%,0 calc(100% - 2px),2px 66%,0 38%,3px 17%);
+  --cut2:polygon(2px 0,19% 2px,44% 0,68% 3px,100% 1px,calc(100% - 3px) 30%,100% 58%,calc(100% - 2px) 84%,calc(100% - 1px) 100%,81% calc(100% - 3px),57% 100%,31% calc(100% - 2px),11% 100%,0 calc(100% - 1px),3px 72%,0 45%,2px 20%);
+  --cut3:polygon(0 2px,30% 0,100% 1px,calc(100% - 1px) 60%,100% 100%,65% calc(100% - 2px),0 100%,1px 40%); /* 按钮 / 标签 / 胶囊 */
+  --cutz:polygon(0 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,calc(100% - 14px) calc(100% - 7px),calc(100% - 21px) 100%,calc(100% - 28px) calc(100% - 7px),calc(100% - 35px) 100%,0 calc(100% - 7px)); /* 锯齿底边 */
+
+  /* ② 纸纹：只给大面积底色与卡片，透明度 .09 */
+  --grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .25 0 0 0 0 .22 0 0 0 0 .15 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.09'/%3E%3C/svg%3E");
+
+  /* ③ 剪纸饱和色块：只做点缀（下垫纸、窗花、胶带、图钉），队伍 8 色不动 */
+  --vm:#d6412b; --in:#2c4577; --gd:#e2ad2f; --paper:#f3eedf;
+  --ink-card:#10272a;                 /* 素材黑底 → 墨绿卡纸 */
+
+  /* ④ 投影：硬边，blur 恒为 0，浅色 */
+  --shadow:rgba(13,25,27,.2);
+  --ox:3px; --oy:4px;                 /* 默认；小 2/3，大 5/6 */
+  --sheet:#b9cdc3;                    /* 叠层下垫纸（默认） */
+  --sheet2:color-mix(in oklab,var(--in) 30%,var(--bg));
+  --sheet3:color-mix(in oklab,var(--gd) 38%,var(--bg));
+  --edge:rgba(255,255,255,.8);        /* 纸边亮线（浅色=白纸边；深色=冷青亮线） */
+  --base:#dbe5dd;                     /* 大屏底板 */
+}
+:root[data-theme="dark"]{
+  --shadow:rgba(0,0,0,.6); --sheet:#0b2829; --paper:#d8d2c1; --edge:rgba(95,224,180,.34); --base:#0d1a22; --ink-card:#0c1d20;
+  --sheet2:color-mix(in oklab,#2c4577 55%,#0a1012); --sheet3:color-mix(in oklab,#a8791c 40%,#0a1012);
+  --tex:radial-gradient(ellipse 70% 50% at 15% 0%,rgba(95,224,180,.07),transparent 70%),radial-gradient(ellipse 80% 55% at 85% 110%,rgba(60,90,160,.22),transparent 70%);
+}
+
+/* ---------- 底纸 ---------- */
+body{background-image:var(--grain),var(--tex)}
+header.top{border-bottom:2px dashed var(--line2)}           /* 缝线 */
+@media (min-width:720px){body:not(.login):not(.screen) #view{padding:3px 9px 22px 3px}} /* 给投影留 6px，避免被滚动容器裁掉 */
+
+/* ---------- ⑤ 纸片：卡片 / 面板（cut1 / cut2 轮换） ---------- */
+.pn:not(.dash),.hero,.tbl,.tcard,.mate,.skd,.room,.myroom,
+.note,.mini,.rt,.rbtn,.wen,.lg{
+  position:relative;isolation:isolate;background:none!important;border-color:transparent!important;border-radius:0!important;box-shadow:none!important;
+  --pb:var(--panel);--pe:var(--line);--pw:1px;--cut:var(--cut1);--rot:0deg;
+}
+.hero,.note,.rt,.rbtn,.mini,.wen,.lg{--cut:var(--cut2)}
+:is(.pn:not(.dash),.hero,.tbl,.tcard,.mate,.skd,.room,.myroom,.note,.mini,.rt,.rbtn,.wen,.lg)::before,
+:is(.pn:not(.dash),.hero,.tbl,.tcard,.mate,.skd,.room,.myroom,.note,.mini,.rt,.rbtn,.wen,.lg)::after{
+  content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;clip-path:var(--cut)}
+:is(.pn:not(.dash),.hero,.tbl,.tcard,.mate,.skd,.room,.myroom,.note,.mini,.rt,.rbtn,.wen,.lg)::before{
+  background:var(--grain),linear-gradient(var(--pb),var(--pb));
+  box-shadow:inset 0 0 0 var(--pw) var(--pe),inset 0 0 0 calc(var(--pw) + 2px) var(--edge)}
+:is(.pn:not(.dash),.hero,.tbl,.tcard,.mate,.skd,.room,.myroom,.note,.mini,.rt,.rbtn,.wen,.lg)::after{
+  z-index:-2;background:var(--shadow);transform:translate(var(--ox),var(--oy))}
+
+/* 每类卡片的纸色与状态（只映射原有语义色，不新增语义） */
+.pn.hook{--pe:#e2c4bd}
+:root[data-theme="dark"] .pn.hook{--pe:#5a3029}
+.pn.hook::before{box-shadow:inset 0 3px 0 var(--red),inset 0 0 0 1px var(--pe),inset 0 0 0 3px var(--edge)}
+.rt,.mate{--pb:var(--card)}
+.tbl .th{background:transparent;border-bottom:1.5px dashed var(--line2)}
+.tbl{overflow:visible}
+.tbl .tr{border-top:1px dashed var(--line)}
+.rbtn.on{--pb:var(--card);--pe:var(--accent);--pw:2px}
+.room.busy{--pb:var(--cb);--pe:var(--accent);--pw:2px}
+.room.mine{--pe:var(--red);--pw:2px}
+.myroom{--pb:var(--cb);--pe:var(--accent);--pw:2px}
+.note.new,.pc.ok{--pe:var(--accent);--pw:2px}
+.mate[style*="--red"]{--pe:var(--red)}
+.wen{--pb:var(--wpaper);--pe:var(--wline)}
+.lg{--pb:#101a1d;--pe:#22363c;--edge:rgba(95,224,180,.3);--ox:5px;--oy:6px}
+
+/* 叠层：房间卡 / 通行证 / 排名柱 = 上层纸 + 色块下垫纸（错位 + 微旋转） */
+.stack::after,.stage .room::after,.wen::after{background:var(--sheet);transform:translate(5px,6px) rotate(.7deg);box-shadow:inset 0 0 0 1px rgba(0,0,0,.14)}
+.stage .room:nth-child(3n+2)::after{background:var(--sheet2)}
+.stage .room:nth-child(3n)::after{background:var(--sheet3)}
+.stage .room:nth-child(odd)::after{transform:translate(5px,6px) rotate(-.6deg)}
+.stage .room.busy{--pb:var(--cb)}
+.wen::after{background:var(--vm)}
+.wen[data-st="market"]::after{background:var(--in)}
+.wen[data-st="protected"]::after{background:var(--gd)}
+.lift-s{--ox:2px;--oy:3px}.lift-l{--ox:5px;--oy:6px}
+
+/* 大屏：整张底板（一张大纸，房间卡和排名叠在它上面） */
+.stage{background:none}
+.stage::before{content:"";position:absolute;inset:18px;z-index:0;pointer-events:none;background:var(--grain),linear-gradient(var(--base),var(--base));
+  clip-path:var(--cut1);box-shadow:inset 0 0 0 2px var(--edge)}
+.stage::after{content:"";position:absolute;inset:18px;z-index:-1;pointer-events:none;background:var(--shadow);clip-path:var(--cut1);transform:translate(7px,8px)}
+.stage>.left,.stage>.right{z-index:1}
+
+/* 排名柱 = 彩纸条，顶部手剪，下面一层硬投影 */
+.stage .bcol .b{position:relative;isolation:isolate;background:none;border-radius:0}
+.stage .bcol .b::before,.stage .bcol .b::after{content:"";position:absolute;inset:0 -1px;z-index:-1;clip-path:polygon(0 4px,18% 0,41% 3px,66% 0,100% 3px,100% 100%,0 100%)}
+.stage .bcol .b::before{background:var(--grain),linear-gradient(var(--c),var(--c));box-shadow:inset 0 0 0 1px rgba(255,255,255,.28)}
+.stage .bcol .b::after{z-index:-2;background:var(--shadow);transform:translate(4px,0)}
+.stage .bcol:nth-child(even) .b::before{clip-path:polygon(0 2px,27% 0,52% 4px,81% 0,100% 2px,100% 100%,0 100%)}
+
+/* ---------- ⑥ 按钮 / 标签 ---------- */
+.btn-main,.btn-line,.tbtn{position:relative;isolation:isolate;background:none!important;border:0!important;border-radius:0!important;box-shadow:none!important;
+  --pb:var(--card);--pe:var(--line2);--pw:1.5px;--cut:var(--cut3);--ox:2px;--oy:3px}
+.btn-main::before,.btn-main::after,.btn-line::before,.btn-line::after,.tbtn::before,.tbtn::after{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;clip-path:var(--cut)}
+.btn-main::before,.btn-line::before,.tbtn::before{background:var(--grain),linear-gradient(var(--pb),var(--pb));box-shadow:inset 0 0 0 var(--pw) var(--pe)}
+.btn-main::after,.btn-line::after,.tbtn::after{z-index:-2;background:var(--shadow);transform:translate(var(--ox),var(--oy))}
+.btn-main{--pb:var(--accent);--pe:transparent;--ox:3px;--oy:4px}
+.btn-main.red{--pb:var(--red)}
+.btn-main:disabled{--pb:var(--track)}
+.btn-main.ghost:disabled{--pb:var(--panel2);--pe:var(--line2)}
+.btn-line.acc{--pe:var(--accent)} .btn-line.red{--pe:var(--red)}
+.btn-line.fill{--pb:var(--accent);--pe:transparent} .btn-line.fillred{--pb:var(--red);--pe:transparent}
+.btn-line:disabled{--pb:var(--off-bg);--pe:var(--off-line)}
+.tbtn:hover{--pe:var(--accent)}
+.btn-main:active,.btn-line:active,.tbtn:active{translate:1px 2px;--ox:1px;--oy:1px}
+
+/* 选择按钮 / 分页签 / 小标签：只剪边，不加投影（数量多，保持克制） */
+.cb,.sbtn,.wl button,.quick button,.clue,nav.pages button,.subtabs.top button,.tsq,.tchip,.tag,.pill,.typ,.kb,.sk,.skills span,.stamp-box,.fin,.lot,.empty{
+  border-radius:0!important;clip-path:var(--cut3)}
+.cb:focus-visible,.sbtn:focus-visible,.wl button:focus-visible,.quick button:focus-visible,nav.pages button:focus-visible,.btn-main:focus-visible,.btn-line:focus-visible,.tbtn:focus-visible{outline-offset:4px}
+.in{border-radius:3px}
+.dd-list{border-radius:0;box-shadow:3px 4px 0 var(--shadow)}
+.dd-btn{border-radius:0;clip-path:var(--cut3)}
+
+/* 手机底部分页条：上沿锯齿纸边 */
+@media (max-width:719px){
+  .subtabs:not(.top){border-top:0;padding-top:6px;
+    -webkit-mask:conic-gradient(from 135deg at top,#0000,#000 1deg 89deg,#0000 90deg) top/14px 6px repeat-x,linear-gradient(#000 0 0) bottom/100% calc(100% - 5px) no-repeat;
+    mask:conic-gradient(from 135deg at top,#0000,#000 1deg 89deg,#0000 90deg) top/14px 6px repeat-x,linear-gradient(#000 0 0) bottom/100% calc(100% - 5px) no-repeat;
+    background-image:var(--grain)}
+}
+
+/* ---------- ⑦ 小件：胶带（每页最多 1 处，只放在无文字的边上） ---------- */
+.tape{position:absolute;width:64px;height:20px;background:rgba(226,173,47,.86);background-image:var(--grain);transform:rotate(-4deg);pointer-events:none;
+  clip-path:polygon(0 12%,6% 0,12% 14%,18% 0,100% 6%,96% 30%,100% 56%,95% 80%,100% 100%,10% 94%,5% 100%,0 82%,3% 50%)}
+@media (prefers-reduced-motion:no-preference){.btn-main,.btn-line,.tbtn{transition:translate .08s}}@media (prefers-reduced-motion:no-preference){.btn-main,.btn-line,.tbtn{transition:translate .08s}}
+
+/* ---------- 纤维纸纹（排名柱 / 香 / 底板用，比 --grain 更强一点） ---------- */
+:root{--fiber:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9 .05' numOctaves='2' seed='4'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 .97 0 0 0 0 .88 0 0 0 1.1 -.42'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)' opacity='.32'/%3E%3C/svg%3E")}
+
+/* ---------- 大屏版面：压缩排名区，花色不再被房间卡遮住 ---------- */
+@media (min-width:820px){
+  .stage .right{gap:28px}
+  .stage .bars{height:auto}
+  .stage .bcol{--b0:36px;--b1:110px;height:auto}
+  .stage .rank{margin-bottom:8px}
+}
+@media (max-width:819px){
+  .stage .bars{height:auto;align-items:end}
+  .stage .bcol{height:auto}
+  .stage .bcol .b{--b0:24px;--b1:90px}
+  .stage .bcol .al{font-size:10px;line-height:1.2;text-align:center}
+}
+/* 排名柱：纸片 + 纤维 + 每根不同的手撕顶边 */
+.stage .bcol .b::before{background:var(--fiber),var(--grain),linear-gradient(var(--c),var(--c));box-shadow:inset 0 0 0 1px rgba(255,255,255,.3),inset 0 5px 0 rgba(255,255,255,.14);
+  clip-path:polygon(0 7px,6% 3px,13% 6px,22% 1px,31% 5px,40% 2px,49% 7px,58% 3px,67% 6px,77% 1px,86% 5px,94% 2px,100% 6px,100% 100%,0 100%)}
+.stage .bcol:nth-child(3n+2) .b::before{clip-path:polygon(0 4px,9% 7px,18% 2px,29% 6px,38% 1px,50% 5px,61% 7px,72% 2px,83% 6px,92% 3px,100% 5px,100% 100%,0 100%)}
+.stage .bcol:nth-child(3n) .b::before{clip-path:polygon(0 2px,8% 5px,19% 7px,28% 3px,41% 6px,52% 1px,63% 4px,74% 7px,85% 2px,93% 6px,100% 3px,100% 100%,0 100%)}
+.stage .bcol .b::after{clip-path:polygon(0 7px,100% 6px,100% 100%,0 100%)}
+
+
+/* 大屏底板：旧纸颗粒 + 轻微泛黄/泛青污渍，克制 */
+.stage::before{background:var(--grain),radial-gradient(ellipse 40% 30% at 20% 85%,rgba(226,173,47,.05),transparent 70%),radial-gradient(ellipse 35% 30% at 85% 15%,rgba(95,224,180,.05),transparent 70%),linear-gradient(var(--base),var(--base))}
+
+/* ---------- 彼岸花：背景层，只贴边，压暗淡出，永远在文字下面 ---------- */
+.stage .fl{position:absolute;z-index:0;width:560px;top:250px;opacity:.3;mix-blend-mode:screen;pointer-events:none;filter:brightness(.75) saturate(.85)}
+.stage .fl img{display:block;width:100%;height:auto}
+.stage .fl.l{left:-190px;-webkit-mask-image:linear-gradient(to right,#000 30%,transparent 90%);mask-image:linear-gradient(to right,#000 30%,transparent 90%)}
+.stage .fl.r{right:-190px;transform:scaleX(-1);-webkit-mask-image:linear-gradient(to right,#000 30%,transparent 90%);mask-image:linear-gradient(to right,#000 30%,transparent 90%)}
+@media (max-width:819px){.stage .fl{display:none}}
+
+/* ---------- 素材：不加框，只保留剪影 ----------
+   只用在深色页：黑底用 screen 混合消掉。浅色页不放素材。 */
+.asset{position:absolute;pointer-events:none;z-index:0}
+.asset img{display:block;width:100%;height:auto}
+:root[data-theme="dark"] .asset img{mix-blend-mode:screen}
+@media (max-width:719px){.hide-sm{display:none!important}}
+
+/* ---------- 玩家手机页：底部一级（大屏 / 本队），顶部二级（本队 / 任务 / 鬼市 / 房间） ---------- */
+@media (max-width:719px){
+  body[data-role="player"] nav.pages{position:fixed;left:0;right:0;bottom:0;z-index:41;margin:0;gap:0;display:grid;grid-template-columns:1fr 1fr;overflow:visible;
+    padding:8px 8px calc(env(safe-area-inset-bottom) + 8px);background:var(--panel2);background-image:var(--grain);
+    -webkit-mask:conic-gradient(from 135deg at top,#0000,#000 1deg 89deg,#0000 90deg) top/14px 6px repeat-x,linear-gradient(#000 0 0) bottom/100% calc(100% - 5px) no-repeat;
+    mask:conic-gradient(from 135deg at top,#0000,#000 1deg 89deg,#0000 90deg) top/14px 6px repeat-x,linear-gradient(#000 0 0) bottom/100% calc(100% - 5px) no-repeat}
+  body[data-role="player"] nav.pages button{min-height:60px;justify-content:center;font-size:19px;letter-spacing:.2em;border:0;border-top:3px solid transparent;background:transparent;color:var(--sub)}
+  body[data-role="player"] nav.pages button[aria-selected="true"]{background:var(--accent-soft);color:var(--accent);border-top-color:var(--accent);font-weight:900}
+  body[data-role="player"] .page.allin>.subtabs{order:-3}
+  body[data-role="player"] .subtabs.top{position:static;display:flex;gap:6px;padding:0;background:none;border:0;-webkit-mask:none;mask:none}
+  body[data-role="player"] .subtabs.top button{flex:1 1 0;min-height:36px;padding:0 4px;border:0;border-bottom:2px solid var(--line);background:transparent;font-size:13px;font-weight:700;color:var(--sub);gap:4px;clip-path:none}
+  body[data-role="player"] .subtabs.top button .n{display:none}
+  body[data-role="player"] .subtabs.top button[aria-selected="true"]{border-bottom-color:var(--accent);color:var(--accent);background:none}
+}
+
+/* ---------- 房间卡：统一字号与高度 ---------- */
+.stage .rgrid,.prooms{grid-auto-rows:1fr}
+@media (min-width:820px){.stage .room .on,.stage .room .rs,.stage .room .idle,.stage .room .vs .tchip{font-size:22px}.stage .room .rtm{font-size:18px}}
+@media (max-width:819px){
+  .stage .rgrid{grid-auto-rows:1fr}
+  .stage .room{padding:12px 14px;gap:6px}
+  .stage .room .cd{font-size:30px}
+  .stage .room .typ{font-size:12px}
+  .stage .room .pt{font-size:14px}
+  .stage .room .on,.stage .room .rs,.stage .room .idle{font-size:14px}
+  .stage .room .rtm{font-size:12px}
+  .stage .room .vs .tchip{font-size:13px;padding:0 7px}
+  .stage .room .rbook{min-height:36px;font-size:14px;padding:0 14px;margin-top:2px}
+}
+/* ---------- 玩家手机本队页：字号收敛 ---------- */
+@media (max-width:719px){
+  .wen .w-id{font-size:30px}
+  .mini .cv{font-size:28px}
+  .s4 .g{font-size:22px}
+  .s4 .l{font-size:12px}
+  .histp .hrow{font-size:14px}
+  .svline{font-size:13px}
+}
+.svline.fz{border-radius:0;clip-path:var(--cut3)}
