@@ -1039,3 +1039,5 @@ body.inmk::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:6
 /* 彼岸花（paper.css 的 .fl）：用真透明图，普通混合 */
 .stage .fl{mix-blend-mode:normal;opacity:.34;filter:none}
 .stage .bcol .b{min-height:46px}
+/* 纸片卡片各自成层后，展开的下拉要盖在后面的卡片上 */
+:is(.pn,.tcard,.hero,.mini,.note,.room,.mate,.skd):has(.dd.open){z-index:50}
