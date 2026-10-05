@@ -553,12 +553,16 @@ function viewPlayer(){
   // 本队
   const a=alive(t.id).length,st=teamStatus(t);
   const dots=S.players.filter(p=>p.team===t.id).map(p=>'<span class="dt'+(p.st==='alive'?'':' out')+'" style="'+tv(t.id)+'" title="'+p.id+(p.st==='alive'?'':'（淘汰）')+'"></span>').join('');
-  const suits=SUITS.map(s=>{const has=t.cards.filter(c=>c.includes(s));
-    return '<div class="s4'+(has.length?' got':'')+'"><span class="g '+(isRed(s)?'sr':'')+'">'+s+'</span><span class="l">'+TYPE[s]+'</span><span class="c">'+(has.length?has.join(' '):'未获得')+'</span></div>';}).join('');
+  const suits=SUITS.map(x=>{const got=t.cards.some(c=>c.includes(x));
+    return '<div class="s4'+(got?' got':'')+'" title="'+TYPE[x]+(got?'':'：未获得')+'"><span class="g '+(isRed(x)?'sr':'')+'">'+x+'</span><span class="l">'+TYPE[x]+'</span></div>';}).join('');
+  // 房间记录：进入时间、结果、得分 / 被淘汰的人
+  const hist=[...(t.hist||[])].reverse().map(h=>{const r=room(h.rid),res=h.res===null?'游戏中':h.res==='win'?'通关　+'+h.pts:h.res==='lose'?'失败　0 分'+(h.out?'，淘汰 '+h.out:''):'中途离场';
+    return '<div class="hrow"><span class="mono">'+fmt(h.t0)+'</span><b>'+cardG(r)+' '+(r.n===4?'简单':'困难')+'</b><span class="hres '+(h.res==='win'?'w':h.res==='lose'?'l':'')+'">'+res+'</span></div>';}).join('');
+  const histSec=hist?'<div class="pn histp"><h3>房间记录</h3>'+hist+'</div>':'';
   const fin=st.k==='free'?'<div class="fin ok">'+st.txt+'</div>':'';
   const teamSec='<div class="tsum"><div class="mini"><span class="cap">队伍冥币</span><span class="cv">'+t.score+'</span></div>'
     +'<div class="mini" style="gap:8px"><span class="cap">存活 <span class="mono" style="font-weight:700;font-size:14px;color:var(--ink)">'+a+' / '+size(t.id)+'</span></span><div class="dots">'+dots+'</div></div>'
-    +'<div class="mini frag"><span class="cap">四色花色</span><div class="suits4">'+suits+'</div>'+fin+'</div></div>'
+    +'<div class="mini frag"><span class="cap">花色</span><div class="suits4">'+suits+'</div>'+fin+'</div></div>'+histSec
     
   ;const skillsPart=!FEATURES.cards?'':''
     +'<div class="skrow"><span class="cap">本队技能卡</span>'+(t.skills.length?'<div class="skills">'+t.skills.map(k=>'<button class="sk'+(ui.skillOpen===k.sid?' on':'')+'" data-a="skill" data-v="'+k.sid+'" aria-expanded="'+(ui.skillOpen===k.sid)+'">'+esc(k.name)+'</button>').join('')+'</div>':'<span class="muted small">暂无。鬼市里的人可用个人冥币购买。</span>')+'</div>'

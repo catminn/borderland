@@ -983,3 +983,15 @@ body.inmk::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:6
 .svline b{font-weight:900}
 .stage .room .rbook{min-height:46px;font-size:22px;padding:0 30px;margin-top:0}
 .room .idle.okk{color:var(--accent);font-weight:800}
+/* 花色：四个小章；房间记录 */
+.suits4{display:flex;flex-wrap:wrap;gap:8px}
+.s4{flex-direction:row;gap:6px;padding:6px 12px;border-radius:999px;align-items:center}
+.s4 .g{font-size:20px}
+.s4 .l{font-size:13px;font-weight:700}
+.s4.got .l{color:var(--accent)}
+.tsum .frag{flex-direction:row;align-items:center;flex-wrap:wrap;gap:10px 16px}
+.histp{gap:0;padding:12px 16px}
+.histp h3{padding-bottom:6px}
+.hrow{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;padding:8px 0;border-top:1px solid var(--line);font-size:14px}
+.hrow .hres{margin-left:auto;font-weight:700;color:var(--sub)}
+.hrow .hres.w{color:var(--accent)}.hrow .hres.l{color:var(--red)}

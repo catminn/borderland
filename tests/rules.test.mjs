@@ -39,4 +39,10 @@ T('revive: 500 spent, only 100 returns', S2.teams[0].score === sc0 + 100 && S2.p
 // final: forced entry lists unmet conditions
 const t = S2.teams[1]; T('finalMiss lists unmet items (score, suits)', R.finalMiss(t).length === 2);
 T('ctrl forces final', ap('ctrl', { type: 'final', tid: t.id, on: true }).ok && t.final);
+{ // 房间记录
+  const R = await import('../shared/rules.js'); const g = R.newGame ? R.newGame(false) : null;
+  if (g) { R.use(g); g.t = 100; const t = g.teams[0]; const rid = R.ROOMS[0].id;
+    R.enterRoom(t.id, rid); g.t = 200; const r = R.finishRoom(rid, { [t.id]: 'lose' }, { [t.id]: R.alive(t.id)[0].id });
+    const h = t.hist[0]; T('room history records entry/result/out', !!(h && h.rid === rid && h.t0 === 100 && h.t1 === 200 && h.res === 'lose' && h.out)); }
+}
 console.log(bad ? bad + ' FAILED' : 'RULES PASSED'); process.exit(bad ? 1 : 0);

@@ -152,7 +152,7 @@ function setScore(tid,v){const t=team(tid);v=Math.round(+v);if(!Number.isFinite(
 function setFinal(tid,on){const t=team(tid);if(!t)return no('先选队伍');
   if(!!on===!!t.final)return no(t.name+(t.final?'已经在终极任务中':'本来就没有开启终极任务'));
   if(on){const miss=finalMiss(t);
-    if(t.inRoom){const r=S.rooms.find(x=>x.id===t.inRoom);r.teams=r.teams.filter(x=>x!==tid);r.st='reset';r.at=S.t;t.inRoom=null;}
+    if(t.inRoom){const r=S.rooms.find(x=>x.id===t.inRoom);r.teams=r.teams.filter(x=>x!==tid);r.st='reset';r.at=S.t;{const h=(t.hist||[]).find(x=>x.res===null&&x.rid===r.id);if(h){h.res='left';h.t1=S.t;}}t.inRoom=null;}
     const rv=rsvOf(tid);if(rv){rv.st='open';rv.rt=null;}
     t.final=true;log('总控让 '+t.name+' 进入终极任务'+(miss.length?'（条件未满足：'+miss.join('，')+'）':''),'back');
     pushNotice({kind:'通知',tone:'final',title:'进入终极任务',body:FINAL_MSG,target:'team',ids:[tid]});
@@ -171,7 +171,7 @@ function assignStart(){
   ts.forEach((tid,i)=>{const r=ROOMS[i];if(!r)return;const why=whyNotEnter(tid,r.id);if(why){notes.push(team(tid).name+'没分到（'+why+'）');return;}
     seat(tid,r.id);notes.push(team(tid).name+'→'+r.card);});
   log('开局随机分房：'+notes.join('，'));return ok('已随机分房：'+notes.join('，'));}
-function seat(tid,rid){const r=S.rooms.find(x=>x.id===rid);r.st='play';r.rt=null;r.at=S.t;r.teams=[tid];team(tid).inRoom=rid;}
+function seat(tid,rid){const r=S.rooms.find(x=>x.id===rid);r.st='play';r.rt=null;r.at=S.t;r.teams=[tid];const t=team(tid);t.inRoom=rid;(t.hist=t.hist||[]).push({rid,t0:S.t,res:null,pts:0,out:null});}
 // 预约：由本队队长（或总控）操作；每队同时只能预约一间，预约 2 分钟，可取消。
 function whyNotReserve(tid,rid){
   const t=team(tid),r=S.rooms.find(x=>x.id===rid),st=rstate(r);
@@ -252,13 +252,14 @@ function finishRoom(rid,results,picks={}){
   const notes=[];
   for(const tid of st.teams){
     const t=team(tid); t.played.push(rid); t.inRoom=null;
+    const h=(t.hist=t.hist||[]).filter(x=>x.rid===rid&&x.res===null).pop()||(t.hist[t.hist.length]={rid,t0:st.at,res:null,pts:0,out:null});h.t1=S.t;h.res=results[tid];
     if(results[tid]==='win'){
       if(!t.cleared.includes(rid))t.cleared.push(rid);
-      if(!t.cards.includes(r.card))t.cards.push(r.card); const pts=r.n*100; t.score+=pts; log(t.name+' 赢下 '+r.card+'，+'+pts+' 冥币','back'); notes.push(t.name+'赢 +'+pts+' 冥币');
+      if(!t.cards.includes(r.card))t.cards.push(r.card); const pts=r.n*100; t.score+=pts; h.pts=pts; log(t.name+' 赢下 '+r.card+'，+'+pts+' 冥币','back'); notes.push(t.name+'赢 +'+pts+' 冥币');
     }else{
       const pool=alive(tid); if(!pool.length){log(t.name+' 输了 '+r.card+'，队里已无存活队员');notes.push(t.name+'输（无人可淘汰）');continue;}
       const v=pool.find(p=>p.id===picks[tid]);
-      eliminate(v,'输了 '+r.card+' 被抽签淘汰',r.card+' '+r.name); notes.push(t.name+'输，淘汰 '+v.id);
+      h.out=v.id; eliminate(v,'输了 '+r.card+' 被抽签淘汰',r.card+' '+r.name); notes.push(t.name+'输，淘汰 '+v.id);
     }
   }
   st.teams=[]; st.st='reset'; st.at=S.t; st.rt=null;
@@ -431,7 +432,7 @@ export function viewFor(state,me){
   if(me.role!=='player')return state;
   use(state);const p=state.players.find(x=>x.id===me.pid);
   return {...state,log:state.log.filter(isBcast).slice(0,30),shop:[],notices:state.notices.filter(n=>p&&matches(n,p)),
-    teams:state.teams.map(t=>p&&t.id===p.team?t:{...t,skills:[]})};
+    teams:state.teams.map(t=>p&&t.id===p.team?t:{...t,skills:[],hist:[]})};
 }
 
 export {needsReset,rstate,rsvLeft,rsvOf,whyNotReserve,reserve,cancelRsv,resetDone,gateReward,gateEnd,scavInfo,scavWhy,finalMiss,RSV,GAME_HINT,RESET_HINT,SCAV_PTS,SCAV_WIN,SCAV_N,SCAV_CAP,COIN_START,CARRY_MAX,DUR0,size,COIN_GOAL,FEATURES,FINAL_MSG,FINAL_SCORE,MIN_STAY,PER_TEAM,PROTECT,QUESTS,GATES,RATE,ROOMS,ROLE_LABEL,SHOP0,SUITS,TEAMS,ack,addCard,alive,buyCard,cands,donate,eliminate,enterRoom,esc,finishRoom,fmt,gapOf,hook,inMarket,indiv,init,isBcast,isFirst,kindLabel,lab,log,markDone,matches,no,ok,protectedLeft,publish,pushNotice,revive,revokeNotice,rewardTxt,room,seed,setScore,targetLabel,tcol,team,teamOf,teamStatus,unmarkDone,useCard,whyNotEnter};
