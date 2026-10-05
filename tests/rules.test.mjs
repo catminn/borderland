@@ -45,4 +45,12 @@ T('ctrl forces final', ap('ctrl', { type: 'final', tid: t.id, on: true }).ok && 
     R.enterRoom(t.id, rid); g.t = 200; const r = R.finishRoom(rid, { [t.id]: 'lose' }, { [t.id]: R.alive(t.id)[0].id });
     const h = t.hist[0]; T('room history records entry/result/out', !!(h && h.rid === rid && h.t0 === 100 && h.t1 === 200 && h.res === 'lose' && h.out)); }
 }
+{ // 判官直接兑换 Scavenger Hunt
+  const G = R.newGame(false); R.use(G); G.t = 50; const J = a => R.apply(G, { role: 'judge' }, a);
+  const a1 = J({ type: 'scavredeem', tid: 'C', qid: 'q1' }), a2 = J({ type: 'scavredeem', tid: 'C', qid: 'q1' }), a3 = J({ type: 'scavredeem', tid: 'C', qid: 'custom', title: '自定义题' }), a4 = J({ type: 'scavredeem', tid: 'C', qid: 'q2' });
+  T('judge redeems scav: +100, no repeat, window limit 2', a1.ok && !a2.ok && a3.ok && !a4.ok && G.teams.find(t => t.id === 'C').score === 200);
+  const P = R.apply(G, { role: 'ctrl' }, { type: 'publish', f: { kind: 'sidequest', team: 'B', quest: 'custom', title: '临时题' } });
+  T('custom scavenger publish', P.ok && G.notices[0].title === '临时题');
+  T('custom gate publish', R.apply(G, { role: 'ctrl' }, { type: 'publish', f: { kind: '鬼门开', gate: 'custom', title: '临时门' } }).ok);
+}
 console.log(bad ? bad + ' FAILED' : 'RULES PASSED'); process.exit(bad ? 1 : 0);

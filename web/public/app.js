@@ -28,7 +28,7 @@ function buzz(p){
   if(!IOS)return;const a=Array.isArray(p)?p:[p];let t=0;
   a.forEach((d,i)=>{if(i%2===0)setTimeout(iosTick,t);t+=d;});}
 function shakeEl(el,cls){if(!el)return;el.classList.remove(cls);void el.offsetWidth;el.classList.add(cls);}
-let ui={ddOpen:null,don:{},tab:null,room:'4S',gatePick:'',finalAsk:null,pick:'',res:{},settled:null,hookTeam:'',hookTarget:'',hookWhere:'',pickOut:{},doneSel:{},revokeAsk:null,
+let ui={ddOpen:null,don:{},tab:null,room:'4S',gatePick:'',finalAsk:null,pick:'',res:{},settled:null,hookTeam:'',hookTarget:'',hookWhere:'',rd:{team:'',quest:'',title:''},pickOut:{},doneSel:{},revokeAsk:null,
   coinTeam:'',coinAmt:'',buyer:'',mkTab:'buy',ncOpen:false,as:'ctrl',devOps:false,demoRows:null,devAck:new Set(),nc:{name:'',desc:'',price:'',stock:''},
   sub:{dealer:'info',npc:'task',market:'buy',ctrl:'status',player:'team'},
   pub:{kind:'鬼门开',reward:0,title:'',body:'',target:'all',team:'R',players:[],mins:10,to:'all',sqTeam:'',quest:'',gate:''},
@@ -75,7 +75,8 @@ function dd(k,valLabel,placeholder,valColor,options,multi){
 }
 const teamPick=(k,cur,off,small)=>S.teams.map(t=>cb({k,v:t.id,on:cur===t.id,off:off&&off(t.id),c:TC[t.id][0],label:t.name,small:small&&small(t.id)})).join('');
 function countdown(n,short){if(!n.due)return '';const r=n.due-S.t;return r>0?(short?mmss(r):'剩余 '+mmss(r)):'已截止';}
-const kindOf=n=>n.kind==='通知'?['通知','alert']:n.kind==='公告'?['公告','']:n.sub==='side'?['sidequest','secret']:['鬼门开','task'];
+const qTitle=id=>(QUESTS.find(q=>q.id===id)||{title:String(id).replace(/^x:/,'')}).title;
+const kindOf=n=>n.kind==='通知'?['通知','alert']:n.kind==='公告'?['公告','']:n.sub==='side'?['Scavenger Hunt','secret']:['鬼门开','task'];
 const modeOf=n=>n.kind==='任务'&&n.sub!=='side'?'先到先得':'';
 
 // ---------- 大屏 ----------
@@ -122,7 +123,7 @@ function viewBoard(){
   const bars=list.map((t,i)=>{if(t.score!==prev){rk=i+1;prev=t.score;}
     return '<div class="bcol" style="'+tv(t.id)+'"><span class="v">'+t.score+'</span>'
       +'<div class="b" style="height:calc(var(--b0,56px) + '+(t.score/max).toFixed(3)+' * var(--b1,214px))" role="img" aria-label="'+t.name+' 第 '+rk+' 名，'+t.score+' 冥币">'+rk+'</div>'
-      +'<div class="nm">'+tsq(t.id)+'<span>'+t.name+'</span>'+'</div>'
+      +'<div class="nm">'+tsq(t.id)+'<span>'+t.name+'</span>'+'</div><div class="al">存活 '+alive(t.id).length+'/'+size(t.id)+'</div>'
       +'<div class="su">'+SUITS.map(s=>'<span class="'+(t.cards.some(c=>c.includes(s))?'got ':'')+(isRed(s)?'sr':'')+'">'+s+'</span>').join('')+'</div></div>';}).join('');
   const bc=broadcast();
   const run=CLOCK&&CLOCK.running;
@@ -235,10 +236,17 @@ function gatePanel(){
 }
 // Scavenger 额度：每队全场最多 600 分，任意滚动 10 分钟最多 2 题，同一题不重复兑换
 function scavPanel(){
+  const rd=ui.rd,rq=QUESTS.find(x=>x.id===rd.quest),rwhy=rd.team?scavWhy(rd.team,rq?rq.id:null):null,rcus=rd.quest==='custom';
+  const rbtn=!rd.team?'先选队伍':!rd.quest?'先选题目':rcus&&!rd.title.trim()?'先写题目':rwhy?rwhy:'兑换 +100 分';
+  const rok=rd.team&&rd.quest&&!(rcus&&!rd.title.trim())&&!rwhy;
+  const redeem='<div class="fgrid"><div class="fld"><span>兑换队伍</span>'+dd('rd.team',rd.team&&team(rd.team).name,'选择队伍',rd.team?TC[rd.team][0]:null,S.teams.map(t=>({v:t.id,label:t.name,c:TC[t.id][0]})))+'</div>'
+    +'<div class="fld"><span>题目</span>'+dd('rd.quest',rq?rq.title:rcus?'自定义':'','选择题目',null,[...QUESTS.map(x=>({v:x.id,label:esc(x.title)})),{v:'custom',label:'自定义'}])+'</div></div>'
+    +(rcus?'<label class="fld"><span>自定义题目</span><input class="in" id="rdt" data-m="rd.title" value="'+esc(rd.title)+'" placeholder="题目名称"></label>':'')
+    +'<button class="btn-main'+(rok?' glow':'')+'" data-a="scavredeem"'+(rok?'':' disabled')+' style="min-height:52px">'+esc(rbtn)+'</button>';
   const rows=S.teams.map(t=>{const i=scavInfo(t.id),nx=i.capped?'已封顶':i.n>=SCAV_N?fmt(i.nextAt)+' 后':'现在可兑换';
     return '<div class="li"><div class="grow"><span class="x">'+tsq(t.id,22)+' '+t.name+'　<span class="mono">'+i.used+'/'+SCAV_CAP+'</span> 分　10 分钟内 <span class="mono">'+i.n+'/'+SCAV_N+'</span>　<b style="color:'+(i.capped||i.n>=SCAV_N?'var(--red)':'var(--accent)')+'">'+nx+'</b></span>'
-      +(i.recs.length?'<span class="small">最近：'+i.recs.slice(0,3).map(r=>fmt(r.t)+' '+esc((QUESTS.find(q=>q.id===r.q)||{title:r.q}).title)).join('；')+'</span>':'')+'</div></div>';}).join('');
-  return '<div class="pn" style="gap:0"><h3 style="padding-bottom:8px">Scavenger 额度</h3>'+rows+'</div>';
+      +(i.recs.length?'<span class="small">最近：'+i.recs.slice(0,3).map(r=>fmt(r.t)+' '+esc(qTitle(r.q))).join('；')+'</span>':'')+'</div></div>';}).join('');
+  return '<div class="pn" style="gap:12px"><h3>Scavenger Hunt 兑换</h3>'+redeem+'</div><div class="pn" style="gap:0"><h3 style="padding-bottom:8px">Scavenger Hunt 额度</h3>'+rows+'</div>';
 }
 
 function hookLog(){
@@ -279,7 +287,7 @@ function viewNpc(){
   const hook='<div class="pn hook"><div class="two">'
     +'<div class="fld"><span>取得勾魂令的队伍</span>'+dd('hookTeam',ui.hookTeam&&team(ui.hookTeam).name,'选择队伍',ui.hookTeam&&TC[ui.hookTeam][0],S.teams.map(t=>({v:t.id,label:t.name,c:TC[t.id][0]})))+'</div>'
     +'<div class="fld"><span>被点名的队员</span>'+dd('hookTarget',tgt&&tgt.id,'选择别队队员',tgt&&TC[tgt.team][0],opts)+'</div></div>'
-    +'<label class="fld"><span>被勾魂时的位置（可不填，黑白无常会看到）</span><input class="in" id="hw" data-m="hookWhere" value="'+esc(ui.hookWhere)+'" placeholder="例如：二楼走廊"></label>'
+    +'<label class="fld"><span>位置（在房间内可不填）</span><input class="in" id="hw" data-m="hookWhere" value="'+esc(ui.hookWhere)+'" placeholder="例如：二楼走廊"></label>'
     +'<button class="btn-main red" data-a="hook"'+(ready?'':' disabled')+' style="min-height:56px;display:flex;align-items:center;justify-content:center;gap:12px;font-size:18px">'
     +'<span style="width:34px;height:34px;border:2px solid currentColor;border-radius:6px;display:grid;place-items:center;font-family:var(--brush);font-size:24px;line-height:1;transform:rotate(-8deg);font-weight:400">勾</span>'
     +(ready?team(ui.hookTeam).name+' 勾魂 '+tgt.id:'先选队伍和队员')+'</button></div>'
@@ -402,7 +410,7 @@ function teamRows(){
     const sk=!FEATURES.cards?'':t.skills.length?t.skills.map(k=>'<button class="sk'+(ui.tskOpen===k.sid?' on':'')+'" data-a="tsk" data-v="'+k.sid+'" aria-expanded="'+(ui.tskOpen===k.sid)+'">'+esc(k.name)+'</button>').join(''):'<span class="small">无</span>';
     const ok=t.skills.find(k=>k.sid===ui.tskOpen);
     const det=ok?'<div class="skd"><b>'+esc(ok.name)+'</b>'+(ok.desc?'<span class="d">'+esc(ok.desc)+'</span>':'<span class="small">没有效果说明</span>')+'<span class="small">'+esc(ok.by)+' 于 '+fmt(ok.t)+' 在鬼市买入</span></div>':'';
-    const fin='<button class="btn-line'+(st.k==='free'&&!t.final?' fill':'')+'" data-a="final" data-v="'+t.id+'"'+(t.final?' data-off="1"':'')+'>'+(t.final?'取消终极':'放行终极')+'</button>'+(t.final||st.k==='free'?'':'<span class="small fmiss">'+st.txt+'</span>');
+    const fin='<button class="btn-line'+(st.k==='free'&&!t.final?' fill':'')+'" data-a="final" data-v="'+t.id+'"'+(t.final?' data-off="1"':'')+'>'+(t.final?'取消终极':'放行')+'</button>'+(t.final||st.k==='free'?'':'<span class="small fmiss">'+st.txt+'</span>');
     return {t,a,dots,sq,sk,fin,det};});
   const tbl='<div class="tbl'+(FEATURES.cards?'':' no-skills')+'"><div class="tr th"><span>队伍</span><span>存活</span><span>冥币</span><span>四色花色</span>'+(FEATURES.cards?'<span>技能卡</span>':'')+'<span>终极</span></div>'
     +parts.map(({t,a,dots,sq,sk,fin,det})=>'<div class="trg" style="'+tv(t.id)+'"><div class="tr"><span class="tn">'+tsq(t.id)+t.name+'</span><span class="dots">'+dots+'<span class="mono" style="font-weight:700;font-size:14px;margin-left:6px">'+a+'/'+size(t.id)+'</span></span>'
@@ -447,7 +455,7 @@ function finalDlg(){
   return '<div class="sheet"><div class="sheet-bg" data-a="finalno"></div><div class="sheet-card pn" role="dialog" aria-modal="true" aria-labelledby="fdt"><h3 id="fdt">放行 '+esc(t.name)+' 进入终极任务？</h3>'
     +(miss.length?'<div class="lot hot"><b>以下条件还没满足：</b><ul class="fl">'+miss.map(m=>'<li>'+esc(m)+'</li>').join('')+'</ul>你仍然可以放行。</div>':'<div class="lot">条件都已满足（四色齐、全员存活、积分 ≥ '+FINAL_SCORE+'）。</div>')
     +'<span class="small">放行后该队玩家页变成终极任务界面；之后可以在这里取消。</span>'
-    +'<div class="btns"><button class="btn-main" data-a="finalok">'+(miss.length?'仍然放行':'确认放行')+'</button><button class="btn-line" data-a="finalno">取消</button></div></div></div>';
+    +'<div class="btns two2"><button class="btn-main" data-a="finalok">'+(miss.length?'仍然放行':'确认放行')+'</button><button class="btn-line" data-a="finalno">取消</button></div></div></div>';
 }
 
 function pubPanel(){
@@ -456,23 +464,23 @@ function pubPanel(){
   const toOn=v=>v==='team:'+f.team?f.target==='team':v===f.target;
   const pl=f.players||[],q=QUESTS.find(x=>x.id===f.quest),gq=GATES.find(x=>x.id===f.gate);
   const toName=gate?'全场':side?(f.sqTeam?team(f.sqTeam).name+'的':'队伍的'):f.target==='team'?team(f.team).name:f.target==='player'?(!pl.length?'某位队员':pl.length<=3?pl.join('、'):pl.slice(0,2).join('、')+' 等 '+pl.length+' 人'):{all:'全场',alive:'存活的',market:'鬼市里的'}[f.target];
-  // sidequest: one team only, teams that are short of people first, with how many are left
+  // Scavenger Hunt: one team only, teams that are short of people first, with how many are left
   const sqTeams=[...S.teams].sort((a,b)=>alive(a.id).length-alive(b.id).length);
   const target=K==='公告'?'<div class="fgrid"><div class="fld"><span>发给谁</span>'+dd('pub.to',(to.find(([v])=>toOn(v))||[])[1],'选择对象',f.target==='team'?TC[f.team][0]:null,to.map(([v,l,id])=>({v,label:l,c:id?TC[id][0]:null})))+'</div>'
       +(f.target==='player'?'<div class="fld"><span>选择队员（可多选）</span>'+dd('pub.players',pl.length?pl.length+' 人':'','选择队员',null,S.teams.flatMap(t=>[{group:t.name},...S.players.filter(p=>p.team===t.id).map(p=>({v:p.id,label:p.id,c:TC[t.id][0],note:p.st==='alive'?'':'已淘汰'}))]),true)
         +(pl.length?'<div class="selchips">'+pl.map(id=>'<button class="selchip" data-a="unpick" data-k="pub.players" data-v="'+id+'" aria-label="去掉 '+id+'"><span class="sw" style="--c:'+TC[teamOf(id)][0]+'"></span>'+id+'<b>×</b></button>').join('')+'</div>':'')+'</div>':'')+'</div>'
-    :gate?'<div class="fld"><span>题库</span>'+dd('pub.gate',gq&&gq.title,'选择鬼门开',null,GATES.map(x=>({v:x.id,label:esc(x.title)})))+'</div>'+(gq?'<div class="lot">'+esc(gq.body)+'</div>':'')
+    :gate?'<div class="fld"><span>题库</span>'+dd('pub.gate',gq?gq.title:f.gate==='custom'?'自定义':'','选择鬼门开',null,[...GATES.map(x=>({v:x.id,label:esc(x.title)})),{v:'custom',label:'自定义'}])+'</div>'+(gq?'<div class="lot">'+esc(gq.body)+'</div>':'')
     :'<div class="fgrid"><div class="fld"><span>发给哪个队伍</span>'+dd('pub.sqTeam',f.sqTeam&&team(f.sqTeam).name,'选择队伍',f.sqTeam?TC[f.sqTeam][0]:null,sqTeams.map(t=>({v:t.id,label:t.name,c:TC[t.id][0],note:'剩余 '+alive(t.id).length+'/'+size(t.id)+' 人'})))+'</div>'
-      +'<div class="fld"><span>题库</span>'+dd('pub.quest',q&&q.title,'选择题目',null,QUESTS.map(x=>({v:x.id,label:esc(x.title),note:'+'+x.reward+' 分'})))+'</div></div>'
+      +'<div class="fld"><span>题库</span>'+dd('pub.quest',q?q.title:f.quest==='custom'?'自定义':'','选择题目',null,[...QUESTS.map(x=>({v:x.id,label:esc(x.title),note:'+'+x.reward+' 分'})),{v:'custom',label:'自定义'}])+'</div></div>'
       +(q?'<div class="lot">'+esc(q.body)+'</div>':'');
   const form='<div class="pn" style="gap:14px">'
-    +'<div class="fld"><span>类型</span><div class="seg3">'+['公告','鬼门开','sidequest'].map(k=>'<button class="sbtn'+(K===k?' on':'')+(k==='sidequest'?' secret':'')+'" data-a="pick" data-k="pub.kind" data-v="'+k+'" aria-pressed="'+(K===k)+'">'+k+'</button>').join('')+'</div></div>'
+    +'<div class="fld"><span>类型</span><div class="seg3">'+['公告','鬼门开','sidequest'].map(k=>'<button class="sbtn'+(K===k?' on':'')+(k==='sidequest'?' secret':'')+'" data-a="pick" data-k="pub.kind" data-v="'+k+'" aria-pressed="'+(K===k)+'">'+(k==='sidequest'?'Scavenger Hunt':k)+'</button>').join('')+'</div></div>'
     +target
     +'<div class="fgrid"><label class="fld"><span>限时（分钟）</span><input class="in mono" id="pm" data-m="pub.mins" value="'+esc(f.mins)+'" inputmode="numeric"></label>'
     +'</div>'
-    +(side||gate?'':'<label class="fld"><span>标题</span><input class="in" id="pti" data-m="pub.title" value="'+esc(f.title)+'" placeholder="例如：鬼门开：还原鬼片海报"></label>'
+    +((side&&f.quest!=='custom')||(gate&&f.gate!=='custom')?'':'<label class="fld"><span>标题</span><input class="in" id="pti" data-m="pub.title" value="'+esc(f.title)+'" placeholder="例如：鬼门开：还原鬼片海报"></label>'
     +'<label class="fld"><span>内容</span><textarea class="in" id="pb" data-m="pub.body" rows="3" placeholder="玩家手机上看到的说明：任务要求、集合地点…">'+esc(f.body)+'</textarea></label>')
-    +'<button class="btn-main" data-a="publish">发布'+(side?' sidequest':gate?'鬼门开':'')+'到'+esc(toName)+'玩家手机</button></div>';
+    +'<button class="btn-main" data-a="publish">发布'+(side?' Scavenger Hunt':gate?'鬼门开':'')+'到'+esc(toName)+'玩家手机</button></div>';
   const list=S.notices.filter(n=>n.kind!=='通知').slice(0,10).map(n=>{
     const aud=S.players.filter(p=>matches(n,p)),acked=aud.filter(p=>n.acks[p.id]).length,[kl,kc]=kindOf(n),ds=Object.keys(n.done);
     return '<div class="li"><div class="grow" style="gap:4px"><div class="thead"><span class="kb '+kc+'" style="font-size:12px;padding:0 7px">'+kl+'</span><b style="font-size:17px">'+esc(n.title)+'</b></div>'
@@ -481,7 +489,7 @@ function pubPanel(){
       +(ui.revokeAsk===n.id?'<span class="btns"><button class="btn-line fillred" data-a="revokeok" data-n="'+n.id+'">确认撤销</button><button class="btn-line" data-a="revokeno">取消</button></span>'
         +'<span class="small" style="flex-basis:100%">玩家手机上会删除'+(Object.values(n.done).some(d=>d.pts)?'，奖励扣回':'')+'</span>'
         :'<button class="btn-line" data-a="revoke" data-n="'+n.id+'">撤销发布</button>')+'</div>';}).join('');
-  return '<h2 class="sh">发布公告 / 鬼门开 / sidequest</h2><div class="pubcols">'+form+'<div class="pn" style="gap:0"><h3 style="padding-bottom:8px">已发布</h3>'+(list||'<div class="li small">还没有发布过。</div>')+'</div></div>';
+  return '<h2 class="sh">发布公告 / 鬼门开 / Scavenger Hunt</h2><div class="pubcols">'+form+'<div class="pn" style="gap:0"><h3 style="padding-bottom:8px">已发布</h3>'+(list||'<div class="li small">还没有发布过。</div>')+'</div></div>';
 }
 function adminPanel(){
   const A=ui.admin,c=A.counts,run=CLOCK&&CLOCK.running;
@@ -901,6 +909,7 @@ document.addEventListener('click',e=>{
   else if(a==='finish'){const rid=ui.room;send({type:'finish',rid,results:ui.res,picks:ui.pickOut},m=>{ui.res={};ui.pickOut={};ui.settled={rid,msg:m.msg};});}
   else if(a==='hook'){send({type:'hook',actor:ui.hookTeam,pid:ui.hookTarget,where:ui.hookWhere},()=>{ui.hookTarget='';ui.hookWhere='';});}
   else if(a==='publish'){const sq=ui.pub.kind==='sidequest';send({type:'publish',f:{...ui.pub,team:sq?ui.pub.sqTeam:ui.pub.team,mins:+ui.pub.mins||0,reward:+ui.pub.reward||0}},()=>{ui.pub.title='';ui.pub.body='';if(sq){ui.pub.quest='';ui.pub.sqTeam='';}ui.pub.gate='';});}
+  else if(a==='scavredeem'){const r=ui.rd;send({type:'scavredeem',tid:r.team,qid:r.quest,title:r.title},()=>{r.team='';r.quest='';r.title='';});}
   else if(a==='checkin'){send({type:'checkin',pid:b.dataset.p,party:checkinParty()});}
   else if(a==='pickup'){send({type:'pickup',pid:b.dataset.p});}
   else if(a==='confirmin'){send({type:'confirm',pid:b.dataset.p,party:checkinParty()});}
@@ -964,6 +973,7 @@ document.addEventListener('input',e=>{
   else if(m==='durMin')ui.admin.dur=v.replace(/[^\d.]/g,'');
   else if(m.startsWith('adm.'))ui.admin.counts[m.slice(4)]=+v;
   else if(m.startsWith('pub.'))ui.pub[m.slice(4)]=v;
+  else if(m==='rd.title')ui.rd.title=v;
 });
 function copyText(t){
   if(navigator.clipboard&&window.isSecureContext)return navigator.clipboard.writeText(t);

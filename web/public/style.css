@@ -995,3 +995,12 @@ body.inmk::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:6
 .hrow{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;padding:8px 0;border-top:1px solid var(--line);font-size:14px}
 .hrow .hres{margin-left:auto;font-weight:700;color:var(--sub)}
 .hrow .hres.w{color:var(--accent)}.hrow .hres.l{color:var(--red)}
+/* 2026-10-05：大屏花色 2×2 + 存活人数；放行弹窗两个按钮等宽一行 */
+.bcol .al{font-size:13px;font-weight:700;color:var(--sub);text-align:center;font-variant-numeric:tabular-nums}
+.btns.two2{display:flex;flex-wrap:nowrap}
+.btns.two2>button{flex:1 1 0;min-width:0}
+/* 2026-10-05：大屏花色 2×2 + 存活人数；放行弹窗两个按钮等宽一行 */
+.bcol .al{font-size:13px;font-weight:700;color:var(--sub);text-align:center;font-variant-numeric:tabular-nums}
+@media (min-width:820px){.stage .bcol .su{display:grid;grid-template-columns:repeat(2,auto);justify-content:center;gap:2px 16px;font-size:26px;line-height:1.2}.stage .bcol .al{font-size:22px}.stage .bcol .b{--b1:150px}}
+.btns.two2{display:flex;flex-wrap:nowrap}
+.btns.two2>button{flex:1 1 0;min-width:0}

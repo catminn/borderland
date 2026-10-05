@@ -27,10 +27,10 @@ const SHOP0=[
   {id:'k3',name:'偷看生死簿',desc:'逻辑类房间里多看 10 秒。',price:300,stock:3},
   {id:'k4',name:'回魂香',desc:'一名鬼市队员的停留时间要求减半。',price:400,stock:3},
   {id:'k5',name:'勾魂令',desc:'立刻点名一名别队队员去鬼市（仍受保护期限制）。',price:800,stock:1}];
-// sidequest 题库（占位，正式内容待定）。同一题可以发给不同队伍，每次发布只给一个队伍。
-const QUESTS=Array.from({length:8},(_,i)=>({id:'q'+(i+1),title:'Sidequest 占位 '+(i+1),body:'（占位文字，正式内容待定）',reward:100}));
+// Scavenger Hunt（内部名 sidequest）题库（占位，正式内容待定）。同一题可以发给不同队伍，每次发布只给一个队伍。
+const QUESTS=Array.from({length:8},(_,i)=>({id:'q'+(i+1),title:'Scavenger 占位 '+(i+1),body:'（占位文字，正式内容待定）',reward:100}));
 // 鬼门开题库（占位，正式内容待定）。判官从题库选一题发布，先到先得。
-const GATES=Array.from({length:6},(_,i)=>({id:'g'+(i+1),title:'鬼门开 占位 '+(i+1),body:'（占位文字，正式内容待定）'}));
+const GATES=Array.from({length:2},(_,i)=>({id:'g'+(i+1),title:'鬼门开 占位 '+(i+1),body:'（占位文字，正式内容待定）'}));
 const FINAL_MSG='你们已集齐四种花色，全员存活，积分达标！请全队前往一楼大厅，等待终极任务指示。（占位文案）';
 const RATE=1;
 const PER_TEAM=6, PROTECT=600, MIN_STAY=0, COIN_GOAL=500, COIN_START=200, CARRY_MAX=100, FINAL_SCORE=2400;
@@ -77,7 +77,7 @@ function matches(n,p){
 function targetLabel(n){return n.target==='all'?'全体玩家':n.target==='team'?team(n.ids[0]).name:n.target==='player'?(n.ids.length<=4?n.ids.join('、'):n.ids.slice(0,3).join('、')+' 等 '+n.ids.length+' 人'):n.target==='market'?'鬼市中的人':'存活玩家';}
 const rewardTxt=n=>n.reward?'+'+n.reward+' 冥币':'';
 const teamOf=id=>id.includes('-')?id.split('-')[0]:id;
-const kindLabel=n=>n.kind==='任务'?(n.sub==='side'?'sidequest':'鬼门开'):n.kind;
+const kindLabel=n=>n.kind==='任务'?(n.sub==='side'?'Scavenger Hunt':'鬼门开'):n.kind;
 const isFirst=n=>(n.mode||'first')==='first';
 const indiv=n=>n.target==='player'||n.target==='market';
 const lab=id=>id.includes('-')?id:team(id).name;
@@ -87,9 +87,11 @@ function pushNotice(o){S.notices.unshift({id:S.nid++,q:o.q||null,reward:o.reward
 // 公告：发给任意对象。鬼门开：发给全场，先到先得，完成时全场播报。sidequest：从题库选一题，只发给一个队伍，不播报。
 function publish(f){f=f||{};const str=(v,n)=>String(v==null?'':v).slice(0,n);f={...f,title:str(f.title,80),body:str(f.body,1000)};
   if(!KINDS.includes(f.kind))return no('类型不对');
-  let target=f.target,ids=[],mode=null,sub=null,reward=0;
+  let target=f.target,ids=[],mode=null,sub=null,reward=0,qid=null;
   if(f.kind==='sidequest'){
-    const q=QUESTS.find(x=>x.id===f.quest);if(!q)return no('先从题库选一个 sidequest');
+    let q=QUESTS.find(x=>x.id===f.quest);
+    if(!q&&f.quest==='custom'){const ti=f.title.trim();if(!ti)return no('先写自定义题目');q={id:'x:'+ti.slice(0,20),title:ti,body:f.body.trim()};}
+    if(!q)return no('先从题库选一个 Scavenger Hunt');qid=q.id;
     if(!team(f.team))return no('先选队伍');
     const why=scavWhy(f.team,q.id);if(why)return no(team(f.team).name+'：'+why);
     target='team';ids=[f.team];mode='each';sub='side';f.title=q.title;f.body=q.body;reward=SCAV_PTS;
@@ -104,10 +106,19 @@ function publish(f){f=f||{};const str=(v,n)=>String(v==null?'':v).slice(0,n);f={
     if(target==='team'){if(!team(f.team))return no('先选队伍');ids=[f.team];}
     if(target==='player'){const want=Array.isArray(f.players)?f.players:f.player?[f.player]:[];ids=[...new Set(want)].filter(id=>S.players.some(p=>p.id===id));if(!ids.length)return no('先选队员');}
   }
-  pushNotice({kind:f.kind==='公告'?'公告':'任务',sub,title:f.title.trim(),body:f.body.trim(),target,ids,mins:Math.max(0,+f.mins||0),mode,reward,q:f.kind==='sidequest'?f.quest:null});
+  pushNotice({kind:f.kind==='公告'?'公告':'任务',sub,title:f.title.trim(),body:f.body.trim(),target,ids,mins:Math.max(0,+f.mins||0),mode,reward,q:qid});
   const n=S.notices[0];
   if(sub==='gate'){S.gp={nid:n.id,win:null,res:false};log('鬼门开：各房间暂停开放（已开始的可打完当前一局），结束后恢复','hook');}log('判官发布'+kindLabel(n)+'「'+n.title+'」→ '+targetLabel(n));
   return ok('已发布给 '+targetLabel(n)+'，共 '+S.players.filter(p=>matches(n,p)).length+' 人');}
+// 判官直接兑换一道 Scavenger Hunt：发布给该队并立即记完成（+100，受额度限制）。题库没有的题可自定义。
+function scavRedeem(tid,qid,title,body){
+  if(!team(tid))return no('先选队伍');
+  let t,b,key;const q=QUESTS.find(x=>x.id===qid);
+  if(q){t=q.title;b=q.body;key=q.id;}
+  else{t=String(title||'').trim().slice(0,80);if(!t)return no('先选题目，或写自定义题目');b=String(body||'').slice(0,1000);key='x:'+t.slice(0,20);}
+  const why=scavWhy(tid,key);if(why)return no(team(tid).name+'：'+why);
+  pushNotice({kind:'任务',sub:'side',title:t,body:b,target:'team',ids:[tid],mode:'each',reward:SCAV_PTS,q:key});
+  return markDone(S.notices[0].id,tid);}
 function ack(nid,pid){const n=S.notices.find(x=>x.id===nid);if(n&&!n.acks[pid])n.acks[pid]=S.t;}
 function markDone(nid,cid){const n=S.notices.find(x=>x.id===nid);if(!n)return no('任务不存在');
   if(n.done[cid])return no(lab(cid)+'已经记录过');
@@ -366,8 +377,8 @@ function seed(){
   S.t=27*60; finishRoom('4H',{G:'win'});
   S.t=28*60; finishRoom('8H',{R:'win'});resetDone('8H');
   S.t=28*60+30; go('O','4D'); go('Y','8S');
-  S.t=29*60; P('B-05').coins=COIN_GOAL; P('P-02').coins=COIN_GOAL+200; reserve('G','4C');
-  log('演示数据就位：4♦ 与 8♠ 进行中，4♥ 重置中，4♣ 已预约');
+  S.t=29*60; P('B-05').coins=COIN_GOAL; P('P-02').coins=COIN_GOAL+200; reserve('G','4C'); reserve('K','8H');
+  log('演示数据就位：4♦ 与 8♠ 进行中，4♥ 重置中，4♣、8♥ 已预约');
   pushNotice({kind:'任务',sub:'gate',title:'鬼门开：还原鬼片海报',body:'全队 60 秒内还原一张「鬼片海报」造型，到一楼大厅找判官。第一支完成的队伍可获得奖励。',target:'all',mins:10,mode:'first'});
   publish({kind:'sidequest',team:'R',quest:'q1',mins:0});markDone(S.notices[0].id,'R');
   publish({kind:'sidequest',team:'R',quest:'q2',mins:0});
@@ -377,7 +388,7 @@ export function newGame(demo){init();if(demo)seed();return S;}
 
 // Which roles may perform each action ('ctrl' may do everything).
 const ROLE_OK={enter:['dealer'],finish:['dealer'],resetdone:['dealer'],reserve:['player'],cancelrsv:['player'],setcap:['ctrl'],setdur:['ctrl'],gatereward:['judge'],gateend:['judge'],hook:['judge'],done:['judge'],undone:['judge'],
-  publish:['ctrl'],revoke:['ctrl'],setscore:['ctrl'],final:['ctrl'],assign:['ctrl'],
+  publish:['ctrl'],revoke:['ctrl'],setscore:['ctrl'],final:['ctrl'],assign:['ctrl'],scavredeem:['judge'],
   pickup:['wuchang'],checkin:['wuchang','mengpo'],confirm:['wuchang','mengpo'],
   revive:['mengpo'],coin:['mengpo'],buy:['mengpo'],usecard:['mengpo'],addcard:['mengpo'],
   ack:['player'],donate:['player']};
@@ -404,6 +415,7 @@ export function apply(state,me,a){
     case 'enter':return enterRoom(a.tid,a.rid);
     case 'finish':return finishRoom(a.rid,a.results||{},a.picks||{});
     case 'hook':return hook(a.actor,a.pid,a.where);
+    case 'scavredeem':return scavRedeem(a.tid,a.qid,a.title,a.body);
     case 'done':return markDone(+a.nid,a.cid);
     case 'undone':return unmarkDone(+a.nid,a.cid);
     case 'publish':return publish(a.f);
