@@ -28,7 +28,7 @@ function buzz(p){
   if(!IOS)return;const a=Array.isArray(p)?p:[p];let t=0;
   a.forEach((d,i)=>{if(i%2===0)setTimeout(iosTick,t);t+=d;});}
 function shakeEl(el,cls){if(!el)return;el.classList.remove(cls);void el.offsetWidth;el.classList.add(cls);}
-let ui={ddOpen:null,don:{},tab:null,room:'4S',gatePick:'',finalAsk:null,pick:'',res:{},settled:null,hookTeam:'',hookTarget:'',hookWhere:'',rd:{quest:'',title:''},pickOut:{},doneSel:{},revokeAsk:null,
+let ui={ddOpen:null,don:{},tab:null,room:'4S',gatePick:'',finalAsk:null,pick:'',res:{},settled:null,hookTeam:'',hookMode:'',hookAsk:null,hookTarget:'',hookWhere:'',rd:{quest:'',title:''},pickOut:{},doneSel:{},revokeAsk:null,
   coinTeam:'',coinAmt:'',buyer:'',mkTab:'buy',ncOpen:false,as:'ctrl',devOps:false,demoRows:null,devAck:new Set(),nc:{name:'',desc:'',price:'',stock:''},
   sub:{dealer:'info',npc:'task',market:'buy',ctrl:'status',player:'team'},
   pub:{kind:'鬼门开',reward:0,title:'',body:'',target:'all',team:'R',players:[],mins:10,to:'all',sqTeam:'',quest:'',gate:''},
@@ -249,9 +249,25 @@ function scavPanel(){
 }
 
 function hookLog(){
-  const out=[];
-  for(const l of S.log){const m=/^(\S+) 被(.)队(?:勾魂|通过「鬼门开」任务淘汰)/.exec(l.text);if(m)out.push({t:l.t,pid:m[1],by:(S.teams.find(t=>t.name===m[2]+'队')||{}).id});}
+  const out=[],byName=n=>(S.teams.find(t=>t.name===n+'队')||{}).id;
+  for(const l of S.log){let m;
+    if((m=/^(\S+) 被(.)队(?:勾魂|通过「鬼门开」任务淘汰)/.exec(l.text)))out.push({t:l.t,pid:m[1],by:byName(m[2]),kind:'淘汰'});
+    else if((m=/^(\S+) 因(?:勾魂令|鬼门开奖励)免费复活，回到(.)队/.exec(l.text)))out.push({t:l.t,pid:m[1],by:byName(m[2]),kind:'复活'});}
   return out;
+}
+// 勾魂令：取得勾魂令的队伍 = 左边「任务判定」里判定成功的队伍（选别的队要二次确认）；效果按本队人数建议（满员淘汰 / 缺人复活），也可强行改。
+function hookWon(tid){return S.notices.some(n=>n.kind==='任务'&&n.sub!=='side'&&Object.keys(n.done).some(c=>teamOf(c)===tid));}
+function hookSug(tid){return tid&&alive(tid).length<size(tid)?'revive':'kill';}
+function hookDlg(){
+  const k=ui.hookAsk;if(!k)return '';
+  const t=team(k.kind==='team'?k.v:ui.hookTeam);if(!t)return '';
+  let msg;
+  if(k.kind==='team')msg=t.name+'还没有在左边「任务判定」里判定成功，却要使用勾魂令。';
+  else{const n=alive(t.id).length,z=size(t.id),sug=hookSug(t.id);
+    msg=t.name+(n<z?'未满员（存活 '+n+'/'+z+'），建议「复活」一名队员':'已满员（存活 '+n+'/'+z+'），建议「淘汰」别队一名队员')+'，你要强行改成「'+(k.v==='kill'?'淘汰':'复活')+'」。';}
+  return '<div class="sheet"><div class="sheet-bg" data-a="hookno"></div><div class="sheet-card pn" role="dialog" aria-modal="true" aria-labelledby="hdt"><h3 id="hdt">'+(k.kind==='team'?'这支队伍没有判定成功':'与建议的效果不同')+'</h3>'
+    +'<div class="lot hot">'+esc(msg)+'</div><span class="small">你仍然可以继续。</span>'
+    +'<div class="btns two2"><button class="btn-main" data-a="hookok">仍然选择</button><button class="btn-line" data-a="hookno">取消</button></div></div></div>';
 }
 function viewNpc(){
   const tasks=S.notices.filter(n=>n.kind==='任务'&&n.sub!=='side').slice(0,6);
@@ -274,27 +290,35 @@ function viewNpc(){
     '<div class="li"><div class="grow"><span class="t">'+fmt(d.t)+(n.due&&d.t>n.due?' 超时':'')+'</span><span class="x">'+lab(cid)+' 完成「'+esc(n.title)+'」'+(d.pts?' <span class="mono">+'+d.pts+'</span>':'')+'</span></div>'
     +'<button class="btn-line" data-a="undone" data-n="'+n.id+'" data-t="'+cid+'">撤销</button></div>').join(''):'<div class="li small">暂无记录</div>')+'</div>';
   const task=gatePanel()+(cards||'<div class="pn"><span class="muted">还没有发布任务。总控在生死簿「发布」里发布。</span></div>')+records;
-  // 勾魂令: two dropdowns (who holds the token, who is named) and one button
+  // 勾魂令：队伍 → 效果（建议 + 可强行改）→ 队员
+  const ht=ui.hookTeam&&team(ui.hookTeam),sug=hookSug(ui.hookTeam),mode=ui.hookMode||sug,kill=mode==='kill';
   if(ui.hookTarget){const p=S.players.find(x=>x.id===ui.hookTarget);
-    if(!p||p.team===ui.hookTeam||p.st!=='alive'||protectedLeft(p)>0)ui.hookTarget='';}
+    if(!p||(kill?(p.team===ui.hookTeam||p.st!=='alive'||protectedLeft(p)>0):(p.team!==ui.hookTeam||p.st==='alive')))ui.hookTarget='';}
   const tgt=ui.hookTarget&&S.players.find(x=>x.id===ui.hookTarget);
-  const opts=S.teams.filter(t=>t.id!==ui.hookTeam).flatMap(t=>{
+  const won=S.teams.filter(t=>hookWon(t.id)),notWon=S.teams.filter(t=>!hookWon(t.id));
+  const tOpts=[...(won.length?[{group:'判定成功'},...won.map(t=>({v:t.id,label:t.name,c:TC[t.id][0]}))]:[]),
+    {group:'未判定成功（强行选择会提示）'},...notWon.map(t=>({v:t.id,label:t.name,c:TC[t.id][0]}))];
+  const stName={out:'原地待接',picked:'已被接到',market:'在鬼市'};
+  const opts=kill?S.teams.filter(t=>t.id!==ui.hookTeam).flatMap(t=>{
     return [{group:t.name},...S.players.filter(p=>p.team===t.id).map(p=>{const l=protectedLeft(p),gone=p.st!=='alive';
-      return {v:p.id,label:p.id,c:TC[t.id][0],off:gone||l>0,note:gone?'已淘汰':l>0?'保护 '+Math.ceil(l/60)+' 分':''};})];});
+      return {v:p.id,label:p.id,c:TC[t.id][0],off:gone||l>0,note:gone?'已淘汰':l>0?'保护 '+Math.ceil(l/60)+' 分':''};})];})
+    :S.players.filter(p=>p.team===ui.hookTeam&&p.st!=='alive').map(p=>({v:p.id,label:p.id,c:TC[ui.hookTeam][0],note:stName[p.st]||''}));
   const ready=ui.hookTeam&&tgt;
-  const counts={};const hl=hookLog();hl.forEach(h=>{if(h.by)counts[h.by]=(counts[h.by]||0)+1;});
-  const hook='<div class="pn hook"><div class="two">'
-    +'<div class="fld"><span>取得勾魂令的队伍</span>'+dd('hookTeam',ui.hookTeam&&team(ui.hookTeam).name,'选择队伍',ui.hookTeam&&TC[ui.hookTeam][0],S.teams.map(t=>({v:t.id,label:t.name,c:TC[t.id][0]})))+'</div>'
-    +'<div class="fld"><span>被点名的队员</span>'+dd('hookTarget',tgt&&tgt.id,'选择别队队员',tgt&&TC[tgt.team][0],opts)+'</div></div>'
-    +'<label class="fld"><span>位置（在房间内可不填）</span><input class="in" id="hw" data-m="hookWhere" value="'+esc(ui.hookWhere)+'" placeholder="例如：二楼走廊"></label>'
-    +'<button class="btn-main red" data-a="hook"'+(ready?'':' disabled')+' style="min-height:56px;display:flex;align-items:center;justify-content:center;gap:12px;font-size:18px">'
+  const modeUi=ht?'<div class="fld"><span>效果</span><div class="seg2">'+[['kill','淘汰别队一名队员'],['revive','复活本队一名队员']].map(([k,l])=>'<button class="sbtn'+(mode===k?' on':'')+'" data-a="hookmode" data-v="'+k+'" aria-pressed="'+(mode===k)+'">'+l+(sug===k?'（建议）':'')+'</button>').join('')+'</div>'
+      +'<span class="small">'+esc(ht.name)+'存活 '+alive(ht.id).length+'/'+size(ht.id)+(sug==='kill'?'，已满员 → 建议淘汰':'，未满员 → 建议复活')+(ui.hookMode&&ui.hookMode!==sug?'　<b style="color:var(--red)">（已强行改成'+(ui.hookMode==='kill'?'淘汰':'复活')+'）</b>':'')+'</span></div>'
+    :'<span class="small">选好队伍后，会按本队存活人数建议效果（满员淘汰，未满员复活）。</span>';
+  const hl=hookLog();
+  const hook='<div class="pn hook"><div class="fld"><span>取得勾魂令的队伍</span>'+dd('hookTeam',ht&&ht.name,'选择队伍',ht&&TC[ui.hookTeam][0],tOpts)+'</div>'
+    +modeUi
+    +'<div class="fld"><span>'+(kill?'被点名的队员':'要复活的队友')+'</span>'+dd('hookTarget',tgt&&tgt.id,kill?'选择别队队员':'选择本队未存活的队友',tgt&&TC[tgt.team][0],opts)+'</div>'
+    +(kill?'<label class="fld"><span>位置（在房间内可不填）</span><input class="in" id="hw" data-m="hookWhere" value="'+esc(ui.hookWhere)+'" placeholder="例如：二楼走廊"></label>':'')
+    +'<button class="btn-main'+(kill?' red':'')+'" data-a="hook"'+(ready?'':' disabled')+' style="min-height:56px;display:flex;align-items:center;justify-content:center;gap:12px;font-size:18px">'
     +'<span style="width:34px;height:34px;border:2px solid currentColor;border-radius:6px;display:grid;place-items:center;font-family:var(--brush);font-size:24px;line-height:1;transform:rotate(-8deg);font-weight:400">勾</span>'
-    +(ready?team(ui.hookTeam).name+' 勾魂 '+tgt.id:'先选队伍和队员')+'</button></div>'
-    +'<div class="pn"><div class="shrow"><h3>已勾魂次数</h3><span class="small">本局共 <span class="mono" style="font-weight:800;font-size:22px;color:var(--ink)">'+S.gate+'</span> 次</span></div>'
-    +'<div class="hgrid">'+S.teams.map(t=>'<div class="hc">'+tsq(t.id,26)+'<span>'+t.name+'</span><b>'+(counts[t.id]||0)+'</b></div>').join('')+'</div>'
-    +hl.slice(0,3).map(h=>'<div class="hrow"><span class="minis">勾</span><span class="t">'+fmt(h.t)+'</span><span>'+(h.by?team(h.by).name+' 勾魂 ':'勾魂 ')+h.pid+'</span></div>').join('')+'</div>';
+    +(ready?ht.name+(kill?' 勾魂 ':' 复活 ')+tgt.id:'先选队伍和队员')+'</button></div>'
+    +'<div class="pn"><div class="shrow"><h3>勾魂记录</h3><span class="small">'+(hl.length?'共 '+hl.length+' 条':'暂无')+'</span></div>'
+    +hl.slice(0,10).map(h=>'<div class="hrow"><span class="minis">勾</span><span class="t">'+fmt(h.t)+'</span><span class="typ">'+h.kind+'</span><span>'+(h.by?team(h.by).name+' ':'')+(h.kind==='复活'?'复活 ':'勾魂 ')+h.pid+'</span></div>').join('')+'</div>';
   return '<div class="page tabbed"><div class="cols3">'+sec('npc','task','<h2 class="sh">任务判定</h2>'+task)+sec('npc','scav','<h2 class="sh">Scavenger Hunt 兑换</h2>'+scavPanel())+sec('npc','hook','<h2 class="sh">勾魂令</h2>'+hook)+'</div>'
-    +sub('npc',[['task','任务判定'],['scav','Scavenger'],['hook','勾魂令']])+'</div>';
+    +sub('npc',[['task','任务判定'],['scav','Scavenger'],['hook','勾魂令']])+hookDlg()+'</div>';
 }
 
 // ---------- 鬼市 ----------
@@ -478,7 +502,7 @@ function pubPanel(){
     +'<div class="fgrid"><label class="fld"><span>限时（分钟）</span><input class="in mono" id="pm" data-m="pub.mins" value="'+esc(f.mins)+'" inputmode="numeric"></label>'
     +(K==='custom'?'<label class="fld"><span>完成奖励（冥币，可为 0）</span><input class="in mono" id="prw" data-m="pub.reward" value="'+esc(f.reward)+'" inputmode="numeric"></label>':'')
     +'</div>'
-    +((side&&f.quest!=='custom')||(gate&&f.gate!=='custom')?'':'<label class="fld"><span>标题</span><input class="in" id="pti" data-m="pub.title" value="'+esc(f.title)+'" placeholder="例如：鬼门开：还原鬼片海报"></label>'
+    +((side&&f.quest!=='custom')||(gate&&f.gate!=='custom')?'':'<label class="fld"><span>标题</span><input class="in" id="pti" data-m="pub.title" value="'+esc(f.title)+'" placeholder="例如：鬼门开 占位"></label>'
     +'<label class="fld"><span>内容</span><textarea class="in" id="pb" data-m="pub.body" rows="3" placeholder="玩家手机上看到的说明：任务要求、集合地点…">'+esc(f.body)+'</textarea></label>')
     +'<button class="btn-main" data-a="publish">发布'+(K==='custom'?'自定义任务':gate?'鬼门开':'')+'到'+esc(toName)+(f.target==='staff'?'':f.target==='everyone'?'的手机':'玩家手机')+'</button></div>';
   const list=S.notices.filter(n=>n.kind!=='通知'&&n.sub!=='side').slice(0,10).map(n=>{
@@ -504,9 +528,11 @@ function adminPanel(){
       +(A.ask==='snap:'+s.key?'<span class="btns"><button class="btn-line fillred" data-a="adm-restore" data-v="'+s.key+'">确认恢复</button><button class="btn-line" data-a="adm-cancel">取消</button></span>'
         :'<button class="btn-line" data-a="adm-ask" data-v="snap:'+s.key+'">恢复到这里</button>')+'</div>').join('')+'</div>':'<span class="small">还没有备份。每 10 次操作自动备份一次。</span>'):'';
   const left='<div class="stack"><div class="pn"><span class="lbl" style="font-size:13px">游戏计时</span><div class="timer"><span class="big'+(run?'':' paused')+'" id="tclk">'+fmt(S.t)+'</span>'
-    +'<button class="btn-line '+(run?'':'fill')+'" data-a="clockctl" style="min-height:52px;padding:0 24px;font-size:17px;font-weight:900">'+(run?'暂停':'开始')+'</button></div>'
+    +'<button class="btn-line '+(run?'':'fill')+'" data-a="clockctl" style="min-height:52px;padding:0 24px;font-size:17px;font-weight:900">'+(run?'暂停':'开始')+'</button>'
+    +(A.ask==='clockreset'?'<button class="btn-line fillred" data-a="clockreset" style="min-height:52px;padding:0 18px;font-size:16px;font-weight:900">确认重置为 0:00</button><button class="btn-line" data-a="adm-cancel" style="min-height:52px">取消</button>'
+      :'<button class="btn-line" data-a="adm-ask" data-v="clockreset" style="min-height:52px;padding:0 18px;font-size:16px;font-weight:900">重置</button>')+'</div>'
     +'<span class="small" style="font-weight:700;color:'+(run?'var(--accent)':'var(--sub)')+'">'+(run?'● 计时中':'❚❚ 已暂停')+'</span></div>'
-    +'<div class="pn"><div class="shrow"><h3>总时长</h3><span class="small">大屏显示剩余时间；倒数到 0 不会自动做任何事</span></div><span class="small">当前 <b class="mono" style="color:var(--ink)">'+Math.round((S.dur||7200)/60)+'</b> 分钟</span>'
+    +'<div class="pn"><div class="shrow"><h3>总时长</h3></div><span class="small">当前 <b class="mono" style="color:var(--ink)">'+Math.round((S.dur||7200)/60)+'</b> 分钟</span>'
     +'<div class="btns"><input class="in mono" id="durm" data-m="durMin" value="'+esc(A.dur)+'" inputmode="numeric" placeholder="分钟，如 120" style="max-width:150px"><button class="btn-line acc" data-a="setdur">设置</button></div></div>'
     +'<div class="pn"><h3>开局</h3><span class="small">8 队随机分到 8 个房间（直接进入游戏中）。只有还没有队伍进过房间时才能用。</span><div class="btns"><button class="btn-line acc" data-a="assign">开局随机分房</button></div></div>'
     +'<div class="pn"><div class="shrow"><h3>PIN</h3><span class="small">按数量补齐工作人员 PIN</span></div>'
@@ -586,7 +612,7 @@ function viewPlayer(){
     +'<div class="skrow"><span class="cap">本队技能卡</span>'+(t.skills.length?'<div class="skills">'+t.skills.map(k=>'<button class="sk'+(ui.skillOpen===k.sid?' on':'')+'" data-a="skill" data-v="'+k.sid+'" aria-expanded="'+(ui.skillOpen===k.sid)+'">'+esc(k.name)+'</button>').join('')+'</div>':'<span class="muted small">暂无。鬼市里的人可用个人冥币购买。</span>')+'</div>'
     +((sk=>sk?'<div class="skd"><b>'+esc(sk.name)+'</b>'+(sk.desc?'<span class="d">'+esc(sk.desc)+'</span>':'')+'<span class="small">'+esc(sk.by)+' 于 '+fmt(sk.t)+' 在鬼市买入</span><span class="small">使用时找工作人员出示这一页。</span></div>':'')(t.skills.find(k=>k.sid===ui.skillOpen)));
   // 通知与任务
-  const mine=S.notices.filter(n=>matches(n,me)),unread=mine.filter(n=>!n.acks[me.id]).length;
+  const mine=S.notices.filter(n=>n.sub!=='side'&&matches(n,me)),unread=mine.filter(n=>!n.acks[me.id]).length;
   const nmeta=n=>{const key=indiv(n)?me.id:me.team,d=n.done[key],w=Object.keys(n.done)[0],lost=n.kind==='任务'&&!d&&isFirst(n)&&!!w;return{d,w,lost,live:n.kind==='任务'&&!d&&!lost};};
   const noteHtml=n=>{const acked=!!n.acks[me.id],[kl,kc]=kindOf(n),{d,w,lost}=nmeta(n);
     let ns='',nc='';
@@ -656,7 +682,7 @@ function modalHtml(){
       +'<button data-a="sack" data-n="'+n.id+'" data-modal="1">知道了</button></div></div>';}
   if(!ME||ME.role!=='player'||!S)return '';
   const me=S.players.find(p=>p.id===ME.pid);
-  const n=S.notices.find(x=>matches(x,me)&&!x.acks[me.id]&&!(DEVME&&ui.devAck.has(x.id+':'+me.id)));if(!n)return '';
+  const n=S.notices.find(x=>x.sub!=='side'&&matches(x,me)&&!x.acks[me.id]&&!(DEVME&&ui.devAck.has(x.id+':'+me.id)));if(!n)return '';
   const [kl,kc]=kindOf(n),r=n.due?n.due-S.t:0;
   return '<div class="ovl" data-k="'+(n.tone==='out'?'out':'')+'"><div class="dlg" data-n="'+n.id+'" data-k="'+(n.tone==='out'?'out':'')+'" role="dialog" aria-modal="true" aria-labelledby="dt"><div class="new"><i></i>新通知</div>'
     +'<div class="bd"><span class="k '+(kc==='alert'?'alert':'')+'">'+kl+'</span>'+(modeOf(n)?'<span>'+modeOf(n)+'</span>':'')+'</div>'
@@ -877,6 +903,7 @@ function localAdmin(a){
       if(a.op==='start'&&!CLOCK.running){CLOCK={running:true,base:CLOCK.base,at:Date.now()};FULL.t=CLOCK.base;R.log('计时开始');}
       else if(a.op==='pause'&&CLOCK.running){const n=nowT();CLOCK={running:false,base:n,at:Date.now()};FULL.t=n;R.log('计时暂停');}
       else if(a.op==='set'){CLOCK={running:CLOCK.running,base:Math.max(0,Math.round(+a.sec)||0),at:Date.now()};}
+      else if(a.op==='reset'){CLOCK={running:false,base:0,at:Date.now()};FULL.t=0;R.log('计时重置为 0:00');}
       else return no('计时状态没有变化');
       return ok(CLOCK.running?'计时进行中':'计时已暂停');
     case 'admin.reset':lSnap('重置前');FULL=R.newGame(!!a.demo);CLOCK={running:false,base:a.demo?FULL.t:0,at:Date.now()};return ok(a.demo?'已载入演示数据（计时暂停）':'已重置为空白游戏（计时暂停）');
@@ -925,7 +952,8 @@ document.addEventListener('click',e=>{
   if(a==='tab'){ui.tab=v;say(null);}
   else if(a==='sub'){ui.sub[b.dataset.p]=v;scrollTo({top:0});$('#view').scrollTop=0;}
   else if(a==='dd'){ui.ddOpen=ui.ddOpen===v?null:v;}
-  else if(a==='pick'){ui.ddOpen=null;const k=b.dataset.k,next=b.dataset.t&&getp(k)===v?'':v;setp(k,next);
+  else if(a==='pick'){ui.ddOpen=null;const k=b.dataset.k,next=b.dataset.t&&getp(k)===v?'':v;if(k==='hookTeam'&&next&&next!==ui.hookTeam&&!hookWon(next))ui.hookAsk={kind:'team',v:next};
+    else{setp(k,next);if(k==='hookTeam'){ui.hookMode='';ui.hookTarget='';}}
     if(k==='pub.quest'){const q=QUESTS.find(x=>x.id===next);if(q)ui.pub.reward=q.reward;}
     if(k==='pub.to'){const t=next||'all';if(t.startsWith('team:')){ui.pub.target='team';ui.pub.team=t.slice(5);}else ui.pub.target=t;}}
   else if(a==='mktab'){ui.mkTab=v;}
@@ -943,6 +971,7 @@ document.addEventListener('click',e=>{
   else if(a==='demo-save'){const r=ui.demoRows[+b.dataset.i];send({type:'dev.setdemo',pin:r.pin,old:r.old,mode:r.mode,write:r.write},m=>{DEVME.demoCfg=m.data;SESSION.me=DEVME;store.set(SESSION);ui.demoRows=null;});}
   else if(a==='demo-del'){const i=+b.dataset.i,r=ui.demoRows[i];if(!r.old)ui.demoRows.splice(i,1);else send({type:'dev.deldemo',pin:r.old},m=>{DEVME.demoCfg=m.data;SESSION.me=DEVME;store.set(SESSION);ui.demoRows=null;});}
   else if(a==='devops'){if(DEVME.demo)return;ui.devOps=!ui.devOps;say({ok:true,msg:ui.devOps?'开发者模式：可操作（以当前视角的身份）':'开发者模式：只读'});}
+  else if(a==='clockreset'){A.ask=null;send({type:'admin.clock',op:'reset'});}
   else if(a==='clockctl'){send({type:'admin.clock',op:CLOCK&&CLOCK.running?'pause':'start'});}
   else if(a==='room'){ui.room=v;ui.pick='';ui.res={};ui.pickOut={};ui.settled=null;}
   else if(a==='res'){ui.res[b.dataset.t]=ui.res[b.dataset.t]===v?undefined:v;delete ui.pickOut[b.dataset.t];}
@@ -955,7 +984,10 @@ document.addEventListener('click',e=>{
   else if(a==='rsvclose'){ui.rsvInfo=null;}
   else if(a==='cancelrsv'){send({type:'cancelrsv'});}
   else if(a==='finish'){const rid=ui.room;send({type:'finish',rid,results:ui.res,picks:ui.pickOut},m=>{ui.res={};ui.pickOut={};ui.settled={rid,msg:m.msg};});}
-  else if(a==='hook'){send({type:'hook',actor:ui.hookTeam,pid:ui.hookTarget,where:ui.hookWhere},()=>{ui.hookTarget='';ui.hookWhere='';});}
+  else if(a==='hook'){send({type:'hook',actor:ui.hookTeam,pid:ui.hookTarget,where:ui.hookWhere,mode:ui.hookMode||hookSug(ui.hookTeam)},()=>{ui.hookTarget='';ui.hookWhere='';});}
+  else if(a==='hookmode'){const cur=ui.hookMode||hookSug(ui.hookTeam);if(v!==cur){if(v===hookSug(ui.hookTeam)){ui.hookMode='';ui.hookTarget='';}else ui.hookAsk={kind:'mode',v};}}
+  else if(a==='hookok'){const k=ui.hookAsk;ui.hookAsk=null;if(k){if(k.kind==='team'){ui.hookTeam=k.v;ui.hookMode='';ui.hookTarget='';}else{ui.hookMode=k.v;ui.hookTarget='';}}}
+  else if(a==='hookno'){ui.hookAsk=null;}
   else if(a==='publish'){const sq=ui.pub.kind==='sidequest';send({type:'publish',f:{...ui.pub,team:sq?ui.pub.sqTeam:ui.pub.team,mins:+ui.pub.mins||0,reward:+ui.pub.reward||0}},()=>{ui.pub.title='';ui.pub.body='';if(sq){ui.pub.quest='';ui.pub.sqTeam='';}ui.pub.gate='';});}
   else if(a==='scavredeem'){const r=ui.rd;send({type:'scavredeem',tid:b.dataset.t,qid:r.quest,title:r.title});}
   else if(a==='checkin'){send({type:'checkin',pid:b.dataset.p,party:checkinParty()});}

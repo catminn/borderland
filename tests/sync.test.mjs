@@ -175,7 +175,9 @@ await admin.act({ type: 'admin.reset', demo: false });
   await jd.act({ type: 'done', nid: gn.id, cid: 'R' }); await sleep(200);
   { const r = await jd.act({ type: 'gatereward', pid: 'G-01' }); await sleep(200);
     T('full winner: reward eliminates a player of another team, gate ends', r.ok && admin.S.players.find(p => p.id === 'G-01').st === 'out' && !admin.S.gp); }
-  T('duration can be set', (await admin.act({ type: 'setdur', secs: 5400 })).ok && (await sleep(200), admin.S.dur === 5400)); }
+  T('duration can be set', (await admin.act({ type: 'setdur', secs: 5400 })).ok && (await sleep(200), admin.S.dur === 5400));
+  { const r = await admin.act({ type: 'admin.clock', op: 'reset' }); await sleep(200);
+    T('clock reset: back to 0:00 and paused', r.ok && admin.S.t === 0 && admin.S.log.some(l => /计时重置/.test(l.text))); } }
 [wc, mp, jd].forEach(c => c.close());
 
 // ---- 展示模式 PIN (set by the developer) ----

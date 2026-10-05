@@ -56,7 +56,7 @@ const ok=msg=>({ok:true,msg}), no=msg=>({ok:false,msg});
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 function init(){
-  S={v:2,t:0,dur:DUR0,gate:0,gp:null,log:[],notices:[],nid:1,sid:100,shop:SHOP0.map(c=>({...c})),
+  S={v:2,t:0,dur:DUR0,gp:null,log:[],notices:[],nid:1,sid:100,shop:SHOP0.map(c=>({...c})),
      teams:TEAMS.map(t=>({...t,cards:[],cleared:[],played:[],inRoom:null,score:0,skills:[],final:false,cap:t.id+'-01',scav:[]})),
      rooms:ROOMS.map(r=>({id:r.id,st:'open',rt:null,at:0,teams:[]})),players:[]};
   TEAMS.forEach(t=>{for(let i=1;i<=PER_TEAM;i++)S.players.push({id:t.id+'-'+String(i).padStart(2,'0'),team:t.id,st:'alive',outAt:null,inAt:null,pickAt:null,at:'',chk:null,backAt:null,coins:0,bail:0});});
@@ -284,15 +284,29 @@ function finishRoom(rid,results,picks={}){
   st.teams=[]; st.st='reset'; st.at=S.t; st.rt=null;
   return ok(r.card+' 结算完成，进入重置：'+notes.join('；'));
 }
-function hook(actorId,pid,where){
+// 免费复活（鬼门开奖励、勾魂令「复活」效果共用）
+function freeRevive(p,wt,why){
+  p.st='alive';p.backAt=S.t;p.outAt=null;p.inAt=null;p.pickAt=null;p.chk=null;p.at='';p.coins=0;p.bail=0;
+  log(p.id+' 因'+why+'免费复活，回到'+wt.name,'back');
+  pushNotice({kind:'通知',title:'免费复活',body:why+'：你被免费复活，请领取新的符咒名牌回到队伍。',target:'player',ids:[p.id]});
+}
+// 勾魂令：取得勾魂令的队伍选效果。mode='kill'（默认）淘汰别队一名存活队员；mode='revive' 免费复活本队一名队员。
+// 建议（满员 → 淘汰，缺人 → 复活）只在判官页提示，这里两种都允许。
+function hook(actorId,pid,where,mode){
   const p=S.players.find(x=>x.id===pid);
   if(!actorId)return no('先选取得勾魂令的队伍');
+  if(mode==='revive'){
+    if(!p)return no('先选要复活的队员');
+    if(p.team!==actorId||p.st==='alive')return no('请选'+team(actorId).name+'里一名未存活的队友');
+    freeRevive(p,team(actorId),'勾魂令');
+    return ok(team(actorId).name+'用勾魂令复活了 '+p.id);
+  }
   if(!p)return no('先选被点名的队员');
   if(p.team===actorId)return no('不能点名本队队员');
   if(p.st!=='alive')return no(p.id+' 已被淘汰');
   if(team(p.team).final)return no(team(p.team).name+'已进入终极任务，不能勾魂');
   if(protectedLeft(p)>0)return no(p.id+' 刚复活，保护期还剩 '+Math.ceil(protectedLeft(p)/60)+' 分钟');
-  S.gate++; eliminate(p,'被'+team(actorId).name+'通过「鬼门开」任务淘汰',String(where||'').trim().slice(0,40));
+  eliminate(p,'被'+team(actorId).name+'通过「鬼门开」任务淘汰',String(where||'').trim().slice(0,40));
   return ok(team(actorId).name+'勾走了 '+p.id);
 }
 function revive(pid){
@@ -313,9 +327,7 @@ function gateReward(pid){const g=S.gp;if(!g)return no('现在没有进行中的�
   const wt=team(g.win),p=S.players.find(x=>x.id===pid);if(!p)return no('先选队员');
   if(alive(wt.id).length<size(wt.id)){
     if(p.team!==wt.id||p.st==='alive')return no('请选'+wt.name+'里一名未存活的队友（免费复活）');
-    p.st='alive';p.backAt=S.t;p.outAt=null;p.inAt=null;p.pickAt=null;p.chk=null;p.at='';p.coins=0;p.bail=0;
-    log(p.id+' 因鬼门开奖励免费复活，回到'+wt.name,'back');
-    pushNotice({kind:'通知',title:'免费复活',body:'鬼门开奖励：你被免费复活，请领取新的符咒名牌回到队伍。',target:'player',ids:[p.id]});
+    freeRevive(p,wt,'鬼门开奖励');
     g.res=true;S.gp=null;log('鬼门开结束，房间恢复开放');return ok(p.id+' 已免费复活，鬼门开结束');}
   if(p.team===wt.id)return no('请选别队的存活队员');if(p.st!=='alive')return no(p.id+' 已被淘汰');
   if(team(p.team).final)return no(team(p.team).name+'已进入终极任务，不能被淘汰');
@@ -387,7 +399,7 @@ function seed(){
   S.t=28*60+30; go('O','4D'); go('Y','8S');
   S.t=29*60; P('B-05').coins=COIN_GOAL; P('P-02').coins=COIN_GOAL+200; reserve('G','4C'); reserve('K','8H');
   log('演示数据就位：4♦ 与 8♠ 进行中，4♥ 重置中，4♣、8♥ 已预约');
-  pushNotice({kind:'任务',sub:'gate',title:'鬼门开：还原鬼片海报',body:'全队 60 秒内还原一张「鬼片海报」造型，到一楼大厅找判官。第一支完成的队伍可获得奖励。',target:'all',mins:10,mode:'first'});
+  pushNotice({kind:'任务',sub:'gate',title:'鬼门开 占位',body:'（占位文字，正式内容待定）',target:'all',mins:10,mode:'first'});
   scavRedeem('R','q1');
 }
 
@@ -421,7 +433,7 @@ export function apply(state,me,a){
     case 'setdur':return setDur(a.secs);
     case 'enter':return enterRoom(a.tid,a.rid);
     case 'finish':return finishRoom(a.rid,a.results||{},a.picks||{});
-    case 'hook':return hook(a.actor,a.pid,a.where);
+    case 'hook':return hook(a.actor,a.pid,a.where,a.mode);
     case 'scavredeem':return scavRedeem(a.tid,a.qid,a.title,a.body);
     case 'done':return markDone(+a.nid,a.cid);
     case 'undone':return unmarkDone(+a.nid,a.cid);

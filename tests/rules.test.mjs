@@ -75,4 +75,14 @@ T('ctrl forces final', ap('ctrl', { type: 'final', tid: t.id, on: true }).ok && 
   const pv = R.viewFor(G, { role: 'player', pid: 'R-02' });
   T('announce to staff / everyone', a.ok && b.ok && !c.ok && pv.notices.some(n => n.title === '全员通知') && !pv.notices.some(n => n.title === '工作人员集合') && R.staffSees(G.notices[0]) && R.staffSees(G.notices[1]));
 }
+{ // 勾魂令：淘汰别队一名存活队员 / 免费复活本队一名队员；不再计次
+  const G = R.newGame(false); R.use(G); G.t = 100; const J = a => R.apply(G, { role: 'judge' }, a);
+  const k = J({ type: 'hook', actor: 'B', pid: 'R-01', where: '二楼' });
+  T('hook kill (default): eliminates other team player', k.ok && G.players.find(p => p.id === 'R-01').st === 'out' && G.gate === undefined);
+  T('hook kill: own team refused', !J({ type: 'hook', actor: 'B', pid: 'B-01' }).ok);
+  T('hook revive: needs a downed teammate of the actor team', !J({ type: 'hook', actor: 'B', pid: 'B-01', mode: 'revive' }).ok && !J({ type: 'hook', actor: 'B', pid: 'R-01', mode: 'revive' }).ok);
+  const r = J({ type: 'hook', actor: 'R', pid: 'R-01', mode: 'revive' }); const p = G.players.find(x => x.id === 'R-01');
+  T('hook revive: frees the teammate (alive, protected)', r.ok && p.st === 'alive' && R.protectedLeft(p) > 0 && G.log.some(l => /^R-01 因勾魂令免费复活，回到.队/.test(l.text)));
+  T('hook: players cannot use it', !R.apply(G, { role: 'player', pid: 'B-01' }, { type: 'hook', actor: 'B', pid: 'R-02' }).ok);
+}
 console.log(bad ? bad + ' FAILED' : 'RULES PASSED'); process.exit(bad ? 1 : 0);

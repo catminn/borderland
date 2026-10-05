@@ -202,6 +202,7 @@ export class Game extends DurableObject {
         if (a.op === 'start' && !c.running) { c.running = true; c.at = Date.now(); this.S.t = c.base; R.use(this.S); R.log('计时开始'); }
         else if (a.op === 'pause' && c.running) { c.base = this.now(); c.running = false; c.at = Date.now(); this.S.t = c.base; R.use(this.S); R.log('计时暂停'); }
         else if (a.op === 'set') { c.base = Math.max(0, Math.round(+a.sec) || 0); c.at = Date.now(); }
+        else if (a.op === 'reset') { c.base = 0; c.running = false; c.at = Date.now(); this.S.t = 0; R.use(this.S); R.log('计时重置为 0:00'); }
         else return R.no('计时状态没有变化');
         return ok(c.running ? '计时进行中' : '计时已暂停');
       }
