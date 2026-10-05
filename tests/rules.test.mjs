@@ -59,4 +59,12 @@ T('ctrl forces final', ap('ctrl', { type: 'final', tid: t.id, on: true }).ok && 
   const n = G.notices[0]; const d = R.apply(G, { role: 'judge' }, { type: 'done', nid: n.id, cid: 'B' });
   T('custom task: one team, judge completes, +150', p.ok && n.sub === 'custom' && n.mode === 'each' && d.ok && G.teams.find(t => t.id === 'B').score === 150 && !G.gp);
 }
+{ // 时间到：暂停预约与入场，已在房间里的不受影响
+  const G = R.newGame(false); R.use(G); G.t = 100; const D = a => R.apply(G, { role: 'dealer', rooms: null }, a);
+  const e1 = R.apply(G, { role: 'ctrl' }, { type: 'enter', tid: 'R', rid: '4S' });
+  G.t = G.dur + 5;
+  const r1 = R.apply(G, { role: 'player', pid: 'B-01' }, { type: 'reserve', rid: '8S' });
+  const e2 = R.apply(G, { role: 'ctrl' }, { type: 'enter', tid: 'B', rid: '8S' });
+  T('time up: reserve and enter refused, team already inside stays', e1.ok && !r1.ok && /时间到/.test(r1.msg) && !e2.ok && /时间到/.test(e2.msg) && G.teams.find(t => t.id === 'R').inRoom === '4S' && R.timeUp());
+}
 console.log(bad ? bad + ' FAILED' : 'RULES PASSED'); process.exit(bad ? 1 : 0);

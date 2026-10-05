@@ -70,6 +70,8 @@ const rsvLeft=r=>r.st==='rsv'?Math.max(0,RSV-(S.t-r.at)):0;
 function sweep(){S.rooms.forEach(r=>{if(r.st==='rsv'&&S.t-r.at>=RSV){log(team(r.rt).name+' 预约 '+room(r.id).card+' 已过期','');r.st='open';r.rt=null;}});}
 const rsvOf=tid=>S.rooms.find(r=>rstate(r)==='rsv'&&r.rt===tid);
 const gated=()=>!!S.gp;
+// 总时间用完（S.t 由服务器在每次操作前设好）：暂停预约与入场，已在房间里的队伍照常打完、结算、重置。
+const timeUp=()=>S.t>=(S.dur||DUR0);
 
 function matches(n,p){
   switch(n.target){case 'all':return true;case 'team':return n.ids.includes(p.team);case 'player':return n.ids.includes(p.id);
@@ -189,6 +191,7 @@ function whyNotReserve(tid,rid){
   const t=team(tid),r=S.rooms.find(x=>x.id===rid),st=rstate(r);
   if(t.final)return '已进入终极任务';
   if(gated())return '鬼门开期间暂停预约';
+  if(timeUp())return '时间到，暂停预约';
   if(t.inRoom)return '正在 '+room(t.inRoom).card;
   const mine=rsvOf(tid);if(mine&&mine.id!==rid)return '已预约 '+room(mine.id).card+'，先取消';
   if(st==='rsv'&&r.rt!==tid)return '已被'+team(r.rt).name+'预约';
@@ -211,6 +214,7 @@ function whyNotEnter(tid,rid){
   const t=team(tid),r=S.rooms.find(x=>x.id===rid),st=rstate(r);
   if(t.final)return '已进入终极任务';
   if(gated())return '鬼门开期间暂停入场';
+  if(timeUp())return '时间到，暂停入场';
   if(t.inRoom)return '正在 '+room(t.inRoom).card;
   if(st==='play')return '游戏中';
   if(st==='reset')return '重置中';
@@ -447,4 +451,4 @@ export function viewFor(state,me){
     teams:state.teams.map(t=>p&&t.id===p.team?t:{...t,skills:[],hist:[]})};
 }
 
-export {needsReset,rstate,rsvLeft,rsvOf,whyNotReserve,reserve,cancelRsv,resetDone,gateReward,gateEnd,scavInfo,scavWhy,finalMiss,RSV,GAME_HINT,RESET_HINT,SCAV_PTS,SCAV_WIN,SCAV_N,SCAV_CAP,COIN_START,CARRY_MAX,DUR0,size,COIN_GOAL,FEATURES,FINAL_MSG,FINAL_SCORE,MIN_STAY,PER_TEAM,PROTECT,QUESTS,GATES,RATE,ROOMS,ROLE_LABEL,SHOP0,SUITS,TEAMS,ack,addCard,alive,buyCard,cands,donate,eliminate,enterRoom,esc,finishRoom,fmt,gapOf,hook,inMarket,indiv,init,isBcast,isFirst,kindLabel,lab,log,markDone,matches,no,ok,protectedLeft,publish,pushNotice,revive,revokeNotice,rewardTxt,room,seed,setScore,targetLabel,tcol,team,teamOf,teamStatus,unmarkDone,useCard,whyNotEnter};
+export {timeUp,needsReset,rstate,rsvLeft,rsvOf,whyNotReserve,reserve,cancelRsv,resetDone,gateReward,gateEnd,scavInfo,scavWhy,finalMiss,RSV,GAME_HINT,RESET_HINT,SCAV_PTS,SCAV_WIN,SCAV_N,SCAV_CAP,COIN_START,CARRY_MAX,DUR0,size,COIN_GOAL,FEATURES,FINAL_MSG,FINAL_SCORE,MIN_STAY,PER_TEAM,PROTECT,QUESTS,GATES,RATE,ROOMS,ROLE_LABEL,SHOP0,SUITS,TEAMS,ack,addCard,alive,buyCard,cands,donate,eliminate,enterRoom,esc,finishRoom,fmt,gapOf,hook,inMarket,indiv,init,isBcast,isFirst,kindLabel,lab,log,markDone,matches,no,ok,protectedLeft,publish,pushNotice,revive,revokeNotice,rewardTxt,room,seed,setScore,targetLabel,tcol,team,teamOf,teamStatus,unmarkDone,useCard,whyNotEnter};

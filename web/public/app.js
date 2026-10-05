@@ -3,7 +3,7 @@
 // for the signed-in role, and sends actions. Rule helpers come from rules.js (same file the server runs).
 import * as R from './rules.js';
 const {size,ROOMS,SUITS,RATE,PER_TEAM,MIN_STAY,COIN_GOAL,FINAL_SCORE,FINAL_MSG,QUESTS,GATES,FEATURES,team,room,alive,inMarket,fmt,protectedLeft,esc,matches,targetLabel,
-  isFirst,indiv,lab,cands,whyNotEnter,gapOf,teamStatus,teamOf,no,rstate,rsvLeft,rsvOf,whyNotReserve,finalMiss,scavInfo,scavWhy,SCAV_CAP,SCAV_N,SCAV_WIN,SCAV_PTS,GAME_HINT,RESET_HINT,RSV,COIN_START}=R;
+  isFirst,indiv,lab,cands,whyNotEnter,gapOf,teamStatus,teamOf,no,rstate,timeUp,rsvLeft,rsvOf,whyNotReserve,finalMiss,scavInfo,scavWhy,SCAV_CAP,SCAV_N,SCAV_WIN,SCAV_PTS,GAME_HINT,RESET_HINT,RSV,COIN_START}=R;
 
 let S=null, ME=null, CLOCK=null, OFFSET=0;
 // Developer mode: DEVME is the real (read-only) sign-in, FULL the full state; ME/S are swapped to the chosen viewpoint.
@@ -372,7 +372,7 @@ function viewWuchang(){
     +(wait.length?'<div class="mlist">'+wait.map(p=>'<div class="mrow">'+meta(p)+'<button class="btn-main glow" data-a="pickup" data-p="'+p.id+'">接到了</button></div>').join('')+'</div>':'<div class="empty">现在没有人需要接。</div>')+'</section>';
   const right='<section class="mcol"><div class="shrow"><h2 class="sh">送入鬼市 / 确认</h2><span class="hint">已接到的人送去鬼市；孟婆已登记的人在这里确认</span></div>'
     +(go.length?'<div class="mlist">'+go.map(p=>'<div class="mrow ok">'+meta(p)+(p.chk&&!p.chk.ok?chkBit(p):'<button class="btn-main glow" data-a="checkin" data-p="'+p.id+'">送入鬼市</button>')+'</div>').join('')+'</div>':'<div class="empty">没有需要送入或确认的人。</div>')+'</section>';
-  return '<div class="page mkt eq wuchang-layout">'+left+'<div class="wc-mask" aria-hidden="true"><img src="img/mask-tongue.webp" alt=""></div>'+right+'</div>';
+  return '<div class="page mkt eq wuchang-layout">'+left+'<div class="wc-mask" aria-hidden="true"><div class="wc-in"><img src="img/mask-tongue.webp" alt=""></div></div>'+right+'</div>';
 }
 
 // ---------- 生死簿 ----------
@@ -635,7 +635,17 @@ function rsvDlg(){
   return '<div class="sheet"><div class="sheet-bg" data-a="rsvclose"></div><div class="sheet-card pn" role="dialog" aria-modal="true"><h3>现在不能预约 '+cardG(r)+'</h3>'+body
     +'<div class="btns"><button class="btn-main" data-a="rsvclose">知道了</button></div></div></div>';
 }
+// 时间到：全员（含工作人员、大屏）全屏提示；按总时长记住已点过，刷新不再重复弹。
+const tuKey=()=>'borderland.tu.'+((S&&S.dur)||7200);
+const tuSeen=()=>{try{return sessionStorage.getItem(tuKey())==='1';}catch{return !!ui.tuAck;}};
+function tuDlg(){
+  return '<div class="ovl" data-k="time"><div class="dlg" data-n="timeup" data-k="time" role="dialog" aria-modal="true" aria-labelledby="dt"><div class="new"><i></i>全场通知</div>'
+    +'<h3 id="dt">时间到</h3><div class="body">游戏总时间已用完。\n各房间暂停预约与入场；已经在房间里的队伍可以继续打完当前一局，结算和重置照常进行。</div>'
+    +'<div class="foot"><span class="cap">剩余时间</span><span class="cd over">0:00:00</span></div>'
+    +'<button data-a="tuack" data-modal="1">知道了</button></div></div>';
+}
 function modalHtml(){
+  if(ME&&S&&!entering&&R.timeUp()&&!tuSeen())return tuDlg();
   if(ME&&ME.role==='player'&&S&&ui.rsvInfo)return rsvDlg();
   if(!ME||ME.role!=='player'||!S)return '';
   const me=S.players.find(p=>p.id===ME.pid);
@@ -682,12 +692,12 @@ function setAmb(mode,tone){
     $('#amb').innerHTML=mode?'<ghost-ambience data-mode="'+mode+'"'+(mode==='login'?' data-len="0" data-err="0" data-ok="0"':'')+'></ghost-ambience>':'';}
   const g=$('#amb ghost-ambience');if(g&&tone&&g.dataset.tone!==tone)g.dataset.tone=tone;}
 const THEME_KEY=r=>'borderland.theme.'+r;
-// Three remembered choices per device: big screen (default dark), player page and staff pages (default light).
+// Three remembered choices per device (big screen, player page, staff pages); all default to dark on first open.
 const themeKey=()=>ui.tab==='board'?'screen':ME&&ME.role==='player'?'player':'staff';
 // 被淘汰、已被接到或在鬼市：整页红色提示，强制深色
 const inMarketNow=()=>{const p=ME&&ME.role==='player'&&S&&S.players.find(x=>x.id===ME.pid);return !!(p&&p.st!=='alive');};
 function themeFor(){const r=themeKey();if(ME&&(ME.role==='mengpo'||ME.role==='wuchang'))return 'dark';if(r==='player'&&inMarketNow())return 'dark';let v=null;try{v=localStorage.getItem(THEME_KEY(r));}catch{/* private mode */}
-  return v||(r==='screen'?'dark':'light');}
+  return v||'dark';}
 const themed=()=>true;
 
 function render(){
@@ -708,7 +718,7 @@ function render(){
   document.documentElement.dataset.theme=themed()?themeFor():'light';
   document.body.classList.toggle('board',ui.tab==='board');
   document.body.classList.toggle('inmk',ME.role==='player'&&inMarketNow());
-  document.body.classList.toggle('natscroll',ui.tab==='market'||(ui.tab==='player'&&ME&&ME.role==='player'));
+  document.body.classList.toggle('natscroll',ui.tab==='market'||ui.tab==='wuchang'||(ui.tab==='player'&&ME&&ME.role==='player'));
   // Staff and player pages: the big screen's full-window background on computers, and on phones in dark mode;
   // flames and eyes only show where no panel covers them (data-free). Phones in light mode keep the header strip.
   const userTab=['dealer','npc','market','wuchang','ctrl','player'].includes(ui.tab),tone=themeFor(),full=userTab&&(innerWidth>=720||tone==='dark');
@@ -734,6 +744,12 @@ function render(){
   R.use(S);S.t=nowT();$('#clk').textContent=fmt(S.t);
   morph($('#view'),ui.tab==='board'?viewBoard():ui.tab==='dealer'?viewDealer():ui.tab==='ctrl'?viewCtrl():ui.tab==='npc'?viewNpc():ui.tab==='market'?viewMarket():ui.tab==='wuchang'?viewWuchang():viewPlayer());
   fitStage();
+  { // 灯笼 / 面具的绳子接到页头那条线：算出它们离页头底边的距离（有标签栏时不上提，免得盖住标签）
+    const root=document.documentElement,hb=$('#top').getBoundingClientRect().bottom;
+    const lb=$('.lantern-band');if(lb){const cur=parseFloat(root.style.getPropertyValue('--lup'))||0,nat=lb.getBoundingClientRect().top+cur;
+      root.style.setProperty('--lup',(nav.hidden?Math.max(0,Math.round(nat-hb)):0)+'px');}
+    const wm=$('.wc-in');if(wm){const top=wm.getBoundingClientRect().top;root.style.setProperty('--wup',Math.max(0,Math.round(top-hb))+'px');}
+  }
   const had=!!$('#modal .dlg');morph($('#modal'),modalHtml());
   const mb=$('#modal button');if(mb&&!had)mb.focus();
   const dlg=$('#modal .dlg'),mk=dlg?dlg.dataset.n:null;
@@ -944,6 +960,7 @@ document.addEventListener('click',e=>{
   else if(a==='setcap'){send({type:'setcap',tid:b.dataset.t,pid:v});}
   else if(a==='setdur'){send({type:'setdur',secs:Math.round((+ui.admin.dur||0)*60)},()=>{ui.admin.dur='';});}
   else if(a==='assign'){send({type:'assign'});}
+  else if(a==='tuack'){ui.tuAck=true;try{sessionStorage.setItem(tuKey(),'1');}catch{/* ignore */}}
   else if(a==='ack'&&DEVME&&!ui.devOps){ui.devAck.add(b.dataset.n+':'+ME.pid);}
   else if(a==='ack'){const nid=+b.dataset.n,n=S&&S.notices.find(x=>x.id===nid);
     if(n&&ME.pid&&!n.acks[ME.pid])n.acks[ME.pid]=S.t; // show the next notice right away; the server confirms

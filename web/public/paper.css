@@ -31,7 +31,6 @@
 
 
 body{background-image:var(--grain),var(--tex,none);background-size:cover,auto;background-repeat:no-repeat,no-repeat;background-attachment:fixed,scroll;background-blend-mode:multiply,normal}
-body.board,body.screen{background-image:var(--tex,none)}
 /* 大面板只加一层很淡的纸纹，不改形状 */
 .pn:not(.dash),.hero,.tcard,.mate,.note,.mini,.room,.rt,.fc,.fhd{background-image:var(--grain);background-size:cover;background-repeat:no-repeat;background-blend-mode:multiply}
 .stage .room,.stage .rt{background-image:none}

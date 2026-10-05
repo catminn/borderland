@@ -225,3 +225,12 @@ npm run dev:pages                             # 正式部署的路径（Pages+Wo
 - 登录页永不出现滚动条（`html:has(body.login)` 与 `body.login` 均 `overflow:hidden`；手机登录页不再整页滚动，娃娃下半身被裁）。盖章放大曾短暂撑出滚动条，`.okv` 加了 `overflow:hidden`。
 - 盖章图 `img/seal-paper.webp` 改成真透明（黑→alpha），去掉 `mix-blend-mode`；盖章时 `.lg.sealing` 把表单淡出，不再有黑底矩形。盖章停留 2.6→4.8 秒。
 - `login()` 在 `localStart()/connect()` 之前先置 `entering=true`：本地展示模式会同步渲染，之前会在盖章出现前就切走页面。
+
+## 7.11 第四轮（2026-10-05 晚）
+
+- **大屏背景 = 工作人员页背景**（删了 paper.css 里 `body.board/.screen` 的特例）：深色黑底无纹理，浅色纸纹。**所有页面首次打开默认深色**（`themeFor` 默认 `dark`，已存过的选择不变）。
+- **手机大屏**：排名只显示队名（去队伍图标、「存活」、燃香进度条），花色 18px；房间卡字号与玩家页一致（`.rs/.idle/.on` 13px）。
+- **时间到**（`R.timeUp()` = `S.t >= S.dur`）：`whyNotReserve`/`whyNotEnter` 返回「时间到，暂停预约/入场」；已在房间里的队伍照常结算、重置。全员（含工作人员、大屏）弹全屏「时间到」（`tuDlg`，`data-k="time"`，点「知道了」后 sessionStorage 按总时长记住）。总控把总时长调大则不再触发。
+- **黑白无常页**：面具放大（中栏 1.3fr，高度随视口），上方两根绳子用 `.wc-in::before/::after` 向上画到页头那条线（`--wup` 由 `render()` 末尾计算）；页面改用整页滚动（`natscroll`）。
+- **鬼市灯笼**：`lantern-dark/light.webp` 重做：每盏灯笼单独抠出，挂在最上面一条直线上，垂直细绳长短不一；整条放大（`clamp(900px,78vw,1400px)`，手机 300vw 从最左截取）；无标签栏的角色（孟婆、玩家在鬼市）整条上提，直接挂在页头那条线下（`--lup`）。总控有标签栏时不上提，免得盖住标签。
+- 坑：改 style.css 时不要用「截断后重写」的脚本（这次丢过末尾追加的块，已补回）。
