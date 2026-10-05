@@ -75,8 +75,10 @@ const timeUp=()=>S.t>=(S.dur||DUR0);
 
 function matches(n,p){
   switch(n.target){case 'all':return true;case 'team':return n.ids.includes(p.team);case 'player':return n.ids.includes(p.id);
-  case 'market':return p.st==='market';case 'alive':return p.st==='alive';}return false;}
-function targetLabel(n){return n.target==='all'?'全体玩家':n.target==='team'?team(n.ids[0]).name:n.target==='player'?(n.ids.length<=4?n.ids.join('、'):n.ids.slice(0,3).join('、')+' 等 '+n.ids.length+' 人'):n.target==='market'?'鬼市中的人':'存活玩家';}
+  case 'market':return p.st==='market';case 'alive':return p.st==='alive';case 'everyone':return true;}return false;}
+// 工作人员能看到的公告：发给「工作人员」或「所有人」的（工作人员没有个人编号，已读只记在本机）
+const staffSees=n=>n.target==='staff'||n.target==='everyone';
+function targetLabel(n){return n.target==='all'?'全体玩家':n.target==='team'?team(n.ids[0]).name:n.target==='player'?(n.ids.length<=4?n.ids.join('、'):n.ids.slice(0,3).join('、')+' 等 '+n.ids.length+' 人'):n.target==='market'?'鬼市中的人':n.target==='staff'?'全体工作人员':n.target==='everyone'?'所有人（玩家 + 工作人员）':'存活玩家';}
 const rewardTxt=n=>n.reward?'+'+n.reward+' 冥币':'';
 const teamOf=id=>id.includes('-')?id.split('-')[0]:id;
 const kindLabel=n=>n.kind==='任务'?(n.sub==='side'?'Scavenger Hunt':n.sub==='custom'?'自定义任务':'鬼门开'):n.kind;
@@ -103,7 +105,8 @@ function publish(f){f=f||{};const str=(v,n)=>String(v==null?'':v).slice(0,n);f={
     if(S.gp)return no('鬼门开正在进行，先结束上一轮');
     target='all';mode='first';sub='gate';reward=0;
   }else{
-    if(!['all','team','player','alive','market'].includes(target))return no('发布对象不对');
+    if(!['all','team','player','alive','market','staff','everyone'].includes(target))return no('发布对象不对');
+    if((target==='staff'||target==='everyone')&&f.kind!=='公告')return no('只有公告能发给工作人员');
     if(!f.title.trim())return no('先写标题');
     if(target==='team'){if(!team(f.team))return no('先选队伍');ids=[f.team];}
     if(f.kind==='custom'){sub='custom';mode='each';reward=Math.max(0,Math.min(5000,Math.round(+f.reward||0)));}
@@ -112,7 +115,7 @@ function publish(f){f=f||{};const str=(v,n)=>String(v==null?'':v).slice(0,n);f={
   pushNotice({kind:f.kind==='公告'?'公告':'任务',sub,title:f.title.trim(),body:f.body.trim(),target,ids,mins:Math.max(0,+f.mins||0),mode,reward,q:qid});
   const n=S.notices[0];
   if(sub==='gate'){S.gp={nid:n.id,win:null,res:false};log('鬼门开：各房间暂停开放（已开始的可打完当前一局），结束后恢复','hook');}log('判官发布'+kindLabel(n)+'「'+n.title+'」→ '+targetLabel(n));
-  return ok('已发布给 '+targetLabel(n)+'，共 '+S.players.filter(p=>matches(n,p)).length+' 人');}
+  return ok('已发布给 '+targetLabel(n)+'，共 '+S.players.filter(p=>matches(n,p)).length+' 名玩家'+(staffSees(n)?' + 全体工作人员':''));}
 // 判官直接兑换一道 Scavenger Hunt：发布给该队并立即记完成（+100，受额度限制）。题库没有的题可自定义。
 function scavRedeem(tid,qid,title,body){
   if(!team(tid))return no('先选队伍');
@@ -451,4 +454,4 @@ export function viewFor(state,me){
     teams:state.teams.map(t=>p&&t.id===p.team?t:{...t,skills:[],hist:[]})};
 }
 
-export {timeUp,needsReset,rstate,rsvLeft,rsvOf,whyNotReserve,reserve,cancelRsv,resetDone,gateReward,gateEnd,scavInfo,scavWhy,finalMiss,RSV,GAME_HINT,RESET_HINT,SCAV_PTS,SCAV_WIN,SCAV_N,SCAV_CAP,COIN_START,CARRY_MAX,DUR0,size,COIN_GOAL,FEATURES,FINAL_MSG,FINAL_SCORE,MIN_STAY,PER_TEAM,PROTECT,QUESTS,GATES,RATE,ROOMS,ROLE_LABEL,SHOP0,SUITS,TEAMS,ack,addCard,alive,buyCard,cands,donate,eliminate,enterRoom,esc,finishRoom,fmt,gapOf,hook,inMarket,indiv,init,isBcast,isFirst,kindLabel,lab,log,markDone,matches,no,ok,protectedLeft,publish,pushNotice,revive,revokeNotice,rewardTxt,room,seed,setScore,targetLabel,tcol,team,teamOf,teamStatus,unmarkDone,useCard,whyNotEnter};
+export {staffSees,timeUp,needsReset,rstate,rsvLeft,rsvOf,whyNotReserve,reserve,cancelRsv,resetDone,gateReward,gateEnd,scavInfo,scavWhy,finalMiss,RSV,GAME_HINT,RESET_HINT,SCAV_PTS,SCAV_WIN,SCAV_N,SCAV_CAP,COIN_START,CARRY_MAX,DUR0,size,COIN_GOAL,FEATURES,FINAL_MSG,FINAL_SCORE,MIN_STAY,PER_TEAM,PROTECT,QUESTS,GATES,RATE,ROOMS,ROLE_LABEL,SHOP0,SUITS,TEAMS,ack,addCard,alive,buyCard,cands,donate,eliminate,enterRoom,esc,finishRoom,fmt,gapOf,hook,inMarket,indiv,init,isBcast,isFirst,kindLabel,lab,log,markDone,matches,no,ok,protectedLeft,publish,pushNotice,revive,revokeNotice,rewardTxt,room,seed,setScore,targetLabel,tcol,team,teamOf,teamStatus,unmarkDone,useCard,whyNotEnter};

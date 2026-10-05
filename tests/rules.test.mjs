@@ -67,4 +67,12 @@ T('ctrl forces final', ap('ctrl', { type: 'final', tid: t.id, on: true }).ok && 
   const e2 = R.apply(G, { role: 'ctrl' }, { type: 'enter', tid: 'B', rid: '8S' });
   T('time up: reserve and enter refused, team already inside stays', e1.ok && !r1.ok && /时间到/.test(r1.msg) && !e2.ok && /时间到/.test(e2.msg) && G.teams.find(t => t.id === 'R').inRoom === '4S' && R.timeUp());
 }
+{ // 公告可发给工作人员 / 所有人
+  const G = R.newGame(false); R.use(G); G.t = 10; const C = a => R.apply(G, { role: 'ctrl' }, a);
+  const a = C({ type: 'publish', f: { kind: '公告', target: 'staff', title: '工作人员集合', body: 'x' } });
+  const b = C({ type: 'publish', f: { kind: '公告', target: 'everyone', title: '全员通知', body: 'y' } });
+  const c = C({ type: 'publish', f: { kind: 'custom', target: 'staff', title: '不行', body: 'z' } });
+  const pv = R.viewFor(G, { role: 'player', pid: 'R-02' });
+  T('announce to staff / everyone', a.ok && b.ok && !c.ok && pv.notices.some(n => n.title === '全员通知') && !pv.notices.some(n => n.title === '工作人员集合') && R.staffSees(G.notices[0]) && R.staffSees(G.notices[1]));
+}
 console.log(bad ? bad + ' FAILED' : 'RULES PASSED'); process.exit(bad ? 1 : 0);
