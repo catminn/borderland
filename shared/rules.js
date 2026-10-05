@@ -15,8 +15,8 @@ const ROOMS=[
   {id:'6D',card:'6♦',suit:'♦',n:6,name:'符咒密码',two:false,rule:'倒计时内从真假 clue 里破解密码锁。'},
   {id:'3C',card:'3♣',suit:'♣',n:3,name:'冥界传话',two:false,rule:'Relay Drawing，一路画下去，最后一人猜。'},
   {id:'5C',card:'5♣',suit:'♣',n:5,name:'心有灵犀',two:false,rule:'队伍分两组背对背答相同问题，答对越多越好。'},
-  {id:'5H',card:'5♥',suit:'♥',n:5,name:'少数派',two:true,rule:'两队同场，每轮匿名选红 / 黑，少数派得分，可 bluff。'},
-  {id:'7H',card:'7♥',suit:'♥',n:7,name:'孟婆的交易',two:true,rule:'两队秘密选「合作 / 背叛」。双合作都小赢，一方背叛独赢，双背叛都输。'}];
+  {id:'5H',card:'5♥',suit:'♥',n:5,name:'少数派',two:false,rule:'每轮匿名选红 / 黑，少数派得分，可 bluff。'},
+  {id:'7H',card:'7♥',suit:'♥',n:7,name:'孟婆的交易',two:false,rule:'玩法待定（原双队对抗，已取消双队）。'}];
 const SUITS=['♠','♦','♣','♥'];
 // 技能卡机制暂时关闭（2026-10-04）：代码保留，把 cards 改成 true 即可重新打开。
 const FEATURES={cards:false};
@@ -41,6 +41,7 @@ const isBcast=l=>BCAST.some(re=>re.test(l.text));
 
 // Player states: alive 在场 · out 刚淘汰，原地等黑白无常 · picked 已被黑白无常接到 · market 已登记进鬼市（计时、领 300 冥币）
 const team=id=>S.teams.find(t=>t.id===id), room=id=>ROOMS.find(r=>r.id===id);
+const size=t=>S.players.filter(p=>p.team===t).length;
 const alive=t=>S.players.filter(p=>p.team===t&&p.st==='alive');
 const inMarket=t=>S.players.filter(p=>p.team===t&&p.st==='market');
 const fmt=s=>'T+'+String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
@@ -135,7 +136,7 @@ function whyNotEnter(tid,rid){
   if(st.teams.length>=(r.two?2:1))return '房间已满';
   if(t.inRoom)return '正在 '+room(t.inRoom).card;
   if(t.played.includes(r.card))return '已打过';
-  if(alive(tid).length<PER_TEAM)return '未满员 '+alive(tid).length+'/'+PER_TEAM;
+  if(alive(tid).length<size(tid))return '未满员 '+alive(tid).length+'/'+size(tid);
   return null;
 }
 function enterRoom(tid,rid){
@@ -246,9 +247,9 @@ function teamStatus(t){
   if(t.final)return {k:'free',txt:'终极任务中'};
   const missing=SUITS.filter(s=>!t.cards.some(c=>c.includes(s)));
   const a=alive(t.id).length;
-  if(!missing.length&&a>=PER_TEAM&&t.score>=FINAL_SCORE)return {k:'free',txt:'可进终极'};
-  const bits=[]; if(missing.length)bits.push('缺 '+missing.join('')); if(a<PER_TEAM)bits.push('存活 '+a+'/'+PER_TEAM); if(t.score<FINAL_SCORE)bits.push('积分 '+t.score+'/'+FINAL_SCORE);
-  return {k:a<PER_TEAM?'bad':'busy',txt:bits.join('，')};
+  if(!missing.length&&a>=size(t.id)&&t.score>=FINAL_SCORE)return {k:'free',txt:'可进终极'};
+  const bits=[]; if(missing.length)bits.push('缺 '+missing.join('')); if(a<size(t.id))bits.push('存活 '+a+'/'+size(t.id)); if(t.score<FINAL_SCORE)bits.push('积分 '+t.score+'/'+FINAL_SCORE);
+  return {k:a<size(t.id)?'bad':'busy',txt:bits.join('，')};
 }
 
 
@@ -325,4 +326,4 @@ export function viewFor(state,me){
     teams:state.teams.map(t=>p&&t.id===p.team?t:{...t,skills:[]})};
 }
 
-export {COIN_GOAL,FEATURES,FINAL_MSG,FINAL_SCORE,MIN_STAY,PER_TEAM,PROTECT,QUESTS,RATE,ROOMS,ROLE_LABEL,SHOP0,SUITS,TEAMS,ack,addCard,alive,buyCard,cands,donate,eliminate,enterRoom,esc,finishRoom,fmt,gapOf,hook,inMarket,indiv,init,isBcast,isFirst,kindLabel,lab,log,markDone,matches,no,ok,protectedLeft,publish,pushNotice,revive,revokeNotice,rewardTxt,room,seed,setScore,targetLabel,tcol,team,teamOf,teamStatus,unmarkDone,useCard,whyNotEnter};
+export {size,COIN_GOAL,FEATURES,FINAL_MSG,FINAL_SCORE,MIN_STAY,PER_TEAM,PROTECT,QUESTS,RATE,ROOMS,ROLE_LABEL,SHOP0,SUITS,TEAMS,ack,addCard,alive,buyCard,cands,donate,eliminate,enterRoom,esc,finishRoom,fmt,gapOf,hook,inMarket,indiv,init,isBcast,isFirst,kindLabel,lab,log,markDone,matches,no,ok,protectedLeft,publish,pushNotice,revive,revokeNotice,rewardTxt,room,seed,setScore,targetLabel,tcol,team,teamOf,teamStatus,unmarkDone,useCard,whyNotEnter};

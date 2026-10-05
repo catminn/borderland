@@ -2,7 +2,7 @@
 // The server owns the game state; this page signs in with a PIN, keeps a live WebSocket, renders the pages
 // for the signed-in role, and sends actions. Rule helpers come from rules.js (same file the server runs).
 import * as R from './rules.js';
-const {ROOMS,SUITS,RATE,PER_TEAM,MIN_STAY,COIN_GOAL,FINAL_SCORE,FINAL_MSG,QUESTS,FEATURES,team,room,alive,inMarket,fmt,protectedLeft,esc,matches,targetLabel,
+const {size,ROOMS,SUITS,RATE,PER_TEAM,MIN_STAY,COIN_GOAL,FINAL_SCORE,FINAL_MSG,QUESTS,FEATURES,team,room,alive,inMarket,fmt,protectedLeft,esc,matches,targetLabel,
   isFirst,indiv,lab,cands,whyNotEnter,gapOf,teamStatus,teamOf,no}=R;
 
 let S=null, ME=null, CLOCK=null, OFFSET=0;
@@ -160,7 +160,7 @@ function viewDealer(){
   if(ts.length<cap){
     if(ui.pick&&(ts.includes(ui.pick)||whyNotEnter(ui.pick,r.id)))ui.pick='';
     const btns=S.teams.filter(t=>!ts.includes(t.id)).map(t=>{const w=whyNotEnter(t.id,r.id);
-      return cb({cls:'big',k:'pick',v:t.id,on:ui.pick===t.id,off:!!w,c:w?'var(--line2)':TC[t.id][0],label:t.name,small:w||'存活 '+alive(t.id).length+'/'+PER_TEAM});}).join('');
+      return cb({cls:'big',k:'pick',v:t.id,on:ui.pick===t.id,off:!!w,c:w?'var(--line2)':TC[t.id][0],label:t.name,small:w||'存活 '+alive(t.id).length+'/'+size(t.id)});}).join('');
     entry='<div class="chips c2">'+btns+'</div><button class="btn-main" data-a="enter"'+(ui.pick?'':' disabled')+'>'+(ui.pick?'放行 '+team(ui.pick).name+' 入场':'先选择可入场的队伍')+'</button>';
   }else entry='<div class="empty">房间已满，结算后再放行</div>';
   const info='<div class="pn" style="gap:14px"><h2 class="sh">规则与入场</h2><div class="rule">'+r.rule+'</div>'
@@ -303,17 +303,14 @@ function cardsPanel(mk){
 
 // ---------- 黑白无常 ----------
 function viewWuchang(){
-  const wait=S.players.filter(p=>p.st==='out'||p.st==='picked').sort((a,b)=>a.outAt-b.outAt);
-  const need=S.players.filter(p=>p.st==='market'&&p.chk&&!p.chk.ok).sort((a,b)=>a.inAt-b.inAt);
-  const row=p=>'<div class="mrow'+(p.st==='picked'?' ok':'')+'"><div class="l1"><span class="id">'+p.id+'</span>'+tchip(p.team)
-    +'<span class="stay">淘汰位置：<b>'+esc(p.at||'未记录')+'</b></span><span class="stay">已等 <b class="mono">'+mm(S.t-p.outAt)+'</b></span></div>'
-    +(p.st==='out'?'<button class="btn-main glow" data-a="pickup" data-p="'+p.id+'">接到了</button>'
-      :'<div class="l1"><span class="chk ok">已接到</span></div><button class="btn-main glow" data-a="checkin" data-p="'+p.id+'">送入鬼市</button>')+'</div>';
-  const left='<section class="mcol"><div class="shrow"><h2 class="sh">待接的人</h2><span class="hint">谁在哪里被淘汰了；接到后点「接到了」，送到鬼市后点「送入鬼市」</span></div>'
-    +(wait.length?'<div class="mlist">'+wait.map(row).join('')+'</div>':'<div class="empty">现在没有人需要接。</div>')+'</section>';
-  const right='<section class="mcol"><div class="shrow"><h2 class="sh">待你确认</h2><span class="hint">孟婆已登记入鬼市的人</span></div>'
-    +(need.length?'<div class="mlist">'+need.map(p=>'<div class="mrow"><div class="l1"><span class="id">'+p.id+'</span>'+tchip(p.team)+chkBit(p)+'</div></div>').join('')+'</div>':'<div class="empty">没有待确认的登记。</div>')+'</section>';
-  return '<div class="page mkt">'+left+right+'</div>';
+  const meta=p=>'<div class="l1"><span class="id">'+p.id+'</span>'+tchip(p.team)+'<span class="stay">淘汰位置：<b>'+esc(p.at||'未记录')+'</b></span><span class="stay">已等 <b class="mono">'+mm(S.t-(p.outAt||S.t))+'</b></span></div>';
+  const wait=S.players.filter(p=>p.st==='out').sort((a,b)=>a.outAt-b.outAt);
+  const go=S.players.filter(p=>p.st==='picked'||(p.st==='market'&&p.chk&&!p.chk.ok&&p.chk.by==='mengpo')).sort((a,b)=>(a.outAt||0)-(b.outAt||0));
+  const left='<section class="mcol"><div class="shrow"><h2 class="sh">待接的人</h2><span class="hint">谁在哪里被淘汰了；接到后点「接到了」</span></div>'
+    +(wait.length?'<div class="mlist">'+wait.map(p=>'<div class="mrow">'+meta(p)+'<button class="btn-main glow" data-a="pickup" data-p="'+p.id+'">接到了</button></div>').join('')+'</div>':'<div class="empty">现在没有人需要接。</div>')+'</section>';
+  const right='<section class="mcol"><div class="shrow"><h2 class="sh">送入鬼市 / 确认</h2><span class="hint">已接到的人送去鬼市；孟婆已登记的人在这里确认</span></div>'
+    +(go.length?'<div class="mlist">'+go.map(p=>'<div class="mrow ok">'+meta(p)+(p.st==='picked'?'<button class="btn-main glow" data-a="checkin" data-p="'+p.id+'">送入鬼市</button>':'<div class="l1"><span class="chk wait">孟婆已登记</span></div><button class="btn-main glow" data-a="confirmin" data-p="'+p.id+'">确认入鬼市</button>')+'</div>').join('')+'</div>':'<div class="empty">没有需要送入或确认的人。</div>')+'</section>';
+  return '<div class="page mkt eq">'+left+right+'</div>';
 }
 
 // ---------- 生死簿 ----------
@@ -337,10 +334,10 @@ function teamRows(){
     const fin='<span class="pill '+(st.k==='free'?'free':st.k==='bad'?'bad':'')+'">'+st.txt+'</span>'+(t.final?'<button class="btn-line" data-a="final" data-v="'+t.id+'" data-off="1">取消终极任务</button>':st.k==='free'?'<button class="btn-line fill" data-a="final" data-v="'+t.id+'">开启终极任务</button>':'');
     return {t,a,dots,sq,sk,fin,det};});
   const tbl='<div class="tbl"><div class="tr th"><span>队伍</span><span>存活</span><span>冥币</span><span>四色花色</span><span>'+(FEATURES.cards?'技能卡':'淘汰状态')+'</span><span>终极</span></div>'
-    +parts.map(({t,a,dots,sq,sk,fin,det})=>'<div class="trg" style="'+tv(t.id)+'"><div class="tr"><span class="tn">'+tsq(t.id)+t.name+'</span><span class="dots">'+dots+'<span class="mono" style="font-weight:700;font-size:14px;margin-left:6px">'+a+'/'+PER_TEAM+'</span></span>'
+    +parts.map(({t,a,dots,sq,sk,fin,det})=>'<div class="trg" style="'+tv(t.id)+'"><div class="tr"><span class="tn">'+tsq(t.id)+t.name+'</span><span class="dots">'+dots+'<span class="mono" style="font-weight:700;font-size:14px;margin-left:6px">'+a+'/'+size(t.id)+'</span></span>'
       +'<span class="cn">'+t.score+'</span><span class="sqs">'+sq+'</span><span class="tags">'+sk+'</span><span>'+fin+'</span></div>'+(det?'<div class="skdrow">'+det+'</div>':'')+'</div>').join('')+'</div>';
   const cards='<div class="tcards">'+parts.map(({t,a,dots,sq,sk,fin,det})=>'<div class="tcard" style="'+tv(t.id)+'"><div class="r">'+tsq(t.id,32)+'<b style="font-size:18px">'+t.name+'</b><span class="cn">'+t.score+'</span></div>'
-    +'<div class="r dots">'+dots+'<span class="small" style="margin-left:4px">存活 <span class="mono" style="color:var(--ink)">'+a+'/'+PER_TEAM+'</span></span></div>'
+    +'<div class="r dots">'+dots+'<span class="small" style="margin-left:4px">存活 <span class="mono" style="color:var(--ink)">'+a+'/'+size(t.id)+'</span></span></div>'
     +'<div class="r"><span class="sqs">'+sq+'</span><span style="margin-left:auto">'+fin+'</span></div><div class="tags">'+sk+'</div>'+det+'</div>').join('')+'</div>';
   return tbl+cards;
 }
@@ -379,7 +376,7 @@ function pubPanel(){
       +(f.target==='player'?'<div class="fld"><span>选择队员（可多选）</span>'+dd('pub.players',pl.length?pl.length+' 人':'','选择队员',null,S.teams.flatMap(t=>[{group:t.name},...S.players.filter(p=>p.team===t.id).map(p=>({v:p.id,label:p.id,c:TC[t.id][0],note:p.st==='alive'?'':'已淘汰'}))]),true)
         +(pl.length?'<div class="selchips">'+pl.map(id=>'<button class="selchip" data-a="unpick" data-k="pub.players" data-v="'+id+'" aria-label="去掉 '+id+'"><span class="sw" style="--c:'+TC[teamOf(id)][0]+'"></span>'+id+'<b>×</b></button>').join('')+'</div>':'')+'</div>':'')+'</div>'
     :gate?'<span class="small">发给全场玩家，先到先得，被完成时全场播报。</span>'
-    :'<div class="fld"><span>发给哪个队伍（剩余人数少的排前面）</span><div class="chips c2">'+sqTeams.map(t=>cb({k:'pub.sqTeam',v:t.id,on:f.sqTeam===t.id,c:TC[t.id][0],label:t.name,small:'剩余 '+alive(t.id).length+'/'+PER_TEAM+' 人'})).join('')+'</div></div>'
+    :'<div class="fld"><span>发给哪个队伍（剩余人数少的排前面）</span><div class="chips c2">'+sqTeams.map(t=>cb({k:'pub.sqTeam',v:t.id,on:f.sqTeam===t.id,c:TC[t.id][0],label:t.name,small:'剩余 '+alive(t.id).length+'/'+size(t.id)+' 人'})).join('')+'</div></div>'
       +'<div class="fld"><span>题库</span><div class="chips c2">'+QUESTS.map(x=>cb({k:'pub.quest',v:x.id,on:f.quest===x.id,label:esc(x.title),small:'+'+x.reward+' 冥币'})).join('')+'</div></div>'
       +(q?'<div class="lot">'+esc(q.body)+'</div>':'');
   const form='<div class="pn" style="gap:14px">'
@@ -417,7 +414,7 @@ function adminPanel(){
     +'<span class="small" style="font-weight:700;color:'+(run?'var(--accent)':'var(--sub)')+'">'+(run?'● 计时中':'❚❚ 已暂停')+'</span></div>'
     +'<div class="pn"><h3>开局</h3><span class="small">8 队随机分到 8 个房间。只有还没有队伍进过房间时才能用。</span><div class="btns"><button class="btn-line acc" data-a="assign">开局随机分房</button></div></div>'
     +'<div class="pn"><div class="shrow"><h3>PIN</h3><span class="small">按数量补齐工作人员 PIN</span></div>'
-    +'<div class="cnts">'+num('dealer','Dealer（固定 8，一人一间）',1)+num('judge','判官')+num('mengpo','孟婆')+num('wuchang','黑白无常（固定 1）',1)+num('ctrl','总控')+num('screen','大屏')+'</div>'
+    +'<div class="cnts">'+num('dealer','Dealer（固定）',1)+num('judge','判官')+num('mengpo','孟婆')+num('wuchang','黑白无常（固定）',1)+num('ctrl','总控')+num('screen','大屏')+'</div>'
     +'<div class="btns"><button class="btn-line acc" data-a="adm-gen">生成 PIN</button><button class="btn-line" data-a="adm-pins">查看全部 PIN</button></div>'+pins+'</div></div>';
   const rs=A.resetTxt==='重置';
   const right='<div class="stack"><div class="pn"><h3>备份与恢复</h3><span class="small">每 10 次操作自动备份一次；重置、恢复、载入演示数据前都会先备份当前数据。</span>'
@@ -476,7 +473,7 @@ function viewPlayer(){
   const downN=S.players.filter(p=>p.team===t.id&&p.st!=='alive').length,sqOpen=S.notices.filter(n=>n.sub==='side'&&matches(n,me)&&!n.done[t.id]);
   const sqBox=downN?'<div class="sqbox"><b>队里有 '+downN+' 人被淘汰，暂时不能进房</b><span>'+(sqOpen.length?'去完成 sidequest 赚冥币，帮队友早点买命（见「任务」页）。':'等工作人员发布 sidequest，完成后赚冥币帮队友买命。')+'</span></div>':'';
   const teamSec=sqBox+'<div class="tsum"><div class="mini"><span class="cap">队伍冥币</span><span class="cv">'+t.score+'</span></div>'
-    +'<div class="mini" style="gap:8px"><span class="cap">存活 <span class="mono" style="font-weight:700;font-size:14px;color:var(--ink)">'+a+' / '+PER_TEAM+'</span></span><div class="dots">'+dots+'</div></div>'
+    +'<div class="mini" style="gap:8px"><span class="cap">存活 <span class="mono" style="font-weight:700;font-size:14px;color:var(--ink)">'+a+' / '+size(t.id)+'</span></span><div class="dots">'+dots+'</div></div>'
     +'<div class="mini frag"><span class="cap">四色花色</span><div class="suits4">'+suits+'</div>'+fin+'</div></div>'
     +'<div class="mobonly">'+(myRooms||'<div class="pn" style="padding:14px"><span class="muted">本队现在没有在任何房间里。</span></div>')+'</div>'
   ;const skillsPart=!FEATURES.cards?'':''

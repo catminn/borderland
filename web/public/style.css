@@ -932,3 +932,9 @@ body.inmk::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:6
 /* 生死簿：终极列里状态 + 按钮上下排 */
 .tbl .tr>span:last-child{display:flex;flex-direction:column;align-items:flex-start;gap:6px}
 .tbl .pill,.tcard .pill{white-space:normal;line-height:1.35;border-radius:12px;padding:3px 10px}
+
+.mkt.eq{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+@media (max-width:959px){.mkt.eq{grid-template-columns:minmax(0,1fr)}}
+.cnts{grid-template-columns:repeat(auto-fit,minmax(104px,1fr));align-items:end}
+.cnts .fld>span{white-space:nowrap}
+.cnts{grid-template-columns:repeat(3,minmax(0,1fr))}
