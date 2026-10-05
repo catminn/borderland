@@ -731,18 +731,45 @@ setInterval(()=>{if(!ws||!connected)return;
 // Send one action. `after` runs only if the server accepted it.
 function localNow(){return nowT();}
 function localStart(){
-  FULL=R.newGame(true);S=FULL;LOCAL=true;CLOCK={running:false,base:FULL.t,at:Date.now()};OFFSET=0;connected=true;setConn();requestRender();
+  FULL=R.newGame(true);S=FULL;LOCAL=true;LPINS={};LSNAPS=[];CLOCK={running:false,base:FULL.t,at:Date.now()};OFFSET=0;connected=true;setConn();requestRender();
+}
+const L_ROLES=['dealer','judge','mengpo','wuchang','ctrl','screen'],L_FIXED={dealer:8,wuchang:1};
+let LPINS={},LSNAPS=[];
+function lSnap(tag){LSNAPS.unshift({at:Date.now(),t:FULL.t,tag,S:JSON.parse(JSON.stringify(FULL)),clock:{...CLOCK}});LSNAPS=LSNAPS.slice(0,30);}
+function lPinList(){return Object.entries(LPINS).map(([pin,v])=>({pin,role:v.role,roleName:ROLE_NAME[v.role],pid:v.pid||'',label:v.label||'',rooms:v.rooms||null}))
+  .sort((x,y)=>(x.role==='player')-(y.role==='player')||(x.pid||x.label).localeCompare(y.pid||y.label,'zh'));}
+function lNewPin(){for(;;){const p=String(Math.floor(Math.random()*1000000)).padStart(6,'0');if(!LPINS[p])return p;}}
+// 本地展示：总控工具在浏览器里自己跑（PIN 只是演示，不能真的拿去登录）
+function localAdmin(a){
+  const ok=(msg,data)=>({ok:true,msg,data});R.use(FULL);
+  switch(a.type){
+    case 'admin.clock':
+      if(a.op==='start'&&!CLOCK.running){CLOCK={running:true,base:CLOCK.base,at:Date.now()};FULL.t=CLOCK.base;R.log('计时开始');}
+      else if(a.op==='pause'&&CLOCK.running){const n=nowT();CLOCK={running:false,base:n,at:Date.now()};FULL.t=n;R.log('计时暂停');}
+      else if(a.op==='set'){CLOCK={running:CLOCK.running,base:Math.max(0,Math.round(+a.sec)||0),at:Date.now()};}
+      else return no('计时状态没有变化');
+      return ok(CLOCK.running?'计时进行中':'计时已暂停');
+    case 'admin.reset':lSnap('重置前');FULL=R.newGame(!!a.demo);CLOCK={running:false,base:a.demo?FULL.t:0,at:Date.now()};return ok(a.demo?'已载入演示数据（计时暂停）':'已重置为空白游戏（计时暂停）');
+    case 'admin.genpins':{
+      const counts=a.counts||{};let made=0;const have=new Set(Object.values(LPINS).filter(v=>v.pid).map(v=>v.pid));
+      for(const p of FULL.players)if(!have.has(p.id)){LPINS[lNewPin()]={role:'player',pid:p.id,label:p.id};made++;}
+      for(const role of L_ROLES){const want=L_FIXED[role]!=null?L_FIXED[role]:Math.max(0,Math.min(30,Math.round(+counts[role])||0));
+        let n=Object.values(LPINS).filter(v=>v.role===role).length;
+        while(n<want){n++;LPINS[lNewPin()]={role,label:ROLE_NAME[role]+' '+n};made++;}}
+      Object.values(LPINS).filter(v=>v.role==='dealer').forEach((v,i)=>{v.rooms=i<ROOMS.length?[ROOMS[i].id]:[];v.label='Dealer '+(v.rooms.length?ROOMS[i].card:'未绑定');});
+      return ok('新生成 '+made+' 个 PIN，共 '+Object.keys(LPINS).length+' 个（本地演示，不能用来登录）',lPinList());}
+    case 'admin.pins':return ok('',lPinList());
+    case 'admin.resetpin':{const old=String(a.pin||''),v=LPINS[old];if(!v)return no('没有这个 PIN');const np=lNewPin();delete LPINS[old];LPINS[np]=v;return ok((v.pid||v.label)+' 的新 PIN：'+np,lPinList());}
+    case 'admin.snaps':return ok('',LSNAPS.map(x=>({key:'l'+x.at,at:x.at,t:x.t,tag:x.tag})));
+    case 'admin.restore':{const x=LSNAPS.find(y=>'l'+y.at===String(a.key));if(!x)return no('找不到这个备份');lSnap('恢复前');
+      FULL=JSON.parse(JSON.stringify(x.S));CLOCK={running:false,base:x.t,at:Date.now()};R.use(FULL);return ok('已恢复到备份（计时暂停，确认无误后再开始）');}
+  }
+  return no('未知的管理操作');
 }
 function localSend(a,after,quiet){
   if(!ui.devOps){say(no('展示模式现在是只读'));return;}
   let r;const t=a.type||'';
-  if(t==='admin.clock'){
-    R.use(FULL);
-    if(a.op==='start'&&!CLOCK.running){CLOCK={running:true,base:CLOCK.base,at:Date.now()};FULL.t=CLOCK.base;R.log('计时开始');r={ok:true,msg:'计时进行中'};}
-    else if(a.op==='pause'&&CLOCK.running){const n=nowT();CLOCK={running:false,base:n,at:Date.now()};FULL.t=n;R.log('计时暂停');r={ok:true,msg:'计时已暂停'};}
-    else r=no('计时状态没有变化');
-  }else if(t==='admin.reset'){FULL=R.newGame(!!a.demo);CLOCK={running:false,base:a.demo?FULL.t:0,at:Date.now()};r={ok:true,msg:'本地演示已重置'};}
-  else if(t.startsWith('admin.'))r=no('本地展示模式不能用这个总控工具');
+  if(t.startsWith('admin.'))r=ME.role==='ctrl'?localAdmin(a):no('只有总控视角能用总控工具');
   else{FULL.t=nowT();r=R.apply(FULL,{role:ME.role,pid:ME.pid,label:ME.label,rooms:null},a);}
   S=ME.role==='player'?R.viewFor(FULL,ME):FULL;
   if(!quiet||!r.ok)say(r);if(r.ok&&after)after(r);requestRender();
