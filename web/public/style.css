@@ -941,3 +941,15 @@ body.inmk::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:6
 
 /* Team status table without the disabled skill-card column. */
 .tbl.no-skills .tr{grid-template-columns:minmax(110px,.8fr) minmax(150px,1.2fr) minmax(80px,.6fr) minmax(130px,1fr) minmax(150px,1fr)}
+.wen[data-st="market"]{--accent:var(--red);--wframe:var(--red);--whair:var(--red);background:var(--red-soft);border-color:var(--red);color:var(--red-ink)}
+.wen[data-st="market"] .w-title b,.wen[data-st="market"] .w-id,.wen[data-st="market"] .w-team{color:var(--red-ink)}
+.wen[data-st="market"] .w-k,.wen[data-st="market"] .w-title span,.wen[data-st="market"] .w-lab{color:var(--red-ink);opacity:.8}
+.wen .w-lab b{font-weight:800;color:inherit;opacity:1}
+.wen[data-st="market"] .w-hint{color:var(--red)}
+
+.stage .bcol.mine{background:color-mix(in srgb,var(--c) 14%,transparent);box-shadow:0 0 0 3px var(--c),0 0 28px color-mix(in srgb,var(--c) 55%,transparent);border-radius:14px}
+.stage .bcol .nm .me{font-style:normal;font-size:16px;font-weight:900;padding:2px 8px;border-radius:6px;background:var(--c);color:#fff}
+
+.stage .bcol.mine{position:relative}
+.stage .bcol .nm span{white-space:nowrap}
+.stage .bcol .me{position:absolute;left:50%;bottom:-12px;transform:translateX(-50%);font-style:normal;font-size:15px;font-weight:900;padding:2px 10px;border-radius:6px;background:var(--c);color:#fff;white-space:nowrap}

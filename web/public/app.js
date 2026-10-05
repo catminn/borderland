@@ -101,9 +101,10 @@ function viewBoard(){
   const list=[...S.teams].sort((a,b)=>b.score-a.score),max=Math.max(1,list[0].score);
   let rk=0,prev=null;
   const bars=list.map((t,i)=>{if(t.score!==prev){rk=i+1;prev=t.score;}
-    return '<div class="bcol" style="'+tv(t.id)+'"><span class="v">'+t.score+'</span>'
+    const mine=ME&&ME.role==='player'&&ME.pid&&ME.pid.split('-')[0]===t.id;
+    return '<div class="bcol'+(mine?' mine':'')+'" style="'+tv(t.id)+'"><span class="v">'+t.score+'</span>'
       +'<div class="b" style="height:calc(var(--b0,56px) + '+(t.score/max).toFixed(3)+' * var(--b1,214px))" role="img" aria-label="'+t.name+' 第 '+rk+' 名，'+t.score+' 冥币">'+rk+'</div>'
-      +'<div class="nm">'+tsq(t.id)+'<span>'+t.name+'</span></div>'
+      +'<div class="nm">'+tsq(t.id)+'<span>'+t.name+'</span>'+'</div>'+(mine?'<em class="me">本队</em>':'')
       +'<div class="su">'+SUITS.map(s=>'<span class="'+(t.cards.some(c=>c.includes(s))?'got ':'')+(isRed(s)?'sr':'')+'">'+s+'</span>').join('')+'</div></div>';}).join('');
   const bc=broadcast();
   const run=CLOCK&&CLOCK.running;
@@ -451,8 +452,9 @@ function viewPlayer(){
   const wst=inMk||out?'market':prot?'protected':'alive';
   const wseal=out?'淘汰':{alive:'存活',protected:'保护中',market:'鬼市'}[wst];
   const wnote=wst==='alive'?'<span class="w-hint">小心勾魂</span>'
-    :out?'<span class="w-hint">'+(me.st==='picked'?'已被接到':'原地等候')+'</span>'
-    :'<span class="w-lab">'+(wst==='market'?'已待':'保护期还剩')+'</span><span class="w-num">'+(wst==='market'?mm(stay):Math.ceil(prot/60)+' 分钟')+'</span>';
+    :out?'<span class="w-hint">你已被淘汰</span><span class="w-lab">'+(me.st==='picked'?'黑白无常已接到你，正在送你去鬼市':'留在原地，等黑白无常来接你')+'</span>'
+    :wst==='market'?'<span class="w-hint">你在鬼市</span><span class="w-lab">已待 <b class="mono">'+mm(stay)+'</b> / '+MIN_STAY/60+' 分钟</span><span class="w-lab">合计冥币 <b class="mono">'+(me.coins+me.bail)+'</b> / '+COIN_GOAL+'</span>'
+    :'<span class="w-lab">保护期还剩</span><span class="w-num">'+Math.ceil(prot/60)+' 分钟</span>';
   const wch=[...wseal],wn=wch.length,wh=wn>2?78:58,wy=wn>2?[27,51,75]:[29,55];
   const wen='<div class="wen" data-st="'+wst+'"><svg class="w-grain" aria-hidden="true"><rect width="100%" height="100%" filter="url(#paperGrain)"></rect></svg>'
     +'<i class="w-frame"></i><i class="w-cn tl"></i><i class="w-cn tr"></i><i class="w-cn bl"></i><i class="w-cn br"></i>'
@@ -514,7 +516,7 @@ function viewPlayer(){
   const roomSec='<h2 class="sh" style="font-size:22px">全部房间</h2><div class="prooms">'+ROOMS.map(r=>roomCard(r,t.id)).join('')+'</div>';
   const tabs=[['team','本队'],['task','任务'+(unread?'<b class="cnt">'+unread+'</b>':'')],['market','鬼市'+(mk.length?'<b class="cnt">'+mk.length+'</b>':'')],['rooms','房间']];
   return '<div class="page tabbed toptabs allin">'+sub('player',tabs,'top')
-    +'<div class="pcol l">'+downBanner(me)+wen+sec('player','team',teamSec)+sec('player','market',mkSec).replace('class="sec','class="sec'+(mk.length?'':' mk0'))+(skillsPart?sec('player','team',skillsPart):'')+sec('player','rooms',roomSec)+'</div>'
+    +'<div class="pcol l">'+wen+sec('player','team',teamSec)+sec('player','market',mkSec).replace('class="sec','class="sec'+(mk.length?'':' mk0'))+(skillsPart?sec('player','team',skillsPart):'')+sec('player','rooms',roomSec)+'</div>'
     +'<div class="pcol r">'+sec('player','task',taskSec)+'</div></div>';
 }
 function modalHtml(){
