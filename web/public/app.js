@@ -128,7 +128,7 @@ function viewBoard(){
       +'<div class="su">'+SUITS.map(s=>'<span class="'+(t.cards.some(c=>c.includes(s))?'got ':'')+(isRed(s)?'sr':'')+'">'+s+'</span>').join('')+'</div></div>';}).join('');
   const bc=broadcast();
   const run=CLOCK&&CLOCK.running;
-  return '<div class="stage-wrap"><div class="stage">'
+  return '<div class="stage-wrap"><div class="stage"><div class="board-art" aria-hidden="true"><img class="lily-corner lc-left" src="img/lily-paper.webp" alt=""><img class="lily-corner lc-right" src="img/lily-paper.webp" alt=""></div>'
     +'<div class="left"><div class="hd"><div class="ttl">百鬼夜行</div><div class="en">CORNELL CSSA 万圣夜</div></div>'
     +'<div class="clock"><span class="cap">'+(run?'剩余时间':'已暂停 · 剩余时间')+'</span><span class="ck mono'+(run?'':' paused')+'" id="sclk">'+remStr(S.t)+'</span>'
     +incense()+(S.gp?'<div class="gatebar"><b>鬼门开</b><span>各房间暂停预约与入场，已开始的可打完当前一局'+(S.gp.win?'；'+team(S.gp.win).name+'已率先完成':'')+'</span></div>':'')+'</div>'
@@ -326,7 +326,7 @@ function viewMarket(){
         :'<button class="btn-main'+(ok?' glow':'')+'" data-a="revive" data-p="'+p.id+'"'+(ok?'':' disabled')+'>'+(ok?'买命回队':'差 '+(COIN_GOAL-tot))+'</button>')+'</div></div>';}).join('');
   const left='<section class="mcol"><div class="shrow"><h2 class="sh">孟婆买命</h2><span class="hint">凑够 '+COIN_GOAL+' 即可回队；回队扣 '+COIN_GOAL+'，多出的最多 '+R.CARRY_MAX+' 存回队伍，凑够后不能再刷分</span></div>'
     +(rows?'<div class="mlist">'+rows+'</div>':'<div class="empty">鬼市现在没有人。</div>')+'</section>';
-  return '<div class="page mkt">'+left+(FEATURES.cards?cardsPanel(mk):inboundPanel())+'</div>';
+  return '<div class="page-art lantern-art" aria-hidden="true"><img src="img/lantern-paper.webp" alt=""></div><div class="page mkt">'+left+(FEATURES.cards?cardsPanel(mk):inboundPanel())+'</div>';
 }
 // 技能卡商铺（暂时关闭，FEATURES.cards 打开后恢复）
 function cardsPanel(mk){
@@ -372,7 +372,7 @@ function viewWuchang(){
     +(wait.length?'<div class="mlist">'+wait.map(p=>'<div class="mrow">'+meta(p)+'<button class="btn-main glow" data-a="pickup" data-p="'+p.id+'">接到了</button></div>').join('')+'</div>':'<div class="empty">现在没有人需要接。</div>')+'</section>';
   const right='<section class="mcol"><div class="shrow"><h2 class="sh">送入鬼市 / 确认</h2><span class="hint">已接到的人送去鬼市；孟婆已登记的人在这里确认</span></div>'
     +(go.length?'<div class="mlist">'+go.map(p=>'<div class="mrow ok">'+meta(p)+(p.chk&&!p.chk.ok?chkBit(p):'<button class="btn-main glow" data-a="checkin" data-p="'+p.id+'">送入鬼市</button>')+'</div>').join('')+'</div>':'<div class="empty">没有需要送入或确认的人。</div>')+'</section>';
-  return '<div class="page mkt eq">'+left+right+'</div>';
+  return '<div class="page-art mask-art" aria-hidden="true"><img src="img/mask-paper.webp" alt=""></div><div class="page mkt eq">'+left+right+'</div>';
 }
 
 // ---------- 生死簿 ----------
@@ -759,7 +759,7 @@ function loginError(msg){
 function showSeal(){
   const c=$('#lgcard');if(!c)return;
   const chars=[...'验明正身·准入阴司'].map((ch,i)=>'<span style="animation-delay:'+(1.3+i*.12).toFixed(2)+'s">'+ch+'</span>').join('');
-  c.insertAdjacentHTML('beforeend','<div class="okv"><div class="seal"><div class="sl"><img src="img/seal-zhun.png" alt="准" width="1200" height="960"></div></div>'
+  c.insertAdjacentHTML('beforeend','<div class="okv"><div class="seal"><div class="sl"><img src="img/seal-paper.webp" alt="准" width="1200" height="960"></div></div>'
     +'<div class="sealtx">'+chars+'</div></div>');
   c.classList.add('shake');setTimeout(()=>buzz(110),600); // the seal lands at 0.6 s
   const g=$('#amb ghost-ambience');if(g)g.setAttribute('data-ok','1');

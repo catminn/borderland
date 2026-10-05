@@ -1014,3 +1014,18 @@ body.inmk::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:6
 #scene .doll{mix-blend-mode:screen}
 #scene .ge{left:0;top:0;width:100%;height:100%;filter:brightness(.82) saturate(.9);-webkit-mask-image:linear-gradient(to bottom,#000 72%,transparent 96%);mask-image:linear-gradient(to bottom,#000 72%,transparent 96%)}
 @media (max-width:719px){#scene .ge{-webkit-mask-image:none;mask-image:none}}
+
+/* Paper-cut decorations: dark-mode pages only, no interaction hitboxes. */
+.board-art,.page-art{display:none;pointer-events:none;user-select:none}
+:root[data-theme="dark"] .board-art{display:block;position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0}
+.board-art .lily-corner{position:absolute;width:250px;bottom:-12px;opacity:.22;mix-blend-mode:screen;clip-path:inset(0 0 6% 0)}
+.board-art .lc-left{left:-18px;transform:rotate(-15deg)}
+.board-art .lc-right{right:-18px;transform:scaleX(-1) rotate(-15deg)}
+.stage>.left,.stage>.right{position:relative;z-index:1}
+:root[data-theme="dark"] .page-art{display:flex;justify-content:center;align-items:center;margin:0 auto 14px;mix-blend-mode:screen;opacity:.8}
+.page-art img{display:block;max-width:100%;object-fit:contain}
+.lantern-art{width:min(100%,1000px);height:130px}
+.lantern-art img{width:100%;height:100%}
+.mask-art{height:150px;width:140px}
+.mask-art img{height:100%;width:auto}
+@media(max-width:719px){.lantern-art{height:80px}.mask-art{height:110px}.board-art .lily-corner{width:130px;opacity:.16}}
