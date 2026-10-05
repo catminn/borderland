@@ -322,7 +322,7 @@ function downTxt(tid){const c={out:0,picked:0,market:0};S.players.forEach(p=>{if
 function downPanel(){
   const l=S.players.filter(p=>p.st!=='alive').sort((a,b)=>(a.outAt||0)-(b.outAt||0)),nm={out:'等黑白无常',picked:'已接到',market:'在鬼市'};
   return '<div class="pn" style="gap:0"><h3 style="padding-bottom:8px">淘汰与鬼市状态</h3>'+(l.length?l.map(p=>'<div class="li"><div class="grow"><span class="t">'+fmt(p.outAt||0)+'</span>'
-    +'<span class="x">'+p.id+'　'+nm[p.st]+(p.at?'　@'+esc(p.at):'')+(p.chk?'　'+(p.chk.ok?'登记已确认':'登记待确认'):'')+'</span></div></div>').join(''):'<div class="li small">现在没有人被淘汰。</div>')+'</div>';
+    +'<span class="x">'+p.id+'　'+(p.chk&&!p.chk.ok?'待入鬼市':nm[p.st])+(p.at?'　@'+esc(p.at):'')+(p.chk?'　'+(p.chk.ok?'登记已确认':'登记待确认'):'')+'</span></div></div>').join(''):'<div class="li small">现在没有人被淘汰。</div>')+'</div>';
 }
 function teamRows(){
   const list=[...S.teams].sort((a,b)=>b.score-a.score);
