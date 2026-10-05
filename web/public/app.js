@@ -712,7 +712,7 @@ function render(){
   document.body.classList.toggle('login',login);if(login)document.body.classList.remove('inmk');document.body.classList.toggle('dev',!!DEVME&&!login);
   document.body.classList.toggle('screen',!login&&ME.role==='screen');
   document.body.dataset.role=login?'':ME.role;
-  if(login){document.documentElement.dataset.theme='dark';setAmb('login');renderLogin();return;}
+  if(login){document.body.classList.remove('board','natscroll','fullamb','inmk');document.documentElement.dataset.theme='dark';setAmb('login');renderLogin();return;}
   const tabs=ME.role==='player'&&finalNow()?['player']:(ROLE_TABS[ME.role]||[]);
   if(!tabs.includes(ui.tab))ui.tab=tabs[0];
   document.documentElement.dataset.theme=themed()?themeFor():'light';
