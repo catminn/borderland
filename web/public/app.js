@@ -110,7 +110,7 @@ function roomCard(r,mt,ctl){
   let act='';
   if(mt&&st==='open'){
     if(done)bt='<span class="idle okk">✓ 已通关</span>';
-    else if(ctl){const w=whyNotReserve(mt,r.id);bt=w?'<button class="btn-line rbook dim" data-a="rsvno" data-v="'+esc(w)+'" aria-disabled="true">预约</button>':'<button class="btn-line rbook fill" data-a="reserve" data-v="'+r.id+'">预约</button>';}}
+    else if(ctl){const w=whyNotReserve(mt,r.id);bt=w?'<button class="btn-line rbook dim" data-a="rsvno" data-v="'+r.id+'" aria-disabled="true">预约</button>':'<button class="btn-line rbook fill" data-a="reserve" data-v="'+r.id+'">预约</button>';}}
   else if(ctl&&mt&&st==='rsv'&&x.rt===mt)act='<button class="btn-line rbook" data-a="cancelrsv">取消预约</button>';
   return '<div class="room s-'+st+(ts.length?' busy':'')+(mine?' mine':'')+(paused?' paused':'')+'"><div class="top"><div class="cd">'+cardG(r)+'</div>'
     +'<div class="rr"><span class="typ">'+(r.n===4?'简单':'困难')+'</span><span class="pt">+'+r.n*100+'</span></div></div>'
@@ -614,7 +614,20 @@ function viewPlayer(){
     +'<div class="pcol l">'+wen+sec('player','team',teamSec)+(me.st==='alive'?sec('player','market',mkSec).replace('class="sec','class="sec'+(mk.length?'':' mk0')):'')+(skillsPart?sec('player','team',skillsPart):'')+'</div>'
     +'<div class="pcol r">'+sec('player','task',taskSec)+'</div></div>';
 }
+// 预约按钮置灰时点击：弹窗说明现在为什么不能预约
+function rsvDlg(){
+  const me=S.players.find(p=>p.id===ME.pid),t=team(me.team),r=room(ui.rsvInfo),why=whyNotReserve(t.id,r.id);
+  if(!why){ui.rsvInfo=null;return '';}
+  const short=alive(t.id).length<size(t.id)&&/未满员/.test(why);
+  const body=short?'<div class="lot hot"><b>进房必须满员</b>：全队 '+size(t.id)+' 人都活着才能预约和入场。本队现在 <b class="mono">'+alive(t.id).length+'/'+size(t.id)+'</b>。</div>'
+      +'<span class="lbl">让队友回来，有两个办法</span><ol class="fl"><li>队友在<b>鬼市</b>里凑够 <b class="mono">'+COIN_GOAL+'</b> 冥币，向孟婆买命复活。</li>'
+      +'<li>去做 <b>Scavenger Hunt</b> 赚冥币，再按 <b class="mono">'+RATE+':1</b> <b>助力</b>给鬼市里的队友，帮他凑够买命。（在「本队」页给队友助力）</li></ol>'
+    :'<div class="lot">'+esc(why)+'</div>';
+  return '<div class="sheet"><div class="sheet-bg" data-a="rsvclose"></div><div class="sheet-card pn" role="dialog" aria-modal="true"><h3>现在不能预约 '+cardG(r)+'</h3>'+body
+    +'<div class="btns"><button class="btn-main" data-a="rsvclose">知道了</button></div></div></div>';
+}
 function modalHtml(){
+  if(ME&&ME.role==='player'&&S&&ui.rsvInfo)return rsvDlg();
   if(!ME||ME.role!=='player'||!S)return '';
   const me=S.players.find(p=>p.id===ME.pid);
   const n=S.notices.find(x=>matches(x,me)&&!x.acks[me.id]&&!(DEVME&&ui.devAck.has(x.id+':'+me.id)));if(!n)return '';
@@ -905,7 +918,8 @@ document.addEventListener('click',e=>{
   else if(a==='enter'){send({type:'enter',tid:ui.pick,rid:ui.room},()=>{ui.pick='';ui.settled=null;ui.sub.dealer='settle';});}
   else if(a==='resetdone'){send({type:'resetdone',rid:ui.room},()=>{ui.settled=null;ui.sub.dealer='info';});}
   else if(a==='reserve'){send({type:'reserve',rid:v});}
-  else if(a==='rsvno'){say(no(v));}
+  else if(a==='rsvno'){ui.rsvInfo=v;}
+  else if(a==='rsvclose'){ui.rsvInfo=null;}
   else if(a==='cancelrsv'){send({type:'cancelrsv'});}
   else if(a==='finish'){const rid=ui.room;send({type:'finish',rid,results:ui.res,picks:ui.pickOut},m=>{ui.res={};ui.pickOut={};ui.settled={rid,msg:m.msg};});}
   else if(a==='hook'){send({type:'hook',actor:ui.hookTeam,pid:ui.hookTarget,where:ui.hookWhere},()=>{ui.hookTarget='';ui.hookWhere='';});}
