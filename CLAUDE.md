@@ -219,3 +219,9 @@ npm run dev:pages                             # 正式部署的路径（Pages+Wo
 ## 7.9 Pages 项目改名（2026-10-05）
 
 - Pages 项目名从 `borderland` 改成 `cssa-borderland`（地址 `cssa-borderland.pages.dev`；若名字被占用，Cloudflare 会加随机后缀，以实际地址为准）。Pages 项目不能改名，所以是新建：部署流程首次运行会自动创建。游戏服务器 Worker 仍叫 `borderland-game`，不受影响。旧的 `borderland` 项目留着，确认新地址正常后由用户在 Cloudflare 里删除；若已绑定 `borderland.catmin.io`，要先从旧项目移除，再在新项目里添加。
+
+## 7.10 登录页修复（2026-10-05）
+
+- 登录页永不出现滚动条（`html:has(body.login)` 与 `body.login` 均 `overflow:hidden`；手机登录页不再整页滚动，娃娃下半身被裁）。盖章放大曾短暂撑出滚动条，`.okv` 加了 `overflow:hidden`。
+- 盖章图 `img/seal-paper.webp` 改成真透明（黑→alpha），去掉 `mix-blend-mode`；盖章时 `.lg.sealing` 把表单淡出，不再有黑底矩形。盖章停留 2.6→4.8 秒。
+- `login()` 在 `localStart()/connect()` 之前先置 `entering=true`：本地展示模式会同步渲染，之前会在盖章出现前就切走页面。

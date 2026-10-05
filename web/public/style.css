@@ -465,9 +465,9 @@ body.login .notice{display:none}
 .lg .go:disabled{opacity:.6}
 .lg .h{font-size:14px;line-height:20px;min-height:20px;color:#8fa8a2;text-align:center}
 .lg .h.err{color:#ff8a72;font-weight:700}
-.lg .okv{position:absolute;inset:0;z-index:5;border-radius:20px;background:rgba(9,14,15,.95);display:flex;align-items:center;justify-content:center;gap:24px;padding:0 20px;animation:fadeIn .3s ease both}
+.lg .okv{position:absolute;inset:0;z-index:5;overflow:hidden;display:flex;align-items:center;justify-content:center;gap:24px;padding:0 20px;animation:fadeIn .3s ease both}
 .seal{position:relative;width:150px;height:150px;flex:none}
-.seal .sl{position:absolute;inset:0;mix-blend-mode:screen;animation:stampSlam .26s cubic-bezier(.3,0,.2,1) .35s both}
+.seal .sl{position:absolute;inset:0;animation:stampSlam .26s cubic-bezier(.3,0,.2,1) .35s both}
 /* The source already includes the tilt and glow; compensate only for its empty margins. */
 .seal img{position:absolute;left:-22%;top:-7.6%;width:144%;height:auto;max-width:none}
 .sealtx{writing-mode:vertical-rl;white-space:nowrap;font-family:var(--disp);font-size:20px;line-height:1;letter-spacing:.22em;color:#bd3a2c}
@@ -876,11 +876,11 @@ button.sk.on{background:var(--accent);border-color:var(--accent);color:var(--acc
 
 /* phone login: the page scrolls; the scene stretches over the whole page, so the dolls are shown in full at the bottom */
 @media (max-width:719px){
-  body.login{position:relative;min-height:100vh;overflow-x:hidden;overflow-y:auto}
+  body.login{position:relative;height:100vh;height:100dvh;overflow:hidden}
   body.login #scene{height:auto;left:0;right:0;top:0;bottom:0}
-  body.login .wrap{min-height:100vh;justify-content:flex-start;padding-top:0;padding-bottom:calc(46vw*1.5 + 24px)}
+  body.login .wrap{height:100vh;height:100dvh;min-height:0;justify-content:flex-start;padding-top:0;padding-bottom:0}
   body.login #view{margin-top:15vh}
-  #scene .doll{width:46vw;height:auto;bottom:6px}
+  #scene .doll{width:46vw;height:auto;bottom:-10vw}
   #scene .doll>img:first-child{width:100%;height:auto}
   #scene .doll.l{left:2vw}#scene .doll.r{right:2vw}
   #scene .fogb{left:-35%;right:-35%;height:min(75%,640px)}
@@ -1078,3 +1078,8 @@ body.inmk::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:6
 .fc .s4{padding:5px 10px}
 .fc .dt{width:18px;height:18px}
 @media (max-width:719px){.fcs{grid-template-columns:minmax(0,1fr)}.fhd .fs{text-align:left}}
+
+/* 登录页永不出现滚动条（盖章放大、手机浏览器栏都不会撑出） */
+html:has(body.login){overflow:hidden}
+body.login{overflow:hidden}
+.lg.sealing>:not(.okv){opacity:0;transition:opacity .25s}

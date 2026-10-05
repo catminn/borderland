@@ -771,7 +771,7 @@ function showSeal(){
   const chars=[...'验明正身·准入阴司'].map((ch,i)=>'<span style="animation-delay:'+(1.3+i*.12).toFixed(2)+'s">'+ch+'</span>').join('');
   c.insertAdjacentHTML('beforeend','<div class="okv"><div class="seal"><div class="sl"><img src="img/seal-paper.webp" alt="准" width="1200" height="960"></div></div>'
     +'<div class="sealtx">'+chars+'</div></div>');
-  c.classList.add('shake');setTimeout(()=>buzz(110),600); // the seal lands at 0.6 s
+  c.classList.add('shake','sealing');setTimeout(()=>buzz(110),600); // the seal lands at 0.6 s
   const g=$('#amb ghost-ambience');if(g)g.setAttribute('data-ok','1');
 }
 
@@ -793,11 +793,12 @@ async function login(pin){
   catch{loginError('连不上服务器，请检查网络');return;}
   if(!res.ok){loginError(j.error||'登录失败');return;}
   SESSION={token:j.token,me:j.me};store.set(SESSION);setMe(j.me);S=null;ui.tab=null;
+  if($('#lgcard'))entering=true; // 先锁住登录页：本地展示模式会同步渲染，否则盖章还没出现页面就切走了
   if(j.me.demo&&j.me.dmode==='local')localStart();else connect();
-  if(!$('#lgcard')){render();say(null);return;}
-  entering=true;showSeal();
+  if(!$('#lgcard')){entering=false;render();say(null);return;}
+  showSeal();
   const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
-  setTimeout(()=>{entering=false;$('#view').innerHTML='';render();say(null);},reduce?400:2600);
+  setTimeout(()=>{entering=false;$('#view').innerHTML='';render();say(null);},reduce?1200:4800);
 }
 function logout(msg){
   SESSION=null;store.set(null);setMe(null);S=null;CLOCK=null;connected=false;entering=false;
