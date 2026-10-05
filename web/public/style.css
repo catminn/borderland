@@ -973,3 +973,13 @@ body.inmk::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:6
 .scavbox .sv3{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px}
 .fmiss{display:block;font-size:12px;margin-top:2px}
 .fl{margin:6px 0;padding-left:20px}.fl li{margin:2px 0}
+/* 2026-10-05 精简：置灰的预约按钮、Scavenger 一行 */
+.room .rbook.dim{opacity:.45;cursor:not-allowed}
+.svline{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;padding:10px 14px;border-radius:12px;border:1.5px solid var(--line);background:var(--panel);font-size:14px}
+.svline b{font-weight:900}
+/* 2026-10-05 精简：置灰的预约按钮、Scavenger 一行 */
+.room .rbook.dim{opacity:.45;cursor:not-allowed}
+.svline{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;padding:10px 14px;border-radius:12px;border:1.5px solid var(--line);background:var(--panel);font-size:14px}
+.svline b{font-weight:900}
+.stage .room .rbook{min-height:46px;font-size:22px;padding:0 30px;margin-top:0}
+.room .idle.okk{color:var(--accent);font-weight:800}

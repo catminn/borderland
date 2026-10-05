@@ -29,6 +29,8 @@ const SHOP0=[
   {id:'k5',name:'勾魂令',desc:'立刻点名一名别队队员去鬼市（仍受保护期限制）。',price:800,stock:1}];
 // sidequest 题库（占位，正式内容待定）。同一题可以发给不同队伍，每次发布只给一个队伍。
 const QUESTS=Array.from({length:8},(_,i)=>({id:'q'+(i+1),title:'Sidequest 占位 '+(i+1),body:'（占位文字，正式内容待定）',reward:100}));
+// 鬼门开题库（占位，正式内容待定）。判官从题库选一题发布，先到先得。
+const GATES=Array.from({length:6},(_,i)=>({id:'g'+(i+1),title:'鬼门开 占位 '+(i+1),body:'（占位文字，正式内容待定）'}));
 const FINAL_MSG='你们已集齐四种花色，全员存活，积分达标！请全队前往一楼大厅，等待终极任务指示。（占位文案）';
 const RATE=1;
 const PER_TEAM=6, PROTECT=600, MIN_STAY=0, COIN_GOAL=500, COIN_START=200, CARRY_MAX=100, FINAL_SCORE=2400;
@@ -92,7 +94,8 @@ function publish(f){f=f||{};const str=(v,n)=>String(v==null?'':v).slice(0,n);f={
     const why=scavWhy(f.team,q.id);if(why)return no(team(f.team).name+'：'+why);
     target='team';ids=[f.team];mode='each';sub='side';f.title=q.title;f.body=q.body;reward=SCAV_PTS;
   }else if(f.kind==='鬼门开'){
-    if(!f.title.trim())return no('先写标题');
+    const g=GATES.find(x=>x.id===f.gate);if(g){f.title=g.title;f.body=g.body;}
+    if(!f.title.trim())return no('先从题库选一个鬼门开');
     if(S.gp)return no('鬼门开正在进行，先结束上一轮');
     target='all';mode='first';sub='gate';reward=0;
   }else{
@@ -431,4 +434,4 @@ export function viewFor(state,me){
     teams:state.teams.map(t=>p&&t.id===p.team?t:{...t,skills:[]})};
 }
 
-export {needsReset,rstate,rsvLeft,rsvOf,whyNotReserve,reserve,cancelRsv,resetDone,gateReward,gateEnd,scavInfo,scavWhy,finalMiss,RSV,GAME_HINT,RESET_HINT,SCAV_PTS,SCAV_WIN,SCAV_N,SCAV_CAP,COIN_START,CARRY_MAX,DUR0,size,COIN_GOAL,FEATURES,FINAL_MSG,FINAL_SCORE,MIN_STAY,PER_TEAM,PROTECT,QUESTS,RATE,ROOMS,ROLE_LABEL,SHOP0,SUITS,TEAMS,ack,addCard,alive,buyCard,cands,donate,eliminate,enterRoom,esc,finishRoom,fmt,gapOf,hook,inMarket,indiv,init,isBcast,isFirst,kindLabel,lab,log,markDone,matches,no,ok,protectedLeft,publish,pushNotice,revive,revokeNotice,rewardTxt,room,seed,setScore,targetLabel,tcol,team,teamOf,teamStatus,unmarkDone,useCard,whyNotEnter};
+export {needsReset,rstate,rsvLeft,rsvOf,whyNotReserve,reserve,cancelRsv,resetDone,gateReward,gateEnd,scavInfo,scavWhy,finalMiss,RSV,GAME_HINT,RESET_HINT,SCAV_PTS,SCAV_WIN,SCAV_N,SCAV_CAP,COIN_START,CARRY_MAX,DUR0,size,COIN_GOAL,FEATURES,FINAL_MSG,FINAL_SCORE,MIN_STAY,PER_TEAM,PROTECT,QUESTS,GATES,RATE,ROOMS,ROLE_LABEL,SHOP0,SUITS,TEAMS,ack,addCard,alive,buyCard,cands,donate,eliminate,enterRoom,esc,finishRoom,fmt,gapOf,hook,inMarket,indiv,init,isBcast,isFirst,kindLabel,lab,log,markDone,matches,no,ok,protectedLeft,publish,pushNotice,revive,revokeNotice,rewardTxt,room,seed,setScore,targetLabel,tcol,team,teamOf,teamStatus,unmarkDone,useCard,whyNotEnter};

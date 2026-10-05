@@ -46,13 +46,13 @@ await ack(player);
 
 // ctrl publishes -> player gets a popup
 await ctrl.click('[data-a=tab][data-v=ctrl]'); await ctrl.click('[data-a=sub][data-p=ctrl][data-v=pub]');
-await ctrl.fill('#pti', '同步测试任务'); await ctrl.fill('#pb', '内容'); await ctrl.click('[data-a=publish]');
+await ctrl.click('[data-a=dd][data-v="pub.gate"]'); await ctrl.click('[data-a=pick][data-k="pub.gate"][data-v=g1]'); await ctrl.click('[data-a=publish]');
 await player.waitForSelector('#modal .dlg', { timeout: 4000 }).catch(() => {});
-T('player popup after publish', (await player.locator('#modal').innerText()).includes('同步测试任务'));
+T('player popup after publish', (await player.locator('#modal').innerText()).includes('鬼门开 占位 1'));
 await ack(player);
 
 // judge records -> ctrl log + score + broadcast
-const nid = admin.S.notices.find(n => n.title === '同步测试任务').id;
+const nid = admin.S.notices.find(n => n.title === '鬼门开 占位 1').id;
 const scoreB = admin.S.teams.find(t => t.id === 'B').score;
 await judge.click('[data-a=pick][data-k="doneSel.' + nid + '"][data-v=B]'); await judge.click('[data-a=done][data-n="' + nid + '"]');
 await sleep(500);
@@ -62,7 +62,7 @@ T('judge page shows the gate reward panel', (await text(judge)).includes('鬼门
 await judge.click('[data-a=gateend]'); await sleep(400);
 T('gate ended by judge', !admin.S.gp);
 await ctrl.click('[data-a=sub][data-p=ctrl][data-v=log]');
-T('ctrl log updated live', (await text(ctrl)).includes('判官记录 蓝队 率先完成任务「同步测试任务」'));
+T('ctrl log updated live', (await text(ctrl)).includes('判官记录 蓝队 率先完成任务「鬼门开 占位 1」'));
 await player.waitForSelector('#modal .dlg', { timeout: 4000 }).catch(() => {});
 T('player gets broadcast', (await player.locator('#modal').innerText()).includes('蓝队率先完成任务'));
 await ack(player);
@@ -94,7 +94,7 @@ T('clock running and same on screens', t1 === t2 && t1 !== 'T+29:00'); if (t1 !=
 await ctrl.click('#clockctl');
 
 // typing is not wiped by live updates
-await ctrl.click('[data-a=tab][data-v=ctrl]'); await ctrl.click('[data-a=sub][data-p=ctrl][data-v=pub]'); await ctrl.click('#pti'); await ctrl.keyboard.type('正在输入');
+await ctrl.click('[data-a=tab][data-v=ctrl]'); await ctrl.click('[data-a=sub][data-p=ctrl][data-v=pub]'); await ctrl.click('[data-a=pick][data-k="pub.kind"][data-v=公告]'); await ctrl.click('#pti'); await ctrl.keyboard.type('正在输入');
 await admin.act({ type: 'setscore', tid: 'R', v: 4321 }); await sleep(600);
 T('typing survives broadcast', (await ctrl.inputValue('#pti')) === '正在输入');
 
