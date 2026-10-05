@@ -120,9 +120,9 @@ T('assign only once', !(await admin.act({ type: 'assign' })).ok);
   { const bad = await mp.act({ type: 'pickup', pid: victim }), good = await wc.act({ type: 'pickup', pid: victim }); await sleep(250);
     T('only wuchang picks up', !bad.ok && good.ok && admin.S.players.find(p => p.id === victim).st === 'picked'); }
   { const r = await wc.act({ type: 'checkin', pid: victim }); await sleep(250); const v = admin.S.players.find(p => p.id === victim);
-    T('wuchang check-in starts the market clock and gives 300', r.ok && v.st === 'market' && v.coins === 300 && v.inAt != null); }
+    T('check-in alone keeps the player pending (not yet in the market)', r.ok && v.st === 'picked' && v.chk && !v.chk.ok && !v.inAt); }
   T('cannot confirm your own check-in', !(await wc.act({ type: 'confirm', pid: victim })).ok);
-  { const r = await mp.act({ type: 'confirm', pid: victim }); await sleep(250); T('the other side confirms', r.ok && admin.S.players.find(p => p.id === victim).chk.ok === true); }
+  { const r = await mp.act({ type: 'confirm', pid: victim }); await sleep(250); const v = admin.S.players.find(p => p.id === victim); T('the other side confirms: market clock starts and gives 300', r.ok && v.chk.ok === true && v.st === 'market' && v.coins === 300 && v.inAt != null); }
   await admin.act({ type: 'setscore', tid, v: 500 });
   const mate = await client(pinOf(p => p.pid === tid + '-01')), g = await mate.act({ type: 'donate', pid: victim, amt: 200 }); await sleep(200);
   T('teammate aid is 1:1', g.ok && admin.S.players.find(p => p.id === victim).bail === 200 && admin.S.teams.find(t => t.id === tid).score === 300);
@@ -149,6 +149,32 @@ await admin.act({ type: 'admin.reset', demo: false });
   await sleep(200);
   T('gate publishes to all', gate.ok && admin.S.notices.find(n => n.title === 'g').target === 'all'); }
 [wc, mp, jd].forEach(c => c.close());
+
+// ---- 展示模式 PIN (set by the developer) ----
+{ const DEV = process.env.DEV_PIN || '777777';
+  const j = await fetch(BASE + '/api/login', { method: 'POST', body: JSON.stringify({ pin: DEV }) });
+  if (j.ok) {
+    const dv = await client(DEV);
+    T('dev sees demoCfg', dv.me.role === 'dev' && dv.me.demoCfg && dv.me.demoCfg.pin === '');
+    T('demo pin must be 6 digits', !(await dv.act({ type: 'dev.setdemo', pin: '12', mode: 'server', write: false })).ok);
+    T('demo pin cannot reuse another pin', !(await dv.act({ type: 'dev.setdemo', pin: ADMIN, mode: 'server', write: false })).ok);
+    T('admin cannot set demo', !(await admin.act({ type: 'dev.setdemo', pin: '135790', mode: 'server', write: false })).ok);
+    T('dev sets demo (server, read-only)', (await dv.act({ type: 'dev.setdemo', pin: '135790', mode: 'server', write: false })).ok);
+    const dm = await client('135790');
+    T('demo login me', dm.me.role === 'dev' && dm.me.demo && dm.me.dmode === 'server' && !dm.me.dwrite && !dm.me.demoCfg);
+    T('demo read-only blocks actions', !(await dm.act({ type: 'setscore', tid: 'R', v: 5, as: { role: 'ctrl' } })).ok);
+    T('demo cannot change demo pin', !(await dm.act({ type: 'dev.setdemo', pin: '246810', mode: 'server', write: true })).ok);
+    await dv.act({ type: 'dev.setdemo', pin: '135790', mode: 'server', write: true }); await sleep(300);
+    const dm2 = await client('135790');
+    T('demo write works on server', dm2.me.dwrite && (await dm2.act({ type: 'setscore', tid: 'R', v: 123, as: { role: 'ctrl' } })).ok);
+    T('demo cannot use admin tools', !(await dm2.act({ type: 'admin.reset', demo: true, as: { role: 'ctrl' } })).ok);
+    await dv.act({ type: 'dev.setdemo', pin: '135790', mode: 'local', write: true });
+    const dm3 = await client('135790');
+    T('local demo mode flag, no server actions', dm3.me.dmode === 'local' && !(await dm3.act({ type: 'setscore', tid: 'R', v: 1, as: { role: 'ctrl' } })).ok);
+    await dv.act({ type: 'admin.reset', demo: true });
+    [dv, dm2, dm3].forEach(c => c.close());
+  } else console.log('SKIP demo-mode tests: DEV_PIN not set on the server');
+}
 
 T('no page errors', errs.length === 0); if (errs.length) console.log(errs);
 console.log(res.join('\n')); console.log(res.filter(x => x.startsWith('FAIL')).length ? 'SOME FAILED' : 'ALL PASSED');

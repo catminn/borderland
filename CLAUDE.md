@@ -44,6 +44,7 @@
 - **开发者模式**：Worker 密钥 `DEV_PIN`（值由用户定，不写进仓库；GitHub Secret `DEV_PIN`，没设就关闭；本地写在 `.dev.vars`）登录得到 `role:'dev'`，收到全量状态；网页右上角下拉框选视角（总控/Dealer/判官/孟婆/大屏/任一玩家），玩家视角在浏览器里用 `viewFor` 过滤。旁边「只读 / 可操作」开关（默认只读，刷新后回到只读）：可操作时每个操作带 `as:{role,pid}`，服务器以该视角身份执行（权限照常检查；`admin.*` 只在总控视角可用）；只读时弹窗「知道了」只在本机生效。**仓库是公开的，PIN 不要写进代码**；活动当天前删掉（`wrangler secret delete DEV_PIN` 并删 GitHub Secret）。
 - **Dealer 绑定房间**：Dealer 的 PIN 记录带 `rooms:[房间id]`，登录下发 `me.rooms`。生成 PIN 时，没人负责的房间轮流分给还没有房间的 Dealer（默认 8 个 Dealer = 一人一间；绑定前生成的旧 Dealer PIN 再点一次「生成」就会分到房间）；标签自动写成「Dealer 3♠」。`rules.apply` 拒绝 Dealer 对自己房间以外的 `enter/finish`（`me.rooms` 不是数组 = 全部房间，用于总控和开发者视角）。总控在 PIN 列表每个 Dealer 行下点 8 张牌改绑定（`admin.setrooms`），改完服务器以 4002 关掉该 Dealer 的连接让它重连拿到新房间。Dealer 页只显示自己的房间，只有一间时不显示房间选择。
 - **管理员 PIN** 不在数据里，是 Worker 的密钥 `ADMIN_PIN`（本地在 `worker/.dev.vars`，值 888888，仅本地）。其他 PIN 由总控在网页上生成，存在 `auth.pins`。重置某个 PIN 会让用旧 PIN 登录的会话立即失效（服务器关闭其 socket，code 4001）。
+- **展示模式 PIN（2026-10-04）**：开发者在「总控工具」最下方的「展示模式 PIN」面板里设置（只有真正的 DEV_PIN 登录能看到/改，`dev.setdemo`，存在 `auth.demo`；不能和其他 PIN 重复；保存后正在用的展示会话被 4001 踢下线）。登录得到 `role:'dev'` + `demo:true`，视角和开发者一样可选。**模式**：连接服务器（看/操作真实游戏）或本地（`dmode:'local'`，浏览器自己用 `R.newGame(true)` 跑一局演示数据，不连服务器、互不影响，刷新即重置；本地只支持 `admin.clock`/`admin.reset`，其余总控工具不可用）。**权限**：只读/可修改由开发者定，展示用户不能切换（右上角按钮禁用）；服务器模式下展示会话永远不能用 `admin.*`。可复制 `?pin=` 登录链接发给别人。
 - **WebSocket 协议**：服务器 → `hello {me,S,clock,now}`、`state {S,clock,now}`、`res {id,ok,msg,data}`、`pong`。浏览器 → `act {id, a:{type,...}}`、`ping`（每 20s；60s 没收到任何消息就判定假死并重连）。
 - **防止打字被冲掉**：有输入框/下拉框获得焦点时，收到的新状态先不重绘，失焦后再重绘。
 

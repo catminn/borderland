@@ -8,7 +8,8 @@ const {size,ROOMS,SUITS,RATE,PER_TEAM,MIN_STAY,COIN_GOAL,FINAL_SCORE,FINAL_MSG,Q
 let S=null, ME=null, CLOCK=null, OFFSET=0;
 // Developer mode: DEVME is the real (read-only) sign-in, FULL the full state; ME/S are swapped to the chosen viewpoint.
 let DEVME=null, FULL=null;
-function setMe(me){ME=me;DEVME=me&&me.role==='dev'?me:null;if(!DEVME)FULL=null;}
+function setMe(me){ME=me;DEVME=me&&me.role==='dev'?me:null;if(!DEVME){FULL=null;LOCAL=null;}}
+let LOCAL=null; // 展示模式·本地：浏览器自己跑一局演示数据，不连服务器
 function devMe(){const v=ui.as||'ctrl';return v.startsWith('player:')?{role:'player',pid:v.slice(7),label:'玩家'}:{role:v,pid:null,label:ROLE_NAME[v]};}
 // Phone vibration plus a visual shake. Android: navigator.vibrate. iPhone Safari has no vibrate API; toggling a hidden
 // <input type="checkbox" switch> gives one haptic tick (iOS 17.4+), but iOS only allows it right after a real tap,
@@ -28,7 +29,7 @@ function buzz(p){
   a.forEach((d,i)=>{if(i%2===0)setTimeout(iosTick,t);t+=d;});}
 function shakeEl(el,cls){if(!el)return;el.classList.remove(cls);void el.offsetWidth;el.classList.add(cls);}
 let ui={ddOpen:null,don:{},tab:null,room:'3S',pick:'',res:{},settled:null,hookTeam:'',hookTarget:'',hookWhere:'',pickOut:{},doneSel:{},revokeAsk:null,
-  coinTeam:'',coinAmt:'',buyer:'',mkTab:'buy',ncOpen:false,as:'ctrl',devOps:false,devAck:new Set(),nc:{name:'',desc:'',price:'',stock:''},
+  coinTeam:'',coinAmt:'',buyer:'',mkTab:'buy',ncOpen:false,as:'ctrl',devOps:false,demo:null,devAck:new Set(),nc:{name:'',desc:'',price:'',stock:''},
   sub:{dealer:'info',npc:'task',market:'buy',ctrl:'status',player:'team'},
   pub:{kind:'鬼门开',reward:0,title:'',body:'',target:'all',team:'R',players:[],mins:10,to:'all',sqTeam:'',quest:''},
   admin:{pins:null,snaps:null,counts:{dealer:8,judge:3,mengpo:2,wuchang:1,ctrl:2,screen:1},ask:null,resetTxt:''}};
@@ -324,6 +325,16 @@ function downPanel(){
   return '<div class="pn" style="gap:0"><h3 style="padding-bottom:8px">淘汰与鬼市状态</h3>'+(l.length?l.map(p=>'<div class="li"><div class="grow"><span class="t">'+fmt(p.outAt||0)+'</span>'
     +'<span class="x">'+p.id+'　'+(p.chk&&!p.chk.ok?'待入鬼市':nm[p.st])+(p.at?'　@'+esc(p.at):'')+(p.chk?'　'+(p.chk.ok?'登记已确认':'登记待确认'):'')+'</span></div></div>').join(''):'<div class="li small">现在没有人被淘汰。</div>')+'</div>';
 }
+function demoPanel(){
+  if(!DEVME||DEVME.demo)return '';
+  const c=DEVME.demoCfg||{pin:'',mode:'server',write:false};if(!ui.demo)ui.demo={pin:c.pin,mode:c.mode,write:c.write};const d=ui.demo;d.write=d.write===true||d.write==='true';
+  const ok=/^\d{6}$/.test(d.pin),dirty=d.pin!==c.pin||d.mode!==c.mode||d.write!==c.write;
+  return '<div class="pn" style="margin-top:16px"><div class="shrow"><h3>展示模式 PIN</h3><span class="small">开发者专用；用这个 PIN 登录的人可以看任意视角，发给别人试用</span></div>'
+    +'<div class="fld"><span>PIN（6 位数字）</span><div class="btns"><input class="in mono" data-m="demo.pin" value="'+esc(d.pin)+'" inputmode="numeric" maxlength="6" placeholder="未设置＝关闭" style="max-width:180px"><button class="btn-line" data-a="demo-rand">随机</button>'+(c.pin?'<button class="btn-line" data-a="demo-copy">复制登录链接</button>':'')+'</div></div>'
+    +'<div class="fld"><span>模式</span><div class="chips c2">'+cb({k:'demo.mode',v:'server',on:d.mode==='server',label:'连接服务器',small:'看的是真实游戏',t:false})+cb({k:'demo.mode',v:'local',on:d.mode==='local',label:'本地',small:'自己一局演示数据，互不影响',t:false})+'</div></div>'
+    +'<div class="fld"><span>权限</span><div class="chips c2">'+cb({k:'demo.write',v:false,on:!d.write,label:'只读',t:false})+cb({k:'demo.write',v:true,on:d.write,label:'可修改',small:d.mode==='server'?'会改动真实游戏':'',t:false})+'</div></div>'
+    +'<div class="btns"><button class="btn-main" data-a="demo-save"'+(ok&&dirty?'':' disabled')+'>保存</button><span class="small">'+(c.pin?'当前：'+c.pin+' · '+(c.mode==='local'?'本地':'服务器')+' · '+(c.write?'可修改':'只读'):'当前：未启用')+'　保存后正在用展示 PIN 的人需要重新登录</span></div></div>';
+}
 function teamRows(){
   const list=[...S.teams].sort((a,b)=>b.score-a.score);
   const parts=list.map(t=>{const st=teamStatus(t),a=alive(t.id).length;
@@ -425,7 +436,7 @@ function adminPanel(){
     +'<div class="danger"><h3>危险操作</h3><p>重置会清空所有冥币、花色、日志和鬼市记录（PIN 不变）。请在下方输入“重置”二字后再点按钮。</p>'
     +'<input class="in" id="rst" data-m="adm.resetTxt" value="'+esc(A.resetTxt)+'" placeholder="输入“重置”" style="border-color:#d9b3aa">'
     +'<button class="btn-line '+(rs?'fillred':'')+'" id="rstbtn" data-a="adm-reset" data-v="blank"'+(rs?'':' disabled')+' style="min-height:48px;font-weight:900">重置为空白游戏</button></div></div>';
-  return '<h2 class="sh">总控工具</h2><div class="cols2">'+left+right+'</div>';
+  return '<h2 class="sh">总控工具</h2><div class="cols2">'+left+right+'</div>'+demoPanel();
 }
 
 // ---------- 玩家 ----------
@@ -575,8 +586,9 @@ const themed=()=>true;
 
 function render(){
   if(DEVME&&!entering){ME=devMe();if(FULL)S=ME.role==='player'?R.viewFor(FULL,ME):FULL;}
+  if(DEVME&&DEVME.demo)ui.devOps=!!DEVME.dwrite;
   const da=$('#devas');da.hidden=!DEVME||entering;
-  const dop=$('#devops');dop.hidden=da.hidden;dop.textContent=ui.devOps?'可操作':'只读';dop.classList.toggle('on',ui.devOps);dop.setAttribute('aria-pressed',String(ui.devOps));
+  const dop=$('#devops');dop.hidden=da.hidden;dop.disabled=!!(DEVME&&DEVME.demo);dop.textContent=ui.devOps?'可操作':'只读';dop.classList.toggle('on',ui.devOps);dop.setAttribute('aria-pressed',String(ui.devOps));
   if(DEVME&&!entering){const src=FULL||S,h='<optgroup label="工作人员">'+['ctrl','dealer','judge','mengpo','wuchang','screen'].map(r=>'<option value="'+r+'">'+ROLE_NAME[r]+'</option>').join('')+'</optgroup>'
       +(src?src.teams.map(t=>'<optgroup label="'+t.name+'">'+src.players.filter(p=>p.team===t.id).map(p=>'<option value="player:'+p.id+'">'+p.id+'</option>').join('')+'</optgroup>').join(''):'');
     if(da.dataset.h!==h){da.innerHTML=h;da.dataset.h=h;}if(da.value!==ui.as)da.value=ui.as;}
@@ -606,7 +618,7 @@ function render(){
   const nav=$('#tabs');nav.hidden=tabs.length<2;
   morph(nav,tabs.map(v=>'<button role="tab" data-a="tab" data-v="'+v+'" aria-selected="'+(v===ui.tab)+'">'+TAB_NAME[v]+'</button>').join(''));
   $('#logo').innerHTML=ui.tab==='ctrl'?'<span class="scroll"></span>生死簿':'百鬼夜行';
-  $('#who').textContent=(DEVME?'开发者 · ':'')+(ME.role==='player'?(DEVME?ME.pid:'玩家'):ME.role==='ctrl'?'总控':ME.label||ROLE_NAME[ME.role]);
+  $('#who').textContent=(DEVME?(DEVME.demo?'展示 · ':'开发者 · '):'')+(ME.role==='player'?(DEVME?ME.pid:'玩家'):ME.role==='ctrl'?'总控':ME.label||ROLE_NAME[ME.role]);
   $('#logout').hidden=false;$('#conn').hidden=false;
   const run=CLOCK&&CLOCK.running;
   const cc=$('#clockctl');cc.hidden=ME.role!=='ctrl';cc.textContent=run?'暂停计时':'开始计时';
@@ -675,21 +687,21 @@ async function login(pin){
   catch{loginError('连不上服务器，请检查网络');return;}
   if(!res.ok){loginError(j.error||'登录失败');return;}
   SESSION={token:j.token,me:j.me};store.set(SESSION);setMe(j.me);S=null;ui.tab=null;
-  connect();
+  if(j.me.demo&&j.me.dmode==='local')localStart();else connect();
   if(!$('#lgcard')){render();say(null);return;}
   entering=true;showSeal();
   const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
   setTimeout(()=>{entering=false;$('#view').innerHTML='';render();say(null);},reduce?400:2600);
 }
 function logout(msg){
-  SESSION=null;store.set(null);setMe(null);S=null;CLOCK=null;entering=false;
+  SESSION=null;store.set(null);setMe(null);S=null;CLOCK=null;connected=false;entering=false;
   if(ws){const w=ws;ws=null;try{w.close();}catch{/* ignore */}}
   clearTimeout(timer);$('#view').innerHTML='';render();say(null);if(msg)loginError(msg);
 }
 
 // ---------- live connection ----------
 let ws=null,connected=false,retry=0,timer=null,seq=0,lastMsg=0;const pending=new Map();
-function setConn(){const c=$('#conn');c.className='pill '+(connected?'free':'bad');c.textContent=connected?'已连接':'重连中…';}
+function setConn(){const c=$('#conn');c.className='pill '+(connected?'free':'bad');c.textContent=connected?(LOCAL?'本地展示':'已连接'):'重连中…';}
 function connect(){
   if(!SESSION)return;
   if(ws){try{ws.onclose=null;ws.close();}catch{/* ignore */}}
@@ -717,9 +729,29 @@ setInterval(()=>{if(!ws||!connected)return;
   try{ws.send('{"t":"ping"}');}catch{/* onclose reconnects */}},20000);
 
 // Send one action. `after` runs only if the server accepted it.
+function localNow(){return nowT();}
+function localStart(){
+  FULL=R.newGame(true);S=FULL;LOCAL=true;CLOCK={running:false,base:FULL.t,at:Date.now()};OFFSET=0;connected=true;setConn();requestRender();
+}
+function localSend(a,after,quiet){
+  if(!ui.devOps){say(no('展示模式现在是只读'));return;}
+  let r;const t=a.type||'';
+  if(t==='admin.clock'){
+    R.use(FULL);
+    if(a.op==='start'&&!CLOCK.running){CLOCK={running:true,base:CLOCK.base,at:Date.now()};FULL.t=CLOCK.base;R.log('计时开始');r={ok:true,msg:'计时进行中'};}
+    else if(a.op==='pause'&&CLOCK.running){const n=nowT();CLOCK={running:false,base:n,at:Date.now()};FULL.t=n;R.log('计时暂停');r={ok:true,msg:'计时已暂停'};}
+    else r=no('计时状态没有变化');
+  }else if(t==='admin.reset'){FULL=R.newGame(!!a.demo);CLOCK={running:false,base:a.demo?FULL.t:0,at:Date.now()};r={ok:true,msg:'本地演示已重置'};}
+  else if(t.startsWith('admin.'))r=no('本地展示模式不能用这个总控工具');
+  else{FULL.t=nowT();r=R.apply(FULL,{role:ME.role,pid:ME.pid,label:ME.label,rooms:null},a);}
+  S=ME.role==='player'?R.viewFor(FULL,ME):FULL;
+  if(!quiet||!r.ok)say(r);if(r.ok&&after)after(r);requestRender();
+}
 function send(a,after,quiet){
+  if(LOCAL){localSend(a,after,quiet);return;}
   if(!ws||!connected){say(no('还没连上服务器，请稍等'));return;}
-  if(DEVME){if(!ui.devOps){say(no('开发者模式现在是只读，点右上角「只读」切换成可操作'));return;}a={...a,as:{role:ME.role,pid:ME.pid}};}
+  if(DEVME&&a.type==='dev.setdemo'){}
+  else if(DEVME){if(!ui.devOps){say(no('开发者模式现在是只读，点右上角「只读」切换成可操作'));return;}a={...a,as:{role:ME.role,pid:ME.pid}};}
   const id=++seq;
   pending.set(id,m=>{if(!quiet||!m.ok)say(m);if(m.ok&&after)after(m);requestRender();});
   ws.send(JSON.stringify({t:'act',id,a}));
@@ -748,7 +780,10 @@ document.addEventListener('click',e=>{
   else if(a==='copypin'){copyText(v).then(()=>say({ok:true,msg:'已复制 PIN '+v}),()=>say(no('复制失败，请手动选中 PIN')));}
   else if(a==='theme'){const r=themeKey(),nx=themeFor()==='dark'?'light':'dark';try{localStorage.setItem(THEME_KEY(r),nx);}catch{/* private mode */}}
   else if(a==='logout'){logout();return;}
-  else if(a==='devops'){ui.devOps=!ui.devOps;say({ok:true,msg:ui.devOps?'开发者模式：可操作（以当前视角的身份）':'开发者模式：只读'});}
+  else if(a==='demo-rand'){if(ui.demo)ui.demo.pin=String(Math.floor(100000+Math.random()*900000));}
+  else if(a==='demo-copy'){const l=location.origin+'/?pin='+(DEVME.demoCfg||{}).pin;copyText(l).then(()=>say({ok:true,msg:'已复制链接 '+l}),()=>say(no('复制失败')));}
+  else if(a==='demo-save'){const d=ui.demo;send({type:'dev.setdemo',pin:d.pin,mode:d.mode,write:d.write},m=>{DEVME.demoCfg=m.data;SESSION.me=DEVME;store.set(SESSION);ui.demo=null;});}
+  else if(a==='devops'){if(DEVME.demo)return;ui.devOps=!ui.devOps;say({ok:true,msg:ui.devOps?'开发者模式：可操作（以当前视角的身份）':'开发者模式：只读'});}
   else if(a==='clockctl'){send({type:'admin.clock',op:CLOCK&&CLOCK.running?'pause':'start'});}
   else if(a==='room'){ui.room=v;ui.pick='';ui.res={};ui.pickOut={};ui.settled=null;}
   else if(a==='res'){ui.res[b.dataset.t]=ui.res[b.dataset.t]===v?undefined:v;delete ui.pickOut[b.dataset.t];}
@@ -807,6 +842,7 @@ document.addEventListener('input',e=>{
   if(m==='coin'){const q=S.players.find(x=>x.id===e.target.dataset.p);if(q){q.coins=Math.max(0,parseInt(v,10)||0);const tot=q.coins+q.bail,el=document.getElementById('tot-'+q.id),bar=document.getElementById('bar-'+q.id);
     if(el)el.textContent=tot+' / '+COIN_GOAL;if(bar)bar.style.width=Math.min(100,tot/COIN_GOAL*100)+'%';}}
   else if(m==='don'){ui.don[e.target.dataset.p]=parseInt(v,10)||0;}
+  else if(m==='demo.pin'){const el=e.target;el.value=el.value.replace(/\D/g,'').slice(0,6);if(ui.demo)ui.demo.pin=el.value;}
   else if(m==='hookWhere'){ui.hookWhere=v;}
   else if(m==='coinAmt'){ui.coinAmt=v;const btn=$('#coinbtn');if(btn)btn.textContent=coinBtn();}
   else if(m.startsWith('nc.'))ui.nc[m.slice(3)]=v;
@@ -836,4 +872,4 @@ function downloadPins(){
 document.body.dataset.gaFrame='1';
 const qp=new URLSearchParams(location.search).get('pin');
 if(qp){history.replaceState(null,'',location.pathname);render();login(qp);}
-else{if(SESSION){setMe(SESSION.me);connect();}render();say(null);}
+else{if(SESSION){setMe(SESSION.me);if(SESSION.me.demo&&SESSION.me.dmode==='local')localStart();else connect();}render();say(null);}

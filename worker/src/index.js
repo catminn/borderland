@@ -45,6 +45,9 @@ export class Game extends DurableObject {
     if (this.env.ADMIN_PIN && pin === String(this.env.ADMIN_PIN)) return { role: 'ctrl', label: '总控（管理员）' };
     // Developer mode: read-only, sees every page. Only on when the Worker secret DEV_PIN is set.
     if (this.env.DEV_PIN && pin === String(this.env.DEV_PIN)) return { role: 'dev', label: '开发者' };
+    // 展示模式 PIN: set by the developer from the page. Same viewpoints as developer mode; 本地 = the browser runs its own demo game, 服务器 = the real game.
+    const d = this.auth.demo;
+    if (d && d.pin && pin === d.pin) return { role: 'dev', demo: true, dmode: d.mode === 'local' ? 'local' : 'server', dwrite: !!d.write, label: '展示' };
     return this.auth.pins[pin] || null;
   }
   sessionOf(token) {
@@ -53,7 +56,12 @@ export class Game extends DurableObject {
     const id = this.identity(s.pin);
     return id ? { ...id, pin: s.pin } : null;   // PIN reset or deleted -> session no longer valid
   }
-  me(s) { return { role: s.role, pid: s.pid || null, label: s.label || ROLE_NAME[s.role], rooms: s.role === 'dealer' && Array.isArray(s.rooms) ? s.rooms : null }; }
+  me(s) {
+    const m = { role: s.role, pid: s.pid || null, label: s.label || ROLE_NAME[s.role], rooms: s.role === 'dealer' && Array.isArray(s.rooms) ? s.rooms : null };
+    if (s.demo) { m.demo = true; m.dmode = s.dmode; m.dwrite = s.dwrite; }
+    else if (s.role === 'dev') m.demoCfg = { pin: (this.auth.demo || {}).pin || '', mode: (this.auth.demo || {}).mode === 'local' ? 'local' : 'server', write: !!(this.auth.demo || {}).write };
+    return m;
+  }
 
   // ---------- HTTP ----------
   async fetch(req) {
@@ -113,6 +121,17 @@ export class Game extends DurableObject {
   }
 
   async handle(s, a) {
+    if (a.type === 'dev.setdemo') {   // only the real developer PIN may change the 展示模式 PIN
+      if (s.role !== 'dev' || s.demo) return R.no('只有开发者能改展示模式');
+      const pin = String(a.pin || '').trim();
+      if (!/^\d{6}$/.test(pin)) return R.no('展示 PIN 要是 6 位数字');
+      if ((this.env.ADMIN_PIN && pin === String(this.env.ADMIN_PIN)) || (this.env.DEV_PIN && pin === String(this.env.DEV_PIN)) || this.auth.pins[pin]) return R.no('这个 PIN 已被别的身份用了，换一个');
+      this.auth.demo = { pin, mode: a.mode === 'local' ? 'local' : 'server', write: !!a.write };
+      for (const ws of this.ctx.getWebSockets()) { const t = this.sessionOf(ws.deserializeAttachment()?.token); if (t && t.demo) { try { ws.close(4001, 'demo changed'); } catch { /* ignore */ } } }
+      return { ok: true, msg: '展示模式已保存', changed: false, auth: true, data: { pin, mode: this.auth.demo.mode, write: this.auth.demo.write } };
+    }
+    if (s.demo && (!s.dwrite || s.dmode === 'local')) return R.no(s.dmode === 'local' ? '本地展示模式不连服务器' : '展示模式现在是只读');
+    const isDemo = !!s.demo;
     if (s.role === 'dev') { // acts as the viewpoint chosen on the page, only when its 可操作 switch is on
       const as = a.as || {}, roles = ['ctrl', 'dealer', 'judge', 'mengpo', 'screen', 'player'];
       if (!roles.includes(as.role)) return R.no('开发者模式：先打开右上角「可操作」');
@@ -121,6 +140,7 @@ export class Game extends DurableObject {
       delete a.as;
     }
     if (typeof a.type === 'string' && a.type.startsWith('admin.')) {
+      if (isDemo) return R.no('展示模式不能用总控工具');
       if (s.role !== 'ctrl') return R.no('只有总控能做这个操作');
       return this.admin(a);
     }
@@ -156,6 +176,7 @@ export class Game extends DurableObject {
       case 'admin.genpins': {
         const counts = a.counts || {}, pins = this.auth.pins, taken = new Set(Object.keys(pins));
         if (this.env.ADMIN_PIN) taken.add(String(this.env.ADMIN_PIN));
+        if (this.auth.demo && this.auth.demo.pin) taken.add(this.auth.demo.pin);
         let made = 0;
         const have = new Set(Object.values(pins).filter(v => v.pid).map(v => v.pid));
         for (const p of this.S.players) if (!have.has(p.id)) { pins[newPin(taken)] = { role: 'player', pid: p.id, label: p.id }; made++; }
