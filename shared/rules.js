@@ -155,18 +155,21 @@ function eliminate(p,why,where){
 function pickup(pid){const p=S.players.find(x=>x.id===pid);
   if(!p)return no('没有这名队员');if(p.st!=='out')return no(p.id+(p.st==='picked'?' 已经接到了':' 现在不在待接状态'));
   p.st='picked';p.pickAt=S.t;log('黑白无常接到 '+p.id+(p.at?'（'+p.at+'）':''));return ok('已接到 '+p.id);}
-// 入鬼市登记（黑白无常或孟婆谁点都行，另一方确认）：从这一刻起计停留时间，并领 300 个人冥币。
+// 登记后留在待入鬼市，另一方确认后正式进入并开始计时。
 function checkIn(pid,role){const p=S.players.find(x=>x.id===pid);
-  if(!p)return no('没有这名队员');if(p.st!=='out'&&p.st!=='picked')return no(p.id+(p.st==='market'?' 已经在鬼市了':' 不在待接状态'));
-  p.st='market';p.inAt=S.t;p.coins=300;p.bail=0;p.chk={by:role,ok:false};
-  log(p.id+' 进入鬼市（'+(ROLE_LABEL[role]||role)+'登记，待确认），领 300 冥币','back');
-  pushNotice({kind:'通知',title:'你已进入鬼市',body:'已登记，领到 300 冥币。待满 '+MIN_STAY/60+' 分钟且个人冥币 + 队友助力凑够 '+COIN_GOAL+'，找孟婆买命回队。',target:'player',ids:[p.id]});
-  return ok(p.id+' 已登记进鬼市，请'+(role==='wuchang'?'孟婆':role==='mengpo'?'黑白无常':'另一方')+'确认');}
+  if(!p)return no('没有这名队员');if(p.chk&&!p.chk.ok)return no('已登记，等待另一方确认');
+  if(p.st!=='out'&&p.st!=='picked')return no('不在待入鬼市状态');
+  p.st='picked';p.chk={by:role,ok:false};
+  log(p.id+' 入鬼市登记，等待'+(role==='wuchang'?'孟婆':'黑白无常')+'确认');
+  return ok('已登记，等待另一方确认');}
 function confirmIn(pid,role){const p=S.players.find(x=>x.id===pid);
-  if(!p||p.st!=='market'||!p.chk)return no('没有待确认的登记');if(p.chk.ok)return no(p.id+' 已经确认过了');
+  if(!p||!['picked','market'].includes(p.st)||!p.chk)return no('没有待确认的登记');if(p.chk.ok)return no('已经确认过了');
   const expected=p.chk.by==='mengpo'?'wuchang':p.chk.by==='wuchang'?'mengpo':null;
   if(!expected||role!==expected)return no('要由另一方确认，不能自己确认自己的登记');
-  p.chk.ok=true;p.chk.by2=role;log(p.id+' 入鬼市登记已由'+(ROLE_LABEL[role]||role)+'确认');return ok('已确认 '+p.id+' 入鬼市');}
+  p.st='market';p.inAt=S.t;p.coins=300;p.bail=0;p.chk.ok=true;p.chk.by2=role;
+  log(p.id+' 正式进入鬼市，由'+ROLE_LABEL[role]+'确认，领 300 冥币','back');
+  pushNotice({kind:'通知',title:'你已进入鬼市',body:'已确认入鬼市，领到 300 冥币。待满 '+MIN_STAY/60+' 分钟且个人冥币 + 队友助力凑够 '+COIN_GOAL+'，找孟婆买命回队。',target:'player',ids:[p.id]});
+  return ok('已确认 '+p.id+' 入鬼市');}
 function finishRoom(rid,results,picks={}){
   const r=room(rid),st=S.rooms.find(x=>x.id===rid);
   if(st.teams.length<(r.two?2:1))return no(r.two?'♥ 房间需要两队同场才能结算':'房间里没有队伍');
@@ -200,7 +203,7 @@ function hook(actorId,pid,where){
 }
 function revive(pid){
   const p=S.players.find(x=>x.id===pid);
-  if(!p||p.st!=='market')return no('该队员不在鬼市');
+  if(!p||p.st!=='market'||(p.chk&&!p.chk.ok))return no('该队员不在鬼市');
   if(S.t-p.inAt<MIN_STAY)return no(p.id+' 还需在鬼市待满 '+Math.ceil((MIN_STAY-(S.t-p.inAt))/60)+' 分钟');
   const tot=(p.coins||0)+(p.bail||0);
   if(tot<COIN_GOAL)return no(p.id+' 冥币 '+p.coins+' + 队友助力 '+p.bail+' = '+tot+'，还差 '+(COIN_GOAL-tot));
@@ -214,7 +217,7 @@ function revive(pid){
 function gapOf(p){return Math.max(0,COIN_GOAL-(p.coins||0)-(p.bail||0));}
 function donate(pid,amt,byId){
   const p=S.players.find(x=>x.id===pid),by=S.players.find(x=>x.id===byId);
-  if(!p||p.st!=='market')return no('该队员还没进鬼市（要先由黑白无常 / 孟婆登记）');
+  if(!p||p.st!=='market'||(p.chk&&!p.chk.ok))return no('该队员还没进鬼市（要先由黑白无常 / 孟婆登记）');
   if(!by||by.st!=='alive'||by.team!==p.team)return no('只有本队还在场上的队员可以助力');
   const t=team(p.team),gap=gapOf(p);
   if(amt==null)amt=Math.min(gap*RATE,t.score);
@@ -232,7 +235,7 @@ function donate(pid,amt,byId){
 function buyCard(kid,buyer){const c=S.shop.find(x=>x.id===kid);
   if(!c)return no('没有这张卡');if(!buyer)return no('先选买家');if(c.stock<=0)return no('「'+c.name+'」已售罄');
   let tm,payer;
-  {const p=S.players.find(x=>x.id===buyer);if(!p||p.st!=='market')return no('只有在鬼市的人能用个人冥币');
+  {const p=S.players.find(x=>x.id===buyer);if(!p||p.st!=='market'||(p.chk&&!p.chk.ok))return no('只有在鬼市的人能用个人冥币');
     if(p.coins<c.price)return no(p.id+' 只有 '+p.coins+' 冥币，买不起「'+c.name+'」（'+c.price+'）');p.coins-=c.price;tm=team(p.team);payer=p.id;}
   c.stock--;tm.skills.push({sid:S.sid++,name:c.name,desc:c.desc||'',by:payer,t:S.t});
   log(payer+' 在鬼市花 '+c.price+' 冥币买了技能卡「'+c.name+'」','back');
@@ -308,7 +311,7 @@ export function apply(state,me,a){
     case 'checkin':{const role=me.role==='ctrl'?a.party:me.role;if(role!=='mengpo'&&role!=='wuchang')return no('请选择孟婆或黑白无常页面登记');return checkIn(a.pid,role);}
     case 'confirm':return confirmIn(a.pid,me.role==='ctrl'?a.party:me.role);
     case 'revive':return revive(a.pid);
-    case 'coin':{const p=S.players.find(x=>x.id===a.pid);if(!p||p.st!=='market')return no('该队员不在鬼市');
+    case 'coin':{const p=S.players.find(x=>x.id===a.pid);if(!p||p.st!=='market'||(p.chk&&!p.chk.ok))return no('该队员不在鬼市');
       p.coins=Math.max(0,Math.round(+a.coins)||0);return ok(p.id+' 冥币记为 '+p.coins);}
     case 'buy':return buyCard(a.kid,a.buyer);
     case 'usecard':return useCard(a.tid,+a.sid);

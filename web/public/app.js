@@ -242,16 +242,16 @@ const checkinParty=()=>ME.role==='ctrl'?(ui.tab==='wuchang'?'wuchang':'mengpo'):
 const canConfirm=p=>!!p.chk&&!p.chk.ok&&(p.chk.by==='mengpo'?checkinParty()==='wuchang':p.chk.by==='wuchang'&&checkinParty()==='mengpo');
 const chkBit=p=>!p.chk?'':p.chk.ok?'<span class="chk ok">登记已确认</span>':canConfirm(p)?'<button class="btn-line fill chkbtn" data-a="confirmin" data-p="'+p.id+'">确认入鬼市</button>':'<span class="chk wait">待'+(p.chk.by==='mengpo'?'黑白无常':'孟婆')+'确认</span>';
 function inboundPanel(){
-  const wait=S.players.filter(p=>p.st==='out'||p.st==='picked').sort((a,b)=>a.outAt-b.outAt);
+  const wait=S.players.filter(p=>p.st==='out'||p.st==='picked'||(p.st==='market'&&p.chk&&!p.chk.ok)).sort((a,b)=>a.outAt-b.outAt);
   const rows=wait.map(p=>'<div class="mrow'+(p.st==='picked'?' ok':'')+'"><div class="l1"><span class="id">'+p.id+'</span>'+tchip(p.team)
     +'<span class="stay">'+(p.st==='picked'?'<b>已被黑白无常接到</b>':'等黑白无常来接')+'</span></div>'
     +'<div class="l1"><span class="stay">淘汰位置：<b>'+esc(p.at||'未记录')+'</b>　已等 <b class="mono">'+mm(S.t-p.outAt)+'</b></span></div>'
-    +'<button class="btn-main'+(p.st==='picked'?' glow':'')+'" data-a="checkin" data-p="'+p.id+'">登记入鬼市</button></div>').join('');
-  return '<section class="mcol"><div class="shrow"><h2 class="sh">待入鬼市</h2><span class="hint">登记后开始计时并领 300 冥币，另一方确认</span></div>'
+    +(p.chk&&!p.chk.ok?chkBit(p):'<button class="btn-main'+(p.st==='picked'?' glow':'')+'" data-a="checkin" data-p="'+p.id+'">登记入鬼市</button>')+'</div>').join('');
+  return '<section class="mcol"><div class="shrow"><h2 class="sh">待入鬼市</h2><span class="hint">另一方确认后进入鬼市，开始计时并领 300 冥币</span></div>'
     +(rows?'<div class="mlist">'+rows+'</div>':'<div class="empty">现在没有等着入鬼市的人。</div>')+'</section>';
 }
 function viewMarket(){
-  const mk=S.players.filter(p=>p.st==='market').sort((a,b)=>a.inAt-b.inAt);
+  const mk=S.players.filter(p=>p.st==='market'&&(!p.chk||p.chk.ok)).sort((a,b)=>a.inAt-b.inAt);
   // Left (≈60%): one compact row per person in the market.
   if(ui.reviveAsk){const q=S.players.find(x=>x.id===ui.reviveAsk);if(!q||q.st!=='market'||S.t-q.inAt<MIN_STAY||q.coins+q.bail<COIN_GOAL)ui.reviveAsk=null;}
   const rows=mk.map(p=>{const stay=S.t-p.inAt,tOk=stay>=MIN_STAY,tot=p.coins+p.bail,cOk=tot>=COIN_GOAL,ok=tOk&&cOk,asking=ui.reviveAsk===p.id;
@@ -306,11 +306,11 @@ function cardsPanel(mk){
 function viewWuchang(){
   const meta=p=>'<div class="l1"><span class="id">'+p.id+'</span>'+tchip(p.team)+'<span class="stay">淘汰位置：<b>'+esc(p.at||'未记录')+'</b></span><span class="stay">已等 <b class="mono">'+mm(S.t-(p.outAt||S.t))+'</b></span></div>';
   const wait=S.players.filter(p=>p.st==='out').sort((a,b)=>a.outAt-b.outAt);
-  const go=S.players.filter(p=>p.st==='picked'||(p.st==='market'&&p.chk&&!p.chk.ok&&p.chk.by==='mengpo')).sort((a,b)=>(a.outAt||0)-(b.outAt||0));
+  const go=S.players.filter(p=>p.st==='picked'||(p.chk&&!p.chk.ok)).sort((a,b)=>(a.outAt||0)-(b.outAt||0));
   const left='<section class="mcol"><div class="shrow"><h2 class="sh">待接的人</h2><span class="hint">谁在哪里被淘汰了；接到后点「接到了」</span></div>'
     +(wait.length?'<div class="mlist">'+wait.map(p=>'<div class="mrow">'+meta(p)+'<button class="btn-main glow" data-a="pickup" data-p="'+p.id+'">接到了</button></div>').join('')+'</div>':'<div class="empty">现在没有人需要接。</div>')+'</section>';
   const right='<section class="mcol"><div class="shrow"><h2 class="sh">送入鬼市 / 确认</h2><span class="hint">已接到的人送去鬼市；孟婆已登记的人在这里确认</span></div>'
-    +(go.length?'<div class="mlist">'+go.map(p=>'<div class="mrow ok">'+meta(p)+(p.st==='picked'?'<button class="btn-main glow" data-a="checkin" data-p="'+p.id+'">送入鬼市</button>':'<div class="l1"><span class="chk wait">孟婆已登记</span></div><button class="btn-main glow" data-a="confirmin" data-p="'+p.id+'">确认入鬼市</button>')+'</div>').join('')+'</div>':'<div class="empty">没有需要送入或确认的人。</div>')+'</section>';
+    +(go.length?'<div class="mlist">'+go.map(p=>'<div class="mrow ok">'+meta(p)+(p.chk&&!p.chk.ok?chkBit(p):'<button class="btn-main glow" data-a="checkin" data-p="'+p.id+'">送入鬼市</button>')+'</div>').join('')+'</div>':'<div class="empty">没有需要送入或确认的人。</div>')+'</section>';
   return '<div class="page mkt eq">'+left+right+'</div>';
 }
 
