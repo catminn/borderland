@@ -343,7 +343,7 @@ textarea.in{height:auto;min-height:90px;padding:10px 12px;line-height:1.6;resize
 .room .on{font-size:20px;font-weight:900;color:var(--accent);display:flex;align-items:center;gap:8px}
 .room .vs{font-size:20px}
 .room .vs .tchip{font-size:20px;padding:1px 10px}
-.room .idle{font-size:26px;color:var(--sub);letter-spacing:.2em}
+.room .idle{font-size:20px;font-weight:900;color:var(--sub)}
 body.screen .wrap{max-width:none;padding:0;gap:0;min-height:100vh;justify-content:center}
 body.screen header.top{position:fixed;top:8px;right:10px;z-index:30;border:0;padding:0;opacity:.18;transition:opacity .2s}
 body.screen header.top:hover,body.screen header.top:focus-within{opacity:1}
@@ -982,7 +982,8 @@ body.inmk::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:6
 .svline{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;padding:10px 14px;border-radius:12px;border:1.5px solid var(--line);background:var(--panel);font-size:14px}
 .svline b{font-weight:900}
 .stage .room .rbook{min-height:46px;font-size:22px;padding:0 30px;margin-top:0}
-.room .idle.okk{color:var(--accent);font-weight:800}
+.room .idle.okk{color:var(--accent)}
+.stage .room .idle{font-size:22px}
 /* 花色：四个小章；房间记录 */
 .suits4{display:flex;flex-wrap:wrap;gap:8px}
 .s4{flex-direction:row;gap:6px;padding:6px 12px;border-radius:999px;align-items:center}
