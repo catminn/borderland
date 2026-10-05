@@ -164,7 +164,8 @@ function checkIn(pid,role){const p=S.players.find(x=>x.id===pid);
   return ok(p.id+' 已登记进鬼市，请'+(role==='wuchang'?'孟婆':role==='mengpo'?'黑白无常':'另一方')+'确认');}
 function confirmIn(pid,role){const p=S.players.find(x=>x.id===pid);
   if(!p||p.st!=='market'||!p.chk)return no('没有待确认的登记');if(p.chk.ok)return no(p.id+' 已经确认过了');
-  if(role!=='ctrl'&&p.chk.by===role)return no('要由另一方确认，不能自己确认自己的登记');
+  const expected=p.chk.by==='mengpo'?'wuchang':p.chk.by==='wuchang'?'mengpo':null;
+  if(!expected||role!==expected)return no('要由另一方确认，不能自己确认自己的登记');
   p.chk.ok=true;p.chk.by2=role;log(p.id+' 入鬼市登记已由'+(ROLE_LABEL[role]||role)+'确认');return ok('已确认 '+p.id+' 入鬼市');}
 function finishRoom(rid,results,picks={}){
   const r=room(rid),st=S.rooms.find(x=>x.id===rid);
@@ -304,8 +305,8 @@ export function apply(state,me,a){
     case 'final':return setFinal(a.tid,!!a.on);
     case 'assign':return assignStart();
     case 'pickup':return pickup(a.pid);
-    case 'checkin':return checkIn(a.pid,me.role);
-    case 'confirm':return confirmIn(a.pid,me.role);
+    case 'checkin':{const role=me.role==='ctrl'?a.party:me.role;if(role!=='mengpo'&&role!=='wuchang')return no('请选择孟婆或黑白无常页面登记');return checkIn(a.pid,role);}
+    case 'confirm':return confirmIn(a.pid,me.role==='ctrl'?a.party:me.role);
     case 'revive':return revive(a.pid);
     case 'coin':{const p=S.players.find(x=>x.id===a.pid);if(!p||p.st!=='market')return no('该队员不在鬼市');
       p.coins=Math.max(0,Math.round(+a.coins)||0);return ok(p.id+' 冥币记为 '+p.coins);}
