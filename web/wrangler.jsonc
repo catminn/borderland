@@ -1,6 +1,6 @@
-// Web pages (Cloudflare Pages project "borderland"). /api/* is forwarded to the game server Worker.
+// Web pages (Cloudflare Pages project "cssa-borderland"). /api/* is forwarded to the game server Worker.
 {
-  "name": "borderland",
+  "name": "cssa-borderland",
   "pages_build_output_dir": "./public",
   "compatibility_date": "2025-09-01",
   "durable_objects": { "bindings": [{ "name": "GAME", "class_name": "Game", "script_name": "borderland-game" }] }

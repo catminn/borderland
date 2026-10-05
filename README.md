@@ -32,4 +32,4 @@ npm test             # 另开终端：多设备联测
 
 1. 游戏服务器：`npm run deploy:game`，并设置密钥 `cd worker && wrangler secret put ADMIN_PIN`
 2. 网页：`npm run deploy:web`（Pages 项目名 `borderland`）
-3. 自定义域名在 Pages 项目里添加；外部 DNS 的子域名只需一条 CNAME 指向 `borderland.pages.dev`。
+3. 自定义域名在 Pages 项目里添加；外部 DNS 的子域名只需一条 CNAME 指向 `cssa-borderland.pages.dev`。

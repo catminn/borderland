@@ -55,12 +55,12 @@ jobs:
 
       - name: Create Pages project (first run only)
         run: |
-          if npx wrangler pages project list | grep -q '\bborderland\b'; then
+          if npx wrangler pages project list | grep -q 'cssa-borderland'; then
             echo "Pages project exists"
           else
-            npx wrangler pages project create borderland --production-branch main
+            npx wrangler pages project create cssa-borderland --production-branch main
           fi
 
-      - name: Deploy web (Pages project borderland)
+      - name: Deploy web (Pages project cssa-borderland)
         working-directory: web
         run: npx wrangler pages deploy --branch main --commit-hash "$GITHUB_SHA" --commit-dirty=true
