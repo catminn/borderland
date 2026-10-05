@@ -1077,3 +1077,276 @@ body.login{overflow:hidden}
   .stage .room .rtm{font-size:12px}
   .stage .room .on{font-size:13px}
 }
+
+/* ==== 漫画分格组件皮肤（2026-10-05）· 追加在 style.css 末尾即可 ====
+   只改组件的描边 / 投影 / 按压。描边用 inset box-shadow 加粗、禁用用 outline 画虚线，
+   都不占布局：尺寸、换行、栅格与原来完全一致。--bw = 该组件原本的 border 宽度。 */
+:root{
+  --stroke:2px; --stroke-s:1.5px;            /* 组件 / 小标签 描边宽度 */
+  --stroke-c:var(--ink);                   /* 描边色 */
+  --sh-c:var(--ink); --shx:3px; --shs:2px; /* 硬投影颜色、偏移（组件 / 小标签） */
+  --press:3px;                             /* 按下位移 */
+  --hair-c:transparent;                    /* 深色：描边内一圈青绿细线 */
+  --hov:0 0 0 0 transparent;               /* 深色：hover 鬼火光 */
+  --redlit:0 0 0 0 transparent;            /* 深色：红按钮暗红光 */
+  --in-sh:color-mix(in oklab,var(--ink) 16%,transparent); /* 输入框内凹 */
+  --r-s:4px; --r-m:6px; --bw:1px;
+  --sh:var(--shx) var(--shx) 0 var(--sh-c);
+}
+:root[data-theme="dark"]{
+  --stroke-c:#000;
+  --sh-c:color-mix(in oklab,var(--accent) 30%,#000); /* 纯黑在近黑底上看不见，投影带一点鬼火青 */
+  --hair-c:transparent;
+  --hov:0 0 18px color-mix(in oklab,var(--accent) 40%,transparent);
+  --redlit:0 0 18px color-mix(in oklab,var(--red) 38%,transparent);
+  --in-sh:rgba(0,0,0,.6);
+}
+.ovl{--stroke-c:#000;--sh-c:color-mix(in oklab,#5fe0b4 30%,#000);--hair-c:transparent;--hov:0 0 18px rgba(95,224,180,.4)}
+@media (max-width:719px){:root{--stroke:1.5px;--stroke-s:1px;--shx:2px;--press:2px}}
+@media (min-width:820px){.stage{--stroke:3px;--stroke-s:2px;--shx:4px;--shs:3px;--press:3px}}
+
+/* 各组件原 border 宽度 */
+.btn-main,.dlg button,.tchip{--bw:0px}
+.btn-line,.tbtn,nav.pages button,.subtabs.top button,.mtabs button,.quick button,.cstep button,.histbtn,
+.pn,.note,.mate,.rt,.hero,.tcard,.tbl,.lot,.notice,.mrow,
+.tag,.pill,.kb,.typ,.sk,.logl .k,.in,.cb.big{--bw:1px}
+.btn-line.acc,.btn-line.red,.cb,.sbtn,.dd-btn,.rbtn,.wl button,.note .ack,.bchip,.svline,.dd-list,.tile,.pc,.kb.round,.dlg .bd span,.room .typ{--bw:1.5px}
+.room,.gatebar,.cb.big.on{--bw:2px}
+
+/* ---------- 可点击：凸起贴纸 ---------- */
+:is(.btn-main,.btn-line,.tbtn,nav.pages button,.subtabs.top button,.mtabs button,.cb,.sbtn,.dd-btn,.rbtn,.wl button,.quick button,.note .ack,.bchip,.histbtn,.dlg button,.stage .room .rbook){
+  --ring:inset 0 0 0 calc(var(--stroke) - var(--bw)) var(--stroke-c),inset 0 0 0 calc(var(--stroke) - var(--bw) + 1px) var(--hair-c);
+  border-color:var(--stroke-c);border-style:solid;border-radius:var(--r-m);
+  box-shadow:var(--ring),var(--sh);
+  transition:transform 70ms ease-out,box-shadow 70ms ease-out;
+}
+.histbtn{border-style:solid}
+.btn-main.glow{box-shadow:var(--ring),var(--sh),0 0 22px var(--glow)}
+:is(.btn-main.red,.btn-line.red,.btn-line.fillred,.devops.on){box-shadow:var(--ring),var(--sh),var(--redlit)}
+.btn-line.acc{background:var(--accent-soft)}
+.btn-line.red{background:var(--red-soft)}
+@media (hover:hover){
+  :is(.btn-main,.btn-line,.tbtn,nav.pages button,.subtabs.top button,.mtabs button,.cb,.sbtn,.dd-btn,.rbtn,.wl button,.quick button,.note .ack,.bchip,.histbtn,.dlg button,.stage .room .rbook):hover:not(:disabled){box-shadow:var(--ring),var(--sh),var(--hov)}
+  :is(.btn-main.red,.btn-line.red,.btn-line.fillred):hover:not(:disabled){box-shadow:var(--ring),var(--sh),var(--redlit),var(--redlit)}
+}
+:is(.btn-main,.btn-line,.tbtn,nav.pages button,.subtabs.top button,.mtabs button,.cb,.sbtn,.dd-btn,.rbtn,.wl button,.quick button,.note .ack,.bchip,.histbtn,.dlg button,.stage .room .rbook):focus-visible{box-shadow:var(--ring),var(--sh),0 0 0 4px var(--glow)}
+/* 按下：投影收掉、下沉 */
+:is(.btn-main,.btn-line,.tbtn,nav.pages button,.subtabs.top button,.mtabs button,.cb,.sbtn,.dd-btn,.rbtn,.wl button,.quick button,.note .ack,.bchip,.histbtn,.dlg button,.stage .room .rbook):active:not(:disabled){transform:translate(var(--press),var(--press));box-shadow:var(--ring)}
+/* 选中：不位移（避免与同排按钮错位），投影收掉，描边整圈换成强调色（单线） */
+:is(.cb.on,.sbtn.on,.rbtn.on,.dd.open .dd-btn,nav.pages button[aria-selected="true"],.subtabs.top button[aria-selected="true"],.mtabs button[aria-selected="true"],.wl button[aria-pressed="true"]){
+  border-color:var(--accent);
+  box-shadow:inset 0 0 0 calc(var(--stroke) - var(--bw)) var(--accent);
+}
+:is(.cb.redsel.on,.sbtn.on.secret,.wl .l[aria-pressed="true"]){border-color:var(--red);box-shadow:inset 0 0 0 calc(var(--stroke) - var(--bw)) var(--red),var(--redlit)}
+.wl .w[aria-pressed="true"]{border-color:var(--stroke-c);box-shadow:inset 0 0 0 calc(var(--stroke) - var(--bw)) var(--stroke-c)}
+.rbtn.on{box-shadow:inset 0 0 0 calc(var(--stroke) - var(--bw)) var(--accent),0 0 18px var(--glow)}
+/* 主按钮：左侧镂空钉孔（真透出底色）。孔用 mask 挖，圈用背景渐变画，二者同在 border-box 坐标，严格同心 */
+.btn-main{position:relative}
+.btn-main:not(.rvask .btn-main){
+  background-image:radial-gradient(circle 8px at 18px 50%,transparent 5.5px,var(--stroke-c) 6px,var(--stroke-c) 7.5px,transparent 8px);
+  background-origin:border-box;background-repeat:no-repeat;
+  -webkit-mask:radial-gradient(circle 6px at 42px 50%,transparent 5.5px,#000 6px) -24px -24px/calc(100% + 48px) calc(100% + 48px) no-repeat border-box;
+  mask:radial-gradient(circle 6px at 42px 50%,transparent 5.5px,#000 6px) -24px -24px/calc(100% + 48px) calc(100% + 48px) no-repeat border-box;
+  -webkit-mask-clip:no-clip;mask-clip:no-clip}
+.btn-main:not(.rvask .btn-main):disabled{background-image:radial-gradient(circle 8px at 18px 50%,transparent 5.5px,var(--line2) 6px,var(--line2) 7px,transparent 7.5px)}
+/* 不可用：虚线描边、无投影、半透明 */
+:is(.btn-main,.btn-line,.tbtn,.cb,.sbtn,.dd-btn,.rbtn,.wl button,.quick button,.note .ack,.dlg button):disabled,.room .rbook.dim{
+  border-color:transparent;box-shadow:none;transform:none;opacity:.55;
+  outline:var(--stroke) dashed var(--line2);outline-offset:calc(-1 * var(--stroke));
+}
+.btn-main.ghost:disabled{opacity:.7}
+
+/* ---------- 输入：内凹 ---------- */
+.in{
+  border-color:var(--stroke-c);border-radius:var(--r-s);
+  box-shadow:inset 0 0 0 calc(var(--stroke) - var(--bw)) var(--stroke-c),inset 0 0 0 calc(var(--stroke) - var(--bw) + 1px) var(--hair-c),inset 3px 3px 0 calc(var(--stroke) - var(--bw)) var(--in-sh);
+}
+.in:focus{box-shadow:inset 0 0 0 calc(var(--stroke) - var(--bw)) var(--stroke-c),inset 3px 3px 0 calc(var(--stroke) - var(--bw)) var(--in-sh),0 0 0 4px var(--glow)}
+.cstep{gap:3px}
+.cstep button{
+  border:1px solid var(--stroke-c);border-radius:3px;
+  box-shadow:inset 0 0 0 calc(var(--stroke-s) - 1px) var(--stroke-c),1px 1px 0 var(--sh-c);
+  transition:transform 70ms ease-out,box-shadow 70ms ease-out;
+}
+.cstep button:hover{border-color:var(--stroke-c);box-shadow:inset 0 0 0 calc(var(--stroke-s) - 1px) var(--stroke-c),1px 1px 0 var(--sh-c),var(--hov)}
+.cstep button:active{transform:translate(1px,1px);box-shadow:inset 0 0 0 calc(var(--stroke-s) - 1px) var(--stroke-c)}
+
+/* ---------- 信息块：漫画分格 ---------- */
+:is(.pn,.note,.mate,.room,.rt,.hero,.tcard,.tbl,.svline,.lot,.dd-list,.tile,.mrow){
+  --ring:inset 0 0 0 calc(var(--stroke) - var(--bw)) var(--stroke-c),inset 0 0 0 calc(var(--stroke) - var(--bw) + 1px) var(--hair-c);
+  border-color:var(--stroke-c);border-radius:var(--r-m);box-shadow:var(--ring),var(--sh);
+}
+.pn.dash{border-color:var(--line2);box-shadow:none}
+.lot.hot{border-color:var(--red);box-shadow:inset 0 0 0 calc(var(--stroke) - var(--bw)) var(--red),var(--shx) var(--shx) 0 var(--red)}
+/* 强调状态：整圈描边换色（单线），不加左侧粗条 */
+:is(.pc.ok,.note.new,.room.busy,.mrow.ok){border-color:var(--accent);box-shadow:inset 0 0 0 calc(var(--stroke) - var(--bw)) var(--accent),var(--shx) var(--shx) 0 var(--accent),0 0 22px var(--glow)}
+.room.mine{border-color:var(--red);box-shadow:inset 0 0 0 calc(var(--stroke) - var(--bw)) var(--red),var(--shx) var(--shx) 0 var(--red),0 0 16px var(--glow)}
+.pn.hook{border-color:var(--red);box-shadow:inset 0 0 0 calc(var(--stroke) - var(--bw)) var(--red),var(--shx) var(--shx) 0 var(--red)}
+.note.lost{box-shadow:var(--ring)}
+.dd-list{box-shadow:var(--ring),var(--sh)}
+.dd-o{border-radius:var(--r-s)}
+.gatebar{border-radius:var(--r-m);box-shadow:inset 0 0 0 calc(var(--stroke) - var(--bw)) var(--red),var(--sh),var(--redlit)}
+.notice{border-color:var(--stroke-c);border-radius:var(--r-m);box-shadow:inset 0 0 0 calc(var(--stroke) - var(--bw)) var(--stroke-c),var(--sh)}
+.notice.ok{border-color:var(--accent);box-shadow:inset 0 0 0 calc(var(--stroke) - var(--bw)) var(--accent),var(--shx) var(--shx) 0 var(--accent)}
+.notice.bad{border-color:var(--red);box-shadow:inset 0 0 0 calc(var(--stroke) - var(--bw)) var(--red),var(--shx) var(--shx) 0 var(--red)}
+/* 大屏深色：去掉纸纹（背景、卡片、香） */
+:root[data-theme="dark"] body:is(.board,.screen){background-image:var(--tex,none)!important;background-blend-mode:normal!important}
+:root[data-theme="dark"] body:is(.board,.screen) :is(.stage,.pn,.hero,.tcard,.mate,.note,.mini,.room,.rt,.fc,.fhd,.xiang .stick){background-image:none!important}
+/* 大屏排名柱：去掉纸纹与剪纸顶边，改为描边色块 + 右侧硬投影 */
+.stage .bcol .b{background-image:none!important;clip-path:none;border-radius:var(--r-m) var(--r-m) 0 0;
+  box-shadow:inset 0 0 0 var(--stroke) var(--stroke-c),inset 0 0 0 calc(var(--stroke) + 1px) var(--hair-c),var(--shx) 0 0 var(--sh-c)}
+
+/* ---------- 标签 / 徽章：带描边的小色块 ---------- */
+:is(.tag,.pill,.kb,.typ,.tchip,.sk,.logl .k,.dlg .bd span){
+  border-color:var(--stroke-c);border-radius:var(--r-s);
+  box-shadow:inset 0 0 0 calc(var(--stroke-s) - var(--bw)) var(--stroke-c),var(--shs) var(--shs) 0 var(--sh-c);
+}
+.tchip{box-shadow:inset 0 0 0 var(--stroke-s) var(--stroke-c),var(--shs) var(--shs) 0 var(--sh-c)}
+.tag{background:var(--accent-soft)}
+.pill{background:var(--panel)}
+.pill.free{background:var(--accent-soft)}
+.pill.bad{background:var(--red-soft)}
+.pill.warn{background:color-mix(in oklab,var(--warn) 16%,transparent)}
+.kb{background:var(--card)}
+.kb.task{background:var(--accent-soft)}
+.kb.alert{background:var(--red-soft)}
+.kb.secret{background:var(--red)}
+.typ{background:var(--card)}
+.sk{background:var(--card)}
+.dlg .bd span{border-color:#020807;box-shadow:inset 0 0 0 calc(var(--stroke-s) - var(--bw)) #020807,var(--shs) var(--shs) 0 #000}
+
+/* 玩家页「终极任务进度」：style.css 里缺这一块的样式，补上 */
+.fin3{display:flex;flex-direction:column;gap:12px;min-width:0}
+.fin3 .fhd{display:flex;flex-direction:column;gap:6px;padding:14px 18px;background-color:var(--panel);border:1px solid var(--stroke-c);border-radius:var(--r-m);
+  box-shadow:inset 0 0 0 calc(var(--stroke) - 1px) var(--stroke-c),var(--sh)}
+.fin3 .ft{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.fin3 .ft .cap{font-size:14px;font-weight:700;color:var(--sub);letter-spacing:.1em}
+.fin3 .fn{font:800 34px var(--mono);line-height:1;color:var(--accent)}
+.fin3 .fn i{font-style:normal;font-size:20px;color:var(--sub)}
+.fin3 .fs{font-size:15px;font-weight:700;color:var(--ink2);text-wrap:pretty}
+.fin3 .fcs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.fin3 .fc{display:flex;flex-direction:column;gap:10px;min-width:0;padding:14px 16px;background-color:var(--panel);border:1px solid var(--stroke-c);border-radius:var(--r-m);
+  box-shadow:inset 0 0 0 calc(var(--stroke) - 1px) var(--stroke-c),var(--sh)}
+.fin3 .fc.ok{border-color:var(--accent);box-shadow:inset 0 0 0 calc(var(--stroke) - 1px) var(--accent),var(--shx) var(--shx) 0 var(--accent),0 0 18px var(--glow)}
+.fin3 .fh{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.fin3 .fh b{font-size:16px;font-weight:900}
+.fin3 .fk{font-size:12px;font-weight:900;color:var(--sub);padding:1px 8px;border:1px solid var(--stroke-c);border-radius:var(--r-s);background:var(--card);
+  box-shadow:inset 0 0 0 calc(var(--stroke-s) - 1px) var(--stroke-c),var(--shs) var(--shs) 0 var(--sh-c);white-space:nowrap}
+.fin3 .fc.ok .fk{color:var(--accent);background:var(--accent-soft)}
+.fin3 .suits4{display:flex;flex-wrap:wrap;gap:6px}
+.fin3 .fscore{font-size:26px;font-weight:800;line-height:1}
+.fin3 .fx{font-size:13px;color:var(--sub)}
+.fin3 .fx,.fin3 .bar{margin-top:auto}
+@media (max-width:959px){.fin3 .fcs{grid-template-columns:minmax(0,1fr)}}
+
+/* 黑白无常面具：去掉上方两根连线，图片上沿顶到页头分割线（--wup 由 app.js 量出，量的是 .wc-in，不受 img 位移影响） */
+.wc-in::before,.wc-in::after{content:none}
+.wc-in img{margin-top:calc(-1 * var(--wup,0px))}
+
+/* 登录页：登录卡改为漫画分格（去掉手剪边）；PIN 格内凹；进入按钮同主按钮 */
+body .lg{background:#101a1d!important;border:1px solid #000!important;border-radius:var(--r-m)!important;
+  box-shadow:inset 0 0 0 calc(var(--stroke) - 1px) #000,var(--sh),0 30px 80px rgba(0,0,0,.5)!important}
+body .lg::before,body .lg::after{content:none}
+.lg .okv{border-radius:var(--r-m)}
+.boxes .bx{border-color:#000;border-radius:var(--r-s);box-shadow:inset 0 0 0 calc(var(--stroke) - 1px) #000,inset 3px 3px 0 calc(var(--stroke) - 1px) rgba(0,0,0,.6)}
+.boxes:focus-within .bx.act{border-color:#5fe0b4;box-shadow:inset 0 0 0 calc(var(--stroke) - 1px) #5fe0b4,0 0 14px rgba(95,224,180,.35)}
+.lg .go{position:relative;border-radius:var(--r-m);box-shadow:inset 0 0 0 var(--stroke) #000,var(--sh),0 0 22px rgba(95,224,180,.25);transition:transform 70ms ease-out,box-shadow 70ms ease-out;
+  background-image:radial-gradient(circle 8px at 18px 50%,transparent 5.5px,#000 6px,#000 7.5px,transparent 8px);background-origin:border-box;background-repeat:no-repeat;
+  -webkit-mask:radial-gradient(circle 6px at 42px 50%,transparent 5.5px,#000 6px) -24px -24px/calc(100% + 48px) calc(100% + 48px) no-repeat border-box;
+  mask:radial-gradient(circle 6px at 42px 50%,transparent 5.5px,#000 6px) -24px -24px/calc(100% + 48px) calc(100% + 48px) no-repeat border-box;-webkit-mask-clip:no-clip;mask-clip:no-clip}
+.lg .go:active:not(:disabled){transform:translate(var(--press),var(--press));box-shadow:inset 0 0 0 var(--stroke) #000}
+.lg .go:disabled{box-shadow:none;outline:var(--stroke) dashed #2e474e;outline-offset:calc(-1 * var(--stroke))}
+/* 深色大屏：去掉舞台上的噪点纸纹层 */
+:root[data-theme="dark"] .stage::after{content:none}
+
+/* ---------- 手机（≤819）大屏 ---------- */
+@media (max-width:819px){
+  /* 排名：柱区高度随内容，存活人数与花色不再被挤掉 */
+  .stage .bars{height:auto;align-items:end;gap:6px}
+  .stage .bcol{height:auto;gap:4px}
+  .stage .bcol .al{display:block;font-size:11px;line-height:1.2;white-space:normal;text-align:center;word-break:keep-all}
+  .stage .bcol .su{display:grid;grid-template-columns:repeat(2,1fr);gap:2px;justify-items:center;font-size:15px;line-height:1.15}
+  .stage .bcol .su span{opacity:.16}
+  .stage .bcol .su span.got{opacity:1;font-weight:900}
+  /* 房间：更紧凑，预约按钮回到正常尺寸 */
+  .stage .rgrid{gap:8px}
+  .stage .room{padding:10px 12px;gap:4px}
+  .stage .room .cd{font-size:30px}
+  .stage .room .rr{gap:3px}
+  .stage .room .bt{gap:4px}
+  .stage .room .rbook{min-height:32px;font-size:14px;padding:0 12px;margin-top:2px}
+  .stage .room .rs{font-size:13px}.stage .room .rtm{font-size:12px}
+}
+
+/* ---------- 玩家手机：一级（底部）与二级分页 ---------- */
+@media (max-width:719px){
+  /* 底部菜单（玩家一级 / 工作人员分页）统一：纸面底栏，选中项是带描边的实心色块 */
+  :root body[data-role="player"]:not(.login) #tabs,:root body:not([data-role="player"]) .subtabs,:root body[data-role="player"] .subtabs:not(.top){background:var(--panel);border-top:var(--stroke) solid var(--stroke-c);gap:6px;padding:8px 8px calc(env(safe-area-inset-bottom) + 8px)}
+  :root body[data-role="player"]:not(.login) #tabs button,:root body:not([data-role="player"]) .subtabs button,:root body[data-role="player"] .subtabs:not(.top) button{min-height:50px;border:1px solid transparent;border-radius:var(--r-m);background:transparent;color:var(--sub);box-shadow:none;transform:none;font-weight:800}
+  :root body[data-role="player"]:not(.login) #tabs button[aria-selected="true"],:root body:not([data-role="player"]) .subtabs button[aria-selected="true"],:root body[data-role="player"] .subtabs:not(.top) button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--stroke-c);font-weight:900;
+    box-shadow:inset 0 0 0 calc(var(--stroke) - 1px) var(--stroke-c),var(--shs) var(--shs) 0 var(--sh-c)}
+  :root body[data-role="player"]:not(.login) #tabs button[aria-selected="true"] .n,:root body:not([data-role="player"]) .subtabs button[aria-selected="true"] .n,:root body[data-role="player"] .subtabs:not(.top) button[aria-selected="true"] .n{opacity:.75}
+  :root body[data-role="player"]:not(.login) #tabs button:active,:root body:not([data-role="player"]) .subtabs button:active,:root body[data-role="player"] .subtabs:not(.top) button:active{transform:none}
+  /* 二级：一条分段控件，外框描边 + 硬投影，内部按钮平铺 */
+  body[data-role="player"] .subtabs.top{gap:0;width:fit-content;max-width:100%;border:1px solid var(--stroke-c);border-radius:var(--r-m);
+    box-shadow:inset 0 0 0 calc(var(--stroke) - 1px) var(--stroke-c),var(--sh);background:var(--panel);padding:var(--stroke)}
+  body[data-role="player"] .subtabs.top button{border:0;border-radius:calc(var(--r-m) - 2px);box-shadow:none;transform:none;background:transparent;min-height:34px}
+  body[data-role="player"] .subtabs.top button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink);border:0;box-shadow:none}
+  body[data-role="player"] .subtabs.top button[aria-selected="true"] .n{opacity:.7}
+  body[data-role="player"] .subtabs.top button:active{transform:none}
+
+  /* 终极任务：手机精简为一张卡，三条件各一行（标题 · 进度 · 状态） */
+  .fin3{gap:0;border:1px solid var(--stroke-c);border-radius:var(--r-m);background:var(--panel);box-shadow:inset 0 0 0 calc(var(--stroke) - 1px) var(--stroke-c),var(--sh)}
+  .fin3 .fhd{border:0;box-shadow:none;background:transparent;padding:12px 14px 8px;gap:4px}
+  .fin3 .fn{font-size:24px}.fin3 .fn i{font-size:15px}
+  .fin3 .fs{font-size:13px}
+  .fin3 .fcs{grid-template-columns:minmax(0,1fr);gap:0;padding:0 14px 6px}
+  .fin3 .fc,.fin3 .fc.ok{flex-direction:row;align-items:center;gap:10px;padding:9px 0;border:0;border-top:1px solid var(--line);border-radius:0;box-shadow:none;background:transparent}
+  .fin3 .fh{display:contents}
+  .fin3 .fh b{flex:1;min-width:0;font-size:14px}
+  .fin3 .fc>:not(.fh):not(.fx){display:none}
+  .fin3 .fx{order:1;margin:0;font-size:13px;white-space:nowrap}
+  .fin3 .fk{order:2}
+}
+
+/* 灯笼 / 面具：浅色模式不显示；手机上只当背景，不占位置，内容盖在上面 */
+:root:not([data-theme="dark"]) :is(.lantern-band,.wc-mask){display:none!important}
+@media (min-width:720px){:root:not([data-theme="dark"]) .wuchang-layout{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+@media (max-width:719px){
+  .lantern-band{z-index:-1;height:0!important;margin-bottom:0;overflow:visible;overflow-x:clip;opacity:.55;align-items:flex-start}
+  .lantern-band img{align-self:flex-start;height:auto;margin-top:-7vw} /* 去掉吊绳后图片上方是空白，上提让最高的灯笼顶到页头线 */
+  .wuchang-layout{position:relative}
+  .wc-mask{position:absolute;left:0;right:0;top:0;z-index:-1;opacity:.3;grid-row:auto}
+}
+
+/* 队长下拉：占满队名右侧 */
+.caprow .dd{flex:1 1 180px;min-width:0}
+/* 生死簿手机卡：放行按钮与缺项说明另起一行，左对齐 */
+.tcard .r>span[style*="margin-left:auto"]{margin-left:0!important;flex:1 1 100%;display:flex;align-items:center;gap:6px 12px;flex-wrap:wrap}
+.tcard .fmiss{flex:1 1 160px;min-width:0}
+
+/* 全屏通知：震动只做水平位移、不产生滚动溢出；弹窗打开时页面本身不滚动（避免两个滚动条和文字闪动） */
+@keyframes joltX{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(1px)}}
+.dlg.jolt{animation:joltX .45s ease-out}
+.ovl{overflow-x:hidden;overscroll-behavior:contain}
+html:has(#modal .ovl),body:has(#modal .ovl){overflow:hidden!important}
+@media (prefers-reduced-motion:reduce){.dlg.jolt{animation:none}}
+
+/* Dealer 房间状态：圆点和文字保持一排 */
+.hero .status{flex-wrap:nowrap;align-items:flex-start;min-width:0}
+.hero .status .gd{margin-top:.45em}
+@media (max-width:719px){.hero .status{font-size:14px;gap:6px}}
+
+/* 页面高度变化（切换房间等）时滚动条出现/消失会让宽度跳动：始终预留滚动条位置 */
+html{scrollbar-gutter:stable}
+.hero,.hero .info,.hero .name{min-width:0;max-width:100%}
+
+/* 手机登录页：两个童子上移 */
+@media (max-width:719px){body.login #scene .doll{bottom:-1vw}}
+
+@media (prefers-reduced-motion:reduce){
+  .lg .go:active{transform:none}
+  :is(.btn-main,.btn-line,.tbtn,nav.pages button,.subtabs.top button,.mtabs button,.cb,.sbtn,.dd-btn,.rbtn,.wl button,.quick button,.note .ack,.bchip,.histbtn,.dlg button,.stage .room .rbook,.cstep button){transition:none}
+  :is(.btn-main,.btn-line,.tbtn,nav.pages button,.subtabs.top button,.mtabs button,.cb,.sbtn,.dd-btn,.rbtn,.wl button,.quick button,.note .ack,.bchip,.histbtn,.dlg button,.stage .room .rbook,.cstep button):active,
+  :is(.cb.on,.sbtn.on,.rbtn.on,.dd.open .dd-btn,nav.pages button[aria-selected="true"],.subtabs.top button[aria-selected="true"],.mtabs button[aria-selected="true"],.wl button[aria-pressed="true"]){transform:none}
+}
