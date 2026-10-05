@@ -171,7 +171,17 @@ await admin.act({ type: 'admin.reset', demo: false });
     await dv.act({ type: 'dev.setdemo', pin: '135790', mode: 'local', write: true });
     const dm3 = await client('135790');
     T('local demo mode flag, no server actions', dm3.me.dmode === 'local' && !(await dm3.act({ type: 'setscore', tid: 'R', v: 1, as: { role: 'ctrl' } })).ok);
-    await dv.act({ type: 'admin.reset', demo: true });
+    await dv.act({ type: 'dev.setdemo', pin: '135790', mode: 'shared', write: true });
+    const sa = await client('135790'), sb = await client('135790');
+    const realR = admin.S.teams.find(t => t.id === 'R').score;
+    T('shared demo: acts on the sandbox', (await sa.act({ type: 'setscore', tid: 'R', v: 4242, as: { role: 'ctrl' } })).ok);
+    await sleep(300);
+    T('shared demo: second user sees the same game', sb.S.teams.find(t => t.id === 'R').score === 4242);
+    T('shared demo does not touch the real game', admin.S.teams.find(t => t.id === 'R').score === realR);
+    T('shared demo may use clock + reset only', !(await sa.act({ type: 'admin.genpins', counts: {}, as: { role: 'ctrl' } })).ok && (await sa.act({ type: 'admin.reset', demo: true, as: { role: 'ctrl' } })).ok);
+    await sleep(300);
+    T('shared reset reaches the other user', sb.S.teams.find(t => t.id === 'R').score !== 4242);
+    [sa, sb].forEach(c => c.close());
     [dv, dm2, dm3].forEach(c => c.close());
   } else console.log('SKIP demo-mode tests: DEV_PIN not set on the server');
 }

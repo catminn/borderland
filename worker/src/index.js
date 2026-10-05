@@ -25,6 +25,9 @@ export class Game extends DurableObject {
       this.clock = (await ctx.storage.get('clock')) || { running: false, base: 0, at: Date.now() };
       this.auth = (await ctx.storage.get('auth')) || { pins: {}, sessions: {} };
       if (!this.S) { this.S = R.newGame(false); await this.persist(true); }
+      // 展示模式·共享: one demo game that everyone using the 展示 PIN sees together (never touches the real game)
+      this.D = await ctx.storage.get('sandbox');
+      if (!this.D) { const g = R.newGame(true); this.D = { S: g, clock: { running: false, base: g.t, at: Date.now() } }; await ctx.storage.put('sandbox', this.D); }
     });
   }
 
@@ -34,7 +37,13 @@ export class Game extends DurableObject {
     if (this.S.log.length > LOG_KEEP) this.S.log.length = LOG_KEEP;
     await this.ctx.storage.put(withAuth ? { state: this.S, clock: this.clock, auth: this.auth } : { state: this.S, clock: this.clock });
   }
+  async sandbox(fn) {   // run fn against the shared demo game instead of the real one
+    const keep = { S: this.S, clock: this.clock };
+    this.S = this.D.S; this.clock = this.D.clock; this.inSandbox = true;
+    try { return await fn(); } finally { this.D.S = this.S; this.D.clock = this.clock; this.S = keep.S; this.clock = keep.clock; this.inSandbox = false; }
+  }
   async snapshot(tag) {
+    if (this.inSandbox) return;
     await this.ctx.storage.put('snap:' + String(Date.now()).padStart(15, '0'), { S: this.S, clock: this.clock, tag, t: this.now() });
     const keys = [...(await this.ctx.storage.list({ prefix: 'snap:', keysOnly: true })).keys()];
     if (keys.length > SNAP_KEEP) await this.ctx.storage.delete(keys.slice(0, keys.length - SNAP_KEEP));
@@ -47,7 +56,7 @@ export class Game extends DurableObject {
     if (this.env.DEV_PIN && pin === String(this.env.DEV_PIN)) return { role: 'dev', label: '开发者' };
     // 展示模式 PIN: set by the developer from the page. Same viewpoints as developer mode; 本地 = the browser runs its own demo game, 服务器 = the real game.
     const d = this.auth.demo;
-    if (d && d.pin && pin === d.pin) return { role: 'dev', demo: true, dmode: d.mode === 'local' ? 'local' : 'server', dwrite: !!d.write, label: '展示' };
+    if (d && d.pin && pin === d.pin) return { role: 'dev', demo: true, dmode: ['local', 'shared'].includes(d.mode) ? d.mode : 'server', dwrite: !!d.write, label: '展示' };
     return this.auth.pins[pin] || null;
   }
   sessionOf(token) {
@@ -59,7 +68,7 @@ export class Game extends DurableObject {
   me(s) {
     const m = { role: s.role, pid: s.pid || null, label: s.label || ROLE_NAME[s.role], rooms: s.role === 'dealer' && Array.isArray(s.rooms) ? s.rooms : null };
     if (s.demo) { m.demo = true; m.dmode = s.dmode; m.dwrite = s.dwrite; }
-    else if (s.role === 'dev') m.demoCfg = { pin: (this.auth.demo || {}).pin || '', mode: (this.auth.demo || {}).mode === 'local' ? 'local' : 'server', write: !!(this.auth.demo || {}).write };
+    else if (s.role === 'dev') m.demoCfg = { pin: (this.auth.demo || {}).pin || '', mode: ['local', 'shared'].includes((this.auth.demo || {}).mode) ? this.auth.demo.mode : 'server', write: !!(this.auth.demo || {}).write };
     return m;
   }
 
@@ -90,7 +99,8 @@ export class Game extends DurableObject {
     this.ctx.acceptWebSocket(server);
     if (!s) { server.close(4001, 'login expired'); return new Response(null, { status: 101, webSocket: client }); }
     server.serializeAttachment({ token });
-    server.send(JSON.stringify({ t: 'hello', me: this.me(s), S: R.viewFor(this.S, s), clock: this.clock, now: Date.now() }));
+    const sh = s.demo && s.dmode === 'shared';
+    server.send(JSON.stringify({ t: 'hello', me: this.me(s), S: sh ? this.D.S : R.viewFor(this.S, s), clock: sh ? this.D.clock : this.clock, now: Date.now() }));
     return new Response(null, { status: 101, webSocket: client });
   }
 
@@ -102,20 +112,26 @@ export class Game extends DurableObject {
     if (m.t === 'ping') { ws.send(JSON.stringify({ t: 'pong', now: Date.now() })); return; }
     if (m.t !== 'act') return;
     let r;
-    try { r = await this.handle(s, m.a || {}); } catch (e) { r = R.no('服务器出错：' + (e && e.message)); }
+    const shared = !!(s.demo && s.dmode === 'shared');
+    try { r = shared ? await this.sandbox(() => this.handle(s, m.a || {})) : await this.handle(s, m.a || {}); } catch (e) { r = R.no('服务器出错：' + (e && e.message)); }
     ws.send(JSON.stringify({ t: 'res', id: m.id, ok: !!r.ok, msg: r.msg, data: r.data }));
-    if (r.ok && r.changed !== false) { await this.persist(r.auth); this.broadcast(); }
+    if (shared) { if (r.ok && r.changed !== false) { await this.ctx.storage.put('sandbox', this.D); this.broadcast('sandbox'); } }
+    else if (r.ok && r.changed !== false) { await this.persist(r.auth); this.broadcast(); }
     else if (r.ok && r.auth) await this.ctx.storage.put('auth', this.auth);
   }
   async webSocketClose(ws, code, reason) { try { ws.close(code, reason); } catch { /* already closed */ } }
   async webSocketError(ws) { try { ws.close(1011, 'error'); } catch { /* already closed */ } }
 
-  broadcast() {
+  broadcast(which) {
     const base = { t: 'state', clock: this.clock, now: Date.now() };
     const staff = JSON.stringify({ ...base, S: this.S });
+    const sbox = JSON.stringify({ t: 'state', clock: this.D.clock, now: Date.now(), S: this.D.S });
     for (const ws of this.ctx.getWebSockets()) {
       const s = this.sessionOf(ws.deserializeAttachment()?.token);
       if (!s) { try { ws.close(4001, 'login expired'); } catch { /* ignore */ } continue; }
+      const sh = !!(s.demo && s.dmode === 'shared');
+      if (sh !== (which === 'sandbox')) continue;   // real-game changes go to real sockets, shared-demo changes to shared-demo sockets
+      if (sh) { try { ws.send(sbox); } catch { /* socket gone */ } continue; }
       try { ws.send(s.role === 'player' ? JSON.stringify({ ...base, S: R.viewFor(this.S, s) }) : staff); } catch { /* socket gone */ }
     }
   }
@@ -126,12 +142,12 @@ export class Game extends DurableObject {
       const pin = String(a.pin || '').trim();
       if (!/^\d{6}$/.test(pin)) return R.no('展示 PIN 要是 6 位数字');
       if ((this.env.ADMIN_PIN && pin === String(this.env.ADMIN_PIN)) || (this.env.DEV_PIN && pin === String(this.env.DEV_PIN)) || this.auth.pins[pin]) return R.no('这个 PIN 已被别的身份用了，换一个');
-      this.auth.demo = { pin, mode: a.mode === 'local' ? 'local' : 'server', write: !!a.write };
+      this.auth.demo = { pin, mode: ['local', 'shared'].includes(a.mode) ? a.mode : 'server', write: !!a.write };
       for (const ws of this.ctx.getWebSockets()) { const t = this.sessionOf(ws.deserializeAttachment()?.token); if (t && t.demo) { try { ws.close(4001, 'demo changed'); } catch { /* ignore */ } } }
       return { ok: true, msg: '展示模式已保存', changed: false, auth: true, data: { pin, mode: this.auth.demo.mode, write: this.auth.demo.write } };
     }
     if (s.demo && (!s.dwrite || s.dmode === 'local')) return R.no(s.dmode === 'local' ? '本地展示模式不连服务器' : '展示模式现在是只读');
-    const isDemo = !!s.demo;
+    const isDemo = !!s.demo, isShared = isDemo && s.dmode === 'shared';
     if (s.role === 'dev') { // acts as the viewpoint chosen on the page, only when its 可操作 switch is on
       const as = a.as || {}, roles = ['ctrl', 'dealer', 'judge', 'mengpo', 'screen', 'player'];
       if (!roles.includes(as.role)) return R.no('开发者模式：先打开右上角「可操作」');
@@ -140,7 +156,7 @@ export class Game extends DurableObject {
       delete a.as;
     }
     if (typeof a.type === 'string' && a.type.startsWith('admin.')) {
-      if (isDemo) return R.no('展示模式不能用总控工具');
+      if (isDemo && !(isShared && (a.type === 'admin.clock' || a.type === 'admin.reset'))) return R.no('展示模式不能用这个总控工具');
       if (s.role !== 'ctrl') return R.no('只有总控能做这个操作');
       return this.admin(a);
     }

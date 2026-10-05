@@ -331,9 +331,9 @@ function demoPanel(){
   const ok=/^\d{6}$/.test(d.pin),dirty=d.pin!==c.pin||d.mode!==c.mode||d.write!==c.write;
   return '<div class="pn" style="margin-top:16px"><div class="shrow"><h3>展示模式 PIN</h3><span class="small">开发者专用；用这个 PIN 登录的人可以看任意视角，发给别人试用</span></div>'
     +'<div class="fld"><span>PIN（6 位数字）</span><div class="btns"><input class="in mono" data-m="demo.pin" value="'+esc(d.pin)+'" inputmode="numeric" maxlength="6" placeholder="未设置＝关闭" style="max-width:180px"><button class="btn-line" data-a="demo-rand">随机</button>'+(c.pin?'<button class="btn-line" data-a="demo-copy">复制登录链接</button>':'')+'</div></div>'
-    +'<div class="fld"><span>模式</span><div class="chips c2">'+cb({k:'demo.mode',v:'server',on:d.mode==='server',label:'连接服务器',small:'看的是真实游戏',t:false})+cb({k:'demo.mode',v:'local',on:d.mode==='local',label:'本地',small:'自己一局演示数据，互不影响',t:false})+'</div></div>'
-    +'<div class="fld"><span>权限</span><div class="chips c2">'+cb({k:'demo.write',v:false,on:!d.write,label:'只读',t:false})+cb({k:'demo.write',v:true,on:d.write,label:'可修改',small:d.mode==='server'?'会改动真实游戏':'',t:false})+'</div></div>'
-    +'<div class="btns"><button class="btn-main" data-a="demo-save"'+(ok&&dirty?'':' disabled')+'>保存</button><span class="small">'+(c.pin?'当前：'+c.pin+' · '+(c.mode==='local'?'本地':'服务器')+' · '+(c.write?'可修改':'只读'):'当前：未启用')+'　保存后正在用展示 PIN 的人需要重新登录</span></div></div>';
+    +'<div class="fld"><span>模式</span><div class="chips c2" style="grid-template-columns:repeat(3,minmax(0,1fr))">'+cb({k:'demo.mode',v:'server',on:d.mode==='server',label:'连接服务器',small:'看的是真实游戏',t:false})+cb({k:'demo.mode',v:'shared',on:d.mode==='shared',label:'共享演示局',small:'同一 PIN 的人看同一场演示（不是真实游戏）',t:false})+cb({k:'demo.mode',v:'local',on:d.mode==='local',label:'本地',small:'各自一局演示数据，互不影响',t:false})+'</div></div>'
+    +'<div class="fld"><span>权限</span><div class="chips c2">'+cb({k:'demo.write',v:false,on:!d.write,label:'只读',t:false})+cb({k:'demo.write',v:true,on:d.write,label:'可修改',small:d.mode==='server'?'会改动真实游戏':d.mode==='shared'?'改的是共享演示局':'',t:false})+'</div></div>'
+    +'<div class="btns"><button class="btn-main" data-a="demo-save"'+(ok&&dirty?'':' disabled')+'>保存</button><span class="small">'+(c.pin?'当前：'+c.pin+' · '+({local:'本地',shared:'共享演示局'}[c.mode]||'服务器')+' · '+(c.write?'可修改':'只读'):'当前：未启用')+'　保存后正在用展示 PIN 的人需要重新登录</span></div></div>';
 }
 function teamRows(){
   const list=[...S.teams].sort((a,b)=>b.score-a.score);
