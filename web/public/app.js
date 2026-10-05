@@ -3,7 +3,7 @@
 // for the signed-in role, and sends actions. Rule helpers come from rules.js (same file the server runs).
 import * as R from './rules.js';
 const {size,ROOMS,SUITS,RATE,PER_TEAM,MIN_STAY,COIN_GOAL,FINAL_SCORE,FINAL_MSG,QUESTS,GATES,FEATURES,team,room,alive,inMarket,fmt,protectedLeft,esc,matches,targetLabel,
-  isFirst,indiv,lab,cands,whyNotEnter,gapOf,teamStatus,teamOf,no,rstate,rsvLeft,rsvOf,whyNotReserve,finalMiss,scavInfo,scavWhy,SCAV_CAP,SCAV_N,SCAV_WIN,GAME_HINT,RESET_HINT,RSV,COIN_START}=R;
+  isFirst,indiv,lab,cands,whyNotEnter,gapOf,teamStatus,teamOf,no,rstate,rsvLeft,rsvOf,whyNotReserve,finalMiss,scavInfo,scavWhy,SCAV_CAP,SCAV_N,SCAV_WIN,SCAV_PTS,GAME_HINT,RESET_HINT,RSV,COIN_START}=R;
 
 let S=null, ME=null, CLOCK=null, OFFSET=0;
 // Developer mode: DEVME is the real (read-only) sign-in, FULL the full state; ME/S are swapped to the chosen viewpoint.
@@ -28,7 +28,7 @@ function buzz(p){
   if(!IOS)return;const a=Array.isArray(p)?p:[p];let t=0;
   a.forEach((d,i)=>{if(i%2===0)setTimeout(iosTick,t);t+=d;});}
 function shakeEl(el,cls){if(!el)return;el.classList.remove(cls);void el.offsetWidth;el.classList.add(cls);}
-let ui={ddOpen:null,don:{},tab:null,room:'4S',gatePick:'',finalAsk:null,pick:'',res:{},settled:null,hookTeam:'',hookTarget:'',hookWhere:'',rd:{team:'',quest:'',title:''},pickOut:{},doneSel:{},revokeAsk:null,
+let ui={ddOpen:null,don:{},tab:null,room:'4S',gatePick:'',finalAsk:null,pick:'',res:{},settled:null,hookTeam:'',hookTarget:'',hookWhere:'',rd:{quest:'',title:''},pickOut:{},doneSel:{},revokeAsk:null,
   coinTeam:'',coinAmt:'',buyer:'',mkTab:'buy',ncOpen:false,as:'ctrl',devOps:false,demoRows:null,devAck:new Set(),nc:{name:'',desc:'',price:'',stock:''},
   sub:{dealer:'info',npc:'task',market:'buy',ctrl:'status',player:'team'},
   pub:{kind:'鬼门开',reward:0,title:'',body:'',target:'all',team:'R',players:[],mins:10,to:'all',sqTeam:'',quest:'',gate:''},
@@ -236,17 +236,15 @@ function gatePanel(){
 }
 // Scavenger 额度：每队全场最多 600 分，任意滚动 10 分钟最多 2 题，同一题不重复兑换
 function scavPanel(){
-  const rd=ui.rd,rq=QUESTS.find(x=>x.id===rd.quest),rwhy=rd.team?scavWhy(rd.team,rq?rq.id:null):null,rcus=rd.quest==='custom';
-  const rbtn=!rd.team?'先选队伍':!rd.quest?'先选题目':rcus&&!rd.title.trim()?'先写题目':rwhy?rwhy:'兑换 +100 分';
-  const rok=rd.team&&rd.quest&&!(rcus&&!rd.title.trim())&&!rwhy;
-  const redeem='<div class="fgrid"><div class="fld"><span>兑换队伍</span>'+dd('rd.team',rd.team&&team(rd.team).name,'选择队伍',rd.team?TC[rd.team][0]:null,S.teams.map(t=>({v:t.id,label:t.name,c:TC[t.id][0]})))+'</div>'
-    +'<div class="fld"><span>题目</span>'+dd('rd.quest',rq?rq.title:rcus?'自定义':'','选择题目',null,[...QUESTS.map(x=>({v:x.id,label:esc(x.title)})),{v:'custom',label:'自定义'}])+'</div></div>'
-    +(rcus?'<label class="fld"><span>自定义题目</span><input class="in" id="rdt" data-m="rd.title" value="'+esc(rd.title)+'" placeholder="题目名称"></label>':'')
-    +'<button class="btn-main'+(rok?' glow':'')+'" data-a="scavredeem"'+(rok?'':' disabled')+' style="min-height:52px">'+esc(rbtn)+'</button>';
-  const rows=S.teams.map(t=>{const i=scavInfo(t.id),nx=i.capped?'已封顶':i.n>=SCAV_N?fmt(i.nextAt)+' 后':'现在可兑换';
-    return '<div class="li"><div class="grow"><span class="x">'+tsq(t.id,22)+' '+t.name+'　<span class="mono">'+i.used+'/'+SCAV_CAP+'</span> 分　10 分钟内 <span class="mono">'+i.n+'/'+SCAV_N+'</span>　<b style="color:'+(i.capped||i.n>=SCAV_N?'var(--red)':'var(--accent)')+'">'+nx+'</b></span>'
-      +(i.recs.length?'<span class="small">最近：'+i.recs.slice(0,3).map(r=>fmt(r.t)+' '+esc(qTitle(r.q))).join('；')+'</span>':'')+'</div></div>';}).join('');
-  return '<div class="pn" style="gap:12px"><h3>Scavenger Hunt 兑换</h3>'+redeem+'</div><div class="pn" style="gap:0"><h3 style="padding-bottom:8px">Scavenger Hunt 额度</h3>'+rows+'</div>';
+  const rd=ui.rd,rq=QUESTS.find(x=>x.id===rd.quest),rcus=rd.quest==='custom',ti=rd.title.trim();
+  const key=rq?rq.id:rcus&&ti?'x:'+ti.slice(0,20):null;
+  const head='<div class="fld"><span>题目（选好后，点各队右边的「兑换」）</span>'+dd('rd.quest',rq?rq.title:rcus?'自定义':'','选择题目',null,[...QUESTS.map(x=>({v:x.id,label:esc(x.title)})),{v:'custom',label:'自定义'}])+'</div>'
+    +(rcus?'<label class="fld"><span>自定义题目</span><input class="in" id="rdt" data-m="rd.title" value="'+esc(rd.title)+'" placeholder="题目名称"></label>':'');
+  const rows=S.teams.map(t=>{const i=scavInfo(t.id),why=scavWhy(t.id,key),ok=!!key&&!why;
+    const st=why?'<span style="color:var(--red)">'+esc(why)+'</span>':'<span style="color:var(--accent)">可兑换</span>';
+    return '<div class="li"><div class="grow"><span class="x svx">'+tsq(t.id,22)+'<b>'+t.name+'</b><span class="mono">'+i.used+'/'+SCAV_CAP+'</span><span class="mono">10 分钟 '+i.n+'/'+SCAV_N+'</span></span><span class="small">'+st+'</span></div>'
+      +'<button class="btn-line'+(ok?' fill':'')+'" data-a="scavredeem" data-t="'+t.id+'"'+(ok?'':' disabled')+'>兑换 +'+SCAV_PTS+'</button></div>';}).join('');
+  return '<div class="pn" style="gap:12px">'+head+'<div style="display:flex;flex-direction:column">'+rows+'</div></div>';
 }
 
 function hookLog(){
@@ -255,7 +253,7 @@ function hookLog(){
   return out;
 }
 function viewNpc(){
-  const tasks=S.notices.filter(n=>n.kind==='任务').slice(0,6);
+  const tasks=S.notices.filter(n=>n.kind==='任务'&&n.sub!=='side').slice(0,6);
   const cards=tasks.map(n=>{
     const [kl,kc]=kindOf(n),w=Object.keys(n.done)[0],closed=isFirst(n)&&!!w,ind=indiv(n),cur=ui.doneSel[n.id]||'';
     const rest=cands(n).filter(c=>!n.done[c]);
@@ -274,7 +272,7 @@ function viewNpc(){
   const records='<div class="pn" style="gap:0"><h3 style="padding-bottom:8px">已完成记录</h3>'+(recs.length?recs.map(({n,cid,d})=>
     '<div class="li"><div class="grow"><span class="t">'+fmt(d.t)+(n.due&&d.t>n.due?' 超时':'')+'</span><span class="x">'+lab(cid)+' 完成「'+esc(n.title)+'」'+(d.pts?' <span class="mono">+'+d.pts+'</span>':'')+'</span></div>'
     +'<button class="btn-line" data-a="undone" data-n="'+n.id+'" data-t="'+cid+'">撤销</button></div>').join(''):'<div class="li small">暂无记录</div>')+'</div>';
-  const task=gatePanel()+(cards||'<div class="pn"><span class="muted">还没有发布任务。总控在生死簿「发布」里发布。</span></div>')+scavPanel()+records;
+  const task=gatePanel()+(cards||'<div class="pn"><span class="muted">还没有发布任务。总控在生死簿「发布」里发布。</span></div>')+records;
   // 勾魂令: two dropdowns (who holds the token, who is named) and one button
   if(ui.hookTarget){const p=S.players.find(x=>x.id===ui.hookTarget);
     if(!p||p.team===ui.hookTeam||p.st!=='alive'||protectedLeft(p)>0)ui.hookTarget='';}
@@ -294,8 +292,8 @@ function viewNpc(){
     +'<div class="pn"><div class="shrow"><h3>已勾魂次数</h3><span class="small">本局共 <span class="mono" style="font-weight:800;font-size:22px;color:var(--ink)">'+S.gate+'</span> 次</span></div>'
     +'<div class="hgrid">'+S.teams.map(t=>'<div class="hc">'+tsq(t.id,26)+'<span>'+t.name+'</span><b>'+(counts[t.id]||0)+'</b></div>').join('')+'</div>'
     +hl.slice(0,3).map(h=>'<div class="hrow"><span class="minis">勾</span><span class="t">'+fmt(h.t)+'</span><span>'+(h.by?team(h.by).name+' 勾魂 ':'勾魂 ')+h.pid+'</span></div>').join('')+'</div>';
-  return '<div class="page tabbed"><div class="cols2">'+sec('npc','task','<h2 class="sh">任务判定</h2>'+task)+sec('npc','hook','<h2 class="sh">勾魂令</h2>'+hook)+'</div>'
-    +sub('npc',[['task','任务判定'],['hook','勾魂令']])+'</div>';
+  return '<div class="page tabbed"><div class="cols3">'+sec('npc','task','<h2 class="sh">任务判定</h2>'+task)+sec('npc','scav','<h2 class="sh">Scavenger Hunt 兑换</h2>'+scavPanel())+sec('npc','hook','<h2 class="sh">勾魂令</h2>'+hook)+'</div>'
+    +sub('npc',[['task','任务判定'],['scav','Scavenger'],['hook','勾魂令']])+'</div>';
 }
 
 // ---------- 鬼市 ----------
@@ -482,7 +480,7 @@ function pubPanel(){
     +((side&&f.quest!=='custom')||(gate&&f.gate!=='custom')?'':'<label class="fld"><span>标题</span><input class="in" id="pti" data-m="pub.title" value="'+esc(f.title)+'" placeholder="例如：鬼门开：还原鬼片海报"></label>'
     +'<label class="fld"><span>内容</span><textarea class="in" id="pb" data-m="pub.body" rows="3" placeholder="玩家手机上看到的说明：任务要求、集合地点…">'+esc(f.body)+'</textarea></label>')
     +'<button class="btn-main" data-a="publish">发布'+(K==='custom'?'自定义任务':gate?'鬼门开':'')+'到'+esc(toName)+'玩家手机</button></div>';
-  const list=S.notices.filter(n=>n.kind!=='通知').slice(0,10).map(n=>{
+  const list=S.notices.filter(n=>n.kind!=='通知'&&n.sub!=='side').slice(0,10).map(n=>{
     const aud=S.players.filter(p=>matches(n,p)),acked=aud.filter(p=>n.acks[p.id]).length,[kl,kc]=kindOf(n),ds=Object.keys(n.done);
     return '<div class="li"><div class="grow" style="gap:4px"><div class="thead"><span class="kb '+kc+'" style="font-size:12px;padding:0 7px">'+kl+'</span><b style="font-size:17px">'+esc(n.title)+'</b></div>'
       +'<span class="small">已读 <span class="mono" style="color:var(--ink)">'+acked+'/'+aud.length+'</span>'+(n.target!=='all'?'　'+esc(targetLabel(n)):'')+(n.due?'　'+countdown(n):'')+'</span>'
@@ -924,7 +922,7 @@ document.addEventListener('click',e=>{
   else if(a==='finish'){const rid=ui.room;send({type:'finish',rid,results:ui.res,picks:ui.pickOut},m=>{ui.res={};ui.pickOut={};ui.settled={rid,msg:m.msg};});}
   else if(a==='hook'){send({type:'hook',actor:ui.hookTeam,pid:ui.hookTarget,where:ui.hookWhere},()=>{ui.hookTarget='';ui.hookWhere='';});}
   else if(a==='publish'){const sq=ui.pub.kind==='sidequest';send({type:'publish',f:{...ui.pub,team:sq?ui.pub.sqTeam:ui.pub.team,mins:+ui.pub.mins||0,reward:+ui.pub.reward||0}},()=>{ui.pub.title='';ui.pub.body='';if(sq){ui.pub.quest='';ui.pub.sqTeam='';}ui.pub.gate='';});}
-  else if(a==='scavredeem'){const r=ui.rd;send({type:'scavredeem',tid:r.team,qid:r.quest,title:r.title},()=>{r.team='';r.quest='';r.title='';});}
+  else if(a==='scavredeem'){const r=ui.rd;send({type:'scavredeem',tid:b.dataset.t,qid:r.quest,title:r.title});}
   else if(a==='checkin'){send({type:'checkin',pid:b.dataset.p,party:checkinParty()});}
   else if(a==='pickup'){send({type:'pickup',pid:b.dataset.p});}
   else if(a==='confirmin'){send({type:'confirm',pid:b.dataset.p,party:checkinParty()});}

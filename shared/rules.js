@@ -381,8 +381,7 @@ function seed(){
   S.t=29*60; P('B-05').coins=COIN_GOAL; P('P-02').coins=COIN_GOAL+200; reserve('G','4C'); reserve('K','8H');
   log('演示数据就位：4♦ 与 8♠ 进行中，4♥ 重置中，4♣、8♥ 已预约');
   pushNotice({kind:'任务',sub:'gate',title:'鬼门开：还原鬼片海报',body:'全队 60 秒内还原一张「鬼片海报」造型，到一楼大厅找判官。第一支完成的队伍可获得奖励。',target:'all',mins:10,mode:'first'});
-  publish({kind:'sidequest',team:'R',quest:'q1',mins:0});markDone(S.notices[0].id,'R');
-  publish({kind:'sidequest',team:'R',quest:'q2',mins:0});
+  scavRedeem('R','q1');
 }
 
 export function newGame(demo){init();if(demo)seed();return S;}
