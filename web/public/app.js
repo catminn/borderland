@@ -477,7 +477,7 @@ function statsPanel(){
   const view=(k,t)=>'<button class="btn-line'+(v===k?' fill':'')+'" data-a="stats-view" data-v="'+k+'">'+t+'</button>';
   return '<div class="pn" style="margin-top:16px;gap:12px">'+head
     +'<div class="btns"><button class="btn-line" data-a="stats-load">刷新</button><button class="btn-line" data-a="stats-csv">下载 CSV</button>'
-    +(ui.statsAsk?'<button class="btn-line fillred" data-a="stats-clear">确认清空统计</button><button class="btn-line" data-a="stats-cancel">取消</button>':'<button class="btn-line" data-a="stats-ask">清空</button>')
+    +'<button class="btn-line" data-a="stats-ask">清空</button>'
     +'<span class="small">当前在线 <b class="mono">'+d.online+'</b>　登录失败 <b class="mono">'+d.fails+'</b> 次'+(d.lastFail?'（最近 '+hm(d.lastFail)+'）':'')+'　更新于 '+hm(d.now)+'</span></div>'
     +'<div class="btns">'+view('all','总计')+view('role','按角色')+view('team','按队伍')+'</div>'+statsChart(d)+tbl+'</div>';
 }
@@ -529,12 +529,18 @@ function viewCtrl(){
     +sec('ctrl','status',status)+sec('ctrl','pub',pubPanel())
     +sec('ctrl','log','<h2 class="sh">全场日志</h2><div class="pn logl" style="gap:0">'+(S.log.length?S.log.slice(0,300).map(l=>{const [k,c]=logTag(l);
       return '<div class="le"><span class="t">'+fmt(l.t)+'</span><span class="k" style="--kc:'+c+'">'+k+'</span><span class="x">'+esc(l.text)+'</span></div>';}).join(''):'<span class="muted">还没有日志。</span>')+'</div>')
-    +sec('ctrl','tools',adminPanel())+finalDlg()+'</div>';
+    +sec('ctrl','tools',adminPanel())+finalDlg()+statsDlg()+'</div>';
 }
 // 每队一名队长，负责房间预约；总控随时可改。
 function capPanel(){
   return '<div class="pn" style="gap:12px"><h3>队长（负责预约房间）</h3>'+S.teams.map(t=>'<div class="caprow" style="'+tv(t.id)+'">'+tsq(t.id,26)+'<b>'+t.name+'</b><div class="chips ids">'
     +S.players.filter(p=>p.team===t.id).map(p=>'<button class="cb id'+(t.cap===p.id?' on':'')+'" data-a="setcap" data-t="'+t.id+'" data-v="'+p.id+'" aria-pressed="'+(t.cap===p.id)+'"><span class="t">'+p.id+'</span></button>').join('')+'</div></div>').join('')+'</div>';
+}
+function statsDlg(){
+  if(!ui.statsAsk)return '';
+  return '<div class="sheet"><div class="sheet-bg" data-a="stats-cancel"></div><div class="sheet-card pn" role="dialog" aria-modal="true" aria-labelledby="sdt"><h3 id="sdt">清空全部统计数据？</h3>'
+    +'<span class="small">登录、设备、在线曲线都会删除，无法恢复。需要的话先下载 CSV。</span>'
+    +'<div class="btns two2"><button class="btn-main" data-a="stats-clear">确认清空</button><button class="btn-line" data-a="stats-cancel">取消</button></div></div></div>';
 }
 // 放行终极：每次都弹窗确认；条件不满足时列出缺项，确认后照样放行。
 function finalDlg(){
@@ -1134,7 +1140,7 @@ document.addEventListener('click',e=>{
   else if(a==='stats-clear'){ui.statsAsk=false;send({type:'dev.clearstats'},m=>{ui.stats=m.data;});}
   render();
 });
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&ui.ncOpen){ui.ncOpen=false;render();}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&(ui.ncOpen||ui.statsAsk)){ui.ncOpen=false;ui.statsAsk=false;render();}});
 document.addEventListener('change',e=>{
   if(e.target.id==='devas'){ui.as=e.target.value;ui.tab=null;ui.ddOpen=null;say(null);render();return;}
   const m=e.target.dataset.m;if(!m)return;
