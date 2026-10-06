@@ -263,8 +263,8 @@ function confirmIn(pid,role){const p=S.players.find(x=>x.id===pid);
   log(p.id+' 正式进入鬼市，由'+ROLE_LABEL[role]+'确认，领 '+COIN_START+' 冥币','back');
   pushNotice({kind:'通知',title:'你已进入鬼市',body:'已确认入鬼市，领到 '+COIN_START+' 冥币。个人冥币 + 队友助力凑够 '+COIN_GOAL+'，就可以找孟婆买命回队。',target:'player',ids:[p.id]});
   return ok('已确认 '+p.id+' 入鬼市');}
-// 输了的队伍 Dealer 可以加一部分分：默认赢分的一半，必须是整数，且少于赢分（r.n×100）
-function lossPts(r,v){if(v===undefined||v===null||v==='')return r.n*50;const x=Number(v);return Number.isInteger(x)&&x>=0&&x<r.n*100?x:null;}
+// 输了的队伍 Dealer 可以选择加一部分分（总控开关打开时）：不选 = 0；选了必须是整数，且少于赢分（r.n×100）。「默认一半」只是 Dealer 页输入框的预填值
+function lossPts(r,v){if(v===undefined||v===null||v==='')return 0;const x=Number(v);return Number.isInteger(x)&&x>=0&&x<r.n*100?x:null;}
 function finishRoom(rid,results,picks={},lpts={}){
   const r=room(rid),st=S.rooms.find(x=>x.id===rid);
   if(!st.teams.length)return no('房间里没有队伍');

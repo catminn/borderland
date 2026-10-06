@@ -55,7 +55,8 @@ T('ctrl forces final', ap('ctrl', { type: 'final', tid: t.id, on: true }).ok && 
   R.use(g); g.lossOn = true;
   const run = (ti, ri, lp) => { const t = g.teams[ti], rid = R.ROOMS[ri].id; R.enterRoom(t.id, rid);
     const before = t.score, r = R.finishRoom(rid, { [t.id]: 'lose' }, { [t.id]: R.alive(t.id)[0].id }, lp === undefined ? {} : { [t.id]: lp }); return { t, rid, r, before }; };
-  { const x = run(0, 0); T('loss bonus: default is half of the win points (4 -> 200)', x.r.ok && x.t.score - x.before === 200 && x.t.hist.at(-1).pts === 200 && x.t.hist.at(-1).res === 'lose'); }
+  { const x = run(0, 0); T('loss bonus: not chosen = 0 points even with the switch on', x.r.ok && x.t.score === x.before && x.t.hist.at(-1).pts === 0 && x.t.hist.at(-1).res === 'lose'); }
+  { const x = run(5, 5, 400); T('loss bonus: explicit half of the 8-room win points (400)', x.r.ok && x.t.score - x.before === 400 && x.t.hist.at(-1).pts === 400); }
   { const x = run(1, 1, 300); T('loss bonus: custom value (8-room, 300)', x.r.ok && x.t.score - x.before === 300 && x.t.hist.at(-1).pts === 300); }
   { const t = g.teams[2], rid = R.ROOMS[2].id; R.enterRoom(t.id, rid); const pick = { [t.id]: R.alive(t.id)[0].id };
     T('loss bonus: must be below the win points', !R.finishRoom(rid, { [t.id]: 'lose' }, pick, { [t.id]: 400 }).ok && !R.finishRoom(rid, { [t.id]: 'lose' }, pick, { [t.id]: 9999 }).ok);
