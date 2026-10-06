@@ -43,6 +43,7 @@ await ack(player);
 await player.click('[data-a=tab][data-v=player]');
 { const tx = await text(player); T('player sees own page (2nd tab)', tx.includes('B-02') && tx.includes('蓝队')); }
 await ack(player);
+await ack(ctrl);
 
 // ctrl publishes -> player gets a popup
 await ctrl.click('[data-a=tab][data-v=ctrl]'); await ctrl.click('[data-a=sub][data-p=ctrl][data-v=pub]');
@@ -50,6 +51,8 @@ await ctrl.click('[data-a=dd][data-v="pub.gate"]'); await ctrl.click('[data-a=pi
 await player.waitForSelector('#modal .dlg', { timeout: 4000 }).catch(() => {});
 T('player popup after publish', (await player.locator('#modal').innerText()).includes('鬼门开 占位 1'));
 await ack(player);
+await sleep(300); T('dealer and judge also get the gate popup, screen does not', await dealer.locator('[data-modal]').count() > 0 && await judge.locator('[data-modal]').count() > 0 && await screen.locator('[data-modal]').count() === 0);
+await ack(ctrl); await ack(judge); await ack(dealer); await ack(mengpo);
 
 // judge records -> ctrl log + score + broadcast
 const nid = admin.S.notices.find(n => n.title === '鬼门开 占位 1').id;
@@ -59,7 +62,7 @@ await sleep(500);
 T('gate winner recorded, no points, rooms paused', admin.S.teams.find(t => t.id === 'B').score === scoreB && admin.S.gp && admin.S.gp.win === 'B');
 await judge.waitForSelector('[data-a=gateend]', { timeout: 3000 }).catch(() => {});
 T('judge page shows the gate reward panel', (await text(judge)).includes('鬼门开奖励'));
-await judge.click('[data-a=gateend]'); await sleep(400);
+await judge.click('[data-a=gateendask]'); await judge.waitForSelector('[data-a=gateend]'); T('gate end needs a second confirm', !!admin.S.gp); await judge.click('[data-a=gateend]'); await sleep(400);
 T('gate ended by judge', !admin.S.gp);
 await ctrl.click('[data-a=sub][data-p=ctrl][data-v=log]');
 T('ctrl log updated live', (await text(ctrl)).includes('判官记录 蓝队 率先完成任务「鬼门开 占位 1」'));
@@ -83,9 +86,11 @@ T('player cannot use admin', !(await pc.act({ type: 'admin.reset', demo: false }
 T('player view: only broadcast log lines, no shop', pc.S.shop.length === 0 && pc.S.log.length > 0 && pc.S.log.every(l => /勾魂|淘汰|买命|拿下|率先完成|鬼门开|赢下/.test(l.text)));
 
 // dealer -> screen
+await ack(dealer);
 if (await dealer.$('[data-a=room]')) await dealer.click('[data-a=room][data-v="8D"]'); await dealer.click('[data-a=pick][data-k=pick][data-v=C]'); await dealer.click('[data-a=enter]');
 await sleep(500);
 T('screen shows room live', (await screen.locator('.rgrid').innerText()).includes('青队'));
+await ack(ctrl); await ack(judge); await ack(mengpo);
 
 // clock
 await ctrl.click('#clockctl'); await sleep(2200);

@@ -77,8 +77,8 @@ function matches(n,p){
   switch(n.target){case 'all':return true;case 'team':return n.ids.includes(p.team);case 'player':return n.ids.includes(p.id);
   case 'market':return p.st==='market';case 'alive':return p.st==='alive';case 'everyone':return true;}return false;}
 // 工作人员能看到的公告：发给「工作人员」或「所有人」的（工作人员没有个人编号，已读只记在本机）
-const staffSees=n=>n.target==='staff'||n.target==='everyone';
-function targetLabel(n){return n.target==='all'?'全体玩家':n.target==='team'?team(n.ids[0]).name:n.target==='player'?(n.ids.length<=4?n.ids.join('、'):n.ids.slice(0,3).join('、')+' 等 '+n.ids.length+' 人'):n.target==='market'?'鬼市中的人':n.target==='staff'?'全体工作人员':n.target==='everyone'?'所有人（玩家 + 工作人员）':'存活玩家';}
+const staffSees=n=>n.target==='staff'||n.target==='everyone'||n.sub==='gate';
+function targetLabel(n){return n.target==='all'?'全体玩家':n.target==='team'?team(n.ids[0]).name:n.target==='player'?(n.ids.length<=4?n.ids.join('、'):n.ids.slice(0,3).join('、')+' 等 '+n.ids.length+' 人'):n.target==='market'?'鬼市中的人':n.target==='staff'?'工作人员':n.target==='everyone'?'所有人':'存活玩家';}
 const rewardTxt=n=>n.reward?'+'+n.reward+' 冥币':'';
 const teamOf=id=>id.includes('-')?id.split('-')[0]:id;
 const kindLabel=n=>n.kind==='任务'?(n.sub==='side'?'Scavenger Hunt':n.sub==='custom'?'自定义任务':'鬼门开'):n.kind;

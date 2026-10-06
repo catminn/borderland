@@ -215,15 +215,17 @@ function viewDealer(){
     +(st==='reset'?resetBtn:'<span class="sum'+(ready?' ready':'')+'">'+summary+'</span>'
     +'<button class="btn-main'+(ready?' glow':'')+'" data-a="finish"'+(ready?'':' disabled')+' style="min-height:60px;font-size:19px;letter-spacing:.14em">结束并结算</button>'
     +'<span class="small center">结算后立即发放，房间随即进入重置，请先核对</span>')+'</div>';
-  return '<div class="page tabbed">'+rooms+hero+'<div class="cols-dealer">'+sec('dealer','info',info)+sec('dealer','settle',settle)+'</div>'
+  const gateWarn=dealerBusy()?'<div class="gatebar"><b>鬼门开：请尽快结束游戏</b><span>各房间已暂停预约与入场，请让正在进行的这一局尽快结算</span></div>':'';
+  return '<div class="page tabbed">'+gateWarn+rooms+hero+'<div class="cols-dealer">'+sec('dealer','info',info)+sec('dealer','settle',settle)+'</div>'
     +sub('dealer',[['info','规则与入场'],['settle','胜负结算']])+'</div>';
 }
 
 // ---------- 判官 ----------
 // 鬼门开：进行中时各房间暂停；率先完成的队伍缺人 → 免费复活一名队友，满员 → 指定别队一名存活队员淘汰（不加分）。
 function gatePanel(){
-  const g=S.gp;if(!g)return '';
-  const end='<button class="btn-line" data-a="gateend">结束鬼门开（房间恢复开放）</button>';
+  const g=S.gp;if(!g){ui.gateEndAsk=false;return '';}
+  const end=ui.gateEndAsk?'<button class="btn-line fillred" data-a="gateend" style="min-height:48px;font-weight:900">确认结束鬼门开</button><button class="btn-line" data-a="gateendno" style="min-height:48px">取消</button><span class="small">结束后各房间立即恢复预约与入场</span>'
+    :'<button class="btn-line" data-a="gateendask">结束鬼门开（房间恢复开放）</button>';
   if(!g.win)return '<div class="pn gatep"><div class="shrow"><h3>鬼门开进行中</h3><span class="small">各房间暂停预约与入场</span></div><span class="muted">等待有队伍率先完成。在下面的任务卡点选完成的队伍并确认后，这里会出现奖励。</span><div class="btns">'+end+'</div></div>';
   const wt=team(g.win),short=alive(wt.id).length<size(wt.id);
   if(ui.gatePick){const p=S.players.find(x=>x.id===ui.gatePick);if(!p||(short?(p.team!==wt.id||p.st==='alive'):(p.team===wt.id||p.st!=='alive')))ui.gatePick='';}
@@ -483,10 +485,10 @@ function finalDlg(){
 
 function pubPanel(){
   const f=ui.pub,K=f.kind,gate=K==='鬼门开',side=K==='sidequest',task=K!=='公告';f.to=f.target==='team'?'team:'+f.team:f.target;
-  const to=[['all','全场'],...(K==='公告'?[['staff','工作人员'],['everyone','所有人（玩家 + 工作人员）']]:[]),...S.teams.map(t=>['team:'+t.id,t.name,t.id]),['alive','存活的人'],['market','鬼市里的人'],['player','某位队员']];
+  const to=[...(K==='公告'?[['everyone','所有人']]:[]),['all','全体玩家'],...(K==='公告'?[['staff','工作人员']]:[]),...S.teams.map(t=>['team:'+t.id,t.name,t.id]),['alive','存活的人'],['market','鬼市里的人'],['player','某位队员']];
   const toOn=v=>v==='team:'+f.team?f.target==='team':v===f.target;
   const pl=f.players||[],q=QUESTS.find(x=>x.id===f.quest),gq=GATES.find(x=>x.id===f.gate);
-  const toName=gate?'全场':side?(f.sqTeam?team(f.sqTeam).name+'的':'队伍的'):f.target==='team'?team(f.team).name:f.target==='player'?(!pl.length?'某位队员':pl.length<=3?pl.join('、'):pl.slice(0,2).join('、')+' 等 '+pl.length+' 人'):{all:'全场',alive:'存活的',market:'鬼市里的',staff:'工作人员',everyone:'所有人'}[f.target];
+  const toName=gate?'全体玩家和工作人员':side?(f.sqTeam?team(f.sqTeam).name+'的':'队伍的'):f.target==='team'?team(f.team).name:f.target==='player'?(!pl.length?'某位队员':pl.length<=3?pl.join('、'):pl.slice(0,2).join('、')+' 等 '+pl.length+' 人'):{all:'全体玩家',alive:'存活的',market:'鬼市里的',staff:'工作人员',everyone:'所有人'}[f.target];
   // Scavenger Hunt: one team only, teams that are short of people first, with how many are left
   const sqTeams=[...S.teams].sort((a,b)=>alive(a.id).length-alive(b.id).length);
   const target=K==='公告'||K==='custom'?'<div class="fgrid"><div class="fld"><span>发给谁</span>'+dd('pub.to',(to.find(([v])=>toOn(v))||[])[1],'选择对象',f.target==='team'?TC[f.team][0]:null,to.map(([v,l,id])=>({v,label:l,c:id?TC[id][0]:null})))+'</div>'
@@ -504,7 +506,7 @@ function pubPanel(){
     +'</div>'
     +((side&&f.quest!=='custom')||(gate&&f.gate!=='custom')?'':'<label class="fld"><span>标题</span><input class="in" id="pti" data-m="pub.title" value="'+esc(f.title)+'" placeholder="例如：鬼门开 占位"></label>'
     +'<label class="fld"><span>内容</span><textarea class="in" id="pb" data-m="pub.body" rows="3" placeholder="玩家手机上看到的说明：任务要求、集合地点…">'+esc(f.body)+'</textarea></label>')
-    +'<button class="btn-main" data-a="publish">发布'+(K==='custom'?'自定义任务':gate?'鬼门开':'')+'到'+esc(toName)+(f.target==='staff'?'':f.target==='everyone'?'的手机':'玩家手机')+'</button></div>';
+    +'<button class="btn-main" data-a="publish">发布'+(K==='custom'?'自定义任务':gate?'鬼门开':'')+'到'+esc(toName)+(gate||f.target==='staff'?'':f.target==='everyone'||f.target==='all'?'的手机':'玩家手机')+'</button></div>';
   const list=S.notices.filter(n=>n.kind!=='通知'&&n.sub!=='side').slice(0,10).map(n=>{
     const aud=S.players.filter(p=>matches(n,p)),acked=aud.filter(p=>n.acks[p.id]).length,[kl,kc]=kindOf(n),ds=Object.keys(n.done);
     return '<div class="li"><div class="grow" style="gap:4px"><div class="thead"><span class="kb '+kc+'" style="font-size:12px;padding:0 7px">'+kl+'</span><b style="font-size:17px">'+esc(n.title)+'</b></div>'
@@ -664,6 +666,7 @@ function rsvDlg(){
 // 时间到：全员（含工作人员、大屏）全屏提示；按总时长记住已点过，刷新不再重复弹。
 const tuKey=()=>'borderland.tu.'+((S&&S.dur)||7200);
 const tuSeen=()=>{try{return sessionStorage.getItem(tuKey())==='1';}catch{return !!ui.tuAck;}};
+const dealerBusy=()=>ME&&ME.role==='dealer'&&!!S&&!!S.gp&&ROOMS.some(y=>(!Array.isArray(ME.rooms)||ME.rooms.includes(y.id))&&roomState(y.id).st==='play');
 const staffAcked=id=>{try{return sessionStorage.getItem('borderland.sa.'+id)==='1';}catch{return !!(ui.sa&&ui.sa[id]);}};
 function tuDlg(){
   return '<div class="ovl" data-k="time"><div class="dlg" data-n="timeup" data-k="time" role="dialog" aria-modal="true" aria-labelledby="dt"><div class="new"><i></i>全场通知</div>'
@@ -675,9 +678,10 @@ function modalHtml(){
   if(ME&&S&&!entering&&R.timeUp()&&!tuSeen())return tuDlg();
   if(ME&&ME.role==='player'&&S&&ui.rsvInfo)return rsvDlg();
   if(ME&&ME.role!=='player'&&S&&S.notices){ // 工作人员：发给「工作人员 / 所有人」的公告，已读只记在本机
-    const n=S.notices.find(x=>staffSees(x)&&!staffAcked(x.id));if(!n)return '';
+    const n=S.notices.find(x=>staffSees(x)&&!staffAcked(x.id)&&!(x.sub==='gate'&&ME.role==='screen'));if(!n)return '';
+    const dl=n.sub==='gate'&&dealerBusy()?'<div class="gatebar" style="margin:6px 0"><b>请尽快结束游戏</b><span>鬼门开已开始，你负责的房间还有一局在进行，请尽快结算</span></div>':'';
     return '<div class="ovl"><div class="dlg" data-n="s'+n.id+'" role="dialog" aria-modal="true" aria-labelledby="dt"><div class="new"><i></i>工作人员通知</div>'
-      +'<div class="bd"><span class="k">'+n.kind+'</span></div><h3 id="dt">'+esc(n.title)+'</h3>'+(n.body?'<div class="body">'+esc(n.body)+'</div>':'')
+      +'<div class="bd"><span class="k">'+n.kind+'</span></div><h3 id="dt">'+esc(n.title)+'</h3>'+(n.body?'<div class="body">'+esc(n.body)+'</div>':'')+dl
       +'<div class="foot">'+(n.due?'<span class="cap">剩余时间</span><span class="cd'+(n.due-S.t>0?'':' over')+'">'+(n.due-S.t>0?mmss(n.due-S.t):'已截止')+'</span>':'')+'</div>'
       +'<button data-a="sack" data-n="'+n.id+'" data-modal="1">知道了</button></div></div>';}
   if(!ME||ME.role!=='player'||!S)return '';
@@ -976,7 +980,9 @@ document.addEventListener('click',e=>{
   else if(a==='room'){ui.room=v;ui.pick='';ui.res={};ui.pickOut={};ui.settled=null;}
   else if(a==='res'){ui.res[b.dataset.t]=ui.res[b.dataset.t]===v?undefined:v;delete ui.pickOut[b.dataset.t];}
   else if(a==='gatereward'){send({type:'gatereward',pid:ui.gatePick},()=>{ui.gatePick='';});}
-  else if(a==='gateend'){send({type:'gateend'});}
+  else if(a==='gateendask'){ui.gateEndAsk=true;}
+  else if(a==='gateendno'){ui.gateEndAsk=false;}
+  else if(a==='gateend'){ui.gateEndAsk=false;send({type:'gateend'});}
   else if(a==='enter'){send({type:'enter',tid:ui.pick,rid:ui.room},()=>{ui.pick='';ui.settled=null;ui.sub.dealer='settle';});}
   else if(a==='resetdone'){send({type:'resetdone',rid:ui.room},()=>{ui.settled=null;ui.sub.dealer='info';});}
   else if(a==='reserve'){send({type:'reserve',rid:v});}
