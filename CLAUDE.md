@@ -255,3 +255,4 @@ npm run dev:pages                             # 正式部署的路径（Pages+Wo
 - **鬼门开**：演示数据和题库 `GATES` 都是占位文字（「鬼门开 占位」「（占位文字，正式内容待定）」），具体玩法待定。
 - **Scavenger Hunt**：玩家端不再弹全屏通知、「当前任务与通知」列表也不显示 sidequest 通知（`n.sub!=='side'` 过滤），只保留任务页顶上那条「Scavenger 已兑换/上限 + 可兑换时间」计数行；判官 / 总控的兑换流程不变。
 - 测试：`rules.test.mjs` 增加勾魂令淘汰/复活用例；`sync.test.mjs` 增加计时重置用例；rules / sync / restart 全过。
+- **PIN 生成默认数量**（总控工具，`ui.admin.counts`）：Dealer 8（固定），判官/孟婆/黑白无常/总控/大屏各 1。
