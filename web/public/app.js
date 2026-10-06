@@ -589,6 +589,7 @@ function pubPanel(){
   return '<h2 class="sh">发布公告 / 鬼门开 / 自定义任务</h2><div class="pubcols">'+form+'<div class="pn" style="gap:0"><h3 style="padding-bottom:8px">已发布</h3>'+(list||'<div class="li small">还没有发布过。</div>')+'</div></div>';
 }
 function adminPanel(){
+  if(!LOCAL&&!ui.cntTried&&ws&&connected){ui.cntTried=true;send({type:'pincounts'},m=>{if(m.data)Object.assign(ui.admin.counts,m.data);},true);}
   const A=ui.admin,c=A.counts,run=CLOCK&&CLOCK.running;
   const num=(k,l,fixed)=>'<label class="fld"><span>'+l+'</span><input class="in mono" type="number" id="adm-'+k+'" min="0" max="30" data-m="adm.'+k+'" value="'+c[k]+'"'+(fixed?' disabled':'')+'></label>';
   const pins=A.pins?'<div class="pins"><div class="pr h"><span>身份</span><span>编号 / 名称</span><span>PIN</span><span></span></div>'
@@ -1028,7 +1029,7 @@ function localSend(a,after,quiet){
 function send(a,after,quiet){
   if(LOCAL){localSend(a,after,quiet);return;}
   if(!ws||!connected){say(no('还没连上服务器，请稍等'));return;}
-  if(DEVME&&(a.type==='dev.setdemo'||a.type==='dev.stats'||a.type==='dev.clearstats')){}
+  if(DEVME&&(a.type==='pincounts'||a.type==='setpincounts'||a.type==='dev.setdemo'||a.type==='dev.stats'||a.type==='dev.clearstats')){}
   else if(DEVME){if(!ui.devOps){say(no('开发者模式现在是只读，点右上角「只读」切换成可操作'));return;}a={...a,as:{role:ME.role,pid:ME.pid}};}
   const id=++seq;
   pending.set(id,m=>{if(!quiet||!m.ok)say(m);if(m.ok&&after)after(m);requestRender();});
@@ -1161,7 +1162,7 @@ document.addEventListener('input',e=>{
   else if(m.startsWith('nc.'))ui.nc[m.slice(3)]=v;
   else if(m==='adm.resetTxt'){ui.admin.resetTxt=v;const btn=$('#rstbtn');if(btn){btn.disabled=v!=='重置';btn.classList.toggle('fillred',v==='重置');}}
   else if(m==='durMin')ui.admin.dur=v.replace(/[^\d.]/g,'');
-  else if(m.startsWith('adm.')){ui.admin.counts[m.slice(4)]=+v;try{localStorage.setItem('borderland.pincounts',JSON.stringify(ui.admin.counts));}catch(e){}}
+  else if(m.startsWith('adm.')){ui.admin.counts[m.slice(4)]=+v;try{localStorage.setItem('borderland.pincounts',JSON.stringify(ui.admin.counts));}catch(e){}if(!LOCAL)send({type:'setpincounts',counts:ui.admin.counts},null,true);}
   else if(m.startsWith('pub.'))ui.pub[m.slice(4)]=v;
   else if(m.startsWith('jg.'))ui.jg[m.slice(3)]=v;
   else if(m==='rd.title')ui.rd.title=v;

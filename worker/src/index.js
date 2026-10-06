@@ -256,6 +256,17 @@ export class Game extends DurableObject {
   }
 
   async handle(s, a) {
+    if (a.type === 'pincounts' || a.type === 'setpincounts') {   // 「生成 PIN」各角色人数的共用默认值：总控和真开发者可读写，存服务器，所有设备一致
+      if (this.inSandbox || s.demo) return { ok: true, msg: '', changed: false, data: null };   // 演示局不读写真实默认值
+      if (!(s.role === 'ctrl' || s.role === 'dev')) return R.no('没有权限');
+      const au = this.realAuth || this.auth, def = { dealer: 8, judge: 1, mengpo: 1, wuchang: 1, ctrl: 1, screen: 1 };
+      if (a.type === 'setpincounts') {
+        const c = { ...def, ...(au.counts || {}) };
+        for (const k of Object.keys(def)) if (k !== 'dealer' && a.counts && a.counts[k] != null) { const v = Math.round(+a.counts[k]); if (v >= 0 && v <= 30) c[k] = v; }
+        au.counts = c; await this.ctx.storage.put('auth', au);
+      }
+      return { ok: true, msg: '', changed: false, data: { ...def, ...(au.counts || {}) } };
+    }
     if (a.type === 'dev.stats' || a.type === 'dev.clearstats') {   // 统计：只有真开发者 PIN（不含展示 PIN），只读也能看
       if (s.role !== 'dev' || s.demo) return R.no('只有开发者能看统计');
       if (a.type === 'dev.clearstats') { this.st = { rows: {}, fails: 0, lastFail: 0 }; this.ser = []; await this.ctx.storage.delete(['stats', 'statsS']); return { ok: true, msg: '统计已清空', changed: false, data: this.statsData() }; }
