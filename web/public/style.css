@@ -1035,8 +1035,8 @@ body.inmk::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:6
 
 /* ===== 2026-10-05 第三轮 ===== */
 /* 灯笼：缩小，居中整条；手机从最左边开始截取（不截中间）；底部不再黑色渐隐，流苏完整 */
-.lantern-band{--band:clamp(900px,78vw,1400px);pointer-events:none;user-select:none;position:relative;width:100vw;height:calc(var(--band)*.17);margin:calc(-1*var(--lup,0px)) 0 8px calc(50% - 50vw);overflow:hidden}
-.lantern-band .lt{position:absolute;left:var(--x);top:calc(var(--band)*var(--y) + 2px);width:calc(var(--band)*var(--w));margin-left:calc(var(--band)*var(--w)/-2)}
+.lantern-band{--band:clamp(900px,78vw,1400px);--pitch:max(calc(100vw/18),calc(var(--band)*.0662));pointer-events:none;user-select:none;position:relative;width:100vw;height:calc(var(--band)*.17);margin:calc(-1*var(--lup,0px)) 0 8px calc(50% - 50vw);overflow:hidden}
+.lantern-band .lt{position:absolute;left:calc(50% + var(--k)*var(--pitch));top:calc(var(--band)*var(--y) + 2px);width:calc(var(--band)*var(--w));margin-left:calc(var(--band)*var(--w)/-2)}
 .lantern-band .lt img{display:block;width:100%;height:auto;transform-origin:50% 0;animation:ltsway var(--dur) ease-in-out infinite alternate;animation-delay:var(--dly)}
 @keyframes ltsway{from{transform:rotate(calc(var(--amp)*-1)) translateY(calc(var(--bob)*-1))}to{transform:rotate(var(--amp)) translateY(var(--bob))}}
 @media (prefers-reduced-motion:reduce){.lantern-band .lt img{animation:none}}
