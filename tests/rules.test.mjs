@@ -47,6 +47,12 @@ T('ctrl forces final', ap('ctrl', { type: 'final', tid: t.id, on: true }).ok && 
 }
 { // 输了 Dealer 可加分：默认赢分的一半，整数，少于赢分
   const R = await import('../shared/rules.js'); const g = R.newGame(false); R.use(g);
+  T('loss bonus switch: off by default', g.lossOn === false);
+  { const g2 = R.newGame(false); R.use(g2); const t = g2.teams[4], rid = R.ROOMS[4].id; R.enterRoom(t.id, rid);
+    const r = R.finishRoom(rid, { [t.id]: 'lose' }, { [t.id]: R.alive(t.id)[0].id }, { [t.id]: 300 });
+    T('loss bonus switch off: loser gets 0 even if a bonus is sent', r.ok && t.score === 0 && t.hist.at(-1).pts === 0);
+    T('loss bonus switch: only ctrl can flip it', !R.apply(g2, me('dealer'), { type: 'setlosspts', on: true }).ok && g2.lossOn === false && R.apply(g2, me('ctrl'), { type: 'setlosspts', on: true }).ok && g2.lossOn === true && R.apply(g2, me('ctrl'), { type: 'setlosspts', on: false }).ok && g2.lossOn === false); }
+  R.use(g); g.lossOn = true;
   const run = (ti, ri, lp) => { const t = g.teams[ti], rid = R.ROOMS[ri].id; R.enterRoom(t.id, rid);
     const before = t.score, r = R.finishRoom(rid, { [t.id]: 'lose' }, { [t.id]: R.alive(t.id)[0].id }, lp === undefined ? {} : { [t.id]: lp }); return { t, rid, r, before }; };
   { const x = run(0, 0); T('loss bonus: default is half of the win points (4 -> 200)', x.r.ok && x.t.score - x.before === 200 && x.t.hist.at(-1).pts === 200 && x.t.hist.at(-1).res === 'lose'); }

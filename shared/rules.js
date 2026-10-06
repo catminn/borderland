@@ -56,7 +56,7 @@ const ok=msg=>({ok:true,msg}), no=msg=>({ok:false,msg});
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 function init(){
-  S={v:2,t:0,dur:DUR0,gp:null,log:[],notices:[],nid:1,sid:100,shop:SHOP0.map(c=>({...c})),
+  S={v:2,t:0,dur:DUR0,lossOn:false,gp:null,log:[],notices:[],nid:1,sid:100,shop:SHOP0.map(c=>({...c})),
      teams:TEAMS.map(t=>({...t,cards:[],cleared:[],played:[],inRoom:null,score:0,skills:[],final:false,cap:t.id+'-01',scav:[]})),
      rooms:ROOMS.map(r=>({id:r.id,st:'open',rt:null,at:0,teams:[]})),players:[]};
   TEAMS.forEach(t=>{for(let i=1;i<=PER_TEAM;i++)S.players.push({id:t.id+'-'+String(i).padStart(2,'0'),team:t.id,st:'alive',outAt:null,inAt:null,pickAt:null,at:'',chk:null,backAt:null,coins:0,bail:0});});
@@ -271,7 +271,7 @@ function finishRoom(rid,results,picks={},lpts={}){
   for(const tid of st.teams){
     if(!results[tid])return no('请为'+team(tid).name+'选择赢或输');
     if(results[tid]==='lose'&&alive(tid).length&&!alive(tid).some(p=>p.id===picks[tid]))return no('请为'+team(tid).name+'选出被淘汰的队员（现场抽签结果）');
-    if(results[tid]==='lose'&&lossPts(r,lpts[tid])===null)return no(team(tid).name+'输的加分要是整数，并且少于 '+r.n*100);
+    if(S.lossOn&&results[tid]==='lose'&&lossPts(r,lpts[tid])===null)return no(team(tid).name+'输的加分要是整数，并且少于 '+r.n*100);
   }
   const notes=[];
   for(const tid of st.teams){
@@ -281,7 +281,7 @@ function finishRoom(rid,results,picks={},lpts={}){
       if(!t.cleared.includes(rid))t.cleared.push(rid);
       if(!t.cards.includes(r.card))t.cards.push(r.card); const pts=r.n*100; t.score+=pts; h.pts=pts; log(t.name+' 赢下 '+r.card+'，+'+pts+' 冥币','back'); notes.push(t.name+'赢 +'+pts+' 冥币');
     }else{
-      const lp=lossPts(r,lpts[tid]); if(lp){t.score+=lp;h.pts=lp;log(t.name+' 输了 '+r.card+'，+'+lp+' 冥币');}
+      const lp=S.lossOn?lossPts(r,lpts[tid]):0; if(lp){t.score+=lp;h.pts=lp;log(t.name+' 输了 '+r.card+'，+'+lp+' 冥币');}
       const lt=lp?' +'+lp+' 冥币':'';
       const pool=alive(tid); if(!pool.length){log(t.name+' 输了 '+r.card+'，队里已无存活队员');notes.push(t.name+'输'+lt+'（无人可淘汰）');continue;}
       const v=pool.find(p=>p.id===picks[tid]);
@@ -342,6 +342,8 @@ function gateReward(pid){const g=S.gp;if(!g)return no('现在没有进行中的�
   gateRec('获胜：'+wt.name+'，淘汰 '+p.id);g.res=true;S.gp=null;log('鬼门开结束，房间恢复开放');return ok(wt.name+'淘汰了 '+p.id+'，鬼门开结束');}
 function gateRec(txt){const g=S.gp,n=g&&S.notices.find(x=>x.id===g.nid);if(n)n.gr=txt;}   // 在鬼门开通知上记下结果，判官页「鬼门开记录」用
 function gateEnd(){if(!S.gp)return no('现在没有进行中的鬼门开');gateRec(S.gp.win?'获胜：'+team(S.gp.win).name+'，未处理奖励':'无人获胜');S.gp=null;log('鬼门开结束，房间恢复开放');return ok('鬼门开已结束，房间恢复开放');}
+// 「输了加分」总开关：总控设置，默认关闭；关闭时输的队伍不加分（和以前一样 0 分）
+function setLossOn(on){S.lossOn=!!on;log('总控'+(S.lossOn?'开启':'关闭')+'「输了加分」');return ok('输了加分已'+(S.lossOn?'开启':'关闭'));}
 function setDur(secs){secs=Math.round(+secs);if(!(secs>=60&&secs<=86400))return no('总时长要在 1 分钟到 24 小时之间');S.dur=secs;log('总控把总时长设为 '+Math.floor(secs/60)+' 分钟');return ok('总时长已设为 '+Math.floor(secs/60)+' 分钟');}
 function setCap(tid,pid){const t=team(tid),p=S.players.find(x=>x.id===pid);if(!t)return no('先选队伍');if(!p||p.team!==tid)return no('队长要从本队队员里选');
   if(t.cap===pid)return no(pid+' 已经是队长');t.cap=pid;log('总控指定 '+pid+' 为'+t.name+'队长');return ok(pid+' 现在是'+t.name+'队长');}
@@ -415,7 +417,7 @@ function seed(){
 export function newGame(demo){init();if(demo)seed();return S;}
 
 // Which roles may perform each action ('ctrl' may do everything).
-const ROLE_OK={enter:['dealer'],finish:['dealer'],resetdone:['dealer'],reserve:['player'],cancelrsv:['player'],setcap:['ctrl'],setdur:['ctrl'],gatereward:['judge'],gateend:['judge'],hook:['judge'],done:['judge'],undone:['judge'],
+const ROLE_OK={enter:['dealer'],finish:['dealer'],resetdone:['dealer'],reserve:['player'],cancelrsv:['player'],setcap:['ctrl'],setdur:['ctrl'],setlosspts:['ctrl'],gatereward:['judge'],gateend:['judge'],hook:['judge'],done:['judge'],undone:['judge'],
   publish:['ctrl','judge'],revoke:['ctrl'],setscore:['ctrl'],final:['ctrl'],assign:['ctrl'],scavredeem:['judge'],
   pickup:['wuchang'],checkin:['wuchang','mengpo'],confirm:['wuchang','mengpo'],
   revive:['mengpo'],coin:['mengpo'],buy:['mengpo'],usecard:['mengpo'],addcard:['mengpo'],
@@ -440,6 +442,7 @@ export function apply(state,me,a){
     case 'gateend':return gateEnd();
     case 'setcap':return setCap(a.tid,a.pid);
     case 'setdur':return setDur(a.secs);
+    case 'setlosspts':return setLossOn(a.on);
     case 'enter':return enterRoom(a.tid,a.rid);
     case 'finish':return finishRoom(a.rid,a.results||{},a.picks||{},a.lpts||{});
     case 'hook':return hook(a.actor,a.pid,a.where,a.mode);
