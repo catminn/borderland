@@ -223,12 +223,7 @@ function viewDealer(){
 
 // ---------- 判官 ----------
 // 鬼门开：进行中时各房间暂停；率先完成的队伍缺人 → 免费复活一名队友，满员 → 指定别队一名存活队员淘汰（不加分）。
-function gateHist(){
-  const l=S.notices.filter(x=>x.sub==='gate'&&!(S.gp&&S.gp.nid===x.id)).sort((a,b)=>b.t-a.t);
-  if(!l.length)return '';
-  return '<div class="pn"><div class="shrow"><h3>鬼门开记录</h3><span class="small">共 '+l.length+' 次</span></div>'+l.map(n=>'<div class="lot"><b>'+esc(n.title)+'</b> <span class="small">'+fmt(n.t)+' · '+esc(n.gr||'已结束')+'</span></div>').join('')+'</div>';}
-function gatePanel(){return gatePanel0()+gateHist();}
-function gatePanel0(){
+function gatePanel(){
   const g=S.gp;
   if(!g){ui.gateEndAsk=false;ui.gateWin='';
     const j=ui.jg,gq=GATES.find(x=>x.id===j.gate),cus=j.gate==='custom',okp=gq||(cus&&j.title.trim());
@@ -307,7 +302,7 @@ function viewNpc(){
       +'<div class="ttitle"><b>'+esc(n.title)+'</b>'+(n.reward?'<span class="rw">+'+n.reward+'</span>':'')+'</div>'+body+'</div>';}).join('');
   const recs=S.notices.filter(n=>n.kind==='任务').flatMap(n=>Object.entries(n.done).map(([cid,d])=>({n,cid,d}))).sort((a,b)=>b.d.t-a.d.t);
   const records='<div class="pn" style="gap:0"><h3 style="padding-bottom:8px">已完成记录</h3>'+(recs.length?recs.map(({n,cid,d})=>
-    '<div class="li"><div class="grow"><span class="t">'+fmt(d.t)+(n.due&&d.t>n.due?' 超时':'')+'</span><span class="x">'+lab(cid)+' 完成「'+esc(n.title)+'」'+(d.pts?' <span class="mono">+'+d.pts+'</span>':'')+'</span></div>'
+    '<div class="li"><div class="grow"><span class="t">'+fmt(d.t)+(n.due&&d.t>n.due?' 超时':'')+'</span><span class="x">'+lab(cid)+' 完成「'+esc(n.title)+'」'+(n.sub==='gate'&&n.gr&&n.gr.includes('，')?'，'+esc(n.gr.split('，').slice(1).join('，').replace('免费复活','复活')):'')+(d.pts?' <span class="mono">+'+d.pts+'</span>':'')+'</span></div>'
     +'<button class="btn-line" data-a="undone" data-n="'+n.id+'" data-t="'+cid+'">撤销</button></div>').join(''):'<div class="li small">暂无记录</div>')+'</div>';
   const task=gatePanel()+(cards||'<div class="pn"><span class="muted">还没有发布任务。总控在生死簿「发布」里发布。</span></div>')+records;
   // 勾魂令：队伍 → 效果（建议 + 可强行改）→ 队员
