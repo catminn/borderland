@@ -671,9 +671,8 @@ function viewPlayer(){
   const gotN=SUITS.filter(x=>t.cards.some(c=>c.includes(x))).length,sz=size(t.id);
   const okS=gotN===SUITS.length,okA=a===sz,okP=t.score>=FINAL_SCORE,doneN=[okS,okA,okP].filter(Boolean).length;
   const cc=(ok,ttl,body)=>'<div class="fc'+(ok?' ok':'')+'"><div class="fh"><b>'+ttl+'</b><span class="fk">'+(ok?'✓ 已达成':'未达成')+'</span></div>'+body+'</div>';
-  const need=[!okS?'再集齐 '+(SUITS.length-gotN)+' 种花色':'',!okA?'复活 '+(sz-a)+' 名队友':'',!okP?'再赚 '+(FINAL_SCORE-t.score)+' 冥币':''].filter(Boolean);
   const finSec='<div class="fin3"><div class="fhd"><div class="ft"><span class="cap">终极任务进度</span><b class="fn">'+doneN+'<i> / 3</i></b></div>'
-    +'<div class="fs">'+(st.k==='free'?st.txt:doneN===3?'三个条件都已满足，等待总控放行。':'还差：'+need.join('、'))+'</div></div>'
+    +'<div class="fs">'+(st.k==='free'?st.txt:doneN===3?'三个条件都已满足，等待总控放行。':'')+'</div></div>'
     +'<div class="fcs">'
     +cc(okS,'集齐四种花色','<div class="suits4">'+suits+'</div><div class="fx mono">'+gotN+' / '+SUITS.length+'</div>')
     +cc(okA,'全员存活','<div class="dots">'+dots+'</div><div class="fx mono">'+a+' / '+sz+'</div>')
@@ -716,7 +715,7 @@ function viewPlayer(){
   const mkSec='<div class="shrow"><h2 class="sh" style="font-size:22px">被淘汰的队友</h2></div>'
     +(mk.length?mk.map(p=>mate(p,p.id===me.id)).join(''):'<div class="pn"><span class="muted">本队现在没有人被淘汰。</span></div>');
   if(ui.sub.player==='market')ui.sub.player='team';
-  const tabs=[['team','本队'],['task','任务'+(unread?'<b class="cnt">'+unread+'</b>':'')],];
+  const tabs=[['team','本队信息'],['task','任务与通知'+(unread?'<b class="cnt">'+unread+'</b>':'')],];
   return (me.st!=='alive'?lanternsHtml():'')+'<div class="page tabbed toptabs allin">'+sub('player',tabs,'top')
     +'<div class="pcol l">'+wen+sec('player','team',teamSec)+(me.st==='alive'?sec('player','team',mkSec).replace('class="sec','class="sec'+(mk.length?'':' mk0')):'')+(skillsPart?sec('player','team',skillsPart):'')+'</div>'
     +'<div class="pcol r">'+sec('player','task',taskSec)+'</div></div>';

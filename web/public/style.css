@@ -1075,6 +1075,10 @@ body.login{overflow:hidden}
   .stage .room .on{font-size:13px}
 }
 
+/* 2026-10-06 排名花色：手机 2×2 紧凑；电脑一横排（提高优先级，盖过后面的 comic-skin） */
+body .stage .bcol .su{display:grid;grid-template-columns:repeat(2,auto);justify-content:center;gap:0 4px;font-size:15px;line-height:1.1}
+@media (min-width:820px){body .stage .bcol .su{grid-template-columns:repeat(4,auto);gap:0 8px;font-size:24px}}
+@media (max-width:719px){body .wen .w-cap{align-self:flex-start}}
 /* ==== 漫画分格组件皮肤（2026-10-05）· 追加在 style.css 末尾即可 ====
    只改组件的描边 / 投影 / 按压。描边用 inset box-shadow 加粗、禁用用 outline 画虚线，
    都不占布局：尺寸、换行、栅格与原来完全一致。--bw = 该组件原本的 border 宽度。 */
