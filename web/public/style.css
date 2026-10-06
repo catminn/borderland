@@ -1035,15 +1035,12 @@ body.inmk::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:6
 
 /* ===== 2026-10-05 第三轮 ===== */
 /* 灯笼：缩小，居中整条；手机从最左边开始截取（不截中间）；底部不再黑色渐隐，流苏完整 */
-.lantern-band{pointer-events:none;user-select:none;position:relative;display:flex;justify-content:center;width:100vw;margin:calc(-1*var(--lup,0px)) 0 8px calc(50% - 50vw);overflow:hidden}
-.lantern-band img{flex:none;display:block;width:clamp(900px,78vw,1400px);height:auto;max-width:none;transform-origin:50% 0;animation:lsway 7s ease-in-out infinite alternate;
-  -webkit-mask-image:linear-gradient(to right,transparent,#000 7%,#000 93%,transparent);mask-image:linear-gradient(to right,transparent,#000 7%,#000 93%,transparent)}
-.lantern-band .lt-d{display:none}
-:root[data-theme="dark"] .lantern-band .lt-l{display:none}
-:root[data-theme="dark"] .lantern-band .lt-d{display:block}
-@keyframes lsway{from{transform:rotate(-.25deg)}to{transform:rotate(.25deg)}}
-@media (prefers-reduced-motion:reduce){.lantern-band img{animation:none}}
-@media (max-width:719px){.lantern-band{justify-content:flex-start;height:190px}.lantern-band img{width:300vw;-webkit-mask-image:none;mask-image:none}}
+.lantern-band{--band:clamp(900px,78vw,1400px);pointer-events:none;user-select:none;position:relative;width:100vw;height:calc(var(--band)*.17);margin:calc(-1*var(--lup,0px)) 0 8px calc(50% - 50vw);overflow:hidden}
+.lantern-band .lt{position:absolute;left:var(--x);top:calc(var(--band)*var(--y) + 2px);width:calc(var(--band)*var(--w));margin-left:calc(var(--band)*var(--w)/-2)}
+.lantern-band .lt img{display:block;width:100%;height:auto;transform-origin:50% 0;animation:ltsway var(--dur) ease-in-out infinite alternate;animation-delay:var(--dly)}
+@keyframes ltsway{from{transform:rotate(calc(var(--amp)*-1)) translateY(calc(var(--bob)*-1))}to{transform:rotate(var(--amp)) translateY(var(--bob))}}
+@media (prefers-reduced-motion:reduce){.lantern-band .lt img{animation:none}}
+@media (max-width:719px){.lantern-band{--band:300vw;height:190px}}
 
 /* 大屏排名柱：顶边只留很轻的起伏；纸纹用上传的纸 */
 .stage .bcol .b{border-radius:0;min-height:46px;background-image:url(img/paper.webp);background-size:cover;background-blend-mode:multiply;
@@ -1311,7 +1308,6 @@ body .lg::before,body .lg::after{content:none}
 @media (min-width:720px){:root:not([data-theme="dark"]) .wuchang-layout{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
 @media (max-width:719px){
   .lantern-band{position:fixed;left:0;right:0;top:var(--lfy,64px);width:100vw;margin:0;z-index:-1;height:190px!important;overflow:hidden;opacity:.55;align-items:flex-start}
-  .lantern-band img{align-self:flex-start;height:auto;margin-top:-12.6vw;animation:none;transform:none} /* 去掉吊绳后图片上方是空白，上提让最高的灯笼顶到页头线 */
   .wuchang-layout{position:relative}
   .wc-mask{position:fixed;left:0;right:0;top:var(--lfy,64px);z-index:-1;opacity:.3;grid-row:auto}
   .wc-in img{margin-top:0}

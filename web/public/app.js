@@ -365,7 +365,7 @@ function viewMarket(){
         :'<button class="btn-main'+(ok?' glow':'')+'" data-a="revive" data-p="'+p.id+'"'+(ok?'':' disabled')+'>'+(ok?'买命回队':'差 '+(COIN_GOAL-tot))+'</button>')+'</div></div>';}).join('');
   const left='<section class="mcol"><div class="shrow"><h2 class="sh">孟婆买命</h2><span class="hint">凑够 '+COIN_GOAL+' 即可回队；回队扣 '+COIN_GOAL+'，多出的最多 '+R.CARRY_MAX+' 存回队伍，凑够后不能再刷分</span></div>'
     +(rows?'<div class="mlist">'+rows+'</div>':'<div class="empty">鬼市现在没有人。</div>')+'</section>';
-  return ''+LANTERNS+'<div class="page mkt">'+left+(FEATURES.cards?cardsPanel(mk):inboundPanel())+'</div>';
+  return lanternsHtml()+'<div class="page mkt">'+left+(FEATURES.cards?cardsPanel(mk):inboundPanel())+'</div>';
 }
 // 技能卡商铺（暂时关闭，FEATURES.cards 打开后恢复）
 function cardsPanel(mk){
@@ -623,7 +623,15 @@ function downBanner(me){
   if(me.st==='market')return '<div class="oban mk" role="status"><b>你在鬼市</b><span>已待 <i class="mono">'+mm(S.t-me.inAt)+'</i> 　合计冥币 <i class="mono">'+(me.coins+me.bail)+'</i> / '+COIN_GOAL+'</span></div>';
   return '<div class="oban" role="status"><b>你已被淘汰</b><span>'+(me.st==='picked'?'黑白无常已接到你，正在送你去鬼市':'留在原地，等黑白无常来接你')+'</span></div>';
 }
-const LANTERNS='<div class="lantern-band" aria-hidden="true"><img class="lt-l" src="img/lantern-light.webp" alt=""><img class="lt-d" src="img/lantern-dark.webp" alt=""></div>';
+const LT_LAYOUT=[[0.04085, 0.04501, 0.10376, 0.0325], [0.04453, 0.01726, 0.09763, 0.0994], [0.05433, 0.02586, 0.1107, 0.1669], [0.04575, 0.04517, 0.10866, 0.2261], [0.05392, 0.04743, 0.10825, 0.29], [0.0433, 0.03474, 0.10294, 0.3547], [0.05188, 0.0, 0.1058, 0.4161], [0.04616, 0.03108, 0.11111, 0.4675], [0.04739, 0.01337, 0.10825, 0.5317], [0.04779, 0.04768, 0.11111, 0.5783], [0.0531, 0.00107, 0.11234, 0.6397], [0.04698, 0.00998, 0.11193, 0.6925], [0.04616, 0.00241, 0.12377, 0.7378], [0.05392, 0.02337, 0.11356, 0.7769], [0.05106, 0.03881, 0.11111, 0.8264], [0.05229, 0.02952, 0.10539, 0.8708], [0.05433, 0.01043, 0.11193, 0.9228], [0.04943, 0.0266, 0.10539, 0.9686]]; // [宽, 顶(相对最高那盏), 高, 原图中心x]，单位 = 原图宽 2448 的比例；每盏灯笼单独一张图 img/lt/dNN.webp
+function lanternsHtml(){ // 灯笼挂满整个屏幕宽度，间距随屏幕拉开，每盏单独摇摆；相位按时钟算，重绘后动画不跳
+  const vw=window.innerWidth,band=vw<720?3*vw:Math.min(1400,Math.max(900,.78*vw)),avg=.049*band,
+    n=Math.max(4,Math.min(LT_LAYOUT.length,Math.floor(vw/(avg*1.35)))),now=Date.now()/1000;
+  let h='<div class="lantern-band" aria-hidden="true">';
+  for(let j=0;j<n;j++){const i=n===1?0:Math.round(j*(LT_LAYOUT.length-1)/(n-1)),L=LT_LAYOUT[i],
+      dur=4.2+(i*37%30)/10,amp=1.6+(i*53%20)/10,bob=2+(i*29%30)/10,dly=-(now%(2*dur));
+    h+='<span class="lt" style="--x:'+((j+.5)/n*100).toFixed(2)+'%;--w:'+L[0]+';--y:'+L[1]+';--dur:'+dur.toFixed(2)+'s;--amp:'+amp.toFixed(2)+'deg;--bob:'+bob.toFixed(1)+'px;--dly:'+dly.toFixed(2)+'s"><img src="img/lt/d'+String(i+1).padStart(2,'0')+'.webp" alt=""></span>';}
+  return h+'</div>';}
 function viewPlayer(){
   const me=S.players.find(p=>p.id===ME.pid),t=team(me.team);
   if(t.final)return viewFinal(me,t);
@@ -705,7 +713,7 @@ function viewPlayer(){
     +(mk.length?mk.map(p=>mate(p,p.id===me.id)).join(''):'<div class="pn"><span class="muted">本队现在没有人被淘汰。</span></div>');
   if(ui.sub.player==='market')ui.sub.player='team';
   const tabs=[['team','本队'],['task','任务'+(unread?'<b class="cnt">'+unread+'</b>':'')],];
-  return (me.st!=='alive'?LANTERNS:'')+'<div class="page tabbed toptabs allin">'+sub('player',tabs,'top')
+  return (me.st!=='alive'?lanternsHtml():'')+'<div class="page tabbed toptabs allin">'+sub('player',tabs,'top')
     +'<div class="pcol l">'+wen+sec('player','team',teamSec)+(me.st==='alive'?sec('player','team',mkSec).replace('class="sec','class="sec'+(mk.length?'':' mk0')):'')+(skillsPart?sec('player','team',skillsPart):'')+'</div>'
     +'<div class="pcol r">'+sec('player','task',taskSec)+'</div></div>';
 }
