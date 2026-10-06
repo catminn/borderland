@@ -52,7 +52,25 @@ export class Game extends DurableObject {
   async sandbox(pin, fn) {   // run fn against that 展示 PIN's shared demo game instead of the real one
     const D = await this.getD(pin), keep = { S: this.S, clock: this.clock, auth: this.auth };
     this.S = D.S; this.clock = D.clock; this.auth = { ...this.auth, pins: D.pins }; this.inSandbox = D;   // this game's own PIN list + backups
+    if (!Object.keys(D.pins).length) this.genPins({ judge: 1, mengpo: 1, ctrl: 1, screen: 1 });   // 演示局第一次用：自动生成整套演示 PIN（不能登录）
     try { return await fn(); } finally { D.S = this.S; D.clock = this.clock; if (D.S.log.length > SBOX_LOG_KEEP) D.S.log.length = SBOX_LOG_KEEP; this.S = keep.S; this.clock = keep.clock; this.auth = keep.auth; this.inSandbox = null; }
+  }
+  genPins(counts) {
+    const pins = this.auth.pins, taken = new Set(Object.keys(pins));
+        if (this.env.ADMIN_PIN) taken.add(String(this.env.ADMIN_PIN));
+        for (const dp of Object.keys(this.auth.demos || {})) taken.add(dp);
+        let made = 0;
+        const have = new Set(Object.values(pins).filter(v => v.pid).map(v => v.pid));
+        for (const p of this.S.players) if (!have.has(p.id)) { pins[newPin(taken)] = { role: 'player', pid: p.id, label: p.id }; made++; }
+        for (const role of STAFF_ROLES) {
+          const want = FIXED[role] != null ? FIXED[role] : Math.max(0, Math.min(30, Math.round(+counts[role]) || 0));
+          let n = Object.values(pins).filter(v => v.role === role).length;
+          while (n < want) { n++; const pin = newPin(taken); taken.add(pin); pins[pin] = { role, label: ROLE_NAME[role] + ' ' + n }; if (role === 'dealer') pins[pin].rooms = []; made++; }
+        }
+        // One Dealer per room, fixed: the i-th Dealer PIN runs the i-th room. No manual choice.
+        const dealers = Object.values(pins).filter(v => v.role === 'dealer');
+        dealers.forEach((v, i) => { v.rooms = i < R.ROOMS.length ? [R.ROOMS[i].id] : []; v.label = this.dealerLabel(v.rooms); });
+    return made;
   }
   async snapshot(tag) {
     if (this.inSandbox) { const D = this.inSandbox; D.snaps.unshift({ at: Date.now(), t: this.now(), tag, S: JSON.parse(JSON.stringify(this.S)), clock: { ...this.clock } }); D.snaps.length = Math.min(D.snaps.length, SBOX_SNAP_KEEP); return; }
@@ -213,20 +231,7 @@ export class Game extends DurableObject {
         return ok(a.demo ? '已载入演示数据（计时暂停）' : '已重置为空白游戏（计时暂停）');
       }
       case 'admin.genpins': {
-        const counts = a.counts || {}, pins = this.auth.pins, taken = new Set(Object.keys(pins));
-        if (this.env.ADMIN_PIN) taken.add(String(this.env.ADMIN_PIN));
-        for (const dp of Object.keys(this.auth.demos || {})) taken.add(dp);
-        let made = 0;
-        const have = new Set(Object.values(pins).filter(v => v.pid).map(v => v.pid));
-        for (const p of this.S.players) if (!have.has(p.id)) { pins[newPin(taken)] = { role: 'player', pid: p.id, label: p.id }; made++; }
-        for (const role of STAFF_ROLES) {
-          const want = FIXED[role] != null ? FIXED[role] : Math.max(0, Math.min(30, Math.round(+counts[role]) || 0));
-          let n = Object.values(pins).filter(v => v.role === role).length;
-          while (n < want) { n++; const pin = newPin(taken); taken.add(pin); pins[pin] = { role, label: ROLE_NAME[role] + ' ' + n }; if (role === 'dealer') pins[pin].rooms = []; made++; }
-        }
-        // One Dealer per room, fixed: the i-th Dealer PIN runs the i-th room. No manual choice.
-        const dealers = Object.values(pins).filter(v => v.role === 'dealer');
-        dealers.forEach((v, i) => { v.rooms = i < R.ROOMS.length ? [R.ROOMS[i].id] : []; v.label = this.dealerLabel(v.rooms); });
+        const made = this.genPins(a.counts || {}), pins = this.auth.pins;
         return ok('新生成 ' + made + ' 个 PIN，共 ' + Object.keys(pins).length + ' 个', { changed: false, auth: true, data: this.pinList() });
       }
       case 'admin.pins': return ok('', { changed: false, data: this.pinList() });

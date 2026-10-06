@@ -256,3 +256,4 @@ npm run dev:pages                             # 正式部署的路径（Pages+Wo
 - **Scavenger Hunt**：玩家端不再弹全屏通知、「当前任务与通知」列表也不显示 sidequest 通知（`n.sub!=='side'` 过滤），只保留任务页顶上那条「Scavenger 已兑换/上限 + 可兑换时间」计数行；判官 / 总控的兑换流程不变。
 - 测试：`rules.test.mjs` 增加勾魂令淘汰/复活用例；`sync.test.mjs` 增加计时重置用例；rules / sync / restart 全过。
 - **PIN 生成默认数量**（总控工具，`ui.admin.counts`）：Dealer 8（固定），判官/孟婆/黑白无常/总控/大屏各 1。
+- **共享演示局自动有 PIN**：每局演示第一次被使用时自动生成整套演示 PIN（`genPins`，Dealer 8 + 其余各 1 + 全部玩家，不能登录，真实 PIN 不受影响）；不用再点「生成 PIN」。本地演示模式未改。

@@ -209,6 +209,8 @@ await admin.act({ type: 'admin.reset', demo: false });
     T('shared demo: second user sees the same game', sb.S.teams.find(t => t.id === 'R').score === 4242);
     T('shared demo does not touch the real game', admin.S.teams.find(t => t.id === 'R').score === realR);
     const realPins = (await admin.act({ type: 'admin.pins' })).data.length;
+    const pre = await sa.act({ type: 'admin.pins', as: { role: 'ctrl' } });
+    T('shared demo already has a full PIN list before generating', pre.ok && pre.data.length >= 48 + 8 + 4);
     const gp = await sa.act({ type: 'admin.genpins', counts: { judge: 1 }, as: { role: 'ctrl' } });
     T('shared demo can generate its own PINs (not login-able, real PIN list untouched)', gp.ok && gp.data.length > 48 && (await admin.act({ type: 'admin.pins' })).data.length === realPins);
     T('shared demo reset', (await sa.act({ type: 'admin.reset', demo: true, as: { role: 'ctrl' } })).ok); await sleep(300);
