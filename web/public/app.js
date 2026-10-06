@@ -29,11 +29,13 @@ function buzz(p){
   if(!IOS)return;const a=Array.isArray(p)?p:[p];let t=0;
   a.forEach((d,i)=>{if(i%2===0)setTimeout(iosTick,t);t+=d;});}
 function shakeEl(el,cls){if(!el)return;el.classList.remove(cls);void el.offsetWidth;el.classList.add(cls);}
+function loadCounts(){const c={dealer:8,judge:1,mengpo:1,wuchang:1,ctrl:1,screen:1};
+  try{const o=JSON.parse(localStorage.getItem('borderland.pincounts')||'{}');for(const k in c){const v=Math.round(+o[k]);if(k!=='dealer'&&v>=0&&v<=30)c[k]=v;}}catch(e){}return c;}
 let ui={ddOpen:null,don:{},tab:null,room:'4S',gatePick:'',finalAsk:null,pick:'',res:{},settled:null,gateWin:'',jg:{gate:'',title:'',body:'',mins:10},hookTeam:'',hookMode:'',hookAsk:null,hookTarget:'',hookWhere:'',rd:{quest:'',title:''},pickOut:{},lpts:{},lpon:{},doneSel:{},revokeAsk:null,
   coinTeam:'',coinAmt:'',buyer:'',mkTab:'buy',ncOpen:false,as:'ctrl',devOps:false,demoRows:null,devAck:new Set(),nc:{name:'',desc:'',price:'',stock:''},
   sub:{dealer:'info',npc:'task',market:'buy',ctrl:'status',player:'team'},
   pub:{kind:'鬼门开',reward:0,title:'',body:'',target:'all',team:'R',players:[],mins:10,to:'all',sqTeam:'',quest:'',gate:''},
-  admin:{dur:'',pins:null,snaps:null,counts:{dealer:8,judge:1,mengpo:1,wuchang:1,ctrl:1,screen:1},ask:null,resetTxt:''}};
+  admin:{dur:'',pins:null,snaps:null,counts:loadCounts(),ask:null,resetTxt:''}};
 const $=s=>document.querySelector(s);
 const ROLE_TABS={ctrl:['board','ctrl','dealer','npc','market','wuchang'],dealer:['dealer'],judge:['npc'],mengpo:['market'],wuchang:['wuchang'],screen:['board'],player:['board','player']};
 const TAB_NAME={board:'大屏',player:'本队',dealer:'Dealer',ctrl:'生死簿',npc:'判官',market:'鬼市',wuchang:'黑白无常'};
@@ -1159,7 +1161,7 @@ document.addEventListener('input',e=>{
   else if(m.startsWith('nc.'))ui.nc[m.slice(3)]=v;
   else if(m==='adm.resetTxt'){ui.admin.resetTxt=v;const btn=$('#rstbtn');if(btn){btn.disabled=v!=='重置';btn.classList.toggle('fillred',v==='重置');}}
   else if(m==='durMin')ui.admin.dur=v.replace(/[^\d.]/g,'');
-  else if(m.startsWith('adm.'))ui.admin.counts[m.slice(4)]=+v;
+  else if(m.startsWith('adm.')){ui.admin.counts[m.slice(4)]=+v;try{localStorage.setItem('borderland.pincounts',JSON.stringify(ui.admin.counts));}catch(e){}}
   else if(m.startsWith('pub.'))ui.pub[m.slice(4)]=v;
   else if(m.startsWith('jg.'))ui.jg[m.slice(3)]=v;
   else if(m==='rd.title')ui.rd.title=v;
