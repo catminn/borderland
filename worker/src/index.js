@@ -6,7 +6,6 @@ import * as R from '../../shared/rules.js';
 
 const ROLE_NAME = { player: '玩家', dealer: 'Dealer', judge: '判官', mengpo: '孟婆', wuchang: '黑白无常', ctrl: '总控', screen: '大屏', dev: '开发者' };
 const STAFF_ROLES = ['dealer', 'judge', 'mengpo', 'wuchang', 'ctrl', 'screen'];
-const FIXED = { dealer: 8, wuchang: 1 };   // 8 个房间一人一间；黑白无常只有 1 个人
 const SNAP_EVERY = 10, SNAP_KEEP = 30, LOG_KEEP = 1500;
 const STATS_KEEP = 360, STATS_EVERY = 60000;   // 统计：在线曲线每分钟一个点，只留最近 6 小时
 const SBOX_SNAP_KEEP = 8, SBOX_LOG_KEEP = 300, DEMO_MAX = 30;   // a shared demo game stays small: few backups, short log, capped number of 展示 PINs
@@ -69,7 +68,7 @@ export class Game extends DurableObject {
   async sandbox(pin, fn) {   // run fn against that 展示 PIN's shared demo game instead of the real one
     const D = await this.getD(pin), keep = { S: this.S, clock: this.clock, auth: this.auth };
     this.realAuth = keep.auth; this.S = D.S; this.clock = D.clock; this.auth = { ...this.auth, pins: D.pins }; this.inSandbox = D;   // this game's own PIN list + backups
-    if (!Object.keys(D.pins).length) { this.genPins({ judge: 1, mengpo: 1, ctrl: 1, screen: 1 }); await this.ctx.storage.put('sandbox:' + pin, D); }   // 演示局第一次用：自动生成整套演示 PIN（可登录，进入这一局）
+    if (!Object.keys(D.pins).length) { this.genPins({ dealer: 8, judge: 1, mengpo: 1, wuchang: 1, ctrl: 1, screen: 1 }); await this.ctx.storage.put('sandbox:' + pin, D); }   // 演示局第一次用：自动生成整套演示 PIN（可登录，进入这一局）
     try { return await fn(); } finally { D.S = this.S; D.clock = this.clock; if (D.S.log.length > SBOX_LOG_KEEP) D.S.log.length = SBOX_LOG_KEEP; this.S = keep.S; this.clock = keep.clock; this.auth = keep.auth; this.inSandbox = null; this.realAuth = null; }
   }
   takenPins() {   // 所有已被占用的 PIN：真实 PIN、展示 PIN、每个演示局的 PIN、管理员/开发者（演示局 PIN 也能登录，所以全局不能重复）
@@ -86,10 +85,18 @@ export class Game extends DurableObject {
         let made = 0;
         const have = new Set(Object.values(pins).filter(v => v.pid).map(v => v.pid));
         for (const p of this.S.players) if (!have.has(p.id)) { pins[newPin(taken)] = { role: 'player', pid: p.id, label: p.id }; made++; }
+        this.removedPins = 0;
         for (const role of STAFF_ROLES) {
-          const want = FIXED[role] != null ? FIXED[role] : Math.max(0, Math.min(30, Math.round(+counts[role]) || 0));
-          let n = Object.values(pins).filter(v => v.role === role).length;
+          if (counts[role] == null) continue;   // 没传这个角色的数量 = 不动
+          const want = Math.max(0, Math.min(30, Math.round(+counts[role]) || 0));
+          const mine = () => Object.entries(pins).filter(([, v]) => v.role === role);
+          let n = mine().length;
           while (n < want) { n++; const pin = newPin(taken); taken.add(pin); pins[pin] = { role, label: ROLE_NAME[role] + ' ' + n }; if (role === 'dealer') pins[pin].rooms = []; made++; }
+          if (n > want) {   // 数量改小：删掉多出来的（编号靠后的）PIN，用它们登录的人会被踢下线
+            const num = v => role === 'dealer' ? (v.rooms && v.rooms.length ? R.ROOMS.findIndex(r => r.id === v.rooms[0]) : 99) : parseInt(String(v.label || '').replace(/\D+/g, ' ').trim().split(' ').pop(), 10) || 0;
+            const extra = mine().sort((x, y) => num(y[1]) - num(x[1])).slice(0, n - want);
+            for (const [pin] of extra) { delete pins[pin]; this.removedPins++; }
+          }
         }
         // One Dealer per room, fixed: the i-th Dealer PIN runs the i-th room. No manual choice.
         const dealers = Object.values(pins).filter(v => v.role === 'dealer');
@@ -220,7 +227,7 @@ export class Game extends DurableObject {
     ws.send(JSON.stringify({ t: 'res', id: m.id, ok: !!r.ok, msg: r.msg, data: r.data }));
     if (shared) { if (r.ok && (r.changed !== false || r.auth) && this.Ds[box]) { await this.ctx.storage.put('sandbox:' + box, this.Ds[box]); this.broadcast(box); } }
     else if (r.ok && r.changed !== false) { await this.persist(r.auth); this.broadcast(); }
-    else if (r.ok && r.auth) await this.ctx.storage.put('auth', this.auth);
+    else if (r.ok && r.auth) { await this.ctx.storage.put('auth', this.auth); if (r.kick) this.broadcast(); }
   }
   async webSocketClose(ws, code, reason) {
     const at = ws.deserializeAttachment();   // 服务器自己踢人（4001/4002）和页面正常关闭（1000）不算断线
@@ -317,7 +324,7 @@ export class Game extends DurableObject {
       }
       case 'admin.genpins': {
         const made = this.genPins(a.counts || {}), pins = this.auth.pins;
-        return ok('新生成 ' + made + ' 个 PIN，共 ' + Object.keys(pins).length + ' 个', { changed: false, auth: true, data: this.pinList() });
+        return ok('新生成 ' + made + ' 个 PIN' + (this.removedPins ? '，删除多出的 ' + this.removedPins + ' 个' : '') + '，共 ' + Object.keys(pins).length + ' 个', { changed: false, auth: true, kick: this.removedPins > 0, data: this.pinList() });
       }
       case 'admin.pins': return ok('', { changed: false, data: this.pinList() });
       case 'admin.resetpin': {

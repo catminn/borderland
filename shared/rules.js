@@ -77,6 +77,8 @@ function matches(n,p){
   switch(n.target){case 'all':return true;case 'team':return n.ids.includes(p.team);case 'player':return n.ids.includes(p.id);
   case 'market':return p.st==='market';case 'alive':return p.st==='alive';case 'everyone':return true;}return false;}
 // 工作人员能看到的公告：发给「工作人员」或「所有人」的（工作人员没有个人编号，已读只记在本机）
+// 已经结束的任务不再弹全屏通知：鬼门开不在进行中 / 先到先得的任务已有人完成 / 「率先完成」播报过了 3 分钟
+const noticeStale=n=>n.sub==='gate'?!(S.gp&&S.gp.nid===n.id):n.sub==='done'?S.t-n.t>180:!!(n.mode==='first'&&n.kind==='任务'&&Object.keys(n.done).length);
 const staffSees=n=>n.target==='staff'||n.target==='everyone'||n.sub==='gate';
 function targetLabel(n){return n.target==='all'?'全体玩家':n.target==='team'?team(n.ids[0]).name:n.target==='player'?(n.ids.length<=4?n.ids.join('、'):n.ids.slice(0,3).join('、')+' 等 '+n.ids.length+' 人'):n.target==='market'?'鬼市中的人':n.target==='staff'?'工作人员':n.target==='everyone'?'所有人':'存活玩家';}
 const rewardTxt=n=>n.reward?'+'+n.reward+' 冥币':'';
@@ -138,7 +140,7 @@ function markDone(nid,cid){const n=S.notices.find(x=>x.id===nid);if(!n)return no
   if(pay){const tm=team(teamOf(cid));tm.score+=pay;n.done[cid].pts=pay;}
   const rw=pay?'，'+team(teamOf(cid)).name+' +'+pay+' 冥币':'';
   if(isFirst(n)){log('判官记录 '+lab(cid)+' 率先完成任务「'+n.title+'」，任务关闭'+rw,'back');
-    pushNotice({kind:'通知',title:lab(cid)+'率先完成任务',body:lab(cid)+'已率先完成「'+n.title+'」，该任务已关闭，其他人不必再做。'+(pay?team(teamOf(cid)).name+'获得 +'+pay+' 冥币。':''),target:'all'});
+    pushNotice({kind:'通知',sub:'done',title:lab(cid)+'率先完成任务',body:lab(cid)+'已率先完成「'+n.title+'」，该任务已关闭，其他人不必再做。'+(pay?team(teamOf(cid)).name+'获得 +'+pay+' 冥币。':''),target:'all'});
     return ok('已记录 '+lab(cid)+' 完成'+rw+'，任务已关闭并向全体广播'+(n.sub==='gate'?'；请在判官页处理鬼门开奖励':''));}
   log('判官记录 '+lab(cid)+' 完成任务「'+n.title+'」'+rw,'back');return ok('已记录 '+lab(cid)+' 完成'+rw);}
 function unmarkDone(nid,cid){const n=S.notices.find(x=>x.id===nid);if(!n||!n.done[cid])return no('没有这条记录');
@@ -306,7 +308,7 @@ function hook(actorId,pid,where,mode){
   if(p.st!=='alive')return no(p.id+' 已被淘汰');
   if(team(p.team).final)return no(team(p.team).name+'已进入终极任务，不能勾魂');
   if(protectedLeft(p)>0)return no(p.id+' 刚复活，保护期还剩 '+Math.ceil(protectedLeft(p)/60)+' 分钟');
-  eliminate(p,'被'+team(actorId).name+'通过「鬼门开」任务淘汰',String(where||'').trim().slice(0,40));
+  eliminate(p,'被'+team(actorId).name+'勾魂',String(where||'').trim().slice(0,40));
   return ok(team(actorId).name+'勾走了 '+p.id);
 }
 function revive(pid){
@@ -328,12 +330,13 @@ function gateReward(pid){const g=S.gp;if(!g)return no('现在没有进行中的�
   if(alive(wt.id).length<size(wt.id)){
     if(p.team!==wt.id||p.st==='alive')return no('请选'+wt.name+'里一名未存活的队友（免费复活）');
     freeRevive(p,wt,'鬼门开奖励');
-    g.res=true;S.gp=null;log('鬼门开结束，房间恢复开放');return ok(p.id+' 已免费复活，鬼门开结束');}
+    gateRec('获胜：'+wt.name+'，免费复活 '+p.id);g.res=true;S.gp=null;log('鬼门开结束，房间恢复开放');return ok(p.id+' 已免费复活，鬼门开结束');}
   if(p.team===wt.id)return no('请选别队的存活队员');if(p.st!=='alive')return no(p.id+' 已被淘汰');
   if(team(p.team).final)return no(team(p.team).name+'已进入终极任务，不能被淘汰');
   eliminate(p,'被'+wt.name+'通过「鬼门开」任务淘汰','');
-  g.res=true;S.gp=null;log('鬼门开结束，房间恢复开放');return ok(wt.name+'淘汰了 '+p.id+'，鬼门开结束');}
-function gateEnd(){if(!S.gp)return no('现在没有进行中的鬼门开');S.gp=null;log('鬼门开结束，房间恢复开放');return ok('鬼门开已结束，房间恢复开放');}
+  gateRec('获胜：'+wt.name+'，淘汰 '+p.id);g.res=true;S.gp=null;log('鬼门开结束，房间恢复开放');return ok(wt.name+'淘汰了 '+p.id+'，鬼门开结束');}
+function gateRec(txt){const g=S.gp,n=g&&S.notices.find(x=>x.id===g.nid);if(n)n.gr=txt;}   // 在鬼门开通知上记下结果，判官页「鬼门开记录」用
+function gateEnd(){if(!S.gp)return no('现在没有进行中的鬼门开');gateRec(S.gp.win?'获胜：'+team(S.gp.win).name+'，未处理奖励':'无人获胜');S.gp=null;log('鬼门开结束，房间恢复开放');return ok('鬼门开已结束，房间恢复开放');}
 function setDur(secs){secs=Math.round(+secs);if(!(secs>=60&&secs<=86400))return no('总时长要在 1 分钟到 24 小时之间');S.dur=secs;log('总控把总时长设为 '+Math.floor(secs/60)+' 分钟');return ok('总时长已设为 '+Math.floor(secs/60)+' 分钟');}
 function setCap(tid,pid){const t=team(tid),p=S.players.find(x=>x.id===pid);if(!t)return no('先选队伍');if(!p||p.team!==tid)return no('队长要从本队队员里选');
   if(t.cap===pid)return no(pid+' 已经是队长');t.cap=pid;log('总控指定 '+pid+' 为'+t.name+'队长');return ok(pid+' 现在是'+t.name+'队长');}
@@ -391,15 +394,16 @@ function seed(){
   S.t=15*60; go('R','8H');go('G','4H');go('B','8D');
   fin('8D',{B:'win'});
   S.t=17*60; eliminate(P('B-05'),'演示数据','演示位置'); S.t=17*60+30; pickup('B-05'); checkIn('B-05','wuchang'); confirmIn('B-05','mengpo');
-  S.t=24*60; P('Y-04').coins=COIN_GOAL; revive('Y-04');
-  S.t=25*60; hook('B','R-03','二楼走廊');
+  S.t=22*60; publish({kind:'鬼门开',gate:'g1',target:'all',mins:10});   // 一次完整的鬼门开：发布 → 黄队率先完成 → 奖励（黄队缺人，免费复活 Y-04）→ 结束
+  S.t=23*60+10; markDone(S.gp.nid,'Y');
+  S.t=24*60; gateReward('Y-04');ack(S.notices.find(x=>x.title==='免费复活').id,'Y-04');
+  S.t=25*60; hook('Y','R-03','二楼走廊');
   S.t=26*60; eliminate(P('B-06'),'演示数据','演示位置'); pickup('B-06');
   S.t=27*60; finishRoom('4H',{G:'win'});
   S.t=28*60; finishRoom('8H',{R:'win'});resetDone('8H');
   S.t=28*60+30; go('O','4D'); go('Y','8S');
   S.t=29*60; P('B-05').coins=COIN_GOAL; P('P-02').coins=COIN_GOAL+200; reserve('G','4C'); reserve('K','8H');
   log('演示数据就位：4♦ 与 8♠ 进行中，4♥ 重置中，4♣、8♥ 已预约');
-  pushNotice({kind:'任务',sub:'gate',title:'鬼门开 占位',body:'（占位文字，正式内容待定）',target:'all',mins:10,mode:'first'});
   scavRedeem('R','q1');
 }
 
@@ -466,4 +470,4 @@ export function viewFor(state,me){
     teams:state.teams.map(t=>p&&t.id===p.team?t:{...t,skills:[],hist:[]})};
 }
 
-export {staffSees,timeUp,needsReset,rstate,rsvLeft,rsvOf,whyNotReserve,reserve,cancelRsv,resetDone,gateReward,gateEnd,scavInfo,scavWhy,finalMiss,RSV,GAME_HINT,RESET_HINT,SCAV_PTS,SCAV_WIN,SCAV_N,SCAV_CAP,COIN_START,CARRY_MAX,DUR0,size,COIN_GOAL,FEATURES,FINAL_MSG,FINAL_SCORE,MIN_STAY,PER_TEAM,PROTECT,QUESTS,GATES,RATE,ROOMS,ROLE_LABEL,SHOP0,SUITS,TEAMS,ack,addCard,alive,buyCard,cands,donate,eliminate,enterRoom,esc,finishRoom,fmt,gapOf,hook,inMarket,indiv,init,isBcast,isFirst,kindLabel,lab,log,markDone,matches,no,ok,protectedLeft,publish,pushNotice,revive,revokeNotice,rewardTxt,room,seed,setScore,targetLabel,tcol,team,teamOf,teamStatus,unmarkDone,useCard,whyNotEnter};
+export {noticeStale,staffSees,timeUp,needsReset,rstate,rsvLeft,rsvOf,whyNotReserve,reserve,cancelRsv,resetDone,gateReward,gateEnd,scavInfo,scavWhy,finalMiss,RSV,GAME_HINT,RESET_HINT,SCAV_PTS,SCAV_WIN,SCAV_N,SCAV_CAP,COIN_START,CARRY_MAX,DUR0,size,COIN_GOAL,FEATURES,FINAL_MSG,FINAL_SCORE,MIN_STAY,PER_TEAM,PROTECT,QUESTS,GATES,RATE,ROOMS,ROLE_LABEL,SHOP0,SUITS,TEAMS,ack,addCard,alive,buyCard,cands,donate,eliminate,enterRoom,esc,finishRoom,fmt,gapOf,hook,inMarket,indiv,init,isBcast,isFirst,kindLabel,lab,log,markDone,matches,no,ok,protectedLeft,publish,pushNotice,revive,revokeNotice,rewardTxt,room,seed,setScore,targetLabel,tcol,team,teamOf,teamStatus,unmarkDone,useCard,whyNotEnter};

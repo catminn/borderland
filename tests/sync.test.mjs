@@ -17,13 +17,15 @@ async function client(pin) {
 const admin = await client(ADMIN);
 T('admin login', admin.me.role === 'ctrl');
 T('load demo', (await admin.act({ type: 'admin.reset', demo: true })).ok);
-const gen = await admin.act({ type: 'admin.genpins', counts: { dealer: 2, judge: 2, mengpo: 1, ctrl: 1, screen: 1 } });
+const gen = await admin.act({ type: 'admin.genpins', counts: { dealer: 8, wuchang: 1, judge: 2, mengpo: 1, ctrl: 1, screen: 1 } });
 const pins = gen.data, pinOf = f => pins.find(f).pin;
 T('pins generated (48 players + 8 dealers + 6 other staff incl. 1 wuchang)', pins.length === 48 + 8 + 2 + 1 + 1 + 1 + 1);
+T('seed has one finished gate, none running', admin.S.notices.some(n => n.sub === 'gate' && n.gr) && !admin.S.gp);
 T('dealers fixed one room each', pins.filter(p => p.role === 'dealer').every(p => p.rooms.length === 1) && new Set(pins.filter(p => p.role === 'dealer').map(p => p.rooms[0])).size === 8);
 T('pins unique', new Set(pins.map(p => p.pin)).size === pins.length);
 const P = { player: pinOf(p => p.pid === 'B-02'), judge: pinOf(p => p.role === 'judge'), judge2: pins.filter(p => p.role === 'judge')[1].pin,
   dealer: pinOf(p => p.role === 'dealer' && p.rooms && p.rooms.includes('8D')), screen: pinOf(p => p.role === 'screen'), mengpo: pinOf(p => p.role === 'mengpo'), wuchang: pinOf(p => p.role === 'wuchang') };
+{ const g2 = await admin.act({ type: 'admin.genpins', counts: { dealer: 6, wuchang: 1 } }); const l = g2.data; T('dealer count can shrink to 6 (trailing rooms unbound), wuchang stays 1', l.filter(p => p.role === 'dealer').length === 6 && l.filter(p => p.role === 'wuchang').length === 1); const g3 = await admin.act({ type: 'admin.genpins', counts: { dealer: 8 } }); pins.splice(0, pins.length, ...g3.data); P.dealer = g3.data.find(p => p.role === 'dealer' && p.rooms && p.rooms.includes('8D')).pin; }
 
 const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
 const errs = [];

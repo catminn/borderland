@@ -223,7 +223,12 @@ function viewDealer(){
 
 // ---------- 判官 ----------
 // 鬼门开：进行中时各房间暂停；率先完成的队伍缺人 → 免费复活一名队友，满员 → 指定别队一名存活队员淘汰（不加分）。
-function gatePanel(){
+function gateHist(){
+  const l=S.notices.filter(x=>x.sub==='gate'&&!(S.gp&&S.gp.nid===x.id)).sort((a,b)=>b.t-a.t);
+  if(!l.length)return '';
+  return '<div class="pn"><div class="shrow"><h3>鬼门开记录</h3><span class="small">共 '+l.length+' 次</span></div>'+l.map(n=>'<div class="lot"><b>'+esc(n.title)+'</b> <span class="small">'+fmt(n.t)+' · '+esc(n.gr||'已结束')+'</span></div>').join('')+'</div>';}
+function gatePanel(){return gatePanel0()+gateHist();}
+function gatePanel0(){
   const g=S.gp;
   if(!g){ui.gateEndAsk=false;ui.gateWin='';
     const j=ui.jg,gq=GATES.find(x=>x.id===j.gate),cus=j.gate==='custom',okp=gq||(cus&&j.title.trim());
@@ -595,8 +600,8 @@ function adminPanel(){
     +'<div class="pn"><div class="shrow"><h3>总时长</h3></div><span class="small">当前 <b class="mono" style="color:var(--ink)">'+Math.round((S.dur||7200)/60)+'</b> 分钟</span>'
     +'<div class="btns"><input class="in mono" id="durm" data-m="durMin" value="'+esc(A.dur)+'" inputmode="numeric" placeholder="分钟，如 120" style="max-width:150px"><button class="btn-line acc" data-a="setdur">设置</button></div></div>'
     +'<div class="pn"><h3>开局</h3><span class="small">8 队随机分到 8 个房间（直接进入游戏中）。只有还没有队伍进过房间时才能用。</span><div class="btns"><button class="btn-line acc" data-a="assign">开局随机分房</button></div></div>'
-    +'<div class="pn"><div class="shrow"><h3>PIN</h3><span class="small">按数量补齐工作人员 PIN</span></div>'
-    +'<div class="cnts">'+num('dealer','Dealer（固定）',1)+num('judge','判官')+num('mengpo','孟婆')+num('wuchang','黑白无常',1)+num('ctrl','总控')+num('screen','大屏')+'</div>'
+    +'<div class="pn"><div class="shrow"><h3>PIN</h3><span class="small">按数量增减工作人员 PIN（改小会删掉编号靠后的，用它们登录的人会被踢下线）</span></div>'
+    +'<div class="cnts">'+num('dealer','Dealer')+num('judge','判官')+num('mengpo','孟婆')+num('wuchang','黑白无常')+num('ctrl','总控')+num('screen','大屏')+'</div>'
     +'<div class="btns"><button class="btn-line acc" data-a="adm-gen">生成 PIN</button><button class="btn-line" data-a="adm-pins">查看全部 PIN</button></div>'+pins+'</div></div>';
   const rs=A.resetTxt==='重置';
   const right='<div class="stack"><div class="pn"><h3>备份与恢复</h3><span class="small">每 10 次操作自动备份一次；重置、恢复、载入演示数据前都会先备份当前数据。</span>'
@@ -736,7 +741,7 @@ function modalHtml(){
   if(ME&&S&&!entering&&R.timeUp()&&!tuSeen())return tuDlg();
   if(ME&&ME.role==='player'&&S&&ui.rsvInfo)return rsvDlg();
   if(ME&&ME.role!=='player'&&S&&S.notices){ // 工作人员：发给「工作人员 / 所有人」的公告，已读只记在本机
-    const n=S.notices.find(x=>staffSees(x)&&!staffAcked(x.id)&&!(x.sub==='gate'&&ME.role==='screen'));if(!n)return '';
+    const n=S.notices.find(x=>staffSees(x)&&!R.noticeStale(x)&&!staffAcked(x.id)&&!(x.sub==='gate'&&ME.role==='screen'));if(!n)return '';
     const dl=n.sub==='gate'&&dealerBusy()?'<div class="gatebar" style="margin:6px 0"><b>请尽快结束游戏</b><span>鬼门开已开始，你负责的房间还有一局在进行，请尽快结算</span></div>':'';
     return '<div class="ovl"><div class="dlg" data-n="s'+n.id+'" role="dialog" aria-modal="true" aria-labelledby="dt"><div class="new"><i></i>工作人员通知</div>'
       +'<div class="bd"><span class="k">'+n.kind+'</span></div><h3 id="dt">'+esc(n.title)+'</h3>'+(n.body?'<div class="body">'+esc(n.body)+'</div>':'')+dl
@@ -744,7 +749,7 @@ function modalHtml(){
       +'<button data-a="sack" data-n="'+n.id+'" data-modal="1">知道了</button></div></div>';}
   if(!ME||ME.role!=='player'||!S)return '';
   const me=S.players.find(p=>p.id===ME.pid);
-  const n=S.notices.find(x=>x.sub!=='side'&&matches(x,me)&&!x.acks[me.id]&&!(DEVME&&ui.devAck.has(x.id+':'+me.id)));if(!n)return '';
+  const n=S.notices.find(x=>x.sub!=='side'&&matches(x,me)&&!R.noticeStale(x)&&!x.acks[me.id]&&!(DEVME&&ui.devAck.has(x.id+':'+me.id)));if(!n)return '';
   const [kl,kc]=kindOf(n),r=n.due?n.due-S.t:0;
   return '<div class="ovl" data-k="'+(n.tone==='out'?'out':'')+'"><div class="dlg" data-n="'+n.id+'" data-k="'+(n.tone==='out'?'out':'')+'" role="dialog" aria-modal="true" aria-labelledby="dt"><div class="new"><i></i>新通知</div>'
     +'<div class="bd"><span class="k '+(kc==='alert'?'alert':'')+'">'+kl+'</span>'+(modeOf(n)?'<span>'+modeOf(n)+'</span>':'')+'</div>'
@@ -959,7 +964,7 @@ function localNow(){return nowT();}
 function localStart(){
   FULL=R.newGame(true);S=FULL;LOCAL=true;LPINS={};LSNAPS=[];CLOCK={running:false,base:FULL.t,at:Date.now()};OFFSET=0;connected=true;setConn();requestRender();
 }
-const L_ROLES=['dealer','judge','mengpo','wuchang','ctrl','screen'],L_FIXED={dealer:8,wuchang:1};
+const L_ROLES=['dealer','judge','mengpo','wuchang','ctrl','screen'];
 let LPINS={},LSNAPS=[];
 function lSnap(tag){LSNAPS.unshift({at:Date.now(),t:FULL.t,tag,S:JSON.parse(JSON.stringify(FULL)),clock:{...CLOCK}});LSNAPS=LSNAPS.slice(0,30);}
 function lPinList(){return Object.entries(LPINS).map(([pin,v])=>({pin,role:v.role,roleName:ROLE_NAME[v.role],pid:v.pid||'',label:v.label||'',rooms:v.rooms||null}))
@@ -980,11 +985,14 @@ function localAdmin(a){
     case 'admin.genpins':{
       const counts=a.counts||{};let made=0;const have=new Set(Object.values(LPINS).filter(v=>v.pid).map(v=>v.pid));
       for(const p of FULL.players)if(!have.has(p.id)){LPINS[lNewPin()]={role:'player',pid:p.id,label:p.id};made++;}
-      for(const role of L_ROLES){const want=L_FIXED[role]!=null?L_FIXED[role]:Math.max(0,Math.min(30,Math.round(+counts[role])||0));
-        let n=Object.values(LPINS).filter(v=>v.role===role).length;
-        while(n<want){n++;LPINS[lNewPin()]={role,label:ROLE_NAME[role]+' '+n};made++;}}
+      let removed=0;
+      for(const role of L_ROLES){if(counts[role]==null)continue;const want=Math.max(0,Math.min(30,Math.round(+counts[role])||0));
+        const mine=()=>Object.entries(LPINS).filter(([,v])=>v.role===role);let n=mine().length;
+        while(n<want){n++;LPINS[lNewPin()]={role,label:ROLE_NAME[role]+' '+n,rooms:role==='dealer'?[]:undefined};made++;}
+        if(n>want){const num=v=>role==='dealer'?(v.rooms&&v.rooms.length?ROOMS.findIndex(r=>r.id===v.rooms[0]):99):parseInt(String(v.label||'').replace(/\D+/g,' ').trim().split(' ').pop(),10)||0;
+          mine().sort((x,y)=>num(y[1])-num(x[1])).slice(0,n-want).forEach(([pin])=>{delete LPINS[pin];removed++;});}}
       Object.values(LPINS).filter(v=>v.role==='dealer').forEach((v,i)=>{v.rooms=i<ROOMS.length?[ROOMS[i].id]:[];v.label='Dealer '+(v.rooms.length?ROOMS[i].card:'未绑定');});
-      return ok('新生成 '+made+' 个 PIN，共 '+Object.keys(LPINS).length+' 个（本地演示：退出后可在本页用这些 PIN 登录；换设备请用共享演示局）',lPinList());}
+      return ok('新生成 '+made+' 个 PIN'+(removed?'，删除多出的 '+removed+' 个':'')+'，共 '+Object.keys(LPINS).length+' 个（本地演示：退出后可在本页用这些 PIN 登录；换设备请用共享演示局）',lPinList());}
     case 'admin.pins':return ok('',lPinList());
     case 'admin.resetpin':{const old=String(a.pin||''),v=LPINS[old];if(!v)return no('没有这个 PIN');const np=lNewPin();delete LPINS[old];LPINS[np]=v;return ok((v.pid||v.label)+' 的新 PIN：'+np,lPinList());}
     case 'admin.snaps':return ok('',LSNAPS.map(x=>({key:'l'+x.at,at:x.at,t:x.t,tag:x.tag})));
