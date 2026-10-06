@@ -263,12 +263,15 @@ function confirmIn(pid,role){const p=S.players.find(x=>x.id===pid);
   log(p.id+' 正式进入鬼市，由'+ROLE_LABEL[role]+'确认，领 '+COIN_START+' 冥币','back');
   pushNotice({kind:'通知',title:'你已进入鬼市',body:'已确认入鬼市，领到 '+COIN_START+' 冥币。个人冥币 + 队友助力凑够 '+COIN_GOAL+'，就可以找孟婆买命回队。',target:'player',ids:[p.id]});
   return ok('已确认 '+p.id+' 入鬼市');}
-function finishRoom(rid,results,picks={}){
+// 输了的队伍 Dealer 可以加一部分分：默认赢分的一半，必须是整数，且少于赢分（r.n×100）
+function lossPts(r,v){if(v===undefined||v===null||v==='')return r.n*50;const x=Number(v);return Number.isInteger(x)&&x>=0&&x<r.n*100?x:null;}
+function finishRoom(rid,results,picks={},lpts={}){
   const r=room(rid),st=S.rooms.find(x=>x.id===rid);
   if(!st.teams.length)return no('房间里没有队伍');
   for(const tid of st.teams){
     if(!results[tid])return no('请为'+team(tid).name+'选择赢或输');
     if(results[tid]==='lose'&&alive(tid).length&&!alive(tid).some(p=>p.id===picks[tid]))return no('请为'+team(tid).name+'选出被淘汰的队员（现场抽签结果）');
+    if(results[tid]==='lose'&&lossPts(r,lpts[tid])===null)return no(team(tid).name+'输的加分要是整数，并且少于 '+r.n*100);
   }
   const notes=[];
   for(const tid of st.teams){
@@ -278,9 +281,11 @@ function finishRoom(rid,results,picks={}){
       if(!t.cleared.includes(rid))t.cleared.push(rid);
       if(!t.cards.includes(r.card))t.cards.push(r.card); const pts=r.n*100; t.score+=pts; h.pts=pts; log(t.name+' 赢下 '+r.card+'，+'+pts+' 冥币','back'); notes.push(t.name+'赢 +'+pts+' 冥币');
     }else{
-      const pool=alive(tid); if(!pool.length){log(t.name+' 输了 '+r.card+'，队里已无存活队员');notes.push(t.name+'输（无人可淘汰）');continue;}
+      const lp=lossPts(r,lpts[tid]); if(lp){t.score+=lp;h.pts=lp;log(t.name+' 输了 '+r.card+'，+'+lp+' 冥币');}
+      const lt=lp?' +'+lp+' 冥币':'';
+      const pool=alive(tid); if(!pool.length){log(t.name+' 输了 '+r.card+'，队里已无存活队员');notes.push(t.name+'输'+lt+'（无人可淘汰）');continue;}
       const v=pool.find(p=>p.id===picks[tid]);
-      h.out=v.id; eliminate(v,'输了 '+r.card+' 被抽签淘汰',r.card+' '+r.name); notes.push(t.name+'输，淘汰 '+v.id);
+      h.out=v.id; eliminate(v,'输了 '+r.card+' 被抽签淘汰',r.card+' '+r.name); notes.push(t.name+'输'+lt+'，淘汰 '+v.id);
     }
   }
   st.teams=[]; st.st='reset'; st.at=S.t; st.rt=null;
@@ -384,7 +389,7 @@ function teamStatus(t){
 function seed(){
   init();
   const go=(tid,rid)=>enterRoom(tid,rid), P=id=>S.players.find(x=>x.id===id);
-  const fin=(rid,res,pk)=>{finishRoom(rid,res,pk);resetDone(rid);};
+  const fin=(rid,res,pk)=>{finishRoom(rid,res,pk,Object.fromEntries(Object.keys(res).map(k=>[k,0])));resetDone(rid);};   // 演示数据里输局不加分（保持原有分数）
   go('R','4C');go('B','4D');go('G','8S');go('Y','8C');go('P','8D');go('O','4S');
   S.t=8*60+20;
   fin('4C',{R:'win'});fin('4D',{B:'win'});fin('8S',{G:'win'});
@@ -436,7 +441,7 @@ export function apply(state,me,a){
     case 'setcap':return setCap(a.tid,a.pid);
     case 'setdur':return setDur(a.secs);
     case 'enter':return enterRoom(a.tid,a.rid);
-    case 'finish':return finishRoom(a.rid,a.results||{},a.picks||{});
+    case 'finish':return finishRoom(a.rid,a.results||{},a.picks||{},a.lpts||{});
     case 'hook':return hook(a.actor,a.pid,a.where,a.mode);
     case 'scavredeem':return scavRedeem(a.tid,a.qid,a.title,a.body);
     case 'done':return markDone(+a.nid,a.cid);

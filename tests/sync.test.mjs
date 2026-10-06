@@ -130,8 +130,10 @@ T('assign only once', !(await admin.act({ type: 'assign' })).ok);
   T('lose needs a picked person', !(await d3.act({ type: 'finish', rid: '4S', results: { [tid]: 'lose' } })).ok);
   T('pick must be on that team', !(await d3.act({ type: 'finish', rid: '4S', results: { [tid]: 'lose' }, picks: { [tid]: 'ZZ-01' } })).ok);
   const victim = tid + '-03';
-  { const r = await d3.act({ type: 'finish', rid: '4S', results: { [tid]: 'lose' }, picks: { [tid]: victim } }); await sleep(250);
-    T('lose: no points, one eliminated, room goes to reset', r.ok && admin.S.players.find(p => p.id === victim).st === 'out' && admin.S.teams.find(t => t.id === tid).score === 0 && admin.S.rooms.find(r => r.id === '4S').st === 'reset'); }
+  T('lose: bonus at the win points is rejected', !(await d3.act({ type: 'finish', rid: '4S', results: { [tid]: 'lose' }, picks: { [tid]: victim }, lpts: { [tid]: 400 } })).ok);
+  T('lose: non-integer bonus is rejected', !(await d3.act({ type: 'finish', rid: '4S', results: { [tid]: 'lose' }, picks: { [tid]: victim }, lpts: { [tid]: 12.5 } })).ok);
+  { const r = await d3.act({ type: 'finish', rid: '4S', results: { [tid]: 'lose' }, picks: { [tid]: victim }, lpts: { [tid]: 0 } }); await sleep(250);
+    T('lose with bonus 0: no points, one eliminated, room goes to reset', r.ok && admin.S.players.find(p => p.id === victim).st === 'out' && admin.S.teams.find(t => t.id === tid).score === 0 && admin.S.rooms.find(r => r.id === '4S').st === 'reset'); }
   T('reset room cannot be reserved or entered', !(await admin.act({ type: 'enter', tid: 'R', rid: '4S' })).ok);
   T('only the dealer of that room sets reset done', !(await (await dealerOf('8S')).act({ type: 'resetdone', rid: '4S' })).ok && (await d3.act({ type: 'resetdone', rid: '4S' })).ok);
   T('team not full cannot enter a room', !(await admin.act({ type: 'enter', tid, rid: '4S' })).ok);

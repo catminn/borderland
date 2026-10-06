@@ -45,6 +45,19 @@ T('ctrl forces final', ap('ctrl', { type: 'final', tid: t.id, on: true }).ok && 
     R.enterRoom(t.id, rid); g.t = 200; const r = R.finishRoom(rid, { [t.id]: 'lose' }, { [t.id]: R.alive(t.id)[0].id });
     const h = t.hist[0]; T('room history records entry/result/out', !!(h && h.rid === rid && h.t0 === 100 && h.t1 === 200 && h.res === 'lose' && h.out)); }
 }
+{ // 输了 Dealer 可加分：默认赢分的一半，整数，少于赢分
+  const R = await import('../shared/rules.js'); const g = R.newGame(false); R.use(g);
+  const run = (ti, ri, lp) => { const t = g.teams[ti], rid = R.ROOMS[ri].id; R.enterRoom(t.id, rid);
+    const before = t.score, r = R.finishRoom(rid, { [t.id]: 'lose' }, { [t.id]: R.alive(t.id)[0].id }, lp === undefined ? {} : { [t.id]: lp }); return { t, rid, r, before }; };
+  { const x = run(0, 0); T('loss bonus: default is half of the win points (4 -> 200)', x.r.ok && x.t.score - x.before === 200 && x.t.hist.at(-1).pts === 200 && x.t.hist.at(-1).res === 'lose'); }
+  { const x = run(1, 1, 300); T('loss bonus: custom value (8-room, 300)', x.r.ok && x.t.score - x.before === 300 && x.t.hist.at(-1).pts === 300); }
+  { const t = g.teams[2], rid = R.ROOMS[2].id; R.enterRoom(t.id, rid); const pick = { [t.id]: R.alive(t.id)[0].id };
+    T('loss bonus: must be below the win points', !R.finishRoom(rid, { [t.id]: 'lose' }, pick, { [t.id]: 400 }).ok && !R.finishRoom(rid, { [t.id]: 'lose' }, pick, { [t.id]: 9999 }).ok);
+    T('loss bonus: integers only, no negatives', !R.finishRoom(rid, { [t.id]: 'lose' }, pick, { [t.id]: 150.5 }).ok && !R.finishRoom(rid, { [t.id]: 'lose' }, pick, { [t.id]: -1 }).ok && !R.finishRoom(rid, { [t.id]: 'lose' }, pick, { [t.id]: 'abc' }).ok);
+    T('loss bonus: a rejected settle changes nothing', g.rooms.find(r => r.id === rid).teams.includes(t.id) && t.score === 0 && !t.hist.at(-1).res);
+    const before = t.score, r = R.finishRoom(rid, { [t.id]: 'lose' }, pick, { [t.id]: 399 }); T('loss bonus: just under the win points is accepted', r.ok && t.score - before === 399); }
+  { const x = run(3, 3, 0); T('loss bonus: 0 is allowed', x.r.ok && x.t.score === x.before); }
+}
 { // 判官直接兑换 Scavenger Hunt
   const G = R.newGame(false); R.use(G); G.t = 50; const J = a => R.apply(G, { role: 'judge' }, a);
   const a1 = J({ type: 'scavredeem', tid: 'C', qid: 'q1' }), a2 = J({ type: 'scavredeem', tid: 'C', qid: 'q1' }), a3 = J({ type: 'scavredeem', tid: 'C', qid: 'custom', title: '自定义题' }), a4 = J({ type: 'scavredeem', tid: 'C', qid: 'q2' });

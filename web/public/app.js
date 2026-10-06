@@ -29,7 +29,7 @@ function buzz(p){
   if(!IOS)return;const a=Array.isArray(p)?p:[p];let t=0;
   a.forEach((d,i)=>{if(i%2===0)setTimeout(iosTick,t);t+=d;});}
 function shakeEl(el,cls){if(!el)return;el.classList.remove(cls);void el.offsetWidth;el.classList.add(cls);}
-let ui={ddOpen:null,don:{},tab:null,room:'4S',gatePick:'',finalAsk:null,pick:'',res:{},settled:null,gateWin:'',jg:{gate:'',title:'',body:'',mins:10},hookTeam:'',hookMode:'',hookAsk:null,hookTarget:'',hookWhere:'',rd:{quest:'',title:''},pickOut:{},doneSel:{},revokeAsk:null,
+let ui={ddOpen:null,don:{},tab:null,room:'4S',gatePick:'',finalAsk:null,pick:'',res:{},settled:null,gateWin:'',jg:{gate:'',title:'',body:'',mins:10},hookTeam:'',hookMode:'',hookAsk:null,hookTarget:'',hookWhere:'',rd:{quest:'',title:''},pickOut:{},lpts:{},doneSel:{},revokeAsk:null,
   coinTeam:'',coinAmt:'',buyer:'',mkTab:'buy',ncOpen:false,as:'ctrl',devOps:false,demoRows:null,devAck:new Set(),nc:{name:'',desc:'',price:'',stock:''},
   sub:{dealer:'info',npc:'task',market:'buy',ctrl:'status',player:'team'},
   pub:{kind:'鬼门开',reward:0,title:'',body:'',target:'all',team:'R',players:[],mins:10,to:'all',sqTeam:'',quest:'',gate:''},
@@ -163,12 +163,17 @@ addEventListener('resize',fitStage);
 
 // ---------- Dealer ----------
 // A losing team draws lots on site; the Dealer picks the person here.
-function outPick(tid){const a=alive(tid);
-  return '<div class="outpick"><span class="lbl">现场抽签：选出被淘汰的人</span>'+(a.length?'<div class="chips ids">'+a.map(p=>cb({cls:'id',k:'pickOut.'+tid,v:p.id,on:ui.pickOut[tid]===p.id,label:p.id,mark:false})).join('')+'</div>':'<span class="small">队里已无存活队员</span>')+'</div>';}
+function lpV(r,tid){return ui.lpts[tid]!==undefined?String(ui.lpts[tid]):String(r.n*50);}   // 输的加分：默认赢分的一半
+function lpOk(r,tid){const s=lpV(r,tid).trim();return /^\d+$/.test(s)&&+s<r.n*100;}
+function dReady(r,ts){const lost=ts.filter(t=>ui.res[t]==='lose');
+  return ts.length===1&&ts.every(t=>ui.res[t])&&!lost.some(t=>alive(t).length&&!alive(t).some(p=>p.id===ui.pickOut[t]))&&lost.every(t=>lpOk(r,t));}
+function outPick(tid,r){const a=alive(tid);
+  return '<div class="outpick"><span class="lbl">现场抽签：选出被淘汰的人</span>'+(a.length?'<div class="chips ids">'+a.map(p=>cb({cls:'id',k:'pickOut.'+tid,v:p.id,on:ui.pickOut[tid]===p.id,label:p.id,mark:false})).join('')+'</div>':'<span class="small">队里已无存活队员</span>')
+    +'<span class="lbl">加分</span><span class="coin-in"><input class="in mono" type="number" step="50" min="0" data-m="lpts" data-t="'+tid+'" value="'+esc(lpV(r,tid))+'" aria-label="输的加分"><span class="cstep"><button type="button" data-a="lpstep" data-t="'+tid+'" data-v="50" aria-label="加 50">▲</button><button type="button" data-a="lpstep" data-t="'+tid+'" data-v="-50" aria-label="减 50">▼</button></span></span></div>';}
 function viewDealer(){
   const mine=ME.role==='dealer'&&Array.isArray(ME.rooms)?ME.rooms:null;
   if(mine&&!mine.length)return '<div class="page"><div class="pn"><h2 class="sh">还没有房间</h2><span class="muted">这个 Dealer PIN 没有对应的房间（Dealer 只有 8 个，一人一间）。请总控在「总控工具」里重新生成 PIN。</span></div></div>';
-  if(mine&&!mine.includes(ui.room)){ui.room=mine[0];ui.pick='';ui.res={};ui.pickOut={};ui.settled=null;}
+  if(mine&&!mine.includes(ui.room)){ui.room=mine[0];ui.pick='';ui.res={};ui.pickOut={};ui.lpts={};ui.settled=null;}
   const r=room(ui.room),{x,st}=roomState(r.id),ts=x.teams;
   const rooms=mine&&mine.length===1?'':'<div class="sec on" style="gap:10px"><span class="lbl">'+(mine?'我负责的房间':'全部房间'+(ME.role==='ctrl'?'（总控视角）':''))+'</span><div class="rooms8">'+ROOMS.filter(y=>!mine||mine.includes(y.id)).map(y=>{const q=roomState(y.id).st;
     return '<button class="rbtn'+(y.id===ui.room?' on':'')+'" data-a="room" data-v="'+y.id+'" aria-pressed="'+(y.id===ui.room)+'"><span class="n">'+cardG(y)+'</span><span class="nm">'+y.name+'</span>'
@@ -196,25 +201,25 @@ function viewDealer(){
       +'<div class="chips c2">'+btns+'</div><button class="btn-main" data-a="enter"'+(want&&!wn?'':' disabled')+'>'+(want?(wn?team(want).name+'：'+wn:(st==='rsv'?'确认 '+team(want).name+' 已到场，放行入场':'放行 '+team(want).name+' 入场（未预约）')):'先选择可入场的队伍')+'</button>';
   }
   const info='<div class="pn" style="gap:14px"><h2 class="sh">规则与入场</h2><div class="rule">'+r.rule+'</div>'
-    +'<div class="lot hot">失败 0 分并淘汰 1 人（现场抽签，结算时在这里选出是谁）；失败后可再挑战，同一间房每队只能成功一次</div>'
+    +'<div class="lot hot">失败淘汰 1 人（现场抽签，结算时在这里选出是谁）；失败后可再挑战，同一间房每队只能成功一次</div>'
     +'<div class="need"><b>放行入场</b><span class="small">队伍须满员：<span class="mono" style="color:var(--ink)">'+PER_TEAM+'</span> 人全部在场</span></div>'+entry+'</div>';
   const done=ui.settled&&ui.settled.rid===r.id&&st==='reset';
   const lostTs=ts.filter(t=>ui.res[t]==='lose'),needPick=lostTs.filter(t=>alive(t).length&&!alive(t).some(p=>p.id===ui.pickOut[t]));
-  const pending=ts.filter(t=>!ui.res[t]).length,ready=ts.length===1&&!pending&&!needPick.length;
-  const hint=st==='reset'?'重置中':!ts.length?'等待入场':pending?'还差 1 队未选':needPick.length?'还差选出被淘汰的人':'胜负已选好';
+  const pending=ts.filter(t=>!ui.res[t]).length,ready=dReady(r,ts);
+  const hint=st==='reset'?'重置中':!ts.length?'等待入场':pending?'还差 1 队未选':needPick.length?'还差选出被淘汰的人':lostTs.some(t=>!lpOk(r,t))?'加分要少于 '+r.n*100:'胜负已选好';
   const rows=ts.map(tid=>{const t=team(tid),v=ui.res[tid]||'';
     return '<div class="rt"><div class="hd">'+tsq(tid,42)+'<div><b>'+t.name+'</b><span class="small">存活 <span class="mono" style="color:var(--ink)">'+alive(tid).length+'</span> 人</span></div></div>'
       +(v?'<span class="stamp">'+(v==='win'?'胜':'负')+'</span>':'')
       +'<div class="wl" role="group" aria-label="'+t.name+'结果"><button class="w" data-a="res" data-t="'+tid+'" data-v="win" aria-pressed="'+(v==='win')+'">赢</button>'
-      +'<button class="l" data-a="res" data-t="'+tid+'" data-v="lose" aria-pressed="'+(v==='lose')+'">输</button></div>'+(v==='lose'?outPick(tid):'')+'</div>';}).join('');
+      +'<button class="l" data-a="res" data-t="'+tid+'" data-v="lose" aria-pressed="'+(v==='lose')+'">输</button></div>'+(v==='lose'?outPick(tid,r):'')+'</div>';}).join('');
   const W=ts.filter(t=>ui.res[t]==='win').map(t=>team(t).name),L=ts.filter(t=>ui.res[t]==='lose').map(t=>team(t).name);
   const summary=done?esc(ui.settled.msg):!ts.length?'':!ready?(needPick.length&&!pending?'为输的队选出被淘汰的人':'为本队选赢或输')
-    :(W.length?W.join('、')+'赢：+'+r.n*100+' 冥币和 '+r.card:'无人获胜')+(L.length?'；'+L.join('、')+'输（0 分），淘汰 '+lostTs.map(t=>ui.pickOut[t]||'无').join('、'):'');
+    :(W.length?W.join('、')+'赢：+'+r.n*100+' 冥币和 '+r.card:'无人获胜')+(L.length?'；'+lostTs.map(t=>team(t).name+'输（+'+lpV(r,t)+'）').join('、')+'，淘汰 '+lostTs.map(t=>ui.pickOut[t]||'无').join('、'):'');
   const resetBtn=st==='reset'?'<button class="btn-main glow" data-a="resetdone" style="min-height:60px;font-size:19px;letter-spacing:.1em">重置完成，恢复可预约</button><span class="small center">'+(done?esc(ui.settled.msg)+'。':'')+'点了之后，各队才能再预约这间房</span>':'';
   const settle='<div class="pn" style="gap:14px"><div class="shrow"><h2 class="sh">房间内队伍</h2><span class="hint" style="font-weight:700;color:'+(ready?'var(--accent)':pending?'var(--warn)':'var(--sub)')+'">'+hint+'</span></div>'
     +(rows?'<div class="rteams">'+rows+'</div>':st==='reset'?'':'<div class="empty">暂无队伍</div>')
     +(st==='reset'?resetBtn:'<span class="sum'+(ready?' ready':'')+'">'+summary+'</span>'
-    +'<button class="btn-main'+(ready?' glow':'')+'" data-a="finish"'+(ready?'':' disabled')+' style="min-height:60px;font-size:19px;letter-spacing:.14em">结束并结算</button>'
+    +'<button class="btn-main'+(ready?' glow':'')+'" id="finbtn" data-a="finish"'+(ready?'':' disabled')+' style="min-height:60px;font-size:19px;letter-spacing:.14em">结束并结算</button>'
     +'<span class="small center">结算后立即发放，房间随即进入重置，请先核对</span>')+'</div>';
   const gateWarn=dealerBusy()?'<div class="gatebar"><b>鬼门开：请尽快结束游戏</b><span>各房间已暂停预约与入场，请让正在进行的这一局尽快结算</span></div>':'';
   return '<div class="page tabbed">'+gateWarn+rooms+hero+'<div class="cols-dealer">'+sec('dealer','info',info)+sec('dealer','settle',settle)+'</div>'
@@ -657,7 +662,7 @@ function viewPlayer(){
   const suits=SUITS.map(x=>{const got=t.cards.some(c=>c.includes(x));
     return '<div class="s4'+(got?' got':'')+'" title="'+TYPE[x]+(got?'':'：未获得')+'"><span class="g '+(isRed(x)?'sr':'')+'">'+x+'</span><span class="l">'+TYPE[x]+'</span></div>';}).join('');
   // 房间记录：进入时间、结果、得分 / 被淘汰的人
-  const hist=[...(t.hist||[])].reverse().map(h=>{const r=room(h.rid),res=h.res===null?'游戏中':h.res==='win'?'通关　+'+h.pts:h.res==='lose'?'失败　0 分'+(h.out?'，淘汰 '+h.out:''):'中途离场';
+  const hist=[...(t.hist||[])].reverse().map(h=>{const r=room(h.rid),res=h.res===null?'游戏中':h.res==='win'?'通关　+'+h.pts:h.res==='lose'?'失败　'+(h.pts?'+'+h.pts:'0 分')+(h.out?'，淘汰 '+h.out:''):'中途离场';
     return '<div class="hrow"><span class="mono">'+fmt(h.t0)+'</span><b>'+cardG(r)+' '+(r.n===4?'简单':'困难')+'</b><span class="hres '+(h.res==='win'?'w':h.res==='lose'?'l':'')+'">'+res+'</span></div>';}).join('');
   const histSec=hist?'<div class="pn histp"><h3>房间记录</h3>'+hist+'</div>':'';
   const fin=st.k==='free'?'<div class="fin ok">'+st.txt+'</div>':'';
@@ -1052,7 +1057,8 @@ document.addEventListener('click',e=>{
   else if(a==='devops'){if(DEVME.demo)return;ui.devOps=!ui.devOps;say({ok:true,msg:ui.devOps?'开发者模式：可操作（以当前视角的身份）':'开发者模式：只读'});}
   else if(a==='clockreset'){A.ask=null;send({type:'admin.clock',op:'reset'});}
   else if(a==='clockctl'){send({type:'admin.clock',op:CLOCK&&CLOCK.running?'pause':'start'});}
-  else if(a==='room'){ui.room=v;ui.pick='';ui.res={};ui.pickOut={};ui.settled=null;}
+  else if(a==='room'){ui.room=v;ui.pick='';ui.res={};ui.pickOut={};ui.lpts={};ui.settled=null;}
+  else if(a==='lpstep'){const r=room(ui.room),t=b.dataset.t,c=parseInt(lpV(r,t),10);ui.lpts[t]=String(Math.min(r.n*100-1,Math.max(0,(Number.isFinite(c)?c:0)+(+v))));}
   else if(a==='res'){ui.res[b.dataset.t]=ui.res[b.dataset.t]===v?undefined:v;delete ui.pickOut[b.dataset.t];}
   else if(a==='gatereward'){send({type:'gatereward',pid:ui.gatePick},()=>{ui.gatePick='';});}
   else if(a==='jgpub'){const j=ui.jg;send({type:'publish',f:{kind:'鬼门开',target:'all',gate:j.gate,title:j.gate==='custom'?j.title:'',body:j.gate==='custom'?j.body:'',mins:+j.mins||0,reward:0}},()=>{ui.jg.gate='';ui.jg.title='';ui.jg.body='';});}
@@ -1066,7 +1072,7 @@ document.addEventListener('click',e=>{
   else if(a==='rsvno'){ui.rsvInfo=v;}
   else if(a==='rsvclose'){ui.rsvInfo=null;}
   else if(a==='cancelrsv'){send({type:'cancelrsv'});}
-  else if(a==='finish'){const rid=ui.room;send({type:'finish',rid,results:ui.res,picks:ui.pickOut},m=>{ui.res={};ui.pickOut={};ui.settled={rid,msg:m.msg};});}
+  else if(a==='finish'){const rid=ui.room,r=room(rid),lpts={};for(const t of Object.keys(ui.res))if(ui.res[t]==='lose')lpts[t]=parseInt(lpV(r,t),10);send({type:'finish',rid,results:ui.res,picks:ui.pickOut,lpts},m=>{ui.res={};ui.pickOut={};ui.lpts={};ui.settled={rid,msg:m.msg};});}
   else if(a==='hook'){send({type:'hook',actor:ui.hookTeam,pid:ui.hookTarget,where:ui.hookWhere,mode:ui.hookMode||hookSug(ui.hookTeam)},()=>{ui.hookTarget='';ui.hookWhere='';});}
   else if(a==='hookmode'){const cur=ui.hookMode||hookSug(ui.hookTeam);if(v!==cur){if(v===hookSug(ui.hookTeam)){ui.hookMode='';ui.hookTarget='';}else ui.hookAsk={kind:'mode',v};}}
   else if(a==='hookok'){const k=ui.hookAsk;ui.hookAsk=null;if(k){if(k.kind==='team'){ui.hookTeam=k.v;ui.hookMode='';ui.hookTarget='';}else{ui.hookMode=k.v;ui.hookTarget='';}}}
@@ -1138,6 +1144,7 @@ document.addEventListener('input',e=>{
   else if(m==='don'){ui.don[e.target.dataset.p]=parseInt(v,10)||0;}
   else if(m==='demoRow.pin'){const el=e.target,r=ui.demoRows&&ui.demoRows[+el.dataset.i];el.value=el.value.replace(/\D/g,'').slice(0,6);if(r)r.pin=el.value;}
   else if(m==='hookWhere'){ui.hookWhere=v;}
+  else if(m==='lpts'){ui.lpts[e.target.dataset.t]=v;const r=room(ui.room),btn=$('#finbtn');if(btn){const ok=dReady(r,roomState(r.id).x.teams);btn.disabled=!ok;btn.classList.toggle('glow',ok);}}
   else if(m==='coinAmt'){ui.coinAmt=v;const btn=$('#coinbtn');if(btn)btn.textContent=coinBtn();}
   else if(m.startsWith('nc.'))ui.nc[m.slice(3)]=v;
   else if(m==='adm.resetTxt'){ui.admin.resetTxt=v;const btn=$('#rstbtn');if(btn){btn.disabled=v!=='重置';btn.classList.toggle('fillred',v==='重置');}}
