@@ -24,13 +24,10 @@ jobs:
           cache: npm
 
       - name: Check secrets
-        env:
-          ADMIN_PIN: ${{ secrets.ADMIN_PIN }}
         run: |
           missing=""
           [ -n "$CLOUDFLARE_API_TOKEN" ] || missing="$missing CLOUDFLARE_API_TOKEN"
           [ -n "$CLOUDFLARE_ACCOUNT_ID" ] || missing="$missing CLOUDFLARE_ACCOUNT_ID"
-          [ -n "$ADMIN_PIN" ] || missing="$missing ADMIN_PIN"
           if [ -n "$missing" ]; then echo "::error::缺少 GitHub Secrets:$missing"; exit 1; fi
 
       - run: npm ci
@@ -40,11 +37,12 @@ jobs:
         working-directory: worker
         run: npx wrangler deploy
 
-      - name: Set ADMIN_PIN on Worker
+      - name: Set ADMIN_PIN on Worker (optional; no admin PIN login without it)
         working-directory: worker
         env:
           ADMIN_PIN: ${{ secrets.ADMIN_PIN }}
-        run: printf '%s' "$ADMIN_PIN" | npx wrangler secret put ADMIN_PIN
+        run: |
+          if [ -n "$ADMIN_PIN" ]; then printf '%s' "$ADMIN_PIN" | npx wrangler secret put ADMIN_PIN; else echo "ADMIN_PIN not set: admin PIN login off"; fi
 
       - name: Set DEV_PIN on Worker (optional; developer mode is off without it)
         working-directory: worker
