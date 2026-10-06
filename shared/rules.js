@@ -407,7 +407,7 @@ export function newGame(demo){init();if(demo)seed();return S;}
 
 // Which roles may perform each action ('ctrl' may do everything).
 const ROLE_OK={enter:['dealer'],finish:['dealer'],resetdone:['dealer'],reserve:['player'],cancelrsv:['player'],setcap:['ctrl'],setdur:['ctrl'],gatereward:['judge'],gateend:['judge'],hook:['judge'],done:['judge'],undone:['judge'],
-  publish:['ctrl'],revoke:['ctrl'],setscore:['ctrl'],final:['ctrl'],assign:['ctrl'],scavredeem:['judge'],
+  publish:['ctrl','judge'],revoke:['ctrl'],setscore:['ctrl'],final:['ctrl'],assign:['ctrl'],scavredeem:['judge'],
   pickup:['wuchang'],checkin:['wuchang','mengpo'],confirm:['wuchang','mengpo'],
   revive:['mengpo'],coin:['mengpo'],buy:['mengpo'],usecard:['mengpo'],addcard:['mengpo'],
   ack:['player'],donate:['player']};
@@ -437,7 +437,7 @@ export function apply(state,me,a){
     case 'scavredeem':return scavRedeem(a.tid,a.qid,a.title,a.body);
     case 'done':return markDone(+a.nid,a.cid);
     case 'undone':return unmarkDone(+a.nid,a.cid);
-    case 'publish':return publish(a.f);
+    case 'publish':if(me.role==='judge'&&!(a.f&&a.f.kind==='鬼门开'))return no('判官只能发布鬼门开');return publish(a.f);
     case 'revoke':return revokeNotice(+a.nid);
     case 'setscore':return setScore(a.tid,a.v);
     case 'final':return setFinal(a.tid,!!a.on);

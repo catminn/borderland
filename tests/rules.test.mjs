@@ -80,6 +80,10 @@ T('ctrl forces final', ap('ctrl', { type: 'final', tid: t.id, on: true }).ok && 
   const g = R.apply(G, { role: 'ctrl' }, { type: 'publish', f: { kind: '鬼门开', gate: 'g1', title: '', body: '' } });
   T('gate notice is seen by staff', g.ok && R.staffSees(G.notices[0]));
 }
+{ // 判官只能发布鬼门开
+  const G = R.newGame(false); R.use(G); G.t = 10; const J = a => R.apply(G, { role: 'judge' }, a);
+  T('judge publishes a gate but not announcements', J({ type: 'publish', f: { kind: '鬼门开', gate: 'g1', title: '', body: '' } }).ok && !J({ type: 'publish', f: { kind: '公告', target: 'all', title: 'x', body: '' } }).ok);
+}
 { // 勾魂令：淘汰别队一名存活队员 / 免费复活本队一名队员；不再计次
   const G = R.newGame(false); R.use(G); G.t = 100; const J = a => R.apply(G, { role: 'judge' }, a);
   const k = J({ type: 'hook', actor: 'B', pid: 'R-01', where: '二楼' });

@@ -70,6 +70,10 @@ T('ctrl log updated live', (await text(ctrl)).includes('判官记录 蓝队 率�
 await player.waitForSelector('#modal .dlg', { timeout: 4000 }).catch(() => {});
 T('player gets broadcast', (await player.locator('#modal').innerText()).includes('蓝队率先完成任务'));
 await ack(player);
+await judge.click('[data-a=dd][data-v="jg.gate"]'); await judge.click('[data-a=pick][data-k="jg.gate"][data-v=g1]'); await judge.click('[data-a=jgpub]'); await sleep(500);
+T('judge can publish a gate (rooms paused)', !!admin.S.gp);
+await ack(judge); await ack(ctrl); await ack(dealer); await ack(mengpo); await admin.act({ type: 'gateend' }); await sleep(200);
+await ack(player);
 
 // race: two judges confirm the same first-come task at the same moment
 const pub2 = await admin.act({ type: 'publish', f: { kind: '鬼门开', title: '抢答', body: '', reward: 0, mins: 0 } });

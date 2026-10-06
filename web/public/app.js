@@ -28,7 +28,7 @@ function buzz(p){
   if(!IOS)return;const a=Array.isArray(p)?p:[p];let t=0;
   a.forEach((d,i)=>{if(i%2===0)setTimeout(iosTick,t);t+=d;});}
 function shakeEl(el,cls){if(!el)return;el.classList.remove(cls);void el.offsetWidth;el.classList.add(cls);}
-let ui={ddOpen:null,don:{},tab:null,room:'4S',gatePick:'',finalAsk:null,pick:'',res:{},settled:null,gateWin:'',hookTeam:'',hookMode:'',hookAsk:null,hookTarget:'',hookWhere:'',rd:{quest:'',title:''},pickOut:{},doneSel:{},revokeAsk:null,
+let ui={ddOpen:null,don:{},tab:null,room:'4S',gatePick:'',finalAsk:null,pick:'',res:{},settled:null,gateWin:'',jg:{gate:'',title:'',body:'',mins:10},hookTeam:'',hookMode:'',hookAsk:null,hookTarget:'',hookWhere:'',rd:{quest:'',title:''},pickOut:{},doneSel:{},revokeAsk:null,
   coinTeam:'',coinAmt:'',buyer:'',mkTab:'buy',ncOpen:false,as:'ctrl',devOps:false,demoRows:null,devAck:new Set(),nc:{name:'',desc:'',price:'',stock:''},
   sub:{dealer:'info',npc:'task',market:'buy',ctrl:'status',player:'team'},
   pub:{kind:'鬼门开',reward:0,title:'',body:'',target:'all',team:'R',players:[],mins:10,to:'all',sqTeam:'',quest:'',gate:''},
@@ -224,7 +224,14 @@ function viewDealer(){
 // 鬼门开：进行中时各房间暂停；率先完成的队伍缺人 → 免费复活一名队友，满员 → 指定别队一名存活队员淘汰（不加分）。
 function gatePanel(){
   const g=S.gp;
-  if(!g){ui.gateEndAsk=false;ui.gateWin='';return '<div class="pn gatep"><div class="shrow"><h3>鬼门开</h3></div><span class="muted">当前没有鬼门开。总控或判官在「发布」里发布鬼门开后，这里选择获胜队伍并结束。</span></div>';}
+  if(!g){ui.gateEndAsk=false;ui.gateWin='';
+    const j=ui.jg,gq=GATES.find(x=>x.id===j.gate),cus=j.gate==='custom',okp=gq||(cus&&j.title.trim());
+    return '<div class="pn gatep"><div class="shrow"><h3>鬼门开</h3><span class="small">当前没有鬼门开</span></div>'
+      +'<div class="fld"><span>题库</span>'+dd('jg.gate',gq?gq.title:cus?'自定义':'','选择鬼门开',null,[...GATES.map(x=>({v:x.id,label:esc(x.title)})),{v:'custom',label:'自定义'}])+'</div>'
+      +(gq?'<div class="lot">'+esc(gq.body)+'</div>':'')
+      +(cus?'<label class="fld"><span>标题</span><input class="in" id="jgt" data-m="jg.title" value="'+esc(j.title)+'" placeholder="鬼门开题目"></label><label class="fld"><span>内容</span><textarea class="in" id="jgb" data-m="jg.body" rows="3">'+esc(j.body)+'</textarea></label>':'')
+      +'<label class="fld"><span>限时（分钟，0 = 不限时）</span><input class="in mono" id="jgm" data-m="jg.mins" value="'+esc(j.mins)+'" inputmode="numeric"></label>'
+      +'<button class="btn-main'+(okp?' glow':'')+'" data-a="jgpub"'+(okp?'':' disabled')+' style="min-height:52px">'+(okp?'发布鬼门开（全体玩家 + 工作人员，各房间暂停）':'先选择鬼门开')+'</button></div>';}
   const gn=S.notices.find(x=>x.id===g.nid),live=gn&&gn.due&&gn.due>S.t;
   const end=ui.gateEndAsk?'<button class="btn-line fillred" data-a="gateend" style="min-height:48px;font-weight:900">确认结束鬼门开</button><button class="btn-line" data-a="gateendno" style="min-height:48px">取消</button><span class="small">结束后各房间立即恢复预约与入场</span>'
     :'<button class="btn-line" data-a="gateendask">'+(g.win?'结束鬼门开（房间恢复开放）':'无人获胜，结束鬼门开')+'</button>';
@@ -985,6 +992,7 @@ document.addEventListener('click',e=>{
   else if(a==='room'){ui.room=v;ui.pick='';ui.res={};ui.pickOut={};ui.settled=null;}
   else if(a==='res'){ui.res[b.dataset.t]=ui.res[b.dataset.t]===v?undefined:v;delete ui.pickOut[b.dataset.t];}
   else if(a==='gatereward'){send({type:'gatereward',pid:ui.gatePick},()=>{ui.gatePick='';});}
+  else if(a==='jgpub'){const j=ui.jg;send({type:'publish',f:{kind:'鬼门开',target:'all',gate:j.gate,title:j.gate==='custom'?j.title:'',body:j.gate==='custom'?j.body:'',mins:+j.mins||0,reward:0}},()=>{ui.jg.gate='';ui.jg.title='';ui.jg.body='';});}
   else if(a==='gatewin'){const cid=ui.gateWin;if(cid&&S.gp)send({type:'done',nid:S.gp.nid,cid},()=>{ui.gateWin='';});}
   else if(a==='gateendask'){ui.gateEndAsk=true;}
   else if(a==='gateendno'){ui.gateEndAsk=false;}
@@ -1067,6 +1075,7 @@ document.addEventListener('input',e=>{
   else if(m==='durMin')ui.admin.dur=v.replace(/[^\d.]/g,'');
   else if(m.startsWith('adm.'))ui.admin.counts[m.slice(4)]=+v;
   else if(m.startsWith('pub.'))ui.pub[m.slice(4)]=v;
+  else if(m.startsWith('jg.'))ui.jg[m.slice(3)]=v;
   else if(m==='rd.title')ui.rd.title=v;
 });
 function copyText(t){
