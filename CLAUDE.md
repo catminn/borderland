@@ -323,3 +323,4 @@ npm run dev:pages                             # 正式部署的路径（Pages+Wo
 ## 7.22 小调整（2026-10-06）
 - 手机通行证「队长」徽章改为左对齐（`@media(max-width:719px) body .wen .w-cap{align-self:flex-start}`）；终极进度里「还差：…」那行文字删除（达成时仍显示等待放行）；玩家二级分页改名「本队信息 / 任务与通知」；大屏排名花色：手机 2×2 紧凑（`gap:0 4px`），电脑（≥820）一横排。覆盖规则用 `body .stage .bcol .su`（提高优先级）放在 comic-skin 块**之前**，comic-skin 块未动。
 - **ADMIN_PIN 改为可选（2026-10-06）**：用户删了 GitHub Secret `ADMIN_PIN`，部署流程不再要求它（没设就不写入 Worker，与 DEV_PIN 一样）。注意：之前已写进 Cloudflare Worker 的旧值不会被自动删除，要彻底关掉需 `wrangler secret delete ADMIN_PIN`。没有 ADMIN_PIN 时总控只能靠 DEV_PIN（开发者视角）或已生成的总控 PIN。
+- **总控工具重排（2026-10-06）**：左栏 = 计时 / 总时长 / **开关**（新区域，放各种开关；目前只有「输了加分」，一行 + 胶囊开关 `.sw`，`data-a="losspts"`）/ 备份与恢复；右栏 = 开局 / PIN / 危险操作（两栏高度接近）。Dealer 结算里的「加分」按钮文案改为「补充加分（不可超过此房间总分）」，提示「补充加分要少于 N」。以后新增开关都放进「开关」区。

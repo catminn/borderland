@@ -169,7 +169,7 @@ function dReady(r,ts){const lost=ts.filter(t=>ui.res[t]==='lose');
   return ts.length===1&&ts.every(t=>ui.res[t])&&!lost.some(t=>alive(t).length&&!alive(t).some(p=>p.id===ui.pickOut[t]))&&lost.every(t=>lpOk(r,t));}
 function outPick(tid,r){const a=alive(tid);
   return '<div class="outpick"><span class="lbl">现场抽签：选出被淘汰的人</span>'+(a.length?'<div class="chips ids">'+a.map(p=>cb({cls:'id',k:'pickOut.'+tid,v:p.id,on:ui.pickOut[tid]===p.id,label:p.id,mark:false})).join('')+'</div>':'<span class="small">队里已无存活队员</span>')
-    +(S.lossOn?'<button class="btn-line'+(ui.lpon[tid]?' fill':'')+'" data-a="lpon" data-t="'+tid+'" aria-pressed="'+!!ui.lpon[tid]+'">加分</button>'+(ui.lpon[tid]?'<span class="coin-in"><input class="in mono" type="number" step="50" min="0" data-m="lpts" data-t="'+tid+'" value="'+esc(lpV(r,tid))+'" aria-label="输的加分"><span class="cstep"><button type="button" data-a="lpstep" data-t="'+tid+'" data-v="50" aria-label="加 50">▲</button><button type="button" data-a="lpstep" data-t="'+tid+'" data-v="-50" aria-label="减 50">▼</button></span></span>':''):'')+'</div>';}
+    +(S.lossOn?'<button class="btn-line'+(ui.lpon[tid]?' fill':'')+'" data-a="lpon" data-t="'+tid+'" aria-pressed="'+!!ui.lpon[tid]+'">补充加分（不可超过此房间总分）</button>'+(ui.lpon[tid]?'<span class="coin-in"><input class="in mono" type="number" step="50" min="0" data-m="lpts" data-t="'+tid+'" value="'+esc(lpV(r,tid))+'" aria-label="输的加分"><span class="cstep"><button type="button" data-a="lpstep" data-t="'+tid+'" data-v="50" aria-label="加 50">▲</button><button type="button" data-a="lpstep" data-t="'+tid+'" data-v="-50" aria-label="减 50">▼</button></span></span>':''):'')+'</div>';}
 function viewDealer(){
   const mine=ME.role==='dealer'&&Array.isArray(ME.rooms)?ME.rooms:null;
   if(mine&&!mine.length)return '<div class="page"><div class="pn"><h2 class="sh">还没有房间</h2><span class="muted">这个 Dealer PIN 没有对应的房间（Dealer 只有 8 个，一人一间）。请总控在「总控工具」里重新生成 PIN。</span></div></div>';
@@ -206,7 +206,7 @@ function viewDealer(){
   const done=ui.settled&&ui.settled.rid===r.id&&st==='reset';
   const lostTs=ts.filter(t=>ui.res[t]==='lose'),needPick=lostTs.filter(t=>alive(t).length&&!alive(t).some(p=>p.id===ui.pickOut[t]));
   const pending=ts.filter(t=>!ui.res[t]).length,ready=dReady(r,ts);
-  const hint=st==='reset'?'重置中':!ts.length?'等待入场':pending?'还差 1 队未选':needPick.length?'还差选出被淘汰的人':lostTs.some(t=>!lpOk(r,t))?'加分要少于 '+r.n*100:'胜负已选好';
+  const hint=st==='reset'?'重置中':!ts.length?'等待入场':pending?'还差 1 队未选':needPick.length?'还差选出被淘汰的人':lostTs.some(t=>!lpOk(r,t))?'补充加分要少于 '+r.n*100:'胜负已选好';
   const rows=ts.map(tid=>{const t=team(tid),v=ui.res[tid]||'';
     return '<div class="rt"><div class="hd">'+tsq(tid,42)+'<div><b>'+t.name+'</b><span class="small">存活 <span class="mono" style="color:var(--ink)">'+alive(tid).length+'</span> 人</span></div></div>'
       +(v?'<span class="stamp">'+(v==='win'?'胜':'负')+'</span>':'')
@@ -599,16 +599,17 @@ function adminPanel(){
     +'<span class="small" style="font-weight:700;color:'+(run?'var(--accent)':'var(--sub)')+'">'+(run?'● 计时中':'❚❚ 已暂停')+'</span></div>'
     +'<div class="pn"><div class="shrow"><h3>总时长</h3></div><span class="small">当前 <b class="mono" style="color:var(--ink)">'+Math.round((S.dur||7200)/60)+'</b> 分钟</span>'
     +'<div class="btns"><input class="in mono" id="durm" data-m="durMin" value="'+esc(A.dur)+'" inputmode="numeric" placeholder="分钟，如 120" style="max-width:150px"><button class="btn-line acc" data-a="setdur">设置</button></div></div>'
-    +'<div class="pn"><div class="shrow"><h3>输了加分</h3></div><div class="btns"><button class="btn-line'+(S.lossOn?'':' fill')+'" data-a="losspts" data-v="0" aria-pressed="'+!S.lossOn+'">关闭</button><button class="btn-line'+(S.lossOn?' fill':'')+'" data-a="losspts" data-v="1" aria-pressed="'+!!S.lossOn+'">开启</button></div></div>'
+    +'<div class="pn"><h3>开关</h3><div class="swrow"><span>输了加分<small>Dealer 结算输局时可给加分</small></span><button class="sw'+(S.lossOn?' on':'')+'" role="switch" aria-checked="'+!!S.lossOn+'" aria-label="输了加分" data-a="losspts" data-v="'+(S.lossOn?0:1)+'"><i></i></button></div></div>'
+    +'<div class="pn"><h3>备份与恢复</h3><span class="small">每 10 次操作自动备份一次；重置、恢复、载入演示数据前都会先备份当前数据。</span>'
+    +'<div class="btns"><button class="btn-line" data-a="adm-snaps">查看备份</button>'
+    +(A.ask==='reset:demo'?'<button class="btn-line fillred" data-a="adm-reset" data-v="demo">确认载入演示数据</button><button class="btn-line" data-a="adm-cancel">取消</button>'
+      :'<button class="btn-line" data-a="adm-ask" data-v="reset:demo">载入演示数据</button>')+'</div>'+snaps+'</div></div>';
+  const rs=A.resetTxt==='重置';
+  const right='<div class="stack">'
     +'<div class="pn"><h3>开局</h3><span class="small">8 队随机分到 8 个房间（直接进入游戏中）。只有还没有队伍进过房间时才能用。</span><div class="btns"><button class="btn-line acc" data-a="assign">开局随机分房</button></div></div>'
     +'<div class="pn"><div class="shrow"><h3>PIN</h3><span class="small">按数量增减工作人员 PIN（改小会删掉编号靠后的，用它们登录的人会被踢下线）</span></div>'
     +'<div class="cnts">'+num('dealer','Dealer')+num('judge','判官')+num('mengpo','孟婆')+num('wuchang','黑白无常')+num('ctrl','总控')+num('screen','大屏')+'</div>'
-    +'<div class="btns"><button class="btn-line acc" data-a="adm-gen">生成 PIN</button><button class="btn-line" data-a="adm-pins">查看全部 PIN</button></div>'+pins+'</div></div>';
-  const rs=A.resetTxt==='重置';
-  const right='<div class="stack"><div class="pn"><h3>备份与恢复</h3><span class="small">每 10 次操作自动备份一次；重置、恢复、载入演示数据前都会先备份当前数据。</span>'
-    +'<div class="btns"><button class="btn-line" data-a="adm-snaps">查看备份</button>'
-    +(A.ask==='reset:demo'?'<button class="btn-line fillred" data-a="adm-reset" data-v="demo">确认载入演示数据</button><button class="btn-line" data-a="adm-cancel">取消</button>'
-      :'<button class="btn-line" data-a="adm-ask" data-v="reset:demo">载入演示数据</button>')+'</div>'+snaps+'</div>'
+    +'<div class="btns"><button class="btn-line acc" data-a="adm-gen">生成 PIN</button><button class="btn-line" data-a="adm-pins">查看全部 PIN</button></div>'+pins+'</div>'
     +'<div class="danger"><h3>危险操作</h3><p>重置会清空所有冥币、花色、日志和鬼市记录（PIN 不变）。请在下方输入“重置”二字后再点按钮。</p>'
     +'<input class="in" id="rst" data-m="adm.resetTxt" value="'+esc(A.resetTxt)+'" placeholder="输入“重置”" style="border-color:#d9b3aa">'
     +'<button class="btn-line '+(rs?'fillred':'')+'" id="rstbtn" data-a="adm-reset" data-v="blank"'+(rs?'':' disabled')+' style="min-height:48px;font-weight:900">重置为空白游戏</button></div></div>';
