@@ -8,6 +8,7 @@ const ROLE_NAME = { player: '玩家', dealer: 'Dealer', judge: '判官', mengpo:
 const STAFF_ROLES = ['dealer', 'judge', 'mengpo', 'wuchang', 'ctrl', 'screen'];
 const FIXED = { dealer: 8, wuchang: 1 };   // 8 个房间一人一间；黑白无常只有 1 个人
 const SNAP_EVERY = 10, SNAP_KEEP = 30, LOG_KEEP = 1500;
+const STATS_KEEP = 360, STATS_EVERY = 60000;   // 统计：在线曲线每分钟一个点，只留最近 6 小时
 const SBOX_SNAP_KEEP = 8, SBOX_LOG_KEEP = 300, DEMO_MAX = 30;   // a shared demo game stays small: few backups, short log, capped number of 展示 PINs
 
 const json = (o, status = 200) => new Response(JSON.stringify(o), {
@@ -15,6 +16,19 @@ const json = (o, status = 200) => new Response(JSON.stringify(o), {
 const randHex = n => { const a = new Uint8Array(n); crypto.getRandomValues(a); return [...a].map(b => b.toString(16).padStart(2, '0')).join(''); };
 function newPin(taken) {
   for (;;) { const a = new Uint32Array(1); crypto.getRandomValues(a); const p = String(a[0] % 1000000).padStart(6, '0'); if (!taken.has(p)) return p; }
+}
+
+// 只取设备大类，不存完整 User-Agent
+function device(ua) {
+  ua = String(ua || '');
+  if (/iPhone|iPod/.test(ua)) return 'iPhone';
+  if (/iPad/.test(ua)) return 'iPad';
+  if (/Android/.test(ua)) return /Mobile/.test(ua) ? '安卓手机' : '安卓平板';
+  if (/CrOS/.test(ua)) return 'Chromebook';
+  if (/Macintosh/.test(ua)) return '苹果电脑';
+  if (/Windows/.test(ua)) return 'Windows';
+  if (/Linux/.test(ua)) return 'Linux';
+  return '其他';
 }
 
 export class Game extends DurableObject {
@@ -25,6 +39,8 @@ export class Game extends DurableObject {
       this.S = await ctx.storage.get('state');
       this.clock = (await ctx.storage.get('clock')) || { running: false, base: 0, at: Date.now() };
       this.auth = (await ctx.storage.get('auth')) || { pins: {}, sessions: {} };
+      this.st = (await ctx.storage.get('stats')) || { rows: {}, fails: 0, lastFail: 0 };   // 统计：每个 PIN 的登录/连接/断线/设备（独立于游戏数据）
+      this.ser = (await ctx.storage.get('statsS')) || [];                                  // 统计：在线人数曲线
       if (this.S && R.needsReset(this.S)) { await ctx.storage.put('snap:' + String(Date.now()).padStart(15, '0'), { S: this.S, clock: this.clock, tag: '规则升级前', t: this.S.t || 0 }); this.S = null; this.clock = { running: false, base: 0, at: Date.now() }; await ctx.storage.put('clock', this.clock); }
       if (!this.S) { this.S = R.newGame(false); await this.persist(true); }
       // 展示模式: any number of 展示 PINs {pin: {mode, write}}. 共享 mode = one demo game per PIN (this.Ds), never touching the real game.
@@ -79,6 +95,42 @@ export class Game extends DurableObject {
     if (keys.length > SNAP_KEEP) await this.ctx.storage.delete(keys.slice(0, keys.length - SNAP_KEEP));
   }
 
+  // ---------- 统计（只有真开发者 PIN 能看，不进游戏数据，重置/恢复不受影响）----------
+  keyOf(id) { return id.demo ? '展示' : (id.label || ROLE_NAME[id.role] || '?'); }
+  async bump(k, role, kind, ua) {
+    try {
+      const now = Date.now(), r = this.st.rows[k] || (this.st.rows[k] = { role, logins: 0, conns: 0, drops: 0, first: now, last: 0, devs: {} });
+      r.role = role; r.last = now;
+      if (kind === 'login') r.logins++; else if (kind === 'conn') r.conns++; else if (kind === 'drop') r.drops++;
+      if (ua != null) r.devs[device(ua)] = 1;
+      await this.ctx.storage.put('stats', this.st);
+    } catch { /* 统计失败不能影响游戏 */ }
+  }
+  async failLogin() {
+    try { this.st.fails = (this.st.fails || 0) + 1; this.st.lastFail = Date.now(); await this.ctx.storage.put('stats', this.st); } catch { /* ignore */ }
+  }
+  async schedule() { if ((await this.ctx.storage.getAlarm()) == null) await this.ctx.storage.setAlarm(Date.now() + STATS_EVERY); }
+  async alarm() {   // 每分钟记一个在线点；没人在线就不记、不再排下一次（下次有人连上时 connect 会重新排）
+    const sockets = this.ctx.getWebSockets();
+    if (!sockets.length) return;
+    const roles = {}, teams = {}; let n = 0;
+    for (const ws of sockets) {
+      const s = this.sessionOf(ws.deserializeAttachment()?.token); if (!s) continue;
+      n++; roles[s.role] = (roles[s.role] || 0) + 1;
+      if (s.role === 'player' && s.pid) { const t = String(s.pid).split('-')[0]; teams[t] = (teams[t] || 0) + 1; }
+    }
+    this.ser.push({ at: Date.now(), n, r: roles, k: teams });
+    if (this.ser.length > STATS_KEEP) this.ser.splice(0, this.ser.length - STATS_KEEP);
+    await this.ctx.storage.put('statsS', this.ser);
+    await this.ctx.storage.setAlarm(Date.now() + STATS_EVERY);
+  }
+  statsData() {
+    const online = {}; let total = 0;
+    for (const ws of this.ctx.getWebSockets()) { const at = ws.deserializeAttachment(); if (at && at.k) { online[at.k] = (online[at.k] || 0) + 1; total++; } }
+    const rows = Object.entries(this.st.rows).map(([k, r]) => ({ k, role: r.role, roleName: ROLE_NAME[r.role] || r.role, logins: r.logins, conns: r.conns, drops: r.drops, first: r.first, last: r.last, devs: Object.keys(r.devs), online: online[k] || 0 }));
+    return { now: Date.now(), online: total, fails: this.st.fails || 0, lastFail: this.st.lastFail || 0, rows, series: this.ser };
+  }
+
   // ---------- identity ----------
   identity(pin) {
     if (this.env.ADMIN_PIN && pin === String(this.env.ADMIN_PIN)) return { role: 'ctrl', label: '总控（管理员）' };
@@ -116,10 +168,11 @@ export class Game extends DurableObject {
     let pin = '';
     try { pin = String((await req.json()).pin || '').trim(); } catch { /* bad body */ }
     const id = /^\d{6}$/.test(pin) ? this.identity(pin) : null;
-    if (!id) return json({ error: 'PIN 不正确' }, 401);   // no lockout: at the event everyone shares one Wi-Fi address
+    if (!id) { await this.failLogin(); return json({ error: 'PIN 不正确' }, 401); }   // no lockout: at the event everyone shares one Wi-Fi address
     const token = randHex(16);
     this.auth.sessions[token] = { pin, at: Date.now() };
     await this.ctx.storage.put('auth', this.auth);
+    await this.bump(this.keyOf(id), id.role, 'login', req.headers.get('user-agent'));
     return json({ token, me: this.me(id) });
   }
 
@@ -129,7 +182,10 @@ export class Game extends DurableObject {
     const [client, server] = Object.values(new WebSocketPair());
     this.ctx.acceptWebSocket(server);
     if (!s) { server.close(4001, 'login expired'); return new Response(null, { status: 101, webSocket: client }); }
-    server.serializeAttachment({ token });
+    const k = this.keyOf(s);
+    server.serializeAttachment({ token, k });
+    await this.bump(k, s.role, 'conn', req.headers.get('user-agent'));
+    await this.schedule();
     const sh = s.demo && s.dmode === 'shared', D = sh ? await this.getD(s.pin) : null;
     server.send(JSON.stringify({ t: 'hello', me: this.me(s), S: sh ? D.S : R.viewFor(this.S, s), clock: sh ? D.clock : this.clock, now: Date.now() }));
     return new Response(null, { status: 101, webSocket: client });
@@ -150,8 +206,16 @@ export class Game extends DurableObject {
     else if (r.ok && r.changed !== false) { await this.persist(r.auth); this.broadcast(); }
     else if (r.ok && r.auth) await this.ctx.storage.put('auth', this.auth);
   }
-  async webSocketClose(ws, code, reason) { try { ws.close(code, reason); } catch { /* already closed */ } }
-  async webSocketError(ws) { try { ws.close(1011, 'error'); } catch { /* already closed */ } }
+  async webSocketClose(ws, code, reason) {
+    const at = ws.deserializeAttachment();   // 服务器自己踢人（4001/4002）和页面正常关闭（1000）不算断线
+    if (at && at.k && code !== 1000 && code !== 4001 && code !== 4002 && this.st.rows[at.k]) await this.bump(at.k, this.st.rows[at.k].role, 'drop');
+    try { ws.close(code, reason); } catch { /* already closed */ }
+  }
+  async webSocketError(ws) {
+    const at = ws.deserializeAttachment();
+    if (at && at.k && this.st.rows[at.k]) await this.bump(at.k, this.st.rows[at.k].role, 'drop');
+    try { ws.close(1011, 'error'); } catch { /* already closed */ }
+  }
 
   broadcast(which) {
     const base = { t: 'state', clock: this.clock, now: Date.now() };
@@ -168,6 +232,11 @@ export class Game extends DurableObject {
   }
 
   async handle(s, a) {
+    if (a.type === 'dev.stats' || a.type === 'dev.clearstats') {   // 统计：只有真开发者 PIN（不含展示 PIN），只读也能看
+      if (s.role !== 'dev' || s.demo) return R.no('只有开发者能看统计');
+      if (a.type === 'dev.clearstats') { this.st = { rows: {}, fails: 0, lastFail: 0 }; this.ser = []; await this.ctx.storage.delete(['stats', 'statsS']); return { ok: true, msg: '统计已清空', changed: false, data: this.statsData() }; }
+      return { ok: true, msg: '', changed: false, data: this.statsData() };
+    }
     if (a.type === 'dev.setdemo' || a.type === 'dev.deldemo') {   // only the real developer PIN may change the 展示模式 PINs
       if (s.role !== 'dev' || s.demo) return R.no('只有开发者能改展示模式');
       const kick = pin => { for (const ws of this.ctx.getWebSockets()) { const t = this.sessionOf(ws.deserializeAttachment()?.token); if (t && t.demo && t.pin === pin) { try { ws.close(4001, 'demo changed'); } catch { /* ignore */ } } } };

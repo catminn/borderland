@@ -439,6 +439,51 @@ function demoPanel(){
     +(rows.length?rows.map(one).join(''):'<span class="small">还没有展示 PIN。</span>')
     +'<div class="btns"><button class="btn-line acc" data-a="demo-add">+ 新增展示 PIN</button></div></div>';
 }
+// ---- 统计（开发者专用，只对真 DEV_PIN 显示；数据在服务器 stats 键里，不进游戏数据）----
+const SROLES=['player','dealer','judge','mengpo','wuchang','ctrl','screen','dev'],SRN={...ROLE_NAME,dev:'开发者'},SPAL=['#3d77c9','#d0453a','#3a9a6c','#9466b8','#e08a3c','#2a9d9a','#e2b33a','#8a8a8a'];
+const hm=ms=>ms?new Date(ms).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit',hour12:false}):'—';
+function statsChart(d){
+  const ser=d.series||[];
+  if(ser.length<2)return '<span class="small">在线曲线至少要 2 个点（有人在线时每分钟记一个点，只留最近 6 小时）。</span>';
+  const v=ui.statsView||'all';
+  let lines=v==='role'?SROLES.map((r,i)=>({n:SRN[r],c:SPAL[i],y:ser.map(p=>(p.r||{})[r]||0)}))
+    :v==='team'?S.teams.map(t=>({n:t.name,c:TC[t.id][0],y:ser.map(p=>(p.k||{})[t.id]||0)}))
+    :[{n:'总在线',c:'var(--accent)',y:ser.map(p=>p.n)}];
+  lines=lines.filter(l=>Math.max(...l.y)>0);
+  const W=Math.min(760,Math.max(280,innerWidth-(innerWidth<720?56:96))),H=170,L=30,B=22,T=8,Rt=8,max=Math.max(1,...lines.flatMap(l=>l.y)),t0=ser[0].at,sp=Math.max(1,ser[ser.length-1].at-t0);
+  const X=at=>L+(at-t0)/sp*(W-L-Rt),Y=n=>T+(1-n/max)*(H-T-B);
+  const grid=[0,.5,1].map(f=>{const n=Math.round(max*f),y=Y(n);return '<line x1="'+L+'" x2="'+(W-Rt)+'" y1="'+y+'" y2="'+y+'" style="stroke:var(--line2);stroke-width:1"/><text x="'+(L-4)+'" y="'+(y+4)+'" text-anchor="end" style="fill:var(--sub);font-size:11px">'+n+'</text>';}).join('');
+  const paths=lines.map(l=>'<polyline fill="none" style="stroke:'+l.c+';stroke-width:2" stroke-linejoin="round" points="'+ser.map((p,i)=>X(p.at).toFixed(1)+','+Y(l.y[i]).toFixed(1)).join(' ')+'"/>').join('');
+  const legend=v==='all'?'':'<div class="btns" style="gap:12px">'+lines.map(l=>'<span class="small"><span style="display:inline-block;width:10px;height:10px;background:'+l.c+';margin-right:4px"></span>'+esc(l.n)+'</span>').join('')+'</div>';
+  return '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:'+W+'px;height:auto;display:block" role="img" aria-label="在线人数曲线">'+grid
+    +'<text x="'+L+'" y="'+(H-6)+'" style="fill:var(--sub);font-size:11px">'+hm(t0)+'</text><text x="'+(W-Rt)+'" y="'+(H-6)+'" text-anchor="end" style="fill:var(--sub);font-size:11px">'+hm(ser[ser.length-1].at)+'</text>'+paths+'</svg>'+legend;
+}
+function statsPanel(){
+  if(!DEVME||DEVME.demo||LOCAL)return '';
+  if(!ui.statsTried&&ws&&connected){ui.statsTried=true;send({type:'dev.stats'},m=>{ui.stats=m.data;},true);}
+  const d=ui.stats,v=ui.statsView||'all';
+  const head='<div class="shrow"><h3>统计</h3><span class="small">开发者专用；只记 PIN 标签、设备大类和时间，不存 IP；重置游戏不影响，活动后点「清空」</span></div>';
+  if(!d)return '<div class="pn" style="margin-top:16px">'+head+'<div class="btns"><button class="btn-line" data-a="stats-load">加载统计</button></div></div>';
+  const rows=[...d.rows].sort((a,b)=>SROLES.indexOf(a.role)-SROLES.indexOf(b.role)||a.k.localeCompare(b.k,'zh'));
+  const G='display:grid;grid-template-columns:minmax(100px,1.3fr) 76px 44px 44px 44px minmax(90px,1.4fr) 52px 44px;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line2);font-size:14px';
+  const tbl='<div style="overflow-x:auto"><div style="min-width:640px"><div class="small" style="'+G+';font-weight:700"><span>名称</span><span>身份</span><span>登录</span><span>连接</span><span>断线</span><span>设备</span><span>最近</span><span>在线</span></div>'
+    +(rows.length?rows.map(r=>'<div style="'+G+'"><span style="font-weight:700">'+esc(r.k)+'</span><span>'+esc(r.roleName)+'</span><span class="mono">'+r.logins+'</span><span class="mono">'+r.conns+'</span><span class="mono"'+(r.drops?' style="color:var(--red)"':'')+'>'+r.drops+'</span><span>'+esc(r.devs.join('、')||'—')+'</span><span class="mono">'+hm(r.last)+'</span><span class="mono">'+(r.online||'')+'</span></div>').join(''):'<div class="small" style="padding:8px 0">还没有登录记录。</div>')+'</div></div>';
+  const view=(k,t)=>'<button class="btn-line'+(v===k?' fill':'')+'" data-a="stats-view" data-v="'+k+'">'+t+'</button>';
+  return '<div class="pn" style="margin-top:16px;gap:12px">'+head
+    +'<div class="btns"><button class="btn-line" data-a="stats-load">刷新</button><button class="btn-line" data-a="stats-csv">下载 CSV</button>'
+    +(ui.statsAsk?'<button class="btn-line fillred" data-a="stats-clear">确认清空统计</button><button class="btn-line" data-a="stats-cancel">取消</button>':'<button class="btn-line" data-a="stats-ask">清空</button>')
+    +'<span class="small">当前在线 <b class="mono">'+d.online+'</b>　登录失败 <b class="mono">'+d.fails+'</b> 次'+(d.lastFail?'（最近 '+hm(d.lastFail)+'）':'')+'　更新于 '+hm(d.now)+'</span></div>'
+    +'<div class="btns">'+view('all','总计')+view('role','按角色')+view('team','按队伍')+'</div>'+statsChart(d)+tbl+'</div>';
+}
+function downloadStats(){
+  const d=ui.stats;if(!d)return;
+  const q=x=>'"'+String(x).replace(/"/g,'""')+'"',tm=ms=>ms?new Date(ms).toLocaleString('zh-CN',{hour12:false}):'';
+  const a=[['名称','身份','登录次数','连接次数','断线次数','设备','首次','最近']].concat(d.rows.map(r=>[r.k,r.roleName,r.logins,r.conns,r.drops,r.devs.join('、'),tm(r.first),tm(r.last)]));
+  const b=[['时间','总在线'].concat(SROLES.map(r=>SRN[r]),S.teams.map(t=>t.name))].concat(d.series.map(p=>[tm(p.at),p.n].concat(SROLES.map(r=>(p.r||{})[r]||0),S.teams.map(t=>(p.k||{})[t.id]||0))));
+  const csv='﻿'+[['登录失败次数',d.fails]].concat([[]],a,[[]],b).map(r=>r.map(q).join(',')).join('\r\n');
+  const l=document.createElement('a');l.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));l.download='borderland-stats.csv';l.click();
+  setTimeout(()=>URL.revokeObjectURL(l.href),1000);
+}
 function teamRows(){
   const list=[...S.teams].sort((a,b)=>b.score-a.score);
   const parts=list.map(t=>{const st=teamStatus(t),a=alive(t.id).length;
@@ -560,7 +605,7 @@ function adminPanel(){
     +'<div class="danger"><h3>危险操作</h3><p>重置会清空所有冥币、花色、日志和鬼市记录（PIN 不变）。请在下方输入“重置”二字后再点按钮。</p>'
     +'<input class="in" id="rst" data-m="adm.resetTxt" value="'+esc(A.resetTxt)+'" placeholder="输入“重置”" style="border-color:#d9b3aa">'
     +'<button class="btn-line '+(rs?'fillred':'')+'" id="rstbtn" data-a="adm-reset" data-v="blank"'+(rs?'':' disabled')+' style="min-height:48px;font-weight:900">重置为空白游戏</button></div></div>';
-  return '<h2 class="sh">总控工具</h2><div class="cols2">'+left+right+'</div>'+demoPanel();
+  return '<h2 class="sh">总控工具</h2><div class="cols2">'+left+right+'</div>'+demoPanel()+statsPanel();
 }
 
 // ---------- 玩家 ----------
@@ -951,7 +996,7 @@ function localSend(a,after,quiet){
 function send(a,after,quiet){
   if(LOCAL){localSend(a,after,quiet);return;}
   if(!ws||!connected){say(no('还没连上服务器，请稍等'));return;}
-  if(DEVME&&a.type==='dev.setdemo'){}
+  if(DEVME&&(a.type==='dev.setdemo'||a.type==='dev.stats'||a.type==='dev.clearstats')){}
   else if(DEVME){if(!ui.devOps){say(no('开发者模式现在是只读，点右上角「只读」切换成可操作'));return;}a={...a,as:{role:ME.role,pid:ME.pid}};}
   const id=++seq;
   pending.set(id,m=>{if(!quiet||!m.ok)say(m);if(m.ok&&after)after(m);requestRender();});
@@ -1054,6 +1099,12 @@ document.addEventListener('click',e=>{
   else if(a==='adm-restore'){A.ask=null;send({type:'admin.restore',key:v},()=>{A.snaps=null;});}
   else if(a==='adm-reset'){A.ask=null;if(v==='blank'&&A.resetTxt!=='重置')return;A.resetTxt='';send({type:'admin.reset',demo:v==='demo'});}
   else if(a==='adm-csv'){downloadPins();}
+  else if(a==='stats-load'){send({type:'dev.stats'},m=>{ui.stats=m.data;},true);}
+  else if(a==='stats-view'){ui.statsView=v;}
+  else if(a==='stats-csv'){downloadStats();}
+  else if(a==='stats-ask'){ui.statsAsk=true;}
+  else if(a==='stats-cancel'){ui.statsAsk=false;}
+  else if(a==='stats-clear'){ui.statsAsk=false;send({type:'dev.clearstats'},m=>{ui.stats=m.data;});}
   render();
 });
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&ui.ncOpen){ui.ncOpen=false;render();}});

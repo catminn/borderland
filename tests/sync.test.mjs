@@ -235,6 +235,20 @@ await admin.act({ type: 'admin.reset', demo: false });
     T('each shared demo pin has its own game', sc.S.teams.find(t => t.id === 'B').score === 777 && sd.S.teams.find(t => t.id === 'B').score !== 777);
     T('delete a demo pin', (await dv.act({ type: 'dev.deldemo', pin: '246802' })).data.every(d => d.pin !== '246802'));
     T('deleted demo pin cannot log in', !(await fetch(BASE + '/api/login', { method: 'POST', body: JSON.stringify({ pin: '246802' }) })).ok);
+    // ---- 统计（只有真开发者 PIN）----
+    T('stats: admin cannot read', !(await admin.act({ type: 'dev.stats' })).ok);
+    const dm4 = await client('135790');   // dm2 was kicked when the demo mode changed; use a fresh demo connection
+    T('stats: demo pin cannot read', !(await dm4.act({ type: 'dev.stats' })).ok);
+    dm4.close();
+    const st0 = (await dv.act({ type: 'dev.stats' }));
+    T('stats: dev reads rows + series', st0.ok && Array.isArray(st0.data.rows) && Array.isArray(st0.data.series) && st0.data.online >= 1);
+    T('stats: rows record dev and admin logins', st0.data.rows.some(r => r.k === '开发者' && r.role === 'dev' && r.logins >= 1 && r.conns >= 1) && st0.data.rows.some(r => r.role === 'ctrl' && r.logins >= 1));
+    T('stats: demo logins grouped as 展示', st0.data.rows.some(r => r.k === '展示'));
+    T('stats: devices are coarse labels only', st0.data.rows.every(r => r.devs.every(x => x.length < 12)));
+    await fetch(BASE + '/api/login', { method: 'POST', body: JSON.stringify({ pin: '000000' }) });
+    T('stats: wrong pin counted', (await dv.act({ type: 'dev.stats' })).data.fails === st0.data.fails + 1);
+    T('stats: clear', (r => r.ok && r.data.rows.length === 0 && r.data.fails === 0 && r.data.series.length === 0)(await dv.act({ type: 'dev.clearstats' })));
+    T('stats: admin cannot clear', !(await admin.act({ type: 'dev.clearstats' })).ok);
     [sc, sd].forEach(c => c.close());
     [dv, dm2, dm3].forEach(c => c.close());
   } else console.log('SKIP demo-mode tests: DEV_PIN not set on the server');
