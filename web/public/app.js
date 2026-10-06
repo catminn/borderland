@@ -441,7 +441,7 @@ function demoPanel(){
     +'<div class="btns"><button class="btn-line acc" data-a="demo-add">+ 新增展示 PIN</button></div></div>';
 }
 // ---- 统计（开发者专用，只对真 DEV_PIN 显示；数据在服务器 stats 键里，不进游戏数据）----
-const SROLES=['player','dealer','judge','mengpo','wuchang','ctrl','screen','dev'],SRN={...ROLE_NAME,dev:'开发者'},SPAL=['#3d77c9','#d0453a','#3a9a6c','#9466b8','#e08a3c','#2a9d9a','#e2b33a','#8a8a8a'];
+const SROLES=['player','dealer','judge','mengpo','wuchang','ctrl','screen','dev','demo'],SRN={...ROLE_NAME,dev:'开发者',demo:'展示'},SPAL=['#3d77c9','#d0453a','#3a9a6c','#9466b8','#e08a3c','#2a9d9a','#e2b33a','#8a8a8a','#c25b9e'];
 const hm=ms=>ms?new Date(ms).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit',hour12:false}):'—';
 function statsChart(d){
   const ser=d.series||[];

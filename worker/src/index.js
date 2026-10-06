@@ -4,7 +4,7 @@
 import { DurableObject } from 'cloudflare:workers';
 import * as R from '../../shared/rules.js';
 
-const ROLE_NAME = { player: '玩家', dealer: 'Dealer', judge: '判官', mengpo: '孟婆', wuchang: '黑白无常', ctrl: '总控', screen: '大屏', dev: '开发者' };
+const ROLE_NAME = { player: '玩家', dealer: 'Dealer', judge: '判官', mengpo: '孟婆', wuchang: '黑白无常', ctrl: '总控', screen: '大屏', dev: '开发者', demo: '展示' };
 const STAFF_ROLES = ['dealer', 'judge', 'mengpo', 'wuchang', 'ctrl', 'screen'];
 const SNAP_EVERY = 10, SNAP_KEEP = 30, LOG_KEEP = 1500;
 const STATS_KEEP = 360, STATS_EVERY = 60000;   // 统计：在线曲线每分钟一个点，只留最近 6 小时
@@ -111,7 +111,8 @@ export class Game extends DurableObject {
   }
 
   // ---------- 统计（只有真开发者 PIN 能看，不进游戏数据，重置/恢复不受影响）----------
-  keyOf(id) { return id.demo ? '展示' : (id.label || ROLE_NAME[id.role] || '?'); }
+  keyOf(id, pin) { return id.demo ? '展示 ··' + String(pin || '').slice(-4) : (id.label || ROLE_NAME[id.role] || '?'); }   // 展示 PIN 每个一行（只用末 4 位区分，不存完整 PIN）
+  roleOf(id) { return id.demo ? 'demo' : id.role; }
   async bump(k, role, kind, ua) {
     try {
       const now = Date.now(), r = this.st.rows[k] || (this.st.rows[k] = { role, logins: 0, conns: 0, drops: 0, first: now, last: 0, devs: {} });
@@ -131,7 +132,7 @@ export class Game extends DurableObject {
     const roles = {}, teams = {}; let n = 0;
     for (const ws of sockets) {
       const s = this.sessionOf(ws.deserializeAttachment()?.token); if (!s) continue;
-      n++; roles[s.role] = (roles[s.role] || 0) + 1;
+      n++; const ro = this.roleOf(s); roles[ro] = (roles[ro] || 0) + 1;
       if (s.role === 'player' && s.pid) { const t = String(s.pid).split('-')[0]; teams[t] = (teams[t] || 0) + 1; }
     }
     this.ser.push({ at: Date.now(), n, r: roles, k: teams });
@@ -142,7 +143,7 @@ export class Game extends DurableObject {
   statsData() {
     const online = {}; let total = 0;
     for (const ws of this.ctx.getWebSockets()) { const at = ws.deserializeAttachment(); if (at && at.k) { online[at.k] = (online[at.k] || 0) + 1; total++; } }
-    const rows = Object.entries(this.st.rows).map(([k, r]) => ({ k, role: r.role, roleName: ROLE_NAME[r.role] || r.role, logins: r.logins, conns: r.conns, drops: r.drops, first: r.first, last: r.last, devs: Object.keys(r.devs), online: online[k] || 0 }));
+    const rows = Object.entries(this.st.rows).map(([k, r]) => ({ k, role: k.startsWith('展示') ? 'demo' : r.role, roleName: ROLE_NAME[k.startsWith('展示') ? 'demo' : r.role] || r.role, logins: r.logins, conns: r.conns, drops: r.drops, first: r.first, last: r.last, devs: Object.keys(r.devs), online: online[k] || 0 }));
     return { now: Date.now(), online: total, fails: this.st.fails || 0, lastFail: this.st.lastFail || 0, rows, series: this.ser };
   }
 
@@ -194,7 +195,7 @@ export class Game extends DurableObject {
     const token = randHex(16);
     this.auth.sessions[token] = { pin, at: Date.now() };
     await this.ctx.storage.put('auth', this.auth);
-    await this.bump(this.keyOf(id), id.role, 'login', req.headers.get('user-agent'));
+    await this.bump(this.keyOf(id, pin), this.roleOf(id), 'login', req.headers.get('user-agent'));
     return json({ token, me: this.me(id) });
   }
 
@@ -204,9 +205,9 @@ export class Game extends DurableObject {
     const [client, server] = Object.values(new WebSocketPair());
     this.ctx.acceptWebSocket(server);
     if (!s) { server.close(4001, 'login expired'); return new Response(null, { status: 101, webSocket: client }); }
-    const k = this.keyOf(s);
+    const k = this.keyOf(s, s.pin);
     server.serializeAttachment({ token, k });
-    await this.bump(k, s.role, 'conn', req.headers.get('user-agent'));
+    await this.bump(k, this.roleOf(s), 'conn', req.headers.get('user-agent'));
     await this.schedule();
     const box = this.sbKey(s), D = box ? await this.getD(box) : null;
     if (box && s.demo) await this.sandbox(box, async () => {});   // 展示 PIN 第一次进共享演示局：自动生成整套演示 PIN

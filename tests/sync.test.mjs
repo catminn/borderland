@@ -261,7 +261,7 @@ await admin.act({ type: 'admin.reset', demo: false });
     const st0 = (await dv.act({ type: 'dev.stats' }));
     T('stats: dev reads rows + series', st0.ok && Array.isArray(st0.data.rows) && Array.isArray(st0.data.series) && st0.data.online >= 1);
     T('stats: rows record dev and admin logins', st0.data.rows.some(r => r.k === '开发者' && r.role === 'dev' && r.logins >= 1 && r.conns >= 1) && st0.data.rows.some(r => r.role === 'ctrl' && r.logins >= 1));
-    T('stats: demo logins grouped as 展示', st0.data.rows.some(r => r.k === '展示'));
+    T('stats: each demo pin is its own row (末 4 位), role 展示, no full pin stored', ['··5790', '··6802'].every(t => st0.data.rows.some(r => r.k === '展示 ' + t && r.role === 'demo' && r.roleName === '展示')) && st0.data.rows.every(r => !/\d{6}/.test(r.k)));
     T('stats: devices are coarse labels only', st0.data.rows.every(r => r.devs.every(x => x.length < 12)));
     await fetch(BASE + '/api/login', { method: 'POST', body: JSON.stringify({ pin: '000000' }) });
     T('stats: wrong pin counted', (await dv.act({ type: 'dev.stats' })).data.fails === st0.data.fails + 1);
