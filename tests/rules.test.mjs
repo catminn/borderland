@@ -56,13 +56,13 @@ T('ctrl forces final', ap('ctrl', { type: 'final', tid: t.id, on: true }).ok && 
   const run = (ti, ri, lp) => { const t = g.teams[ti], rid = R.ROOMS[ri].id; R.enterRoom(t.id, rid);
     const before = t.score, r = R.finishRoom(rid, { [t.id]: 'lose' }, { [t.id]: R.alive(t.id)[0].id }, lp === undefined ? {} : { [t.id]: lp }); return { t, rid, r, before }; };
   { const x = run(0, 0); T('loss bonus: not chosen = 0 points even with the switch on', x.r.ok && x.t.score === x.before && x.t.hist.at(-1).pts === 0 && x.t.hist.at(-1).res === 'lose'); }
-  { const x = run(5, 5, 400); T('loss bonus: explicit half of the 8-room win points (400)', x.r.ok && x.t.score - x.before === 400 && x.t.hist.at(-1).pts === 400); }
+  { const x = run(5, 5, 100); T('loss bonus: default 100', x.r.ok && x.t.score - x.before === 100 && x.t.hist.at(-1).pts === 100); }
   { const x = run(1, 1, 300); T('loss bonus: custom value (8-room, 300)', x.r.ok && x.t.score - x.before === 300 && x.t.hist.at(-1).pts === 300); }
   { const t = g.teams[2], rid = R.ROOMS[2].id; R.enterRoom(t.id, rid); const pick = { [t.id]: R.alive(t.id)[0].id };
-    T('loss bonus: must be below the win points', !R.finishRoom(rid, { [t.id]: 'lose' }, pick, { [t.id]: 400 }).ok && !R.finishRoom(rid, { [t.id]: 'lose' }, pick, { [t.id]: 9999 }).ok);
+    T('loss bonus: must be at most 300', !R.finishRoom(rid, { [t.id]: 'lose' }, pick, { [t.id]: 301 }).ok && !R.finishRoom(rid, { [t.id]: 'lose' }, pick, { [t.id]: 9999 }).ok);
     T('loss bonus: integers only, no negatives', !R.finishRoom(rid, { [t.id]: 'lose' }, pick, { [t.id]: 150.5 }).ok && !R.finishRoom(rid, { [t.id]: 'lose' }, pick, { [t.id]: -1 }).ok && !R.finishRoom(rid, { [t.id]: 'lose' }, pick, { [t.id]: 'abc' }).ok);
     T('loss bonus: a rejected settle changes nothing', g.rooms.find(r => r.id === rid).teams.includes(t.id) && t.score === 0 && !t.hist.at(-1).res);
-    const before = t.score, r = R.finishRoom(rid, { [t.id]: 'lose' }, pick, { [t.id]: 399 }); T('loss bonus: just under the win points is accepted', r.ok && t.score - before === 399); }
+    const before = t.score, r = R.finishRoom(rid, { [t.id]: 'lose' }, pick, { [t.id]: 300 }); T('loss bonus: exactly 300 is accepted', r.ok && t.score - before === 300); }
   { const x = run(3, 3, 0); T('loss bonus: 0 is allowed', x.r.ok && x.t.score === x.before); }
 }
 { // 判官直接兑换 Scavenger Hunt

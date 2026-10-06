@@ -163,13 +163,13 @@ addEventListener('resize',fitStage);
 
 // ---------- Dealer ----------
 // A losing team draws lots on site; the Dealer picks the person here.
-function lpV(r,tid){return ui.lpts[tid]!==undefined?String(ui.lpts[tid]):String(r.n*50);}   // 输的加分：默认赢分的一半
-function lpOk(r,tid){if(!S.lossOn||!ui.lpon[tid])return true;const s=lpV(r,tid).trim();return /^\d+$/.test(s)&&+s<r.n*100;}
+function lpV(r,tid){return ui.lpts[tid]!==undefined?String(ui.lpts[tid]):String(R.LOSS_DEF);}   // 补充加分：默认 100，最多 300
+function lpOk(r,tid){if(!S.lossOn||!ui.lpon[tid])return true;const s=lpV(r,tid).trim();return /^\d+$/.test(s)&&+s<=R.LOSS_MAX;}
 function dReady(r,ts){const lost=ts.filter(t=>ui.res[t]==='lose');
   return ts.length===1&&ts.every(t=>ui.res[t])&&!lost.some(t=>alive(t).length&&!alive(t).some(p=>p.id===ui.pickOut[t]))&&lost.every(t=>lpOk(r,t));}
 function outPick(tid,r){const a=alive(tid);
   return '<div class="outpick"><span class="lbl">现场抽签：选出被淘汰的人</span>'+(a.length?'<div class="chips ids">'+a.map(p=>cb({cls:'id',k:'pickOut.'+tid,v:p.id,on:ui.pickOut[tid]===p.id,label:p.id,mark:false})).join('')+'</div>':'<span class="small">队里已无存活队员</span>')
-    +(S.lossOn?'<button class="btn-line'+(ui.lpon[tid]?' fill':'')+'" data-a="lpon" data-t="'+tid+'" aria-pressed="'+!!ui.lpon[tid]+'">补充加分（不可超过此房间总分）</button>'+(ui.lpon[tid]?'<span class="coin-in"><input class="in mono" type="number" step="50" min="0" data-m="lpts" data-t="'+tid+'" value="'+esc(lpV(r,tid))+'" aria-label="输的加分"><span class="cstep"><button type="button" data-a="lpstep" data-t="'+tid+'" data-v="50" aria-label="加 50">▲</button><button type="button" data-a="lpstep" data-t="'+tid+'" data-v="-50" aria-label="减 50">▼</button></span></span>':''):'')+'</div>';}
+    +(S.lossOn?'<button class="btn-line'+(ui.lpon[tid]?' fill':'')+'" data-a="lpon" data-t="'+tid+'" aria-pressed="'+!!ui.lpon[tid]+'">补充加分（不多于 300 分）</button>'+(ui.lpon[tid]?'<span class="coin-in"><input class="in mono" type="number" step="50" min="0" data-m="lpts" data-t="'+tid+'" value="'+esc(lpV(r,tid))+'" aria-label="输的加分"><span class="cstep"><button type="button" data-a="lpstep" data-t="'+tid+'" data-v="50" aria-label="加 50">▲</button><button type="button" data-a="lpstep" data-t="'+tid+'" data-v="-50" aria-label="减 50">▼</button></span></span>':''):'')+'</div>';}
 function viewDealer(){
   const mine=ME.role==='dealer'&&Array.isArray(ME.rooms)?ME.rooms:null;
   if(mine&&!mine.length)return '<div class="page"><div class="pn"><h2 class="sh">还没有房间</h2><span class="muted">这个 Dealer PIN 没有对应的房间（Dealer 只有 8 个，一人一间）。请总控在「总控工具」里重新生成 PIN。</span></div></div>';
@@ -206,7 +206,7 @@ function viewDealer(){
   const done=ui.settled&&ui.settled.rid===r.id&&st==='reset';
   const lostTs=ts.filter(t=>ui.res[t]==='lose'),needPick=lostTs.filter(t=>alive(t).length&&!alive(t).some(p=>p.id===ui.pickOut[t]));
   const pending=ts.filter(t=>!ui.res[t]).length,ready=dReady(r,ts);
-  const hint=st==='reset'?'重置中':!ts.length?'等待入场':pending?'还差 1 队未选':needPick.length?'还差选出被淘汰的人':lostTs.some(t=>!lpOk(r,t))?'补充加分要少于 '+r.n*100:'胜负已选好';
+  const hint=st==='reset'?'重置中':!ts.length?'等待入场':pending?'还差 1 队未选':needPick.length?'还差选出被淘汰的人':lostTs.some(t=>!lpOk(r,t))?'补充加分不能多于 '+R.LOSS_MAX:'胜负已选好';
   const rows=ts.map(tid=>{const t=team(tid),v=ui.res[tid]||'';
     return '<div class="rt"><div class="hd">'+tsq(tid,42)+'<div><b>'+t.name+'</b><span class="small">存活 <span class="mono" style="color:var(--ink)">'+alive(tid).length+'</span> 人</span></div></div>'
       +(v?'<span class="stamp">'+(v==='win'?'胜':'负')+'</span>':'')
@@ -1060,7 +1060,7 @@ document.addEventListener('click',e=>{
   else if(a==='clockctl'){send({type:'admin.clock',op:CLOCK&&CLOCK.running?'pause':'start'});}
   else if(a==='room'){ui.room=v;ui.pick='';ui.res={};ui.pickOut={};ui.lpts={};ui.lpon={};ui.settled=null;}
   else if(a==='lpon'){const t=b.dataset.t;ui.lpon[t]=!ui.lpon[t];}
-  else if(a==='lpstep'){const r=room(ui.room),t=b.dataset.t,c=parseInt(lpV(r,t),10);ui.lpts[t]=String(Math.min(r.n*100-1,Math.max(0,(Number.isFinite(c)?c:0)+(+v))));}
+  else if(a==='lpstep'){const r=room(ui.room),t=b.dataset.t,c=parseInt(lpV(r,t),10);ui.lpts[t]=String(Math.min(R.LOSS_MAX,Math.max(0,(Number.isFinite(c)?c:0)+(+v))));}
   else if(a==='res'){ui.res[b.dataset.t]=ui.res[b.dataset.t]===v?undefined:v;delete ui.pickOut[b.dataset.t];}
   else if(a==='gatereward'){send({type:'gatereward',pid:ui.gatePick},()=>{ui.gatePick='';});}
   else if(a==='jgpub'){const j=ui.jg;send({type:'publish',f:{kind:'鬼门开',target:'all',gate:j.gate,title:j.gate==='custom'?j.title:'',body:j.gate==='custom'?j.body:'',mins:+j.mins||0,reward:0}},()=>{ui.jg.gate='';ui.jg.title='';ui.jg.body='';});}

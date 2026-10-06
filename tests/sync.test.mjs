@@ -134,7 +134,7 @@ T('assign only once', !(await admin.act({ type: 'assign' })).ok);
   T('dealer cannot flip the loss bonus switch', !(await d3.act({ type: 'setlosspts', on: true })).ok);
   T('ctrl turns the loss bonus switch on', (await admin.act({ type: 'setlosspts', on: true })).ok); await sleep(250);
   T('switch state reaches everyone', admin.S.lossOn === true && admin.S.log.some(l => /开启「输了加分」/.test(l.text)));
-  T('lose: bonus at the win points is rejected', !(await d3.act({ type: 'finish', rid: '4S', results: { [tid]: 'lose' }, picks: { [tid]: victim }, lpts: { [tid]: 400 } })).ok);
+  T('lose: bonus above 300 is rejected', !(await d3.act({ type: 'finish', rid: '4S', results: { [tid]: 'lose' }, picks: { [tid]: victim }, lpts: { [tid]: 301 } })).ok);
   T('lose: non-integer bonus is rejected', !(await d3.act({ type: 'finish', rid: '4S', results: { [tid]: 'lose' }, picks: { [tid]: victim }, lpts: { [tid]: 12.5 } })).ok);
   { const r = await d3.act({ type: 'finish', rid: '4S', results: { [tid]: 'lose' }, picks: { [tid]: victim }, lpts: { [tid]: 0 } }); await sleep(250);
     T('lose with bonus 0: no points, one eliminated, room goes to reset', r.ok && admin.S.players.find(p => p.id === victim).st === 'out' && admin.S.teams.find(t => t.id === tid).score === 0 && admin.S.rooms.find(r => r.id === '4S').st === 'reset'); }

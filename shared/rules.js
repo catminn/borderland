@@ -33,7 +33,7 @@ const QUESTS=Array.from({length:8},(_,i)=>({id:'q'+(i+1),title:'Scavenger 占位
 const GATES=Array.from({length:2},(_,i)=>({id:'g'+(i+1),title:'鬼门开 占位 '+(i+1),body:'（占位文字，正式内容待定）'}));
 const FINAL_MSG='你们已集齐四种花色，全员存活，积分达标！请全队前往一楼大厅，等待终极任务指示。（占位文案）';
 const RATE=1;
-const PER_TEAM=6, PROTECT=600, MIN_STAY=0, COIN_GOAL=500, COIN_START=200, CARRY_MAX=100, FINAL_SCORE=2400;
+const PER_TEAM=6, PROTECT=600, MIN_STAY=0, COIN_GOAL=500, COIN_START=200, CARRY_MAX=100, FINAL_SCORE=2400, LOSS_MAX=300, LOSS_DEF=100;
 // 预约 2 分钟（唯一的自动到期）；游戏 / 重置的建议时长只用于显示，不强制。
 const RSV=120, GAME_HINT=480, RESET_HINT=120;
 // Scavenger：每次 100 分，任意滚动 10 分钟最多 2 题，全场最多 600 分。
@@ -264,14 +264,14 @@ function confirmIn(pid,role){const p=S.players.find(x=>x.id===pid);
   pushNotice({kind:'通知',title:'你已进入鬼市',body:'已确认入鬼市，领到 '+COIN_START+' 冥币。个人冥币 + 队友助力凑够 '+COIN_GOAL+'，就可以找孟婆买命回队。',target:'player',ids:[p.id]});
   return ok('已确认 '+p.id+' 入鬼市');}
 // 输了的队伍 Dealer 可以选择加一部分分（总控开关打开时）：不选 = 0；选了必须是整数，且少于赢分（r.n×100）。「默认一半」只是 Dealer 页输入框的预填值
-function lossPts(r,v){if(v===undefined||v===null||v==='')return 0;const x=Number(v);return Number.isInteger(x)&&x>=0&&x<r.n*100?x:null;}
+function lossPts(r,v){if(v===undefined||v===null||v==='')return 0;const x=Number(v);return Number.isInteger(x)&&x>=0&&x<=LOSS_MAX?x:null;}
 function finishRoom(rid,results,picks={},lpts={}){
   const r=room(rid),st=S.rooms.find(x=>x.id===rid);
   if(!st.teams.length)return no('房间里没有队伍');
   for(const tid of st.teams){
     if(!results[tid])return no('请为'+team(tid).name+'选择赢或输');
     if(results[tid]==='lose'&&alive(tid).length&&!alive(tid).some(p=>p.id===picks[tid]))return no('请为'+team(tid).name+'选出被淘汰的队员（现场抽签结果）');
-    if(S.lossOn&&results[tid]==='lose'&&lossPts(r,lpts[tid])===null)return no(team(tid).name+'输的加分要是整数，并且少于 '+r.n*100);
+    if(S.lossOn&&results[tid]==='lose'&&lossPts(r,lpts[tid])===null)return no(team(tid).name+'输的补充加分要是整数，并且不多于 '+LOSS_MAX);
   }
   const notes=[];
   for(const tid of st.teams){
@@ -478,4 +478,4 @@ export function viewFor(state,me){
     teams:state.teams.map(t=>p&&t.id===p.team?t:{...t,skills:[],hist:[]})};
 }
 
-export {noticeStale,staffSees,timeUp,needsReset,rstate,rsvLeft,rsvOf,whyNotReserve,reserve,cancelRsv,resetDone,gateReward,gateEnd,scavInfo,scavWhy,finalMiss,RSV,GAME_HINT,RESET_HINT,SCAV_PTS,SCAV_WIN,SCAV_N,SCAV_CAP,COIN_START,CARRY_MAX,DUR0,size,COIN_GOAL,FEATURES,FINAL_MSG,FINAL_SCORE,MIN_STAY,PER_TEAM,PROTECT,QUESTS,GATES,RATE,ROOMS,ROLE_LABEL,SHOP0,SUITS,TEAMS,ack,addCard,alive,buyCard,cands,donate,eliminate,enterRoom,esc,finishRoom,fmt,gapOf,hook,inMarket,indiv,init,isBcast,isFirst,kindLabel,lab,log,markDone,matches,no,ok,protectedLeft,publish,pushNotice,revive,revokeNotice,rewardTxt,room,seed,setScore,targetLabel,tcol,team,teamOf,teamStatus,unmarkDone,useCard,whyNotEnter};
+export {noticeStale,staffSees,timeUp,needsReset,rstate,rsvLeft,rsvOf,whyNotReserve,reserve,cancelRsv,resetDone,gateReward,gateEnd,scavInfo,scavWhy,finalMiss,RSV,GAME_HINT,RESET_HINT,SCAV_PTS,SCAV_WIN,SCAV_N,SCAV_CAP,COIN_START,CARRY_MAX,DUR0,size,COIN_GOAL,FEATURES,FINAL_MSG,FINAL_SCORE,LOSS_MAX,LOSS_DEF,MIN_STAY,PER_TEAM,PROTECT,QUESTS,GATES,RATE,ROOMS,ROLE_LABEL,SHOP0,SUITS,TEAMS,ack,addCard,alive,buyCard,cands,donate,eliminate,enterRoom,esc,finishRoom,fmt,gapOf,hook,inMarket,indiv,init,isBcast,isFirst,kindLabel,lab,log,markDone,matches,no,ok,protectedLeft,publish,pushNotice,revive,revokeNotice,rewardTxt,room,seed,setScore,targetLabel,tcol,team,teamOf,teamStatus,unmarkDone,useCard,whyNotEnter};
