@@ -1311,7 +1311,7 @@ body .lg::before,body .lg::after{content:none}
 @media (min-width:720px){:root:not([data-theme="dark"]) .wuchang-layout{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
 @media (max-width:719px){
   .lantern-band{position:fixed;left:0;right:0;top:var(--lfy,64px);width:100vw;margin:0;z-index:-1;height:190px!important;overflow:hidden;opacity:.55;align-items:flex-start}
-  .lantern-band img{align-self:flex-start;height:auto;margin-top:-7vw} /* 去掉吊绳后图片上方是空白，上提让最高的灯笼顶到页头线 */
+  .lantern-band img{align-self:flex-start;height:auto;margin-top:-7vw;animation:none;transform:none} /* 去掉吊绳后图片上方是空白，上提让最高的灯笼顶到页头线 */
   .wuchang-layout{position:relative}
   .wc-mask{position:fixed;left:0;right:0;top:var(--lfy,64px);z-index:-1;opacity:.3;grid-row:auto}
 }
