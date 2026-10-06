@@ -231,7 +231,7 @@ function gatePanel(){
       +(gq?'<div class="lot">'+esc(gq.body)+'</div>':'')
       +(cus?'<label class="fld"><span>标题</span><input class="in" id="jgt" data-m="jg.title" value="'+esc(j.title)+'" placeholder="鬼门开题目"></label><label class="fld"><span>内容</span><textarea class="in" id="jgb" data-m="jg.body" rows="3">'+esc(j.body)+'</textarea></label>':'')
       +'<label class="fld"><span>限时（分钟，0 = 不限时）</span><input class="in mono" id="jgm" data-m="jg.mins" value="'+esc(j.mins)+'" inputmode="numeric"></label>'
-      +'<button class="btn-main'+(okp?' glow':'')+'" data-a="jgpub"'+(okp?'':' disabled')+' style="min-height:52px">'+(okp?'发布鬼门开（全体玩家 + 工作人员，各房间暂停）':'先选择鬼门开')+'</button></div>';}
+      +'<button class="btn-main'+(okp?' glow':'')+'" data-a="jgpub"'+(okp?'':' disabled')+' style="min-height:52px">'+(okp?'发布鬼门开':'先选择鬼门开')+'</button></div>';}
   const gn=S.notices.find(x=>x.id===g.nid),live=gn&&gn.due&&gn.due>S.t;
   const end=ui.gateEndAsk?'<button class="btn-line fillred" data-a="gateend" style="min-height:48px;font-weight:900">确认结束鬼门开</button><button class="btn-line" data-a="gateendno" style="min-height:48px">取消</button><span class="small">结束后各房间立即恢复预约与入场</span>'
     :'<button class="btn-line" data-a="gateendask">'+(g.win?'结束鬼门开（房间恢复开放）':'无人获胜，结束鬼门开')+'</button>';
