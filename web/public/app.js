@@ -624,12 +624,12 @@ function downBanner(me){
   return '<div class="oban" role="status"><b>你已被淘汰</b><span>'+(me.st==='picked'?'黑白无常已接到你，正在送你去鬼市':'留在原地，等黑白无常来接你')+'</span></div>';
 }
 const LT_LAYOUT=[[0.04085, 0.04501, 0.10376, 0.0325], [0.04453, 0.01726, 0.09763, 0.0994], [0.05433, 0.02586, 0.1107, 0.1669], [0.04575, 0.04517, 0.10866, 0.2261], [0.05392, 0.04743, 0.10825, 0.29], [0.0433, 0.03474, 0.10294, 0.3547], [0.05188, 0.0, 0.1058, 0.4161], [0.04616, 0.03108, 0.11111, 0.4675], [0.04739, 0.01337, 0.10825, 0.5317], [0.04779, 0.04768, 0.11111, 0.5783], [0.0531, 0.00107, 0.11234, 0.6397], [0.04698, 0.00998, 0.11193, 0.6925], [0.04616, 0.00241, 0.12377, 0.7378], [0.05392, 0.02337, 0.11356, 0.7769], [0.05106, 0.03881, 0.11111, 0.8264], [0.05229, 0.02952, 0.10539, 0.8708], [0.05433, 0.01043, 0.11193, 0.9228], [0.04943, 0.0266, 0.10539, 0.9686]]; // [宽, 顶(相对最高那盏), 高, 原图中心x]，单位 = 原图宽 2448 的比例；每盏灯笼单独一张图 img/lt/dNN.webp
-function lanternsHtml(){ // 灯笼挂满整个屏幕宽度，间距随屏幕拉开，每盏单独摇摆；相位按时钟算，重绘后动画不跳
+function lanternsHtml(){ // 灯笼挂满整个屏幕宽度，间距随屏幕拉开，每盏单独摇摆；样式必须每次渲染都一样（morph 看到 style 变了会重启动画），所以延迟用固定值
   const vw=window.innerWidth,band=vw<720?3*vw:Math.min(1400,Math.max(900,.78*vw)),avg=.049*band,
-    n=Math.max(4,Math.min(LT_LAYOUT.length,Math.floor(vw/(avg*1.35)))),now=Date.now()/1000;
+    n=Math.max(4,Math.min(LT_LAYOUT.length,Math.floor(vw/(avg*1.35))));
   let h='<div class="lantern-band" aria-hidden="true">';
   for(let j=0;j<n;j++){const i=n===1?0:Math.round(j*(LT_LAYOUT.length-1)/(n-1)),L=LT_LAYOUT[i],
-      dur=4.2+(i*37%30)/10,amp=1.6+(i*53%20)/10,bob=2+(i*29%30)/10,dly=-(now%(2*dur));
+      dur=4.2+(i*37%30)/10,amp=1.6+(i*53%20)/10,bob=2+(i*29%30)/10,dly=-((i*1.7)%(2*dur));
     h+='<span class="lt" style="--x:'+((j+.5)/n*100).toFixed(2)+'%;--w:'+L[0]+';--y:'+L[1]+';--dur:'+dur.toFixed(2)+'s;--amp:'+amp.toFixed(2)+'deg;--bob:'+bob.toFixed(1)+'px;--dly:'+dly.toFixed(2)+'s"><img src="img/lt/d'+String(i+1).padStart(2,'0')+'.webp" alt=""></span>';}
   return h+'</div>';}
 function viewPlayer(){
