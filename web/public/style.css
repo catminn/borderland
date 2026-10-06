@@ -1087,6 +1087,10 @@ body button.sw{flex:none;position:relative;width:52px;height:30px;padding:0;bord
 body button.sw i{position:absolute;top:3px;left:3px;width:21px;height:21px;border-radius:50%;background:var(--sub);transition:transform .2s,background .2s}
 body button.sw.on{background:var(--accent);border-color:var(--accent)}
 body button.sw.on i{transform:translateX(22px);background:#fff}
+/* 设置面板：各设置项一行一行，之间细线分隔 */
+body .setrow{display:flex;flex-direction:column;gap:10px;padding-top:14px;margin-top:14px;border-top:1px solid var(--line)}
+body .setrow:first-of-type{border-top:0;padding-top:0;margin-top:10px}
+body .setrow .swrow>span{max-width:34em}
 /* ==== 漫画分格组件皮肤（2026-10-05）· 追加在 style.css 末尾即可 ====
    只改组件的描边 / 投影 / 按压。描边用 inset box-shadow 加粗、禁用用 outline 画虚线，
    都不占布局：尺寸、换行、栅格与原来完全一致。--bw = 该组件原本的 border 宽度。 */
