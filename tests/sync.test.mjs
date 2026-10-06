@@ -222,7 +222,23 @@ await admin.act({ type: 'admin.reset', demo: false });
     const pre = await sa.act({ type: 'admin.pins', as: { role: 'ctrl' } });
     T('shared demo already has a full PIN list before generating', pre.ok && pre.data.length >= 48 + 8 + 4);
     const gp = await sa.act({ type: 'admin.genpins', counts: { judge: 1 }, as: { role: 'ctrl' } });
-    T('shared demo can generate its own PINs (not login-able, real PIN list untouched)', gp.ok && gp.data.length > 48 && (await admin.act({ type: 'admin.pins' })).data.length === realPins);
+    T('shared demo can generate its own PINs (real PIN list untouched)', gp.ok && gp.data.length > 48 && (await admin.act({ type: 'admin.pins' })).data.length === realPins);
+    {   // 演示局里生成的 PIN 能直接登录：进入这一局，按各自角色
+      const dp = gp.data, realSet = new Set((await admin.act({ type: 'admin.pins' })).data.map(x => x.pin));
+      T('demo PINs do not collide with real PINs', dp.every(x => !realSet.has(x.pin)));
+      const pc = dp.find(x => x.role === 'ctrl').pin, pp = dp.find(x => x.pid === 'R-03').pin, pd = dp.find(x => x.role === 'dealer').pin;
+      const dc = await client(pc), dpl = await client(pp), ddl = await client(pd);
+      T('demo ctrl PIN logs in as ctrl (not dev)', dc.me.role === 'ctrl' && !dc.me.demo);
+      T('demo player PIN logs in as that player', dpl.me.role === 'player' && dpl.me.pid === 'R-03');
+      T('demo ctrl sees the demo game, not the real one', dc.S.teams.find(t => t.id === 'R').score === sb.S.teams.find(t => t.id === 'R').score);
+      T('demo ctrl acts in the demo game and others see it', (await dc.act({ type: 'setscore', tid: 'R', v: 5151 })).ok && (await sleep(300), sb.S.teams.find(t => t.id === 'R').score === 5151 && dpl.S.teams.find(t => t.id === 'R').score === 5151));
+      T('real game untouched by demo ctrl', admin.S.teams.find(t => t.id === 'R').score === realR);
+      T('demo player cannot use ctrl tools', !(await dpl.act({ type: 'admin.pins' })).ok && !(await dpl.act({ type: 'setscore', tid: 'R', v: 1 })).ok);
+      T('demo dealer is bound to its room only', ddl.me.role === 'dealer' && Array.isArray(ddl.me.rooms));
+      T('demo ctrl can use ctrl tools', (await dc.act({ type: 'admin.pins' })).ok);
+      await dc.act({ type: 'setscore', tid: 'R', v: 4242 });
+      [dc, dpl, ddl].forEach(c => c.close());
+    }
     T('shared demo reset', (await sa.act({ type: 'admin.reset', demo: true, as: { role: 'ctrl' } })).ok); await sleep(300);
     T('shared reset reaches the other user', sb.S.teams.find(t => t.id === 'R').score !== 4242);
     const sn = (await sa.act({ type: 'admin.snaps', as: { role: 'ctrl' } })).data;

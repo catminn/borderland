@@ -8,7 +8,8 @@ const {size,ROOMS,SUITS,RATE,PER_TEAM,MIN_STAY,COIN_GOAL,FINAL_SCORE,FINAL_MSG,Q
 let S=null, ME=null, CLOCK=null, OFFSET=0;
 // Developer mode: DEVME is the real (read-only) sign-in, FULL the full state; ME/S are swapped to the chosen viewpoint.
 let DEVME=null, FULL=null;
-function setMe(me){ME=me;DEVME=me&&me.role==='dev'?me:null;if(!DEVME){FULL=null;LOCAL=null;}}
+let LG=null; // 本地展示局退出登录时先存起来，让本地演示 PIN 能在同一页面里登录
+function setMe(me){ME=me;DEVME=me&&me.role==='dev'?me:null;if(!DEVME&&!(me&&me.lpin)){if(LOCAL)LG={FULL,CLOCK,LPINS,LSNAPS};FULL=null;LOCAL=null;}}
 let LOCAL=null; // 展示模式·本地：浏览器自己跑一局演示数据，不连服务器
 function devMe(){const v=ui.as||'ctrl';return v.startsWith('player:')?{role:'player',pid:v.slice(7),label:'玩家'}:{role:v,pid:null,label:ROLE_NAME[v]};}
 // Phone vibration plus a visual shake. Android: navigator.vibrate. iPhone Safari has no vibrate API; toggling a hidden
@@ -899,6 +900,13 @@ let SESSION=store.get();
 
 async function login(pin){
   if(!/^\d{6}$/.test(pin)){loginError('请输入 6 位数字 PIN');return;}
+  if(LG&&LG.LPINS[pin]){ // 本地演示 PIN：进入本页的这一局本地演示（刷新即重置，换设备请用共享演示局）
+    const v=LG.LPINS[pin];FULL=LG.FULL;CLOCK=LG.CLOCK;LPINS=LG.LPINS;LSNAPS=LG.LSNAPS;LOCAL=true;
+    const me={role:v.role,pid:v.pid||null,label:'演示 '+(v.label||v.pid),rooms:v.role==='dealer'?(v.rooms||[]):null,lpin:true};
+    SESSION=null;setMe(me);ui.tab=null;connected=true;setConn();R.use(FULL);S=me.role==='player'?R.viewFor(FULL,me):FULL;
+    if($('#lgcard'))entering=true;
+    if(!$('#lgcard')){entering=false;render();say(null);return;}
+    showSeal();setTimeout(()=>{entering=false;$('#view').innerHTML='';render();say(null);},matchMedia('(prefers-reduced-motion: reduce)').matches?1200:3600);return;}
   let res,j={};
   try{res=await fetch('/api/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({pin})});j=await res.json();}
   catch{loginError('连不上服务器，请检查网络');return;}
@@ -957,7 +965,7 @@ function lSnap(tag){LSNAPS.unshift({at:Date.now(),t:FULL.t,tag,S:JSON.parse(JSON
 function lPinList(){return Object.entries(LPINS).map(([pin,v])=>({pin,role:v.role,roleName:ROLE_NAME[v.role],pid:v.pid||'',label:v.label||'',rooms:v.rooms||null}))
   .sort((x,y)=>(x.role==='player')-(y.role==='player')||(x.pid||x.label).localeCompare(y.pid||y.label,'zh'));}
 function lNewPin(){for(;;){const p=String(Math.floor(Math.random()*1000000)).padStart(6,'0');if(!LPINS[p])return p;}}
-// 本地展示：总控工具在浏览器里自己跑（PIN 只是演示，不能真的拿去登录）
+// 本地展示：总控工具在浏览器里自己跑（PIN 只在本页的这一局本地演示里能登录，刷新即失效）
 function localAdmin(a){
   const ok=(msg,data)=>({ok:true,msg,data});R.use(FULL);
   switch(a.type){
@@ -976,7 +984,7 @@ function localAdmin(a){
         let n=Object.values(LPINS).filter(v=>v.role===role).length;
         while(n<want){n++;LPINS[lNewPin()]={role,label:ROLE_NAME[role]+' '+n};made++;}}
       Object.values(LPINS).filter(v=>v.role==='dealer').forEach((v,i)=>{v.rooms=i<ROOMS.length?[ROOMS[i].id]:[];v.label='Dealer '+(v.rooms.length?ROOMS[i].card:'未绑定');});
-      return ok('新生成 '+made+' 个 PIN，共 '+Object.keys(LPINS).length+' 个（本地演示，不能用来登录）',lPinList());}
+      return ok('新生成 '+made+' 个 PIN，共 '+Object.keys(LPINS).length+' 个（本地演示：退出后可在本页用这些 PIN 登录；换设备请用共享演示局）',lPinList());}
     case 'admin.pins':return ok('',lPinList());
     case 'admin.resetpin':{const old=String(a.pin||''),v=LPINS[old];if(!v)return no('没有这个 PIN');const np=lNewPin();delete LPINS[old];LPINS[np]=v;return ok((v.pid||v.label)+' 的新 PIN：'+np,lPinList());}
     case 'admin.snaps':return ok('',LSNAPS.map(x=>({key:'l'+x.at,at:x.at,t:x.t,tag:x.tag})));
@@ -986,10 +994,10 @@ function localAdmin(a){
   return no('未知的管理操作');
 }
 function localSend(a,after,quiet){
-  if(!ui.devOps){say(no('展示模式现在是只读'));return;}
+  if(!ui.devOps&&!ME.lpin){say(no('展示模式现在是只读'));return;}
   let r;const t=a.type||'';
   if(t.startsWith('admin.'))r=ME.role==='ctrl'?localAdmin(a):no('只有总控视角能用总控工具');
-  else{FULL.t=nowT();r=R.apply(FULL,{role:ME.role,pid:ME.pid,label:ME.label,rooms:null},a);}
+  else{FULL.t=nowT();r=R.apply(FULL,{role:ME.role,pid:ME.pid,label:ME.label,rooms:ME.lpin?ME.rooms:null},a);}
   S=ME.role==='player'?R.viewFor(FULL,ME):FULL;
   if(!quiet||!r.ok)say(r);if(r.ok&&after)after(r);requestRender();
 }

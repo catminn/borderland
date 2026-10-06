@@ -46,7 +46,7 @@
 - **开发者模式**：Worker 密钥 `DEV_PIN`（值由用户定，不写进仓库；GitHub Secret `DEV_PIN`，没设就关闭；本地写在 `.dev.vars`）登录得到 `role:'dev'`，收到全量状态；网页右上角下拉框选视角（总控/Dealer/判官/孟婆/大屏/任一玩家），玩家视角在浏览器里用 `viewFor` 过滤。旁边「只读 / 可操作」开关（默认只读，刷新后回到只读）：可操作时每个操作带 `as:{role,pid}`，服务器以该视角身份执行（权限照常检查；`admin.*` 只在总控视角可用）；只读时弹窗「知道了」只在本机生效。**仓库是公开的，PIN 不要写进代码**；活动当天前删掉（`wrangler secret delete DEV_PIN` 并删 GitHub Secret）。
 - **Dealer 绑定房间**：Dealer 的 PIN 记录带 `rooms:[房间id]`，登录下发 `me.rooms`。生成 PIN 时，没人负责的房间轮流分给还没有房间的 Dealer（默认 8 个 Dealer = 一人一间；绑定前生成的旧 Dealer PIN 再点一次「生成」就会分到房间）；标签自动写成「Dealer 3♠」。`rules.apply` 拒绝 Dealer 对自己房间以外的 `enter/finish`（`me.rooms` 不是数组 = 全部房间，用于总控和开发者视角）。总控在 PIN 列表每个 Dealer 行下点 8 张牌改绑定（`admin.setrooms`），改完服务器以 4002 关掉该 Dealer 的连接让它重连拿到新房间。Dealer 页只显示自己的房间，只有一间时不显示房间选择。
 - **管理员 PIN** 不在数据里，是 Worker 的密钥 `ADMIN_PIN`（本地在 `worker/.dev.vars`，值 888888，仅本地）。其他 PIN 由总控在网页上生成，存在 `auth.pins`。重置某个 PIN 会让用旧 PIN 登录的会话立即失效（服务器关闭其 socket，code 4001）。
-- **展示模式 PIN（2026-10-04）**：开发者在「总控工具」最下方的「展示模式 PIN」面板里设置（只有真正的 DEV_PIN 登录能看到/改，`dev.setdemo`，存在 `auth.demos`（{pin:{mode,write}}，**可建多个**，每个各自模式/权限；动作 `dev.setdemo{pin,old,mode,write}`、`dev.deldemo{pin}`；旧的单个 `auth.demo` 启动时自动迁移）；不能和其他 PIN 重复；保存后正在用的展示会话被 4001 踢下线）。登录得到 `role:'dev'` + `demo:true`，视角和开发者一样可选。**模式**：连接服务器（看/操作真实游戏）、**共享演示局**（`dmode:'shared'`：服务器上每个共享 PIN 各有一局演示数据 `this.Ds[pin]`，存 `sandbox:<pin>` 键，用同一个展示 PIN 的人看同一局、互相实时同步，完全不碰真实游戏；服务器端用 `sandbox(fn)` 临时换入沙盒状态；沙盒里游戏操作和**全部总控工具**都能用，但只影响这一局：每局自带 PIN 列表 `D.pins`（演示用，不能登录）和备份 `D.snaps`；为控制存储，每局最多 8 个备份、日志只留 300 条，展示 PIN 最多 30 个；一局约 11KB，带满备份也就 ~100KB）或本地（`dmode:'local'`，浏览器自己用 `R.newGame(true)` 跑一局演示数据，不连服务器、互不影响，刷新即重置；总控工具全部在浏览器里本地运行：计时、重置/载入演示、生成/查看/重置 PIN（只是演示 PIN，不能登录）、备份恢复；`localAdmin()`）。**权限**：只读/可修改由开发者定，展示用户不能切换（右上角按钮禁用）；服务器模式下展示会话永远不能用 `admin.*`。可复制 `?pin=` 登录链接发给别人。
+- **展示模式 PIN（2026-10-04）**：开发者在「总控工具」最下方的「展示模式 PIN」面板里设置（只有真正的 DEV_PIN 登录能看到/改，`dev.setdemo`，存在 `auth.demos`（{pin:{mode,write}}，**可建多个**，每个各自模式/权限；动作 `dev.setdemo{pin,old,mode,write}`、`dev.deldemo{pin}`；旧的单个 `auth.demo` 启动时自动迁移）；不能和其他 PIN 重复；保存后正在用的展示会话被 4001 踢下线）。登录得到 `role:'dev'` + `demo:true`，视角和开发者一样可选。**模式**：连接服务器（看/操作真实游戏）、**共享演示局**（`dmode:'shared'`：服务器上每个共享 PIN 各有一局演示数据 `this.Ds[pin]`，存 `sandbox:<pin>` 键，用同一个展示 PIN 的人看同一局、互相实时同步，完全不碰真实游戏；服务器端用 `sandbox(fn)` 临时换入沙盒状态；沙盒里游戏操作和**全部总控工具**都能用，但只影响这一局：每局自带 PIN 列表 `D.pins`（演示用，不能登录）和备份 `D.snaps`；为控制存储，每局最多 8 个备份、日志只留 300 条，展示 PIN 最多 30 个；一局约 11KB，带满备份也就 ~100KB）或本地（`dmode:'local'`，浏览器自己用 `R.newGame(true)` 跑一局演示数据，不连服务器、互不影响，刷新即重置；总控工具全部在浏览器里本地运行：计时、重置/载入演示、生成/查看/重置 PIN（2026-10-06 起可在本页退出后用它们登录，见 §7.17）、备份恢复；`localAdmin()`）。**权限**：只读/可修改由开发者定，展示用户不能切换（右上角按钮禁用）；服务器模式下展示会话永远不能用 `admin.*`。可复制 `?pin=` 登录链接发给别人。
 - **WebSocket 协议**：服务器 → `hello {me,S,clock,now}`、`state {S,clock,now}`、`res {id,ok,msg,data}`、`pong`。浏览器 → `act {id, a:{type,...}}`、`ping`（每 20s；60s 没收到任何消息就判定假死并重连）。
 - **防止打字被冲掉**：有输入框/下拉框获得焦点时，收到的新状态先不重绘，失焦后再重绘。
 
@@ -257,7 +257,7 @@ npm run dev:pages                             # 正式部署的路径（Pages+Wo
 - **Scavenger Hunt**：玩家端不再弹全屏通知、「当前任务与通知」列表也不显示 sidequest 通知（`n.sub!=='side'` 过滤），只保留任务页顶上那条「Scavenger 已兑换/上限 + 可兑换时间」计数行；判官 / 总控的兑换流程不变。
 - 测试：`rules.test.mjs` 增加勾魂令淘汰/复活用例；`sync.test.mjs` 增加计时重置用例；rules / sync / restart 全过。
 - **PIN 生成默认数量**（总控工具，`ui.admin.counts`）：Dealer 8（固定），判官/孟婆/黑白无常/总控/大屏各 1。
-- **共享演示局自动有 PIN**：每局演示第一次被使用时自动生成整套演示 PIN（`genPins`，Dealer 8 + 其余各 1 + 全部玩家，不能登录，真实 PIN 不受影响）；不用再点「生成 PIN」。本地演示模式未改。
+- **共享演示局自动有 PIN**：每局演示第一次被使用时自动生成整套演示 PIN（`genPins`，Dealer 8 + 其余各 1 + 全部玩家；**2026-10-06 起可以登录，见 §7.17**）；不用再点「生成 PIN」。本地演示模式未改。
 
 ## 7.15 发布对象与鬼门开通知（2026-10-05 夜）
 
@@ -284,3 +284,10 @@ npm run dev:pages                             # 正式部署的路径（Pages+Wo
 - **实现位置**：`worker/src/index.js`（`device()`、`bump/failLogin/schedule/alarm/statsData`、`handle` 里的 `dev.stats` / `dev.clearstats`；WebSocket attachment 里多存了 `k`＝统计键）、`web/public/app.js`（`statsPanel/statsChart/downloadStats`、`stats-*` 点击处理）。没有改 `shared/rules.js` 和 `style.css`（样式全是内联）。
 - **测试**：`sync.test.mjs` 新增 9 项统计用例（总控/展示 PIN 被拒、开发者能读行和曲线、错误 PIN 计数、清空）；rules / sync（196 项）/ restart 全过。曲线点靠 alarm（每分钟）产生，测试里没有等它，是手动连接 2 分钟后截图验证的。
 - **活动前后**：DEV_PIN 删除前先下载 CSV；活动后点「清空」，统计即删光。仓库公开，统计数据从不写进仓库。
+
+## 7.17 演示 PIN 统一可登录（2026-10-06）
+
+- **共享演示局**：局里生成的 PIN（`D.pins`，含自动生成的整套）现在能真正登录：任何设备输入后进入**那一局**，身份是 PIN 对应的角色/玩家（不是 dev）：玩家只收到 `viewFor` 过滤后的状态，总控可用全部 `admin.*`（只影响这一局），Dealer 绑定房间照常。会话带 `sb`=展示 PIN（`sbKey(s)`；`broadcast/connect/webSocketMessage/handle` 都改用它），标签前加「演示 」。互相实时同步，与展示 PIN 本身的 dev 会话看同一局。
+- **PIN 全局不重复**：`takenPins()` = 真实 PIN + 展示 PIN + 每个演示局的 PIN + ADMIN/DEV；genPins、resetpin、`dev.setdemo` 都用它。启动时把全部 `sandbox:*` 读进内存（`this.Ds`），才能同步判断 PIN 属于哪局。演示局 PIN 生成/重置后会立刻存盘（以前 `changed:false` 不存，重启后会变）。`sandbox()` 期间 `this.realAuth` 指向真实 auth，`identity()` 才找得到真实 PIN。删除/改展示 PIN 会踢掉该局所有登录会话（含角色 PIN 登录的）。
+- **本地演示局**：数据只在这个浏览器里，别的设备进不去。生成的 PIN 能在**同一页面**退出后登录（`LG` 暂存本地局，登录页先查 `LG.LPINS`，`me.lpin`=true，可操作、总控工具可用）；刷新页面本地局和 PIN 一起消失。需要换设备/多人一起用请选共享演示局。
+- 测试：`sync.test.mjs` 增加演示 PIN 登录用例（总控/玩家/Dealer 身份、同步、与真实局隔离、权限、PIN 不与真实重复）；rules / sync 全过。
