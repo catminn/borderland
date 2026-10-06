@@ -57,13 +57,14 @@ await ack(ctrl); await ack(judge); await ack(dealer); await ack(mengpo);
 // judge records -> ctrl log + score + broadcast
 const nid = admin.S.notices.find(n => n.title === '鬼门开 占位 1').id;
 const scoreB = admin.S.teams.find(t => t.id === 'B').score;
-await judge.click('[data-a=pick][data-k="doneSel.' + nid + '"][data-v=B]'); await judge.click('[data-a=done][data-n="' + nid + '"]');
+await judge.click('[data-a=dd][data-v=gateWin]'); await judge.click('[data-a=pick][data-k=gateWin][data-v=B]'); await judge.click('[data-a=gatewin]');
 await sleep(500);
 T('gate winner recorded, no points, rooms paused', admin.S.teams.find(t => t.id === 'B').score === scoreB && admin.S.gp && admin.S.gp.win === 'B');
 await judge.waitForSelector('[data-a=gateend]', { timeout: 3000 }).catch(() => {});
-T('judge page shows the gate reward panel', (await text(judge)).includes('鬼门开奖励'));
+T('judge page shows the gate reward panel', (await text(judge)).includes('蓝队 获胜'));
 await judge.click('[data-a=gateendask]'); await judge.waitForSelector('[data-a=gateend]'); T('gate end needs a second confirm', !!admin.S.gp); await judge.click('[data-a=gateend]'); await sleep(400);
 T('gate ended by judge', !admin.S.gp);
+T('judge page says no gate when none', (await text(judge)).includes('当前没有鬼门开'));
 await ctrl.click('[data-a=sub][data-p=ctrl][data-v=log]');
 T('ctrl log updated live', (await text(ctrl)).includes('判官记录 蓝队 率先完成任务「鬼门开 占位 1」'));
 await player.waitForSelector('#modal .dlg', { timeout: 4000 }).catch(() => {});

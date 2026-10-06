@@ -28,7 +28,7 @@ function buzz(p){
   if(!IOS)return;const a=Array.isArray(p)?p:[p];let t=0;
   a.forEach((d,i)=>{if(i%2===0)setTimeout(iosTick,t);t+=d;});}
 function shakeEl(el,cls){if(!el)return;el.classList.remove(cls);void el.offsetWidth;el.classList.add(cls);}
-let ui={ddOpen:null,don:{},tab:null,room:'4S',gatePick:'',finalAsk:null,pick:'',res:{},settled:null,hookTeam:'',hookMode:'',hookAsk:null,hookTarget:'',hookWhere:'',rd:{quest:'',title:''},pickOut:{},doneSel:{},revokeAsk:null,
+let ui={ddOpen:null,don:{},tab:null,room:'4S',gatePick:'',finalAsk:null,pick:'',res:{},settled:null,gateWin:'',hookTeam:'',hookMode:'',hookAsk:null,hookTarget:'',hookWhere:'',rd:{quest:'',title:''},pickOut:{},doneSel:{},revokeAsk:null,
   coinTeam:'',coinAmt:'',buyer:'',mkTab:'buy',ncOpen:false,as:'ctrl',devOps:false,demoRows:null,devAck:new Set(),nc:{name:'',desc:'',price:'',stock:''},
   sub:{dealer:'info',npc:'task',market:'buy',ctrl:'status',player:'team'},
   pub:{kind:'鬼门开',reward:0,title:'',body:'',target:'all',team:'R',players:[],mins:10,to:'all',sqTeam:'',quest:'',gate:''},
@@ -223,10 +223,15 @@ function viewDealer(){
 // ---------- 判官 ----------
 // 鬼门开：进行中时各房间暂停；率先完成的队伍缺人 → 免费复活一名队友，满员 → 指定别队一名存活队员淘汰（不加分）。
 function gatePanel(){
-  const g=S.gp;if(!g){ui.gateEndAsk=false;return '';}
+  const g=S.gp;
+  if(!g){ui.gateEndAsk=false;ui.gateWin='';return '<div class="pn gatep"><div class="shrow"><h3>鬼门开</h3></div><span class="muted">当前没有鬼门开。总控或判官在「发布」里发布鬼门开后，这里选择获胜队伍并结束。</span></div>';}
+  const gn=S.notices.find(x=>x.id===g.nid),live=gn&&gn.due&&gn.due>S.t;
   const end=ui.gateEndAsk?'<button class="btn-line fillred" data-a="gateend" style="min-height:48px;font-weight:900">确认结束鬼门开</button><button class="btn-line" data-a="gateendno" style="min-height:48px">取消</button><span class="small">结束后各房间立即恢复预约与入场</span>'
-    :'<button class="btn-line" data-a="gateendask">结束鬼门开（房间恢复开放）</button>';
-  if(!g.win)return '<div class="pn gatep"><div class="shrow"><h3>鬼门开进行中</h3><span class="small">各房间暂停预约与入场</span></div><span class="muted">等待有队伍率先完成。在下面的任务卡点选完成的队伍并确认后，这里会出现奖励。</span><div class="btns">'+end+'</div></div>';
+    :'<button class="btn-line" data-a="gateendask">'+(g.win?'结束鬼门开（房间恢复开放）':'无人获胜，结束鬼门开')+'</button>';
+  const head='<div class="shrow"><h3>鬼门开进行中</h3>'+(gn&&gn.due?'<span class="tm'+(live?' live':'')+'">'+(live?'<i class="gd r"></i>':'')+countdown(gn)+'</span>':'<span class="small">各房间暂停预约与入场</span>')+'</div>'+(gn?'<div class="ttitle"><b>'+esc(gn.title)+'</b></div>':'');
+  if(!g.win){const opts=S.teams.map(t=>({v:t.id,label:t.name,c:TC[t.id][0]}));
+    return '<div class="pn gatep">'+head+'<span class="lbl">获胜队伍</span>'+dd('gateWin',ui.gateWin&&team(ui.gateWin).name,'选择获胜队伍',ui.gateWin&&TC[ui.gateWin][0],opts)
+      +'<button class="btn-main'+(ui.gateWin?' glow':'')+'" data-a="gatewin"'+(ui.gateWin?'':' disabled')+' style="min-height:52px">'+(ui.gateWin?'确认 '+team(ui.gateWin).name+' 获胜':'先选择获胜队伍')+'</button><div class="btns">'+end+'</div></div>';}
   const wt=team(g.win),short=alive(wt.id).length<size(wt.id);
   if(ui.gatePick){const p=S.players.find(x=>x.id===ui.gatePick);if(!p||(short?(p.team!==wt.id||p.st==='alive'):(p.team===wt.id||p.st!=='alive')))ui.gatePick='';}
   let pick;
@@ -234,7 +239,7 @@ function gatePanel(){
     pick='<span class="lbl">'+wt.name+'缺人：免费复活一名队友</span><div class="chips ids">'+l.map(p=>cb({cls:'id',k:'gatePick',v:p.id,on:ui.gatePick===p.id,label:p.id,mark:false})).join('')+'</div>';}
   else{const opts=S.teams.filter(t=>t.id!==wt.id).flatMap(t=>[{group:t.name},...S.players.filter(p=>p.team===t.id).map(p=>({v:p.id,label:p.id,c:TC[t.id][0],off:p.st!=='alive'||t.final,note:p.st!=='alive'?'已淘汰':t.final?'终极中':''}))]);
     pick='<span class="lbl">'+wt.name+'满员：指定别队一名存活队员淘汰</span>'+dd('gatePick',ui.gatePick,'选择被淘汰的队员',null,opts);}
-  return '<div class="pn gatep"><div class="shrow"><h3>鬼门开奖励</h3><span class="small">'+wt.name+'率先完成，奖励不加分</span></div>'+pick
+  return '<div class="pn gatep">'+head+'<div class="shrow"><h3>'+wt.name+' 获胜</h3><span class="small">奖励不加分</span></div>'+pick
     +'<button class="btn-main'+(ui.gatePick?' glow':'')+'" data-a="gatereward"'+(ui.gatePick?'':' disabled')+' style="min-height:52px">'+(ui.gatePick?(short?'免费复活 ':'淘汰 ')+ui.gatePick+'，并结束鬼门开':'先选择队员')+'</button><div class="btns">'+end+'</div></div>';
 }
 // Scavenger 额度：每队全场最多 600 分，任意滚动 10 分钟最多 2 题，同一题不重复兑换
@@ -272,7 +277,7 @@ function hookDlg(){
     +'<div class="btns two2"><button class="btn-main" data-a="hookok">仍然选择</button><button class="btn-line" data-a="hookno">取消</button></div></div></div>';
 }
 function viewNpc(){
-  const tasks=S.notices.filter(n=>n.kind==='任务'&&n.sub!=='side').slice(0,6);
+  const tasks=S.notices.filter(n=>n.kind==='任务'&&n.sub!=='side'&&n.sub!=='gate').slice(0,6);
   const cards=tasks.map(n=>{
     const [kl,kc]=kindOf(n),w=Object.keys(n.done)[0],closed=isFirst(n)&&!!w,ind=indiv(n),cur=ui.doneSel[n.id]||'';
     const rest=cands(n).filter(c=>!n.done[c]);
@@ -980,6 +985,7 @@ document.addEventListener('click',e=>{
   else if(a==='room'){ui.room=v;ui.pick='';ui.res={};ui.pickOut={};ui.settled=null;}
   else if(a==='res'){ui.res[b.dataset.t]=ui.res[b.dataset.t]===v?undefined:v;delete ui.pickOut[b.dataset.t];}
   else if(a==='gatereward'){send({type:'gatereward',pid:ui.gatePick},()=>{ui.gatePick='';});}
+  else if(a==='gatewin'){const cid=ui.gateWin;if(cid&&S.gp)send({type:'done',nid:S.gp.nid,cid},()=>{ui.gateWin='';});}
   else if(a==='gateendask'){ui.gateEndAsk=true;}
   else if(a==='gateendno'){ui.gateEndAsk=false;}
   else if(a==='gateend'){ui.gateEndAsk=false;send({type:'gateend'});}
