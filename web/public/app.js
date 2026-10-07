@@ -945,14 +945,28 @@ async function login(pin){
   setTimeout(()=>{entering=false;$('#view').innerHTML='';render();say(null);},reduce?1200:3600);
 }
 function logout(msg){
-  SESSION=null;store.set(null);setMe(null);S=null;CLOCK=null;connected=false;entering=false;
+  SESSION=null;store.set(null);STALE=null;try{localStorage.removeItem(LASTK);}catch{/* ignore */}setMe(null);S=null;CLOCK=null;connected=false;entering=false;
   if(ws){const w=ws;ws=null;try{w.close();}catch{/* ignore */}}
   clearTimeout(timer);$('#view').innerHTML='';render();say(null);if(msg)loginError(msg);
 }
 
 // ---------- live connection ----------
 let ws=null,connected=false,retry=0,timer=null,seq=0,lastMsg=0;const pending=new Map();
-function setConn(){const c=$('#conn');c.className='pill '+(connected?'free':'bad');c.textContent=connected?(LOCAL?'本地展示':'已连接'):'重连中…';}
+function setConn(){const c=$('#conn');c.className='pill '+(connected?'free':'bad');
+  c.textContent=connected?(LOCAL?'本地展示':'已连接'):STALE?'离线 · 最后同步 '+new Date(STALE).toTimeString().slice(0,5):'重连中…';}
+// 离线重开：每隔几秒（和断线那一刻）把最后一次同步的状态存在本机；页面重开后连不上服务器时，用它显示，并可导出记录表。
+// 只存这个账号自己看到的那份状态；退出登录时删除。冻结的计时只用于显示，不代表真实时间。
+const LASTK='borderland.last';let lastSave=0,STALE=null;
+function saveLast(force){
+  if(LOCAL||!SESSION||!S||!CLOCK)return;const n=Date.now();if(!force&&n-lastSave<5000)return;lastSave=n;
+  try{localStorage.setItem(LASTK,JSON.stringify({at:n,who:JSON.stringify([SESSION.me.role,SESSION.me.pid||'',SESSION.me.label||'']),t:nowT(),S}));}catch{/* 存储已满或无痕模式：忽略 */}
+}
+function restoreLast(){
+  if(connected||S||!SESSION)return;
+  let o=null;try{o=JSON.parse(localStorage.getItem(LASTK));}catch{/* ignore */}
+  if(!o||!o.S||o.who!==JSON.stringify([SESSION.me.role,SESSION.me.pid||'',SESSION.me.label||'']))return;
+  S=o.S;if(DEVME)FULL=S;CLOCK={running:false,base:o.t,at:Date.now()};OFFSET=0;STALE=o.at;setConn();requestRender();
+}
 function connect(){
   if(!SESSION)return;
   if(ws){try{ws.onclose=null;ws.close();}catch{/* ignore */}}
@@ -961,11 +975,11 @@ function connect(){
   sock.onopen=()=>{connected=true;retry=0;lastMsg=Date.now();setConn();};
   sock.onmessage=e=>{lastMsg=Date.now();let m;try{m=JSON.parse(e.data);}catch{return;}
     if(m.t==='hello'){setMe(m.me);SESSION.me=m.me;store.set(SESSION);}
-    if(m.t==='hello'||m.t==='state'){S=m.S;if(DEVME)FULL=m.S;CLOCK=m.clock;OFFSET=m.now-Date.now();requestRender();}
+    if(m.t==='hello'||m.t==='state'){S=m.S;if(DEVME)FULL=m.S;CLOCK=m.clock;OFFSET=m.now-Date.now();STALE=null;requestRender();saveLast();}
     else if(m.t==='res'){const cb=pending.get(m.id);pending.delete(m.id);if(cb)cb(m);}};
   sock.onclose=e=>{
     if(ws!==sock)return;
-    ws=null;connected=false;setConn();
+    ws=null;connected=false;saveLast(true);setConn();
     for(const cb of pending.values())cb({ok:false,msg:'连接断开，这次操作可能没生效'});
     pending.clear();
     if(e.code===4001){logout('登录已失效，请重新输入 PIN');return;}
@@ -1205,4 +1219,6 @@ function downloadPins(){
 document.body.dataset.gaFrame='1';
 const qp=new URLSearchParams(location.search).get('pin');
 if(qp){history.replaceState(null,'',location.pathname);render();login(qp);}
-else{if(SESSION){setMe(SESSION.me);if(SESSION.me.demo&&SESSION.me.dmode==='local')localStart();else connect();}render();say(null);}
+else{if(SESSION){setMe(SESSION.me);if(SESSION.me.demo&&SESSION.me.dmode==='local')localStart();else{connect();setTimeout(restoreLast,3500);}}render();say(null);}
+// 页面重开且服务器连不上：3.5 秒后改用本机保存的最后状态（连上后会被服务器状态替换）。
+if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));
