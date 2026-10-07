@@ -1,31 +1,30 @@
 // 应急记录表：node tests/sheet.test.mjs（纯函数，不需要服务器）
 import * as R from '../shared/rules.js';
-import {sheetHtml} from '../web/public/offline-sheet.js';
+import {sheetHtml,sheetData} from '../web/public/offline-sheet.js';
 let pass=0,fail=0;
 const t=(name,ok)=>{if(ok){pass++;}else{fail++;console.log('FAIL',name);}};
-const mk=(blank)=>{
-  const S=R.newGame(true);
-  const {size,alive,team,rstate,ROOMS}=R;
-  return {S,D:{at:1760000000000,t:S.t,dur:S.dur||7200,blank,
-    teams:S.teams.map(x=>({id:x.id,name:x.name,score:x.score,alive:alive(x.id).length,size:size(x.id),cards:x.cards,cleared:x.cleared,final:!!x.final,cap:x.cap})),
-    rooms:ROOMS.map(r=>{const x=S.rooms.find(q=>q.id===r.id),st=rstate(x);return {id:r.id,card:r.card,name:r.name,st,team:st==='rsv'?(x.rt?team(x.rt).name:''):(x.teams||[]).map(i=>team(i).name).join('、'),at:x.at||0};}),
-    players:S.players.map(p=>({id:p.id,team:p.team,st:p.st,outAt:p.outAt,at:p.at,inAt:p.inAt,coins:p.coins})),
-    log:S.log.slice(0,40).map(l=>({t:l.t,text:l.text}))}};
-};
-const {S,D}=mk(false);
-const h=sheetHtml(D);
+const S=R.newGame(true);
+const D=sheetData(S,R,false),h=sheetHtml(D);
 t('完整 HTML',h.startsWith('<!doctype html>')&&h.endsWith('</html>'));
-t('含全部队伍名',S.teams.every(x=>h.includes('>'+x.name+'<')));
-t('含 48 名玩家',S.players.every(p=>h.includes('>'+p.id+'<')));
-t('冥币写进表里',S.teams.some(x=>x.score>0&&h.includes('>'+x.score+'</td>')));
-t('含 8 个房间',R.ROOMS.every(r=>h.includes(r.name)));
+t('分角色页：总控/Dealer/无常孟婆/判官/规则',['>总控<','Dealer · ','黑白无常 / 孟婆','>判官<','规则速查'].every(x=>h.includes(x)));
+t('8 个房间各一页',(h.match(/Dealer · /g)||[]).length===8&&R.ROOMS.every(r=>h.includes('Dealer · '+r.card+' '+r.name)));
+t('房间页预填挑战记录（演示数据里 4♣ 红队胜）',h.includes('>红队<')&&h.includes('>胜<'));
+t('输局记录有淘汰者',D.hist.some(x=>x.res==='lose'&&x.out)&&h.includes('>'+D.hist.find(x=>x.res==='lose').out+'<'));
+t('没有「每人一行」：玩家只出现在淘汰名单里',D.outs.length>0&&D.outs.length<S.players.length&&D.outs.every(p=>p.st!=='alive'));
+t('淘汰名单含鬼市里的人',S.players.filter(p=>p.st==='market').every(p=>h.includes('>'+p.id+'<')));
+t('淘汰名单只列不在场的人',D.outs.length===S.players.filter(p=>p.st!=='alive').length);
+t('判官记录含鬼门开与勾魂令',D.tasks.some(x=>x.kind==='鬼门开')&&D.tasks.some(x=>x.kind==='勾魂令'));
+t('Scavenger 额度',D.scav.some(s=>s.n>0&&s.pts>0));
+t('冥币写进总表',S.teams.some(x=>x.score>0&&h.includes('>'+x.score+'</td>')));
 const m=h.match(/<script type="application\/json" id="snap">([\s\S]*?)<\/script>/);
 t('内嵌快照可解析',!!m&&JSON.parse(m[1]).teams.length===8);
 t('不引用外部资源',!/(src|href)=["']?https?:/.test(h)&&!/<link /.test(h));
-const b=sheetHtml(mk(true).D);
+t('规则速查带数字',h.includes('买命复活')&&h.includes(String(R.COIN_GOAL))&&h.includes(String(R.FINAL_SCORE)));
+const bD=sheetData(S,R,true),b=sheetHtml(bD);
 t('空白表无快照',!b.includes('id="snap"'));
 t('空白表无冥币数字',!S.teams.some(x=>x.score>0&&b.includes('>'+x.score+'</td>')));
-t('空白表有 48 名玩家编号',S.players.every(p=>b.includes('>'+p.id+'<')));
-t('转义',sheetHtml({...D,log:[{t:0,text:'<b>x</b>'}]}).includes('&lt;b&gt;x&lt;/b&gt;'));
+t('空白表无任何玩家编号与挑战记录',!S.players.some(p=>b.includes('>'+p.id+'<'))&&!b.includes('>胜<'));
+t('空白表仍有 8 个房间页和规则',(b.match(/Dealer · /g)||[]).length===8&&b.includes('规则速查'));
+t('转义',sheetHtml({...D,tasks:[{t:0,kind:'任务',team:'<b>x</b>',title:'',pts:0}]}).includes('&lt;b&gt;x&lt;/b&gt;'));
 console.log(pass+' passed, '+fail+' failed');
 process.exit(fail?1:0);

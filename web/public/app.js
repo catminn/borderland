@@ -2,7 +2,7 @@
 // The server owns the game state; this page signs in with a PIN, keeps a live WebSocket, renders the pages
 // for the signed-in role, and sends actions. Rule helpers come from rules.js (same file the server runs).
 import * as R from './rules.js';
-import {sheetHtml} from './offline-sheet.js';
+import {sheetHtml,sheetData} from './offline-sheet.js';
 const {size,ROOMS,SUITS,RATE,PER_TEAM,MIN_STAY,COIN_GOAL,FINAL_SCORE,FINAL_MSG,QUESTS,GATES,FEATURES,team,room,alive,inMarket,fmt,protectedLeft,esc,matches,targetLabel,
   isFirst,indiv,lab,cands,whyNotEnter,gapOf,teamStatus,teamOf,no,rstate,timeUp,staffSees,rsvLeft,rsvOf,whyNotReserve,finalMiss,scavInfo,scavWhy,SCAV_CAP,SCAV_N,SCAV_WIN,SCAV_PTS,GAME_HINT,RESET_HINT,RSV,COIN_START}=R;
 
@@ -1192,11 +1192,7 @@ function copyText(t){
     try{document.execCommand('copy')?ok():bad();}catch(e){bad(e);}x.remove();});}
 // 应急记录表：在本机生成，不联网。blank=true 给空白表，否则带上此刻浏览器里的最新状态。
 function downloadSheet(blank){
-  const D={at:Date.now(),t:S.t,dur:S.dur||7200,blank:!!blank,
-    teams:S.teams.map(t=>({id:t.id,name:t.name,score:t.score,alive:alive(t.id).length,size:size(t.id),cards:t.cards,cleared:t.cleared,final:!!t.final,cap:t.cap})),
-    rooms:ROOMS.map(r=>{const x=S.rooms.find(q=>q.id===r.id)||{},st=rstate(x);return {id:r.id,card:r.card,name:r.name,st,team:st==='rsv'?(x.rt?team(x.rt).name:''):(x.teams||[]).map(i=>team(i).name).join('、'),at:x.at||0};}),
-    players:S.players.map(p=>({id:p.id,team:p.team,st:p.st,outAt:p.outAt,at:p.at,inAt:p.inAt,coins:p.coins})),
-    log:(S.log||[]).slice(0,40).map(l=>({t:l.t,text:l.text}))};
+  const D=sheetData(S,R,blank);
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([sheetHtml(D)],{type:'text/html'}));
   a.download=blank?'borderland-sheet-blank.html':'borderland-sheet-'+new Date().toTimeString().slice(0,5).replace(':','')+'.html';a.click();
   setTimeout(()=>URL.revokeObjectURL(a.href),1000);
