@@ -41,6 +41,7 @@ const $=s=>document.querySelector(s);
 const ROLE_TABS={ctrl:['board','ctrl','dealer','npc','market','wuchang'],dealer:['dealer'],judge:['npc'],mengpo:['market'],wuchang:['wuchang'],screen:['board'],player:['board','player']};
 const TAB_NAME={board:'大屏',player:'本队',dealer:'Dealer',ctrl:'生死簿',npc:'判官',market:'鬼市',wuchang:'黑白无常'};
 const ROLE_NAME={player:'玩家',dealer:'Dealer',judge:'判官',mengpo:'孟婆',wuchang:'黑白无常',ctrl:'总控',screen:'大屏'};
+const SHEET_SCOPE={ctrl:'all',dealer:'dealer',wuchang:'outs',mengpo:'outs',judge:'judge'};
 const nowT=()=>!CLOCK?0:CLOCK.running?CLOCK.base+Math.floor((Date.now()+OFFSET-CLOCK.at)/1000):CLOCK.base;
 
 // ---------- look ----------
@@ -856,6 +857,7 @@ function render(){
   $('#logo').innerHTML=ui.tab==='ctrl'?'<span class="scroll"></span>生死簿':'百鬼夜行';
   $('#who').textContent=(DEVME?(DEVME.demo?'展示 · ':'开发者 · '):'')+(ME.role==='player'?(DEVME?ME.pid:'玩家'):ME.role==='ctrl'?'总控':ME.label||ROLE_NAME[ME.role]);
   $('#logout').hidden=false;$('#conn').hidden=false;
+  $('#sheetbtn').hidden=!SHEET_SCOPE[ME.role]||!S;
   const run=CLOCK&&CLOCK.running;
   const cc=$('#clockctl');cc.hidden=ME.role!=='ctrl';cc.textContent=run?'暂停计时':'开始计时';
   const th=$('#theme');th.hidden=!themed()||(themeKey()==='player'&&inMarketNow())||ME.role==='mengpo'||ME.role==='wuchang';th.textContent=themeFor()==='dark'?'浅色':'深色';
@@ -1152,8 +1154,9 @@ document.addEventListener('click',e=>{
   else if(a==='adm-restore'){A.ask=null;send({type:'admin.restore',key:v},()=>{A.snaps=null;});}
   else if(a==='adm-reset'){A.ask=null;if(v==='blank'&&A.resetTxt!=='重置')return;A.resetTxt='';send({type:'admin.reset',demo:v==='demo'});}
   else if(a==='adm-csv'){downloadPins();}
-  else if(a==='sheet-now'){downloadSheet(false);}
+  else if(a==='sheet-now'){downloadSheet(false,true);}
   else if(a==='sheet-blank'){downloadSheet(true);}
+  else if(a==='sheet-mine'){downloadSheet(false,true);}
   else if(a==='stats-load'){send({type:'dev.stats'},m=>{ui.stats=m.data;},true);}
   else if(a==='stats-view'){ui.statsView=v;}
   else if(a==='stats-csv'){downloadStats();}
@@ -1191,10 +1194,13 @@ function copyText(t){
   return new Promise((ok,bad)=>{const x=document.createElement('textarea');x.value=t;x.style.cssText='position:fixed;opacity:0';document.body.appendChild(x);x.select();
     try{document.execCommand('copy')?ok():bad();}catch(e){bad(e);}x.remove();});}
 // 应急记录表：在本机生成，不联网。blank=true 给空白表，否则带上此刻浏览器里的最新状态。
-function downloadSheet(blank){
-  const D=sheetData(S,R,blank);
+// 工作人员各自导出自己的部分（总控导出全部）；开发者看哪个角色就按哪个角色。
+function downloadSheet(blank,mine){
+  const sc=mine?SHEET_SCOPE[ME.role]:'all';
+  const rooms=mine&&sc==='dealer'&&Array.isArray(ME.rooms)&&ME.rooms.length?ME.rooms:null;
+  const D=sheetData(S,R,blank,sc,rooms);
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([sheetHtml(D)],{type:'text/html'}));
-  a.download=blank?'borderland-sheet-blank.html':'borderland-sheet-'+new Date().toTimeString().slice(0,5).replace(':','')+'.html';a.click();
+  a.download=blank?'borderland-sheet-blank.html':'borderland-sheet-'+(mine?ME.role+'-':'')+new Date().toTimeString().slice(0,5).replace(':','')+'.html';a.click();
   setTimeout(()=>URL.revokeObjectURL(a.href),1000);
 }
 function downloadPins(){

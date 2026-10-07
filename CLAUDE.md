@@ -348,3 +348,8 @@ npm run dev:pages                             # 正式部署的路径（Pages+Wo
 - **限制**：离线显示的计时是冻结的；无痕模式、清除浏览器数据会丢缓存；`?pin=` 链接离线打不开（登录要联网），要用已登录过的会话直接打开网址。
 - 测试：Playwright 在线打开两次后直接关掉服务器，新开页面能渲染、标红离线、总控能导出记录表、无页面错误；rules / sync / sheet 全过。`sw.js` 本身没有单元测试。
 - 手册 `docs/应急手册.md` 已加「每台设备赛前打开两次」。
+
+## 7.26 记录表按角色导出（2026-10-06，已实现）
+
+- **决定**：每个工作人员在页头「导出记录表」（`#sheetbtn`，`data-a=sheet-mine`，Dealer / 判官 / 孟婆 / 黑白无常 / 总控）只导出自己的部分并可继续填写：Dealer = `me.rooms` 里的房间（非数组 = 全部），黑白无常与孟婆 = 淘汰名单页，判官 = 判官页，都另附规则速查；开发者看哪个角色就按哪个角色。**总控导出全部**，只有总控页有空行，其他角色页只有已发生的记录（没有则显示一行「暂无记录」）。「下载空白记录表」不变：全部页都带空行。
+- 实现：`sheetData(S,R,blank,scope,rooms)`（scope = all/dealer/outs/judge，`D.only` = 房间 id）；`sheetHtml` 里 `own`/`show` 决定页面和空行（`rows(...,mine)`）；本机存档键含范围和房间，文件名含角色（`borderland-sheet-<role>-HHMM.html`）。`tests/sheet.test.mjs` 增至 30 项；rules / sync / sheet 全过。

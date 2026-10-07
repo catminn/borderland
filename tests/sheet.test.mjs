@@ -26,5 +26,23 @@ t('空白表无冥币数字',!S.teams.some(x=>x.score>0&&b.includes('>'+x.score+
 t('空白表无任何玩家编号与挑战记录',!S.players.some(p=>b.includes('>'+p.id+'<'))&&!b.includes('>胜<'));
 t('空白表仍有 8 个房间页和规则',(b.match(/Dealer · /g)||[]).length===8&&b.includes('规则速查'));
 t('转义',sheetHtml({...D,tasks:[{t:0,kind:'任务',team:'<b>x</b>',title:'',pts:0}]}).includes('&lt;b&gt;x&lt;/b&gt;'));
+// —— 按角色导出 ——
+const emptyRows=x=>(x.match(/<tr>(<td contenteditable="true" data-k="f\d+"><\/td>)+<\/tr>/g)||[]).length;
+const sec=(x,title)=>{const i=x.indexOf('<h2>'+title);if(i<0)return null;const j=x.indexOf('<section',i);return x.slice(i,j<0?undefined:j);};
+const all=sheetHtml(sheetData(S,R,false,'all'));
+t('总控导出：总控页有空行',emptyRows(sec(all,'总控'))>=14);
+t('总控导出：其他页没有空行',[sec(all,'Dealer · '+R.ROOMS[0].card),sec(all,'黑白无常 / 孟婆'),sec(all,'判官')].every(x=>x&&emptyRows(x)===0));
+t('总控导出：其他页仍预填记录',all.includes('>红队<')&&D.outs.every(p=>all.includes('>'+p.id+'<')));
+const dl=sheetHtml(sheetData(S,R,false,'dealer',['4C']));
+t('Dealer 导出：只含自己的房间',(dl.match(/Dealer · /g)||[]).length===1&&dl.includes('Dealer · '+R.ROOMS.find(r=>r.id==='4C').card)&&!dl.includes('>总控<')&&!dl.includes('黑白无常 / 孟婆')&&!dl.includes('>判官<'));
+t('Dealer 导出：自己的页有空行且含规则速查',emptyRows(dl)>=6&&dl.includes('规则速查'));
+t('Dealer 导出：不绑定房间 = 全部房间',(sheetHtml(sheetData(S,R,false,'dealer',null)).match(/Dealer · /g)||[]).length===8);
+const ou=sheetHtml(sheetData(S,R,false,'outs'));
+t('无常/孟婆导出：只有淘汰名单页（有空行）',ou.includes('黑白无常 / 孟婆')&&!ou.includes('Dealer · ')&&!ou.includes('>判官<')&&emptyRows(ou)>=10);
+const ju=sheetHtml(sheetData(S,R,false,'judge'));
+t('判官导出：只有判官页（有空行）',ju.includes('>判官<')&&!ju.includes('Dealer · ')&&!ju.includes('黑白无常 / 孟婆')&&emptyRows(ju)>=8);
+t('非本人页没有记录时显示「暂无记录」',sheetHtml({...D,scope:'all',hist:[]}).includes('暂无记录'));
+t('不同范围本机存档键不同',new Set([all,dl,ou,ju].map(x=>x.match(/var KEY="([^"]+)"/)[1])).size===4);
+t('空白表仍是全部页都有空行',emptyRows(sec(b,'Dealer · '+R.ROOMS[0].card))>=12&&emptyRows(sec(b,'判官'))>=14);
 console.log(pass+' passed, '+fail+' failed');
 process.exit(fail?1:0);
