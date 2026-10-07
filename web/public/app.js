@@ -2,6 +2,7 @@
 // The server owns the game state; this page signs in with a PIN, keeps a live WebSocket, renders the pages
 // for the signed-in role, and sends actions. Rule helpers come from rules.js (same file the server runs).
 import * as R from './rules.js';
+import {sheetHtml} from './offline-sheet.js';
 const {size,ROOMS,SUITS,RATE,PER_TEAM,MIN_STAY,COIN_GOAL,FINAL_SCORE,FINAL_MSG,QUESTS,GATES,FEATURES,team,room,alive,inMarket,fmt,protectedLeft,esc,matches,targetLabel,
   isFirst,indiv,lab,cands,whyNotEnter,gapOf,teamStatus,teamOf,no,rstate,timeUp,staffSees,rsvLeft,rsvOf,whyNotReserve,finalMiss,scavInfo,scavWhy,SCAV_CAP,SCAV_N,SCAV_WIN,SCAV_PTS,GAME_HINT,RESET_HINT,RSV,COIN_START}=R;
 
@@ -611,6 +612,8 @@ function adminPanel(){
     +'<div class="btns" style="flex-wrap:nowrap"><input class="in mono" id="durm" data-m="durMin" value="'+esc(A.dur)+'" inputmode="numeric" placeholder="分钟，如 120" style="max-width:150px"><button class="btn-line acc" data-a="setdur">设置</button></div></div></div>'
     +'<div class="setrow"><div class="swrow"><span>开局分房间<small>8 队随机分到 8 个房间（直接进入游戏中）。只有还没有队伍进过房间时才能用。</small></span><button class="btn-line acc" data-a="assign">开局随机分房</button></div></div>'
     +'<div class="setrow"><div class="swrow"><span>输了加分<small>Dealer 结算输局时可给补充加分</small></span><button class="sw'+(S.lossOn?' on':'')+'" role="switch" aria-checked="'+!!S.lossOn+'" aria-label="输了加分" data-a="losspts" data-v="'+(S.lossOn?0:1)+'"><i></i></button></div></div></div>'
+    +'<div class="pn"><h3>应急记录表</h3><span class="small">断网或网站出问题时用：在本机生成，不联网。导出的 HTML 可打印，也能在浏览器里继续填写。</span>'
+    +'<div class="btns"><button class="btn-line acc" data-a="sheet-now">导出当前状态</button><button class="btn-line" data-a="sheet-blank">下载空白记录表</button></div></div>'
     +'<div class="pn"><h3>备份与恢复</h3><span class="small">每 10 次操作自动备份一次；重置、恢复、载入演示数据前都会先备份当前数据。</span>'
     +'<div class="btns"><button class="btn-line" data-a="adm-snaps">查看备份</button>'
     +(A.ask==='reset:demo'?'<button class="btn-line fillred" data-a="adm-reset" data-v="demo">确认载入演示数据</button><button class="btn-line" data-a="adm-cancel">取消</button>'
@@ -1135,6 +1138,8 @@ document.addEventListener('click',e=>{
   else if(a==='adm-restore'){A.ask=null;send({type:'admin.restore',key:v},()=>{A.snaps=null;});}
   else if(a==='adm-reset'){A.ask=null;if(v==='blank'&&A.resetTxt!=='重置')return;A.resetTxt='';send({type:'admin.reset',demo:v==='demo'});}
   else if(a==='adm-csv'){downloadPins();}
+  else if(a==='sheet-now'){downloadSheet(false);}
+  else if(a==='sheet-blank'){downloadSheet(true);}
   else if(a==='stats-load'){send({type:'dev.stats'},m=>{ui.stats=m.data;},true);}
   else if(a==='stats-view'){ui.statsView=v;}
   else if(a==='stats-csv'){downloadStats();}
@@ -1171,6 +1176,17 @@ function copyText(t){
   if(navigator.clipboard&&window.isSecureContext)return navigator.clipboard.writeText(t);
   return new Promise((ok,bad)=>{const x=document.createElement('textarea');x.value=t;x.style.cssText='position:fixed;opacity:0';document.body.appendChild(x);x.select();
     try{document.execCommand('copy')?ok():bad();}catch(e){bad(e);}x.remove();});}
+// 应急记录表：在本机生成，不联网。blank=true 给空白表，否则带上此刻浏览器里的最新状态。
+function downloadSheet(blank){
+  const D={at:Date.now(),t:S.t,dur:S.dur||7200,blank:!!blank,
+    teams:S.teams.map(t=>({id:t.id,name:t.name,score:t.score,alive:alive(t.id).length,size:size(t.id),cards:t.cards,cleared:t.cleared,final:!!t.final,cap:t.cap})),
+    rooms:ROOMS.map(r=>{const x=S.rooms.find(q=>q.id===r.id)||{},st=rstate(x);return {id:r.id,card:r.card,name:r.name,st,team:st==='rsv'?(x.rt?team(x.rt).name:''):(x.teams||[]).map(i=>team(i).name).join('、'),at:x.at||0};}),
+    players:S.players.map(p=>({id:p.id,team:p.team,st:p.st,outAt:p.outAt,at:p.at,inAt:p.inAt,coins:p.coins})),
+    log:(S.log||[]).slice(0,40).map(l=>({t:l.t,text:l.text}))};
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([sheetHtml(D)],{type:'text/html'}));
+  a.download=blank?'borderland-sheet-blank.html':'borderland-sheet-'+new Date().toTimeString().slice(0,5).replace(':','')+'.html';a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
 function downloadPins(){
   const rows=[['身份','编号/名称','PIN']].concat((ui.admin.pins||[]).map(p=>[p.roleName,p.pid||p.label,p.pin]));
   const csv='﻿'+rows.map(r=>r.map(x=>'"'+String(x).replace(/"/g,'""')+'"').join(',')).join('\r\n');
