@@ -162,7 +162,9 @@ const dealerOf = room => client(pinOf(p => p.role === 'dealer' && p.rooms[0] ===
   T('player bids from the phone', admin.S.auc.lots[0].bids['003'] && admin.S.auc.lots[0].bids['003'].v === 700);
   const c2 = await client(pinOf(p => p.pid === '002'));
   T('player view hides other bids', Object.keys(c2.S.auc.lots[0].bids).length === 0 && c2.S.auc.lots[0].nb === 1);
-  await c2.act({ type: 'bid', id: 'L1', v: 600 });
+  { const sc = await client(P.screen); await c2.act({ type: 'bid', id: 'L1', v: 610 }); await sleep(300);
+    T('big screen never receives bid amounts (hello + broadcast)', Object.keys(sc.S.auc.lots[0].bids).length === 0 && sc.S.auc.lots[0].nb === 2); sc.close(); }
+  T('staff state carries at most 300 log lines', admin.S.log.length <= 300);
   T('unqualified player cannot bid', !(await (await client(pinOf(p => p.pid === '001'))).act({ type: 'bid', id: 'L1', v: 100 })).ok);
   T('judge +30 s / pause / resume', (await jd.act({ type: 'auc.time', op: 'add' })).ok && (await jd.act({ type: 'auc.time', op: 'pause' })).ok && !(await c2.act({ type: 'bid', id: 'L1', v: 650 })).ok && (await jd.act({ type: 'auc.time', op: 'resume' })).ok);
   T('cannot reveal while open', !(await jd.act({ type: 'auc.reveal' })).ok);

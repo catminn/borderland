@@ -27,9 +27,7 @@ const CHIP_START=200, CHIP_GOAL=500, CARRY_MAX=100, RANSOM=500;   // 鬼市：�
 const PUZ_PTS=100, PUZ_CAP=400;   // 解谜题 100 / 题，每人最多 400
 const GATE_WIN=3, GATE_COIN=300;  // 鬼门开：最先完成的 3 人，每人选 300 冥币 / 救一个人 / 拿一个花色
 const ROOM_CAP0=6, START_ONLY=600, DUR0=7200, MARKET_GRACE=900;  // 房间默认容量；前 10 分钟只能进起始房间；主游戏 2 小时；鬼市复活名额在时间截止后再留 15 分钟
-const RESET_HINT=120;
 const KINDS=['公告','鬼门开'];
-const ROLE_LABEL={wuchang:'黑白无常',mengpo:'孟婆',ctrl:'总控',judge:'判官'};
 
 const room=id=>ROOMS.find(r=>r.id===id);
 const pl=id=>S.players.find(p=>p.id===id);
@@ -69,7 +67,6 @@ function matches(n,p){
 const noticeStale=n=>n.sub==='gate'?!(S.gp&&S.gp.nid===n.id):n.sub==='done'?S.t-n.t>180:false;
 const staffSees=n=>n.target==='staff'||n.target==='everyone'||n.sub==='gate';
 function targetLabel(n){return n.target==='all'?'全体玩家':n.target==='player'?(n.ids.length<=4?n.ids.join('、'):n.ids.slice(0,3).join('、')+' 等 '+n.ids.length+' 人'):n.target==='market'?'鬼市中的人':n.target==='staff'?'工作人员':n.target==='everyone'?'所有人':n.target==='final'?'晋级资格者':'存活玩家';}
-const kindLabel=n=>n.kind;
 function pushNotice(o){S.notices.unshift({id:S.nid++,sub:o.sub||null,tone:o.tone||'',t:S.t,kind:o.kind,title:o.title,body:o.body,target:o.target,ids:o.ids||[],due:o.mins?S.t+o.mins*60:null,acks:{}});}
 const tell=(pid,title,body,tone)=>pushNotice({kind:'通知',title,body,target:'player',ids:[pid],tone});
 // 公告：发给任意对象。鬼门开：发给全场，最先完成的 3 人有奖励。
@@ -84,6 +81,7 @@ function publish(f){f=f||{};const str=(v,n)=>String(v==null?'':v).slice(0,n);f={
   }else{
     if(!['all','player','alive','market','staff','everyone','final'].includes(target))return no('发布对象不对');
     if(!f.title.trim())return no('先写标题');
+    if(target==='final'&&!S.fin)return no('晋级名单还没锁定，发给「晋级资格者」没有人能收到');
     if(target==='player'){const want=Array.isArray(f.players)?f.players:f.player?[f.player]:[];ids=[...new Set(want)].filter(id=>pl(id));if(!ids.length)return no('先选玩家');}
   }
   pushNotice({kind:f.kind,sub,title:f.title.trim(),body:f.body.trim(),target,ids,mins:Math.max(0,+f.mins||0)});
@@ -236,7 +234,7 @@ function gateReward(pid,kind,arg){const g=S.gp;if(!g)return no('现在没有进�
   if(kind==='coin'){p.score+=GATE_COIN;w.rw={k:'coin'};log(nm(p)+' 鬼门开奖励：+'+GATE_COIN+' 冥币','back',1);}
   else if(kind==='save'){const q=pl(arg);if(!q)return no('先选要救的人');if(q.st==='alive')return no(q.id+' 本来就在场');
     if(marketShut())return no('已停止发放复活名额');
-    if(q.inRoom)q.inRoom=null;backAlive(q);w.rw={k:'save',pid:q.id};
+    backAlive(q);w.rw={k:'save',pid:q.id};
     log(nm(p)+' 用鬼门开奖励救出了 '+nm(q),'back',1);tell(q.id,'有人救了你',nm(p)+' 用鬼门开奖励把你救了回来。');}
   else if(kind==='suit'){if(!SUITS.includes(arg))return no('先选花色');if(p.cards.includes(arg))return no(p.id+' 已经有 '+arg);
     p.cards.push(arg);w.rw={k:'suit',s:arg};log(nm(p)+' 鬼门开奖励：拿到花色 '+arg,'back',1);}
@@ -270,7 +268,6 @@ function setFinal(pid,on){if(!S.fin)return no('先锁定资格名单');const p=p
 const lot=id=>S.auc.lots.find(l=>l.id===id);
 const curLot=()=>S.auc.cur?lot(S.auc.cur):null;
 const lotLeft=l=>!l||l.st!=='open'?0:l.left!=null?l.left:Math.max(0,l.end-now());
-const lotLive=l=>!!l&&l.st==='open'&&l.left==null&&now()<l.end;   // 能出价
 function aucAdd(f){f=f||{};const name=String(f.name||'').trim().slice(0,40);if(!name)return no('先写拍品名称');
   const start=Math.max(0,Math.round(+f.start||0));
   S.auc.lots.push({id:'L'+(S.auc.lid++),name,desc:String(f.desc||'').trim().slice(0,200),start,big:!!f.big,st:'wait',bids:{},bad:[],win:null,price:0,end:0,left:null,secs:0});
@@ -319,7 +316,7 @@ function settle(l){const top=bidOrder(l)[0];
   return nm(p)+' '+top.v;}
 function refund(l){if(l.win){const p=pl(l.win);if(p){p.score+=l.price;if(p.won===l.id)p.won=null;}}l.win=null;l.price=0;}
 function aucReveal(id){const l=lot(id)||curLot();if(!l)return no('没有这件拍品');
-  if(lotState(l)==='open')return no('还在出价中，先截止');if(l.st!=='closed'&&l.st!=='open')return no('这件已经揭晓过了');
+  if(lotState(l)==='open')return no('还在出价中，先截止');if(l.st==='wait')return no('这件还没开拍');if(l.st!=='closed'&&l.st!=='open')return no('这件已经揭晓过了');
   l.st='closed';const r=settle(l);return ok('揭晓：'+r);}
 // 得主不在场：作废，顺延给下一位
 function aucVoid(id){const l=lot(id)||curLot();if(!l||l.st!=='done')return no('只有已成交的拍品能作废得主');
@@ -398,8 +395,6 @@ function seedFinal(){
   S.players.slice(8,40).forEach(p=>{const n=1+Math.floor(rnd()*4);for(let i=0;i<n;i++){S.t+=23;play(p.id,ROOMS[Math.floor(rnd()*8)].id,rnd()<.7?'win':'lose');
     if(p.st==='out'){pickup(p.id);checkIn(p.id,'wuchang');confirmIn(p.id,'mengpo');if(rnd()<.6){setChips(p.id,500+Math.floor(rnd()*4)*50);selfRedeem(p.id);}}}});
   ['009','015','022','030'].forEach((id,i)=>{puzRedeem(id,'z1');puzRedeem(id,'z2');});
-  // 差一点的人：三花色、钱够；或四花色、钱差一点
-  S.t=7100; puzRedeem('005','z1');
   S.t=7300; lockFinal();
   demoLots();
   const ids=S.fin.slice();
@@ -481,18 +476,16 @@ export function apply(state,me,a){
 // A player sees only their own notices and the broadcast lines of the log.
 function hideBids(state,pid){return {...state.auc,lots:state.auc.lots.map(l=>{const n=Object.keys(l.bids).length,mine=pid&&l.bids[pid];
   return {...l,bids:mine?{[pid]:mine}:{},nb:n,bad:[]};})};}
+const STAFF_LOG=300;   // 工作人员页最多看 300 行日志（全场日志页也只显示 300 行）；完整日志留在服务器
 export function viewFor(state,me){
-  if(me.role==='screen')return {...state,auc:hideBids(state,null)};
-  if(me.role!=='player')return state;
+  const lg=state.log.length>STAFF_LOG?state.log.slice(0,STAFF_LOG):state.log;
+  if(me.role==='screen')return {...state,log:lg,auc:hideBids(state,null)};
+  if(me.role!=='player')return lg===state.log?state:{...state,log:lg};
   use(state);const p=state.players.find(x=>x.id===me.pid);
   return {...state,log:state.log.filter(isBcast).slice(0,30),notices:state.notices.filter(n=>p&&matches(n,p)),
     players:state.players.map(x=>x.id===me.pid?x:{...x,hist:[],puz:[]}),auc:hideBids(state,me.pid)};
 }
 
-export {noticeStale,staffSees,timeUp,marketShut,needsReset,whyNotEnter,enterRoom,finishRoom,resetDone,kickOut,eliminate,pickup,checkIn,confirmIn,
-  setChips,selfRedeem,ransom,soup,puzInfo,puzRedeem,gateWin,gateReward,gateEnd,finalMiss,qualifies,lockFinal,setFinal,
-  aucAdd,aucOpen,aucTime,aucReveal,aucVoid,aucRedo,bid,whyNotBid,bidOrder,lot,curLot,lotLeft,lotLive,lotState,fmtSecs,
-  ranking,active,suitsOf,stLabel,inMk,pl,nm,nameOf,pidOf,ack,publish,revokeNotice,matches,targetLabel,kindLabel,pushNotice,isBcast,
-  room,fmt,esc,log,ok,no,init,seed,setScore,setNick,
-  ROOMS,SUITS,N_PLAYERS,PUZZLES,GATES,FINAL_MSG,FINAL_SCORE,CHIP_START,CHIP_GOAL,CARRY_MAX,RANSOM,PUZ_PTS,PUZ_CAP,GATE_WIN,GATE_COIN,
-  ROOM_CAP0,START_ONLY,DUR0,MARKET_GRACE,RESET_HINT,ROLE_LABEL,DEMOS,setCards};
+export {noticeStale,staffSees,timeUp,marketShut,needsReset,whyNotEnter,eliminate,soup,puzInfo,finalMiss,qualifies,whyNotBid,bidOrder,lotLeft,lotState,
+  ranking,suitsOf,stLabel,inMk,pl,nm,matches,targetLabel,room,fmt,esc,log,no,
+  ROOMS,SUITS,PUZZLES,GATES,FINAL_SCORE,CHIP_START,CHIP_GOAL,CARRY_MAX,RANSOM,PUZ_PTS,PUZ_CAP,GATE_WIN,GATE_COIN,ROOM_CAP0,START_ONLY,DEMOS};

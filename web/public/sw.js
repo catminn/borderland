@@ -1,8 +1,8 @@
 // 离线重开用的缓存（不缓存 /api/）。
 // 页面文件：网络优先（3 秒超时），失败、超时或服务器返回错误页时用上次缓存的版本；平时每次联网都会刷新缓存，所以改了代码不会被旧缓存挡住。
 // 字体和图片：缓存优先。游戏状态不在这里，由 app.js 存在 localStorage。
-const V='bd-v1';
-const CORE=['/','/index.html','/fonts.css','/style.css','/paper.css','/app.js','/rules.js','/offline-sheet.js','/ghost-ambience.js','/img/seal-zhun.png'];
+const V='bd-v2';
+const CORE=['/','/index.html','/fonts.css','/style.css','/paper.css','/app.js','/rules.js','/offline-sheet.js','/ghost-ambience.js'];
 
 self.addEventListener('install',e=>{
   e.waitUntil(caches.open(V).then(c=>Promise.all(CORE.map(u=>c.add(u).catch(()=>{})))).then(()=>self.skipWaiting()));

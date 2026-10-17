@@ -210,7 +210,7 @@ export class Game extends DurableObject {
     await this.schedule();
     const box = this.sbKey(s), D = box ? await this.getD(box) : null;
     if (box && s.demo) await this.sandbox(box, async () => {});   // 展示 PIN 第一次进共享演示局：自动生成整套演示 PIN
-    server.send(JSON.stringify({ t: 'hello', me: this.me(s), S: box ? (s.demo ? D.S : R.viewFor(D.S, s)) : R.viewFor(this.S, s), clock: box ? D.clock : this.clock, now: Date.now() }));
+    server.send(JSON.stringify({ t: 'hello', me: this.me(s), S: box ? R.viewFor(D.S, s.demo ? { role: 'ctrl' } : s) : R.viewFor(this.S, s), clock: box ? D.clock : this.clock, now: Date.now() }));
     return new Response(null, { status: 101, webSocket: client });
   }
 
@@ -242,15 +242,15 @@ export class Game extends DurableObject {
 
   broadcast(which) {
     const base = { t: 'state', clock: this.clock, now: Date.now() };
-    const staff = JSON.stringify({ ...base, S: this.S });
-    const sbD = which && this.Ds[which] ? this.Ds[which] : null, sbox = sbD ? JSON.stringify({ t: 'state', clock: sbD.clock, now: Date.now(), S: sbD.S }) : '';
+    const staff = JSON.stringify({ ...base, S: R.viewFor(this.S, { role: 'ctrl' }) });
+    const sbD = which && this.Ds[which] ? this.Ds[which] : null, sbox = sbD ? JSON.stringify({ t: 'state', clock: sbD.clock, now: Date.now(), S: R.viewFor(sbD.S, { role: 'ctrl' }) }) : '';
     for (const ws of this.ctx.getWebSockets()) {
       const s = this.sessionOf(ws.deserializeAttachment()?.token);
       if (!s) { try { ws.close(4001, 'login expired'); } catch { /* ignore */ } continue; }
       const box = this.sbKey(s);
       if (box ? box !== which : !!which) continue;   // real-game changes go to real sockets; a shared-demo change goes only to sockets on that 展示 PIN's game
-      if (box) { try { ws.send(s.demo || s.role !== 'player' ? sbox : JSON.stringify({ t: 'state', clock: sbD.clock, now: Date.now(), S: R.viewFor(sbD.S, s) })); } catch { /* socket gone */ } continue; }
-      try { ws.send(s.role === 'player' ? JSON.stringify({ ...base, S: R.viewFor(this.S, s) }) : staff); } catch { /* socket gone */ }
+      if (box) { try { ws.send(s.demo || (s.role !== 'player' && s.role !== 'screen') ? sbox : JSON.stringify({ t: 'state', clock: sbD.clock, now: Date.now(), S: R.viewFor(sbD.S, s) })); } catch { /* socket gone */ } continue; }
+      try { ws.send(s.role === 'player' || s.role === 'screen' ? JSON.stringify({ ...base, S: R.viewFor(this.S, s) }) : staff); } catch { /* socket gone */ }
     }
   }
 
