@@ -1248,6 +1248,7 @@ body .room.mine{opacity:1;border-color:var(--red);box-shadow:inset 0 0 0 1px var
 .stage .aname{font-size:128px}
 .stage .adesc{font-size:30px;color:var(--sub)}
 .akey{display:flex;align-items:center;justify-content:center;gap:72px;margin-top:10px}
+.akey .atimer{flex-direction:column-reverse}
 .astartb{display:flex;flex-direction:column;align-items:center;gap:6px;padding:18px 34px;border:3px solid var(--warn);border-radius:18px}
 .stage .astartb b{font-size:110px;line-height:1;color:var(--warn)}
 .stage .astartb .acap{font-size:28px;letter-spacing:.4em;color:var(--warn)}

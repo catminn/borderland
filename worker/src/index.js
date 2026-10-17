@@ -311,8 +311,9 @@ export class Game extends DurableObject {
 
   // ---------- 总控 tools ----------
   dealerLabel(rooms) { return 'Dealer ' + (rooms.length ? rooms.map(id => R.ROOMS.find(r => r.id === id).card).join(' ') : '未绑定'); }
-  pinList() {
-    return Object.entries(this.auth.pins).map(([pin, v]) => ({ pin, role: v.role, roleName: ROLE_NAME[v.role], pid: v.pid || '', label: v.label || '', rooms: v.rooms || null }))
+  pinList() {   // 只列有效 PIN：玩家 PIN 要对应现在还存在的身份卡（新增身份卡后又重置游戏会留下多出来的旧 PIN，不显示）
+    return Object.entries(this.auth.pins).filter(([, v]) => v.role !== 'player' || this.S.players.some(p => p.id === v.pid))
+      .map(([pin, v]) => ({ pin, role: v.role, roleName: ROLE_NAME[v.role], pid: v.pid || '', label: v.label || '', rooms: v.rooms || null }))
       .sort((a, b) => (a.role === 'player') - (b.role === 'player') || (a.pid || a.label).localeCompare(b.pid || b.label, 'zh'));
   }
   async admin(a) {

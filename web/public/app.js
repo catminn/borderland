@@ -203,7 +203,7 @@ function viewDealer(){
   const mine=ME.role==='dealer'&&Array.isArray(ME.rooms)?ME.rooms:null;
   if(mine&&!mine.length)return '<div class="page"><div class="pn"><h2 class="sh">还没有房间</h2><span class="muted">这个 Dealer PIN 没有对应的房间（Dealer 只有 8 个，一人一间）。请总控在「总控工具」里重新生成 PIN。</span></div></div>';
   if(mine&&!mine.includes(ui.room)){ui.room=mine[0];ui.ent='';ui.res={};ui.settled=null;}
-  const r=room(ui.room),x=S.rooms.find(y=>y.id===r.id),st=x.st,cap=S.cap||R.ROOM_CAP0;
+  const r=room(ui.room),x=S.rooms.find(y=>y.id===r.id),st=x.st,cap=S.capOn?(S.cap||R.ROOM_CAP0):Infinity;
   const rooms=mine&&mine.length===1?'':'<div class="sec on" style="gap:10px"><span class="lbl">'+(mine?'我负责的房间':'全部房间'+(ME.role==='ctrl'?'（总控视角）':''))+'</span><div class="rooms8">'+ROOMS.filter(y=>!mine||mine.includes(y.id)).map(y=>{const q=S.rooms.find(z=>z.id===y.id);
     return '<button class="rbtn'+(y.id===ui.room?' on':'')+'" data-a="room" data-v="'+y.id+'" aria-pressed="'+(y.id===ui.room)+'"><span class="n">'+cardG(y)+'</span><span class="nm">'+y.name+'</span>'
       +'<span class="st'+(q.st==='open'?'':' busy')+'">'+(q.st==='open'?'':'● ')+RST[q.st][0]+(q.ps.length?' '+q.ps.length+' 人':'')+'</span></button>';}).join('')+'</div></div>';
@@ -211,7 +211,7 @@ function viewDealer(){
   const hero='<div class="hero"><div class="tile"><span class="tn">'+r.n+'</span><span class="ts '+(isRed(r.suit)?'sr':'')+'">'+r.suit+'</span></div>'
     +'<div class="info"><div class="meta"><span class="typ">'+TYPE[r.suit]+'</span><span class="typ">'+(r.n===4?'简单':'困难')+'</span><span class="coins">+'+r.n*100+' <small>冥币</small></span></div>'
     +'<div class="name"><b>'+r.name+'</b>'+(ui.settled&&ui.settled.rid===r.id&&st==='reset'?'<span class="stamp">已结算</span>':'')+'</div>'
-    +'<span class="status'+(st==='open'?'':' busy')+'">'+(st==='open'?'':'<i class="gd"></i>')+RST[st][0]+(x.ps.length?' · '+x.ps.length+' / '+cap+' 人':'')+(timer?'　'+timer:'')+'</span></div></div>';
+    +'<span class="status'+(st==='open'?'':' busy')+'">'+(st==='open'?'':'<i class="gd"></i>')+RST[st][0]+(x.ps.length?' · '+x.ps.length+(S.capOn?' / '+cap:'')+' 人':'')+(timer?'　'+timer:'')+'</span></div></div>';
   // 入场：输入编号（可多人），或点起始房间名单里的人
   let entry;
   if(timeUp())entry='<div class="empty">时间到，房间已关闭。房间里还有人的话，照常结算。</div>';
@@ -266,7 +266,9 @@ function gatePanel(){
       +'<button class="btn-main'+(okp?' glow':'')+'" data-a="jgpub"'+(okp?'':' disabled')+' style="min-height:52px">'+(okp?'发布鬼门开（全场）':'先选择鬼门开')+'</button>'
       +(last.length?'<span class="lbl">之前的鬼门开</span>'+last.map(n=>'<div class="li"><div class="grow"><span class="t">'+fmt(n.t)+'</span><span class="x">'+esc(n.title)+'：'+(n.gr.length?n.gr.map(w=>w.pid+' '+rwTxt(w.rw)).join('，'):'无人完成')+'</span></div></div>').join(''):'')+'</div>';}
   const gn=S.notices.find(x=>x.id===g.nid),live=gn&&gn.due&&gn.due>S.t;
-  const end=ui.gateEndAsk?'<button class="btn-line fillred" data-a="gateend" style="min-height:48px;font-weight:900">确认结束鬼门开</button><button class="btn-line" data-a="gateendno" style="min-height:48px">取消</button>'
+  const unrw=g.wins.filter(w=>!w.rw);
+  const end=ui.gateEndAsk?(unrw.length?'<div class="gatebar"><b>还有 '+unrw.length+' 人没领奖</b><span>'+unrw.map(w=>w.pid).join('、')+'，结束后将无法再领</span></div>':'')
+      +'<button class="btn-line fillred" data-a="gateend" style="min-height:48px;font-weight:900">确认结束鬼门开</button><button class="btn-line" data-a="gateendno" style="min-height:48px">取消</button>'
     :'<button class="btn-line" data-a="gateendask">结束鬼门开</button>';
   const head='<div class="shrow"><h3>鬼门开进行中</h3>'+(gn&&gn.due?'<span class="tm'+(live?' live':'')+'">'+(live?'<i class="gd r"></i>':'')+countdown(gn)+'</span>':'')+'</div>'+(gn?'<div class="ttitle"><b>'+esc(gn.title)+'</b></div>':'');
   const gp=findP(ui.gw),gwhy=!ui.gw?'':!gp?'没有这个编号':g.wins.some(w=>w.pid===gp.id)?'已经记过了':gp.st!=='alive'?'不在场':'';
@@ -359,11 +361,10 @@ const canConfirm=p=>!!p.chk&&!p.chk.ok&&(p.chk.by==='mengpo'?checkinParty()==='w
 const chkBit=p=>!p.chk?'':p.chk.ok?'<span class="chk ok">登记已确认</span>':canConfirm(p)?'<button class="btn-line fill chkbtn" data-a="confirmin" data-p="'+p.id+'">确认入鬼市</button>':'<span class="chk wait">待'+(p.chk.by==='mengpo'?'黑白无常':'孟婆')+'确认</span>';
 function inboundPanel(){
   const wait=S.players.filter(p=>p.st==='out'||p.st==='picked'||(p.st==='market'&&p.chk&&!p.chk.ok)).sort((a,b)=>a.outAt-b.outAt);
-  const late=p=>p.outAt!=null&&p.outAt>=(S.dur||7200);
   const rows=wait.map(p=>'<div class="mrow'+(p.st==='picked'?' ok':'')+'"><div class="l1">'+who(p)
     +'<span class="stay">'+(p.chk&&!p.chk.ok?(p.chk.by==='mengpo'?'<b>孟婆已登记，等黑白无常确认</b>':'<b>黑白无常已送来，等孟婆确认</b>'):p.st==='picked'?'<b>已被黑白无常接到</b>':'等黑白无常来接')+'</span></div>'
     +'<div class="l1"><span class="stay">位置：<b>'+esc(p.at||'未记录')+'</b>　已等 <b class="mono">'+mm(S.t-(p.outAt||S.t))+'</b></span></div>'
-    +(late(p)?'<span class="chk wait">时间截止后失败，鬼市不再收人</span>':p.chk&&!p.chk.ok?chkBit(p):'<button class="btn-main'+(p.st==='picked'?' glow':'')+'" data-a="checkin" data-p="'+p.id+'">登记入鬼市</button>')+'</div>').join('');
+    +(p.chk&&!p.chk.ok?chkBit(p):'<button class="btn-main'+(p.st==='picked'?' glow':'')+'" data-a="checkin" data-p="'+p.id+'">登记入鬼市</button>')+'</div>').join('');
   return '<section class="mcol"><div class="shrow"><h2 class="sh">待入鬼市</h2><span class="hint">另一方确认后进入鬼市，领 '+CHIP_START+' 筹码</span></div>'
     +(rows?'<div class="mlist">'+rows+'</div>':'<div class="empty">现在没有等着入鬼市的人。</div>')+'</section>';
 }
@@ -384,7 +385,7 @@ function viewMarket(){
       +(cv!==p.chips?'<button class="btn-line acc" data-a="chipsave" data-p="'+p.id+'">记下 '+cv+'</button>':'<div class="kv"><span class="k">目标</span><span class="v'+(p.chips>=CHIP_GOAL?' ok':'')+'">'+p.chips+' / '+CHIP_GOAL+'</span></div>')+'</div>'
       +act+'</div>';}).join('');
   const left='<section class="mcol"><div class="shrow"><h2 class="sh">孟婆 · 鬼市</h2><span class="hint">筹码到 '+CHIP_GOAL+' 自赎（最多带出 '+CARRY_MAX+'）；别人可花 '+RANSOM+' 赎人；输光喝孟婆汤免费复活，但随机忘掉一个花色</span></div>'
-    +(shut?'<div class="gatebar"><b>已停止发放复活名额</b><span>时间截止 15 分钟后，鬼市里的人不能再复活</span></div>':timeUp()?'<div class="gatebar"><b>鬼市不再收新人</b><span>时间截止后失败的人不再进鬼市；截止 15 分钟后停止复活</span></div>':'')
+    +(shut?'<div class="gatebar"><b>已停止发放复活名额</b><span>时间截止 15 分钟后，鬼市里的人不能再复活</span></div>':'')
     +(rows?'<div class="mlist">'+rows+'</div>':'<div class="empty">鬼市现在没有人。</div>')+'</section>';
   return lanternsHtml()+'<div class="page mkt">'+left+inboundPanel()+'</div>';
 }
@@ -570,8 +571,9 @@ function adminPanel(){
     +'<div class="pn"><h3>设置</h3>'
     +'<div class="setrow"><div class="swrow"><span>总时长<small>当前 <b class="mono" style="color:var(--ink)">'+Math.round((S.dur||7200)/60)+'</b> 分钟</small></span>'
     +'<div class="btns" style="flex-wrap:nowrap"><input class="in mono" id="durm" data-m="durMin" value="'+esc(A.dur)+'" inputmode="numeric" placeholder="分钟，如 120" style="max-width:150px"><button class="btn-line acc" data-a="setdur">设置</button></div></div></div>'
-    +'<div class="setrow"><div class="swrow"><span>房间容量<small>每间房同时最多 <b class="mono" style="color:var(--ink)">'+(S.cap||R.ROOM_CAP0)+'</b> 人</small></span>'
-    +'<div class="btns" style="flex-wrap:nowrap"><input class="in mono" id="capn" data-m="capN" value="'+esc(A.cap)+'" inputmode="numeric" placeholder="人数" style="max-width:110px"><button class="btn-line acc" data-a="setcap">设置</button></div></div></div>'
+    +'<div class="setrow"><div class="swrow"><span>房间人数上限<small>'+(S.capOn?'每间房同时最多 <b class="mono" style="color:var(--ink)">'+(S.cap||R.ROOM_CAP0)+'</b> 人':'现在不限人数')+'</small></span>'
+    +'<button class="cb'+(S.capOn?' on':'')+'" data-a="capon" data-v="'+(S.capOn?'0':'1')+'" aria-pressed="'+!!S.capOn+'"><span class="t">'+(S.capOn?'已开启':'已关闭')+'</span></button></div>'
+    +(S.capOn?'<div class="btns" style="flex-wrap:nowrap;margin-top:8px"><input class="in mono" id="capn" data-m="capN" value="'+esc(A.cap)+'" inputmode="numeric" placeholder="人数" style="max-width:110px"><button class="btn-line acc" data-a="setcap">设置</button></div>':'')+'</div>'
     +'<div class="setrow"><div class="swrow"><span>身份卡<small>现在共 <b class="mono" style="color:var(--ink)">'+S.players.length+'</b> 张（'+S.players[0].id+'–'+S.players[S.players.length-1].id+'），上榜 '+S.players.filter(p=>p.on).length+' 人</small></span>'
     +'<div class="btns" style="flex-wrap:nowrap"><input class="in mono" id="addn" data-m="addN" value="'+esc(ui.addN)+'" inputmode="numeric" style="max-width:80px"><button class="btn-line" data-a="addplayers">新增</button></div></div></div></div>'
     +'<div class="pn"><h3>应急记录表</h3><span class="small">断网或网站出问题时用：在本机生成，不联网。导出的 HTML 可打印，也能在浏览器里继续填写。</span>'
@@ -1085,6 +1087,7 @@ document.addEventListener('click',e=>{
   else if(a==='revokeno'){ui.revokeAsk=null;}
   else if(a==='revokeok'){ui.revokeAsk=null;send({type:'revoke',nid:+b.dataset.n});}
   else if(a==='setcap'){send({type:'setcap',v:+A.cap},()=>{A.cap='';});}
+  else if(a==='capon'){send({type:'setcapon',v:v==='1'});}
   else if(a==='addplayers'){send({type:'addplayers',n:+ui.addN});}
   else if(a==='setdur'){send({type:'setdur',secs:Math.round((+A.dur||0)*60)},()=>{A.dur='';});}
   else if(a==='cards'){printCards();}

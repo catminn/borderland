@@ -37,8 +37,12 @@ S.t = 700;
 T('10 分钟后可以进任意房间', A('dealer', { type: 'enter', rid: '8D', pids: ['001'] }).ok);
 A('dealer', { type: 'finish', rid: '8D', results: { '001': 'win' } }); A('dealer', { type: 'resetdone', rid: '8D' });
 T('困难房 +800', P('001').score === 1200 && P('001').cards.length === 2);
-A('ctrl', { type: 'setcap', v: 2 });
+T('人数上限默认关闭', A('dealer', { type: 'enter', rid: '4H', pids: ['003', '011', '019'] }).ok);
+A('dealer', { type: 'finish', rid: '4H', results: { '003': 'leave', '011': 'leave', '019': 'leave' } }); A('dealer', { type: 'resetdone', rid: '4H' });
+T('只有总控能开关人数上限', !A('dealer', { type: 'setcapon', v: true }).ok);
+A('ctrl', { type: 'setcapon', v: true }); A('ctrl', { type: 'setcap', v: 2 });
 T('房间容量', !A('dealer', { type: 'enter', rid: '4H', pids: ['003', '011', '019'] }).ok && A('dealer', { type: 'enter', rid: '4H', pids: ['003', '011'] }).ok && !A('dealer', { type: 'enter', rid: '4H', pids: ['019'] }).ok);
+A('ctrl', { type: 'setcapon', v: false });
 S.t = 7200;
 T('时间到：房间关闭', !A('dealer', { type: 'enter', rid: '8S', pids: ['002'] }).ok);
 T('时间到：已在房间里的照常结算', A('dealer', { type: 'finish', rid: '4H', results: { '003': 'win', '011': 'win' } }).ok);
@@ -70,7 +74,7 @@ A('mengpo', { type: 'chips', pid: '001', v: 0 });
 T('孟婆汤：免费复活，随机忘掉一个花色', R.soup('001', 0).ok && P('001').st === 'alive' && P('001').cards.length === 1 && P('001').cards[0] === '♥');
 T('忘掉的花色可以再挑战同花色房间', !P('001').cleared.includes('4S') && P('001').cleared.includes('4H'));
 S.t = 7200 + 10; R.eliminate(P('004'), '测试', ''); A('wuchang', { type: 'checkin', pid: '004' });
-T('截止后失败的人不再收进鬼市', !A('mengpo', { type: 'confirm', pid: '004' }).ok);
+T('截止后失败的人照常收进鬼市', A('mengpo', { type: 'confirm', pid: '004' }).ok && P('004').st === 'market');
 S.t = 7200 + 900;
 T('截止 15 分钟后停止复活名额', (() => { A('mengpo', { type: 'chips', pid: '003', v: 600 }); return !A('mengpo', { type: 'redeem', pid: '003' }).ok; })());
 
@@ -133,6 +137,10 @@ A('judge', { type: 'auc.open', id: 'L2', secs: 30 }); A('judge', { type: 'auc.ti
 T('没人出价 → 流拍', A('judge', { type: 'auc.reveal' }).ok && S.auc.lots[1].st === 'pass');
 T('重拍已成交的会退款', (() => { const s = P('003').score; A('judge', { type: 'auc.redo', id: 'L1' }); return P('003').score === s + 800 && !P('003').won; })());
 T('大屏可以切回游戏', A('judge', { type: 'auc.screen', on: false }).ok && S.auc.screen === 'game');
+A('judge', { type: 'auc.add', f: { name: '测试3' } }); A('judge', { type: 'auc.open', id: 'L3', secs: 30 }); A('judge', { type: 'auc.time', op: 'close' });
+A('judge', { type: 'auc.add', f: { name: '测试4' } });
+T('已截止没揭晓时不能切换显示别的拍品', !A('judge', { type: 'auc.show', id: 'L4' }).ok && S.auc.cur === 'L3');
+T('揭晓后可以切换', A('judge', { type: 'auc.reveal' }).ok && A('judge', { type: 'auc.show', id: 'L4' }).ok && S.auc.cur === 'L4');
 
 // ---------- 权限与视图 ----------
 fresh();

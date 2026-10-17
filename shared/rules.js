@@ -44,7 +44,7 @@ const now=()=>S.now||0;           // 真实时间（毫秒），服务器在每�
 function mkPlayer(i){return {id:pidOf(i),nick:'',on:false,start:ROOMS[(i-1)%ROOMS.length].id,st:'alive',score:0,cards:[],cleared:[],inRoom:null,hist:[],puz:[],
   outAt:null,inAt:null,pickAt:null,at:'',chk:null,chips:0,won:null};}
 function init(){
-  S={v:3,t:0,now:0,dur:DUR0,cap:ROOM_CAP0,gp:null,fin:null,log:[],notices:[],nid:1,
+  S={v:3,t:0,now:0,dur:DUR0,cap:ROOM_CAP0,capOn:false,gp:null,fin:null,log:[],notices:[],nid:1,
      rooms:ROOMS.map(r=>({id:r.id,st:'open',at:0,ps:[]})),players:[],
      auc:{lots:[],cur:null,screen:'game',lid:1}};
   for(let i=1;i<=N_PLAYERS;i++)S.players.push(mkPlayer(i));
@@ -105,14 +105,14 @@ function whyNotEnter(pid,rid){
   if(p.inRoom)return p.inRoom===rid?'已经在这间房里':'正在 '+room(p.inRoom).card;
   if(p.cleared.includes(rid))return '已成功过这间房';
   if(S.t<START_ONLY&&p.start!==rid)return '前 '+START_ONLY/60+' 分钟只能进起始房间 '+room(p.start).card;
-  if(r.ps.length>=(S.cap||ROOM_CAP0))return '房间已满（'+r.ps.length+' 人）';
+  if(S.capOn&&r.ps.length>=(S.cap||ROOM_CAP0))return '房间已满（'+r.ps.length+' 人）';
   return null;}
 // Dealer 放人入场（可以一次放多人）。第一个人进来时房间变成「游戏中」。
 function enterRoom(rid,pids){
   pids=[...new Set((Array.isArray(pids)?pids:[pids]).map(x=>String(x||'').trim()).filter(Boolean))];
   if(!room(rid))return no('没有这个房间');if(!pids.length)return no('先输入编号');
   for(const id of pids){const why=whyNotEnter(id,rid);if(why)return no(nameOf(id)+' 不能进 '+room(rid).card+'：'+why);}
-  if(S.rooms.find(x=>x.id===rid).ps.length+pids.length>(S.cap||ROOM_CAP0))return no('超过房间容量 '+(S.cap||ROOM_CAP0)+' 人');
+  if(S.capOn&&S.rooms.find(x=>x.id===rid).ps.length+pids.length>(S.cap||ROOM_CAP0))return no('超过房间容量 '+(S.cap||ROOM_CAP0)+' 人');
   const r=S.rooms.find(x=>x.id===rid);if(!r.ps.length){r.st='play';r.at=S.t;}
   pids.forEach(id=>{const p=pl(id);r.ps.push(id);p.inRoom=rid;p.on=true;p.hist.push({rid,t0:S.t,res:null,pts:0});});
   log(pids.map(nameOf).join('、')+' 进入 '+room(rid).card+' '+room(rid).name);
@@ -138,6 +138,7 @@ function kickOut(rid,pid){const r=S.rooms.find(x=>x.id===rid),p=pl(pid);if(!r||!
   r.ps=r.ps.filter(x=>x!==pid);p.inRoom=null;const h=p.hist.filter(x=>x.rid===rid&&x.res===null).pop();if(h)p.hist.splice(p.hist.indexOf(h),1);
   if(!r.ps.length&&r.st==='play')r.st='open';log(nm(p)+' 被移出 '+room(rid).card+'（不计结果）');return ok('已把 '+p.id+' 移出');}
 function setCap(v){v=Math.round(+v);if(!(v>=1&&v<=30))return no('房间容量要在 1 到 30 之间');S.cap=v;log('总控把房间容量设为 '+v+' 人');return ok('房间容量已设为 '+v+' 人');}
+function setCapOn(v){v=!!v;if(v===S.capOn)return no('没有变化');S.capOn=v;log('总控'+(v?'开启':'关闭')+'房间人数上限');return ok(v?'已开启人数上限':'已关闭人数上限（房间不限人数）');}
 
 // ---------- 淘汰 → 鬼市 ----------
 // 状态：alive 在场 · out 刚失败，原地等黑白无常 · picked 已被黑白无常接到 · market 在鬼市（钱包冻结，玩筹码）
@@ -161,8 +162,6 @@ function confirmIn(pid,role){const p=pl(pid);
   if(!p||!['out','picked'].includes(p.st)||!p.chk)return no('没有待确认的登记');if(p.chk.ok)return no('已经确认过了');
   const expected=p.chk.by==='mengpo'?'wuchang':['wuchang','ctrl'].includes(p.chk.by)?'mengpo':null;
   if(!expected||role!==expected)return no('要由另一方确认，不能自己确认自己的登记');
-  // 截止后不再接新人：截止前失败的人照常收（他们是在路上的）
-  if(p.outAt!=null&&p.outAt>=(S.dur||DUR0))return no('鬼市已停止接收新人');
   if(p.pickAt==null)p.pickAt=S.t;
   p.st='market';p.inAt=S.t;p.chips=CHIP_START;p.chk.ok=true;p.chk.by2=role;
   log(nm(p)+' 进入鬼市，钱包冻结，领 '+CHIP_START+' 筹码','back');
@@ -326,7 +325,9 @@ function aucVoid(id){const l=lot(id)||curLot();if(!l||l.st!=='done')return no('�
 function aucRedo(id){const l=lot(id)||curLot();if(!l)return no('没有这件拍品');if(l.st==='wait')return no('这件还没拍过');
   refund(l);l.st='wait';l.bids={};l.bad=[];l.end=0;l.left=null;log('「'+l.name+'」重拍','',1);return ok('已重置为待拍，重新开拍即可');}
 function aucScreen(on){S.auc.screen=on?'auction':'game';return ok(on?'大屏切到拍卖':'大屏切回游戏');}
-function aucShow(id){const l=lot(id);if(!l)return no('没有这件拍品');const c=curLot();if(c&&c!==l&&(lotState(c)==='open'))return no('「'+c.name+'」还在出价中');S.auc.cur=l.id;return ok('大屏显示「'+l.name+'」');}
+function aucShow(id){const l=lot(id);if(!l)return no('没有这件拍品');const c=curLot(),cs=c&&lotState(c);
+  if(c&&c!==l&&(cs==='open'||cs==='closed'))return no('「'+c.name+'」'+(cs==='open'?'还在出价中':'还没揭晓，请先揭晓'));
+  S.auc.cur=l.id;return ok('大屏显示「'+l.name+'」');}
 
 // ---------- 其他 ----------
 function setScore(pid,v,why){const p=pl(pid);if(!p)return no('没有这个编号');v=Math.round(+v);if(!Number.isFinite(v)||v<0)return no('冥币数要是不小于 0 的整数');
@@ -408,7 +409,7 @@ export function newGame(demo){init();if(demo)seed(demo);return S;}
 
 // Which roles may perform each action ('ctrl' may do everything).
 const ROLE_OK={enter:['dealer'],finish:['dealer'],resetdone:['dealer'],kick:['dealer'],
-  setcap:['ctrl'],setdur:['ctrl'],setscore:['ctrl'],setstart:['ctrl'],setcards:['ctrl'],seton:['ctrl'],addplayers:['ctrl'],lockfinal:['ctrl','judge'],unlockfinal:['ctrl'],final:['ctrl'],
+  setcap:['ctrl'],setcapon:['ctrl'],setdur:['ctrl'],setscore:['ctrl'],setstart:['ctrl'],setcards:['ctrl'],seton:['ctrl'],addplayers:['ctrl'],lockfinal:['ctrl','judge'],unlockfinal:['ctrl'],final:['ctrl'],
   publish:['ctrl','judge'],revoke:['ctrl','judge'],
   gatewin:['judge'],gateunwin:['judge'],gatereward:['judge'],gateend:['judge'],puz:['judge'],puzundo:['judge'],
   pickup:['wuchang'],checkin:['wuchang','mengpo'],confirm:['wuchang','mengpo'],
@@ -431,6 +432,7 @@ export function apply(state,me,a){
     case 'resetdone':return resetDone(a.rid);
     case 'kick':return kickOut(a.rid,a.pid);
     case 'setcap':return setCap(a.v);
+    case 'setcapon':return setCapOn(a.v);
     case 'setdur':return setDur(a.secs);
     case 'setscore':return setScore(a.pid,a.v,a.why);
     case 'setstart':return setStart(a.pid,a.rid);
