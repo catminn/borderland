@@ -22,7 +22,8 @@ const gen = await admin.act({ type: 'admin.genpins', counts: { dealer: 8, wuchan
 const pins = gen.data, pinOf = f => pins.find(f).pin;
 T('pins generated (56 players + 8 dealers + 6 other staff)', pins.length === 56 + 8 + 2 + 1 + 1 + 1 + 1);
 T('player PINs are labelled with the card number', pins.filter(p => p.role === 'player').every(p => /^\d{3}$/.test(p.pid)));
-T('seed has one finished gate, none running', admin.S.notices.some(n => n.sub === 'gate' && n.gr) && !admin.S.gp);
+T('seed (mid) has one finished gate and one running', admin.S.notices.some(n => n.sub === 'gate' && n.gr) && !!admin.S.gp);
+await admin.act({ type: 'gateend' }); await sleep(200);
 T('dealers fixed one room each', pins.filter(p => p.role === 'dealer').every(p => p.rooms.length === 1) && new Set(pins.filter(p => p.role === 'dealer').map(p => p.rooms[0])).size === 8);
 T('pins unique', new Set(pins.map(p => p.pin)).size === pins.length);
 const P = { player: pinOf(p => p.pid === '011'), fresh: pinOf(p => p.pid === '050'), judge: pinOf(p => p.role === 'judge'), judge2: pins.filter(p => p.role === 'judge')[1].pin,
@@ -45,7 +46,7 @@ T('roles see only their tabs', (await text(judge)).includes('鬼门开') && (awa
 T('player first page is the big screen with the ranking', (await text(player)).includes('全场播报') && (await text(player)).includes('冥币排行'));
 await ack(player);
 await player.click('[data-a=tab][data-v=player]');
-{ const tx = await text(player); T('player sees own page (2nd tab)', tx.includes('011') && tx.includes('黑猫') && tx.includes('压轴资格进度')); }
+{ const tx = await text(player); T('player sees own page (2nd tab)', tx.includes('011') && tx.includes('黑猫') && tx.includes('晋级资格进度')); }
 await ack(player); await ack(ctrl);
 
 // a fresh card asks for a nickname first
@@ -143,7 +144,7 @@ const dealerOf = room => client(pinOf(p => p.role === 'dealer' && p.rooms[0] ===
   { const r = await mp.act({ type: 'redeem', pid: v }); await sleep(200); T('self-redeem carries out up to 100', r.ok && P_(v).st === 'alive' && P_(v).score === 80); }
   d4.close(); }
 
-// ---- 压轴 + 拍卖, through the real server and the player phone ----
+// ---- 晋级 + 拍卖, through the real server and the player phone ----
 { await admin.act({ type: 'admin.clock', op: 'set', sec: 700 });
   const q = async (id, rooms) => { for (const rid of rooms) { await admin.act({ type: 'enter', rid, pids: [id] }); await admin.act({ type: 'finish', rid, results: { [id]: 'win' } }); await admin.act({ type: 'resetdone', rid }); } };
   await q('002', ['8S', '8D', '8C', '4H']); await q('003', ['8H', '4D', '4C', '4S']);

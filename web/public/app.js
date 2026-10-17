@@ -47,7 +47,7 @@ let ui={ddOpen:null,tab:null,room:'4S',as:'ctrl',devOps:false,demoRows:null,devA
   pub:{kind:'公告',title:'',body:'',target:'everyone',players:'',mins:0,gate:''},
   admin:{dur:'',cap:'',pins:null,snaps:null,counts:loadCounts(),ask:null,resetTxt:''}};
 const $=s=>document.querySelector(s);
-const ROLE_TABS={ctrl:['board','ctrl','dealer','npc','auc','market','wuchang'],dealer:['dealer'],judge:['npc','auc'],mengpo:['market'],wuchang:['wuchang'],screen:['board'],player:['board','player']};
+const ROLE_TABS={ctrl:['ctrl','board','dealer','npc','auc','market','wuchang'],dealer:['dealer'],judge:['npc','auc'],mengpo:['market'],wuchang:['wuchang'],screen:['board'],player:['board','player']};
 const TAB_NAME={board:'大屏',player:'我的',dealer:'Dealer',ctrl:'生死簿',npc:'判官',auc:'拍卖',market:'鬼市',wuchang:'黑白无常'};
 const ROLE_NAME={player:'玩家',dealer:'Dealer',judge:'判官',mengpo:'孟婆',wuchang:'黑白无常',ctrl:'总控',screen:'大屏'};
 const SHEET_SCOPE={ctrl:'all',dealer:'dealer',wuchang:'outs',mengpo:'outs',judge:'judge'};
@@ -104,10 +104,10 @@ function roomCard(r,me){
   let bt;
   if(st==='play')bt='<span class="on"><i class="gd"></i>'+(mine?'你在这里':'游戏中')+' · '+x.ps.length+' 人</span><span class="rtm">已 '+mmss(Math.max(0,S.t-x.at))+'</span>';
   else if(st==='reset')bt='<span class="rs rst">重置中</span><span class="rtm">已 '+mmss(Math.max(0,S.t-x.at))+'</span>';
-  else bt='<span class="idle">'+(timeUp()?'已关闭':'开放')+'</span>';
+  else bt='<span class="idle">'+(timeUp()?'已关闭':'<i class="gd"></i>开放中')+'</span>';
   if(me&&me.cleared.includes(r.id))bt+='<span class="idle okk">✓ 你已成功</span>';
   else if(me&&S.t<START_ONLY&&me.start===r.id)bt+='<span class="rtm ok">你的起始房间</span>';
-  return '<div class="room s-'+st+(x.ps.length?' busy':'')+(mine?' mine':'')+'"><div class="top"><div class="cd">'+cardG(r)+'</div>'
+  return '<div class="room s-'+(st==='open'&&timeUp()?'shut':st)+(mine?' mine':'')+'"><div class="top"><div class="cd">'+cardG(r)+'</div>'
     +'<div class="rr"><span class="typ">'+(r.n===4?'简单':'困难')+'</span><span class="pt">+'+r.n*100+'</span></div></div>'
     +'<div class="bt">'+bt+'</div></div>';
 }
@@ -168,18 +168,34 @@ function aucResult(l,big){const st=lotState(l);
 function viewAucBoard(){
   const L=S.auc.lots,l=curLot(),i=l?L.indexOf(l):-1,st=l&&lotState(l),nb=l?(l.nb!=null?l.nb:Object.keys(l.bids).length):0;
   const strip=L.map((x,j)=>{const s=lotState(x),w=s==='done'&&pl(x.win);
-    return '<div class="alot s-'+s+(x===l?' cur':'')+'"><span class="ai mono">'+(j+1)+'</span><b>'+esc(x.name)+'</b><span class="ast">'+(w?esc(w.nick||w.id)+' · '+x.price:LST[s])+'</span></div>';}).join('');
-  const main=!l?'<div class="amain"><div class="aname">鬼市大拍卖</div><div class="adesc">拍卖即将开始，请有资格的玩家准备好手机。</div></div>'
-    :'<div class="amain'+(l.big?' grand':'')+'"><div class="aidx">第 '+(i+1)+' 件 / 共 '+L.length+' 件'+(l.big?' · 压轴大奖':'')+'</div><div class="aname">'+esc(l.name)+'</div>'
-      +(l.desc?'<div class="adesc">'+esc(l.desc)+'</div>':'')+(st==='done'||st==='pass'?'':'<div class="astart">起拍价 <b class="mono">'+l.start+'</b> 冥币 · 暗标，每人一次出价，截止前可改</div>')
-      +(st==='open'||st==='closed'?'<div class="atimer">'+aucClock(l)+'</div><div class="anb">已有 <b class="mono">'+nb+'</b> 人出价</div>':'')
-      +(st==='done'||st==='pass'?aucResult(l,true):'')
-      +(st==='wait'?'<div class="adesc">即将开拍</div>':'')+'</div>';
+    return '<div class="alot s-'+s+(x===l?' cur':'')+'"><span class="ai mono">'+(j+1)+'</span><b>'+esc(x.name)+'</b><span class="ast">'+(w?esc(w.nick||w.id):LST[s])+'</span></div>';}).join('');
+  const live=st==='open'||st==='closed';
+  const main=!l?'<div class="amain"><div class="aname">鬼市大拍卖</div><div class="adesc">即将开始</div></div>'
+    :'<div class="amain'+(l.big?' grand':'')+'"><div class="aidx">'+(l.big?'最终大奖':'第 '+(i+1)+' 件')+'</div><div class="aname">'+esc(l.name)+'</div>'
+      +(l.desc?'<div class="adesc">'+esc(l.desc)+'</div>':'')
+      +(st==='done'||st==='pass'?aucResult(l,true)
+        :'<div class="akey"><div class="astartb"><span class="acap">起拍价</span><b class="mono">'+l.start+'</b></div>'
+          +(live?'<div class="atimer">'+aucClock(l)+'</div>':'<div class="await">即将开拍</div>')+'</div>'
+          +(live?'<div class="anb"><b class="mono">'+nb+'</b> 人已出价</div>':''))+'</div>';
   return '<div class="stage-wrap"><div class="stage auc">'
-    +'<div class="left"><div class="hd"><div class="ttl">鬼市大拍卖</div><div class="en">暗标 · 每人最多拍得 1 件 · 须本人在场</div></div>'
-    +'<div class="clock"><span class="cap">资格者</span><span class="ck mono">'+(S.fin?S.fin.length:0)+'</span><span class="cap">人</span></div>'
+    +'<div class="left"><div class="hd"><div class="ttl">鬼市大拍卖</div><div class="en">暗标 · 每人限得一件</div></div>'
     +'<div class="alots">'+strip+'</div></div>'
     +'<div class="right">'+main+'</div></div></div>';
+}
+// 成交时大屏喷彩带：只在本页看到「出价中/已截止 → 成交」的那一刻放一次（刷新页面不会重放）
+const lotSeen={};
+function confettiCheck(){
+  if(!S||!S.auc||ui.tab!=='board'||ME.role==='player')return;
+  for(const l of S.auc.lots){const st=lotState(l),prev=lotSeen[l.id];lotSeen[l.id]=st+':'+(l.win||'');
+    if(st==='done'&&prev&&prev!==lotSeen[l.id])confetti(l.big);}
+}
+function confetti(big){
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  const box=document.createElement('div');box.className='confetti';box.setAttribute('aria-hidden','true');
+  const C=['#e0483a','#f2c14e','#5fe0b4','#ffffff','#b3332a','#d4a92c','#2a9d9a'],n=big?220:140;let h='';
+  for(let i=0;i<n;i++){const x=Math.random()*100,d=2.8+Math.random()*2.6,dl=Math.random()*(big?1.6:.9),w=6+Math.random()*8,r=Math.random()*360,sw=(Math.random()*2-1)*90;
+    h+='<i style="left:'+x.toFixed(1)+'%;--w:'+w.toFixed(1)+'px;--h:'+(w*(1.6+Math.random())).toFixed(1)+'px;--c:'+C[i%C.length]+';--d:'+d.toFixed(2)+'s;--dl:'+dl.toFixed(2)+'s;--r:'+r.toFixed(0)+'deg;--sw:'+sw.toFixed(0)+'px"></i>';}
+  box.innerHTML=h;document.body.appendChild(box);setTimeout(()=>box.remove(),(big?8000:6500));
 }
 
 // ---------- Dealer ----------
@@ -293,7 +309,7 @@ function viewAuc(){
   const scr='<div class="pn ascr"><div class="shrow"><h3>大屏显示</h3><span class="small">'+(fin?'资格者 '+fin.length+' 人':'资格名单还没锁定')+'</span></div><div class="seg2">'
     +'<button class="sbtn'+(A.screen!=='auction'?' on':'')+'" data-a="aucscreen" data-v="0" aria-pressed="'+(A.screen!=='auction')+'">游戏大屏</button>'
     +'<button class="sbtn'+(A.screen==='auction'?' on':'')+'" data-a="aucscreen" data-v="1" aria-pressed="'+(A.screen==='auction')+'">拍卖大屏</button></div>'
-    +(fin?'':'<div class="lot hot">开拍前要先锁定压轴资格名单（四花色 + '+FINAL_SCORE+' 冥币 + 在场）。<br>现在符合条件 <b class="mono">'+S.players.filter(p=>p.on&&qualifies(p)).length+'</b> 人。</div>'
+    +(fin?'':'<div class="lot hot">开拍前要先锁定晋级资格名单（四花色 + '+FINAL_SCORE+' 冥币 + 在场）。<br>现在符合条件 <b class="mono">'+S.players.filter(p=>p.on&&qualifies(p)).length+'</b> 人。</div>'
       +'<button class="btn-main" data-a="lockfinal" style="min-height:52px">锁定资格名单</button>')+'</div>';
   let cur;
   if(!l)cur='<div class="pn acur"><h3>当前拍品</h3><span class="muted">还没有选拍品。在下面列表里点一件「选中」。</span></div>';
@@ -326,14 +342,15 @@ function viewAuc(){
       +'<span class="btns">'+(x!==l?'<button class="btn-line" data-a="aucshow" data-v="'+x.id+'">选中</button>':'<span class="small acc">当前</span>')
       +(s==='wait'?'<button class="btn-line" data-a="lotedit" data-v="'+x.id+'">改</button><button class="btn-line" data-a="lotmove" data-v="'+x.id+'" data-d="-1" aria-label="上移">↑</button><button class="btn-line" data-a="lotmove" data-v="'+x.id+'" data-d="1" aria-label="下移">↓</button>':'')+'</span></div>';}).join('');
   const add='<div class="pn"><h3>拍品列表</h3><div class="alist">'+(list||'<div class="li small">还没有拍品</div>')+'</div>'
-    +'<details class="addlot"'+(L.length?'':' open')+'><summary>＋ 添加拍品</summary>'+lotForm('lot')+'<button class="btn-line acc" data-a="lotadd">添加</button></details></div>';
+    +(ui.addLot||!L.length?'<div class="addlot"><div class="shrow"><b>添加拍品</b>'+(L.length?'<button class="btn-line" data-a="addlot" data-v="0">收起</button>':'')+'</div>'+lotForm('lot')+'<button class="btn-line acc" data-a="lotadd">添加</button></div>'
+      :'<button class="btn-line acc" data-a="addlot" data-v="1" style="align-self:flex-start">＋ 添加拍品</button>')+'</div>';
   return '<div class="page"><div class="cols2 aucg"><div class="stack">'+scr+cur+proxy+'</div><div class="stack">'+add+'</div></div></div>';
 }
 function lotForm(k){const f=k==='lot'?ui.lot:ui.le;
   return '<div class="fgrid"><label class="fld"><span>名称</span><input class="in" data-m="'+k+'.name" value="'+esc(f.name)+'" placeholder="例如：盲盒"></label>'
     +'<label class="fld"><span>起拍价</span><input class="in mono" data-m="'+k+'.start" value="'+esc(f.start)+'" inputmode="numeric"></label></div>'
     +'<label class="fld"><span>说明（可不填）</span><input class="in" data-m="'+k+'.desc" value="'+esc(f.desc)+'"></label>'
-    +'<label class="ckl"><input type="checkbox" data-m="'+k+'.big"'+(f.big?' checked':'')+'> 压轴大奖（大屏更隆重）</label>';}
+    +'<label class="ckl"><input type="checkbox" data-m="'+k+'.big"'+(f.big?' checked':'')+'> 最终大奖（大屏更隆重）</label>';}
 
 // ---------- 鬼市 ----------
 // 入鬼市登记：黑白无常或孟婆谁点都行，另一方确认。
@@ -385,7 +402,7 @@ function viewWuchang(){
 }
 
 // ---------- 生死簿 ----------
-const FLT=[['all','全部'],['alive','在场'],['down','不在场'],['fin','可压轴'],['off','未上榜']];
+const FLT=[['all','全部'],['alive','在场'],['down','不在场'],['fin','可晋级'],['off','未上榜']];
 function playerTable(){
   const q=ui.q.trim(),f=ui.flt;
   let list=S.players.filter(p=>f==='off'?!p.on:p.on);
@@ -394,7 +411,7 @@ function playerTable(){
   list=f==='off'?list:list.sort((a,b)=>b.score-a.score||a.id.localeCompare(b.id));
   const rows=list.map(p=>'<button class="ptr'+(ui.ed.pid===p.id?' on':'')+(p.st!=='alive'?' down':'')+'" data-a="edpick" data-v="'+p.id+'"><span class="mono b">'+p.id+'</span><span class="nk">'+esc(p.nick||'—')+'</span>'
     +'<span class="stt'+(p.st==='alive'?'':' red')+'">'+stLabel(p)+(p.inRoom?' · '+room(p.inRoom).card:'')+'</span>'+suits4(p)+'<span class="mono sc">'+p.score+'</span>'
-    +'<span class="small">'+(S.fin&&S.fin.includes(p.id)?'<b class="acc">资格</b>':qualifies(p)?'<span class="acc">可压轴</span>':'')+'</span></button>').join('');
+    +'<span class="small">'+(S.fin&&S.fin.includes(p.id)?'<b class="acc">资格</b>':qualifies(p)?'<span class="acc">可晋级</span>':'')+'</span></button>').join('');
   return '<div class="pn" style="gap:10px"><div class="btns"><input class="in" id="pq" data-m="q" value="'+esc(ui.q)+'" placeholder="搜编号或昵称" style="max-width:220px">'
     +FLT.map(([k,l])=>'<button class="btn-line'+(f===k?' fill':'')+'" data-a="flt" data-v="'+k+'">'+l+'</button>').join('')+'<span class="small">'+list.length+' 人</span></div>'
     +'<div class="ptbl"><div class="ptr th"><span>编号</span><span>昵称</span><span>状态</span><span>花色</span><span>冥币</span><span></span></div>'+(rows||'<div class="li small">没有符合的人</div>')+'</div></div>';
@@ -413,33 +430,34 @@ function editPanel(){
     +'<button class="btn-main" data-a="edscore"'+(amt?'':' disabled')+'>'+(amt?'确认 '+p.id+' '+(amt>0?'+':'')+amt+' → '+Math.max(0,p.score+amt):'填写增减数')+'</button>'
     +'<div class="fgrid"><label class="fld"><span>昵称</span><input class="in" id="edn" data-m="ed.nick" value="'+esc(ui.ed.nick)+'" placeholder="'+esc(p.nick||'未取名')+'"></label>'
     +'<div class="fld"><span>&nbsp;</span><button class="btn-line" data-a="ednick"'+(ui.ed.nick.trim()?'':' disabled')+'>改昵称</button></div></div>'
+    +'<div class="fld"><span>花色（点一下加上 / 去掉，补录或纠错用）</span><div class="chips c4">'+SUITS.map(x=>'<button class="cb'+(p.cards.includes(x)?' on':'')+'" data-a="edsuit" data-v="'+x+'" aria-pressed="'+p.cards.includes(x)+'"><span class="t">'+suitG(x)+'</span></button>').join('')+'</div></div>'
     +'<div class="fld"><span>起始房间</span><div class="chips c4">'+ROOMS.map(r=>'<button class="cb'+(p.start===r.id?' on':'')+'" data-a="edstart" data-v="'+r.id+'" aria-pressed="'+(p.start===r.id)+'"><span class="t">'+cardG(r)+'</span></button>').join('')+'</div></div>'
     +'<div class="btns"><button class="btn-line" data-a="edon" data-v="'+(p.on?0:1)+'">'+(p.on?'移出排行榜（这张卡没人用）':'加入排行榜')+'</button>'
-    +(S.fin?'<button class="btn-line'+(inFin?'':' acc')+'" data-a="finone" data-v="'+(inFin?0:1)+'">'+(inFin?'移出压轴名单':'加入压轴名单'+(miss.length?'（条件未满足）':''))+'</button>':'')+'</div>'
-    +(miss.length?'<span class="small">压轴还差：'+esc(miss.join('，'))+'</span>':'<span class="small acc">压轴条件已满足</span>')
+    +(S.fin?'<button class="btn-line'+(inFin?'':' acc')+'" data-a="finone" data-v="'+(inFin?0:1)+'">'+(inFin?'移出晋级名单':'加入晋级名单'+(miss.length?'（条件未满足）':''))+'</button>':'')+'</div>'
+    +(miss.length?'<span class="small">晋级还差：'+esc(miss.join('，'))+'</span>':'<span class="small acc">晋级条件已满足</span>')
     +(hist?'<div class="histp"><span class="lbl">房间记录</span>'+hist+'</div>':'')+'</div>';
 }
 function finalPanel(){
   const act=S.players.filter(p=>p.on),ok=act.filter(qualifies),near=act.filter(p=>!qualifies(p)&&p.st==='alive'&&suitsOf(p).length>=3).sort((a,b)=>b.score-a.score).slice(0,10);
   const row=(p,inFin)=>'<div class="li"><div class="grow"><span class="x">'+who(p)+' '+suits4(p)+' <b class="mono">'+p.score+'</b></span>'+(qualifies(p)?'':'<span class="small">'+esc(finalMiss(p).join('，'))+'</span>')+'</div>'
     +(S.fin?(inFin?'<button class="btn-line" data-a="finrm" data-v="'+p.id+'">移出</button>':'<button class="btn-line acc" data-a="finadd" data-v="'+p.id+'">加入</button>'):'')+'</div>';
-  if(!S.fin)return '<div class="pn" style="gap:12px"><div class="shrow"><h3>压轴资格</h3><span class="small">四花色 + 冥币 ≥ '+FINAL_SCORE+' + 在场</span></div>'
+  if(!S.fin)return '<div class="pn" style="gap:12px"><div class="shrow"><h3>晋级资格</h3><span class="small">四花色 + 冥币 ≥ '+FINAL_SCORE+' + 在场</span></div>'
     +'<div class="lot">时间截止后（8:00–8:15）核对，然后锁定名单。锁定后玩家手机会收到通知，拍卖才能开始；之后还可以手动加 / 减人。</div>'
     +'<button class="btn-main glow" data-a="lockfinal" style="min-height:52px">锁定资格名单（现在 '+ok.length+' 人符合）</button>'
     +'<span class="lbl">现在符合条件（'+ok.length+'）</span>'+(ok.map(p=>row(p,false)).join('')||'<div class="li small">暂无</div>')
     +'<span class="lbl">差一点的人</span>'+(near.map(p=>row(p,false)).join('')||'<div class="li small">暂无</div>')+'</div>';
   const inL=S.fin.map(pl).filter(Boolean),rest=act.filter(p=>!S.fin.includes(p.id)&&(qualifies(p)||suitsOf(p).length>=3)).sort((a,b)=>b.score-a.score).slice(0,12);
-  return '<div class="pn" style="gap:12px"><div class="shrow"><h3>压轴资格名单（已锁定，'+inL.length+' 人）</h3>'+(S.auc.lots.some(l=>l.st!=='wait')?'':'<button class="btn-line" data-a="unlockfinal">解锁</button>')+'</div>'
+  return '<div class="pn" style="gap:12px"><div class="shrow"><h3>晋级资格名单（已锁定，'+inL.length+' 人）</h3>'+(S.auc.lots.some(l=>l.st!=='wait')?'':'<button class="btn-line" data-a="unlockfinal">解锁</button>')+'</div>'
     +(inL.map(p=>row(p,true)).join('')||'<div class="li small">名单是空的</div>')
     +'<span class="lbl">可以手动加入的人</span>'+(rest.map(p=>row(p,false)).join('')||'<div class="li small">暂无</div>')+'</div>';
 }
 function logTag(l){const x=l.text;
   return /鬼门开/.test(x)?['鬼门开','var(--warn)']:/拍|流拍|成交/.test(x)?['拍卖','#6b4f9a']:/重置完成|进入 .\d|中途离开|移出/.test(x)?['房间','var(--ink2)']:/失败|原地等/.test(x)?['淘汰','var(--red)']:/黑白无常/.test(x)?['无常','var(--red)']:/孟婆|鬼市|赎|筹码/.test(x)?['鬼市','var(--accent)']
-    :/解出|解谜/.test(x)?['解谜','var(--accent)']:/发布|撤销/.test(x)?['发布','var(--ink2)']:/赢下/.test(x)?['房间','var(--ink2)']:/冥币|压轴/.test(x)?['冥币','var(--warn)']:['系统','var(--sub)'];}
+    :/解出|解谜/.test(x)?['解谜','var(--accent)']:/发布|撤销/.test(x)?['发布','var(--ink2)']:/赢下/.test(x)?['房间','var(--ink2)']:/冥币|晋级/.test(x)?['冥币','var(--warn)']:['系统','var(--sub)'];}
 function viewCtrl(){
   const status='<div class="cols-ed"><div class="stack"><h2 class="sh">玩家</h2>'+playerTable()+'</div><div class="stack"><h2 class="sh">修改</h2>'+editPanel()+'</div></div>';
-  return '<div class="page tabbed toptabs ledger">'+sub('ctrl',[['status','玩家'],['final','压轴资格'],['pub','发布'],['log','全场日志'],['tools','总控工具']],'top col')
-    +sec('ctrl','status',status)+sec('ctrl','final','<h2 class="sh">压轴资格</h2>'+finalPanel())+sec('ctrl','pub',pubPanel())
+  return '<div class="page tabbed toptabs ledger">'+sub('ctrl',[['status','玩家'],['final','晋级资格'],['pub','发布'],['log','全场日志'],['tools','总控工具']],'top col')
+    +sec('ctrl','status',status)+sec('ctrl','final','<h2 class="sh">晋级资格</h2>'+finalPanel())+sec('ctrl','pub',pubPanel())
     +sec('ctrl','log','<h2 class="sh">全场日志</h2><div class="pn logl" style="gap:0">'+(S.log.length?S.log.slice(0,300).map(l=>{const [k,c]=logTag(l);
       return '<div class="le"><span class="t">'+fmt(l.t)+'</span><span class="k" style="--kc:'+c+'">'+k+'</span><span class="x">'+esc(l.text)+'</span></div>';}).join(''):'<span class="muted">还没有日志。</span>')+'</div>')
     +sec('ctrl','tools',adminPanel())+statsDlg()+'</div>';
@@ -450,7 +468,7 @@ function statsDlg(){
     +'<span class="small">登录、设备、在线曲线都会删除，无法恢复。需要的话先下载 CSV。</span>'
     +'<div class="btns two2"><button class="btn-main" data-a="stats-clear">确认清空</button><button class="btn-line" data-a="stats-cancel">取消</button></div></div></div>';
 }
-const PUB_TO=[['everyone','所有人'],['all','全体玩家'],['staff','工作人员'],['alive','在场的人'],['market','鬼市里的人'],['final','压轴资格者'],['player','指定玩家']];
+const PUB_TO=[['everyone','所有人'],['all','全体玩家'],['staff','工作人员'],['alive','在场的人'],['market','鬼市里的人'],['final','晋级资格者'],['player','指定玩家']];
 function pubPanel(){
   const f=ui.pub,gate=f.kind==='鬼门开',gq=GATES.find(x=>x.id===f.gate),ids=parseIds(f.players).filter(id=>pl(id));
   const target=gate?'<div class="fld"><span>题库</span>'+dd('pub.gate',gq?gq.title:f.gate==='custom'?'自定义':'','选择鬼门开',null,[...GATES.map(x=>({v:x.id,label:esc(x.title)})),{v:'custom',label:'自定义'}])+'</div>'+(gq?'<div class="lot">'+esc(gq.body)+'</div>':'')
@@ -559,14 +577,15 @@ function adminPanel(){
     +'<div class="btns"><button class="btn-line acc" data-a="sheet-now">导出当前状态</button><button class="btn-line" data-a="sheet-blank">下载空白记录表</button></div></div>'
     +'<div class="pn"><h3>备份与恢复</h3><span class="small">每 10 次操作自动备份一次；重置、恢复、载入演示数据前都会先备份当前数据。</span>'
     +'<div class="btns"><button class="btn-line" data-a="adm-snaps">查看备份</button>'
-    +(A.ask==='reset:demo'?'<button class="btn-line fillred" data-a="adm-reset" data-v="demo">确认载入演示数据</button><button class="btn-line" data-a="adm-cancel">取消</button>'
-      :'<button class="btn-line" data-a="adm-ask" data-v="reset:demo">载入演示数据</button>')+'</div>'+snaps+'</div></div>';
+    +'</div><span class="lbl" style="padding-top:6px">载入演示数据（会先备份当前数据）</span><div class="btns">'
+    +Object.entries(R.DEMOS).map(([k,l])=>A.ask==='reset:'+k?'<button class="btn-line fillred" data-a="adm-reset" data-v="'+k+'">确认载入「'+l+'」</button><button class="btn-line" data-a="adm-cancel">取消</button>'
+      :'<button class="btn-line" data-a="adm-ask" data-v="reset:'+k+'">'+l+'</button>').join('')+'</div>'+snaps+'</div></div>';
   const rs=A.resetTxt==='重置';
   const right='<div class="stack">'
     +'<div class="pn"><div class="shrow"><h3>PIN</h3><span class="small">按数量增减工作人员 PIN（改小会删掉编号靠后的，用它们登录的人会被踢下线）</span></div>'
     +'<div class="cnts">'+num('dealer','Dealer')+num('judge','判官')+num('mengpo','孟婆')+num('wuchang','黑白无常')+num('ctrl','总控')+num('screen','大屏')+'</div>'
     +'<div class="btns"><button class="btn-line acc" data-a="adm-gen">生成 PIN</button><button class="btn-line" data-a="adm-pins">查看全部 PIN</button></div>'
-    +'<div class="setrow"><div class="swrow"><span>打印身份卡<small>每张卡印编号、起始房间、PIN 和登录二维码（A4，每页 8 张）。二维码指向 <b>'+esc(location.origin)+'</b>，请在正式网址下打印。</small></span><button class="btn-line acc" data-a="cards">打印身份卡</button></div></div>'+pins+'</div>'
+    +'<div class="setrow"><div class="swrow"><span>打印身份卡<small>每张卡印编号、起始房间、PIN 和登录网址（A4，每页 8 张）。卡上印的网址是 <b>'+esc(location.host)+'</b>，请在正式网址下打印。</small></span><button class="btn-line acc" data-a="cards">打印身份卡</button></div></div>'+pins+'</div>'
     +'<div class="danger"><h3>危险操作</h3><p>重置会清空所有冥币、花色、昵称、日志、鬼市和拍卖记录（PIN 不变，身份卡回到 56 张）。请在下方输入“重置”二字后再点按钮。</p>'
     +'<input class="in" id="rst" data-m="adm.resetTxt" value="'+esc(A.resetTxt)+'" placeholder="输入“重置”" style="border-color:#d9b3aa">'
     +'<button class="btn-line '+(rs?'fillred':'')+'" id="rstbtn" data-a="adm-reset" data-v="blank"'+(rs?'':' disabled')+' style="min-height:48px;font-weight:900">重置为空白游戏</button></div></div>';
@@ -596,10 +615,10 @@ function viewPlayer(){
   if(!me.nick&&!DEVME)return viewNick(me);
   const inMkt=me.st==='market',out=me.st==='out'||me.st==='picked',inFin=!!(S.fin&&S.fin.includes(me.id));
   // 酆都通行证: a clearance document, stamped with the current state
-  const wst=inMkt||out?'market':'alive',wseal=out?'待接':inMkt?'鬼市':inFin?'压轴':'在场';
+  const wst=inMkt||out?'market':'alive',wseal=out?'待接':inMkt?'鬼市':inFin?'晋级':'在场';
   const wnote=out?'<span class="w-hint">挑战失败</span><span class="w-lab">'+(me.st==='picked'?'黑白无常已接到你，正在送你去鬼市':'留在原地，等黑白无常来接你')+'</span>'
     :inMkt?'<span class="w-hint">你在鬼市</span><span class="w-lab">筹码 <b class="mono">'+me.chips+'</b> / '+CHIP_GOAL+'</span><span class="w-lab">冥币已冻结 <b class="mono">'+me.score+'</b></span>'
-    :inFin?'<span class="w-hint">已获得压轴资格</span><span class="w-lab">到大房间参加鬼市大拍卖</span>'
+    :inFin?'<span class="w-hint">已获得晋级资格</span><span class="w-lab">到大房间参加鬼市大拍卖</span>'
     :'<span class="w-hint">冥币 <b class="mono">'+me.score+'</b></span><span class="w-lab">'+(myRank(me)?'排第 '+myRank(me)+' 名':'')+'</span>';
   const wch=[...wseal],wn=wch.length,wh=wn>2?78:58,wy=wn>2?[27,51,75]:[29,55];
   const wen='<div class="wen" data-st="'+wst+'"><svg class="w-grain" aria-hidden="true"><rect width="100%" height="100%" filter="url(#paperGrain)"></rect></svg>'
@@ -610,12 +629,12 @@ function viewPlayer(){
     +'<div class="w-state"><div class="w-note">'+wnote+'</div>'
     +'<svg class="w-seal" viewBox="0 0 64 '+(wh+6)+'" role="img" aria-label="'+wseal+'"><g filter="url(#sealInk)"><rect x="3" y="3" width="58" height="'+wh+'" rx="2"></rect>'
     +wch.map((c,i)=>'<text x="32" y="'+wy[i]+'" text-anchor="middle" font-size="'+(wn>2?24:28)+'">'+c+'</text>').join('')+'</g></svg></div></div>';
-  // 压轴资格进度：三个条件各一张卡
+  // 晋级资格进度：三个条件各一张卡
   const got=suitsOf(me).length,okS=got===SUITS.length,okA=me.st==='alive',okP=me.score>=FINAL_SCORE,doneN=[okS,okP,okA].filter(Boolean).length;
   const suits=SUITS.map(x=>{const g=me.cards.includes(x);return '<div class="s4'+(g?' got':'')+'" title="'+TYPE[x]+(g?'':'：未获得')+'"><span class="g '+(isRed(x)?'sr':'')+'">'+x+'</span><span class="l">'+TYPE[x]+'</span></div>';}).join('');
   const cc=(ok,ttl,body)=>'<div class="fc'+(ok?' ok':'')+'"><div class="fh"><b>'+ttl+'</b><span class="fk">'+(ok?'✓ 已达成':'未达成')+'</span></div>'+body+'</div>';
-  const finSec='<div class="fin3"><div class="fhd"><div class="ft"><span class="cap">压轴资格进度</span><b class="fn">'+doneN+'<i> / 3</i></b></div>'
-    +'<div class="fs">'+(inFin?'你已在压轴名单里':doneN===3?'条件都满足了，时间截止时保持住！':'时间截止时满足这三条，就能参加压轴拍卖')+'</div></div><div class="fcs">'
+  const finSec='<div class="fin3"><div class="fhd"><div class="ft"><span class="cap">晋级资格进度</span><b class="fn">'+doneN+'<i> / 3</i></b></div>'
+    +'<div class="fs">'+(inFin?'你已在晋级名单里':doneN===3?'条件都满足了，时间截止时保持住！':'时间截止时满足这三条，就能晋级，参加鬼市大拍卖')+'</div></div><div class="fcs">'
     +cc(okS,'集齐四种花色','<div class="suits4">'+suits+'</div><div class="fx mono">'+got+' / 4</div>')
     +cc(okP,'冥币 ≥ '+FINAL_SCORE,'<div class="fscore mono">'+me.score+'</div><div class="bar"><span class="ok" style="width:'+Math.min(100,me.score/FINAL_SCORE*100)+'%"></span></div><div class="fx mono">'+(okP?'已达成':'差 '+(FINAL_SCORE-me.score))+'</div>')
     +cc(okA,'保持存活','<div class="fscore">'+stLabel(me)+'</div><div class="fx">'+(okA?'不在鬼市':'先从鬼市回来')+'</div>')+'</div></div>';
@@ -647,7 +666,7 @@ function viewAucPlayer(){
   const inFin=!!(me&&S.fin&&S.fin.includes(me.id)),my=l&&me&&l.bids[me.id];
   let box='';
   if(me&&me.won){const w=lot(me.won);box='<div class="pn abox ok"><b>你拍到了「'+esc(w?w.name:'')+'」</b><span class="small">每人最多拍得 1 件，后面的拍品不能再出价。</span></div>';}
-  else if(!inFin)box='<div class="pn abox"><b>你没有压轴资格</b><span class="small">可以在台下围观。</span></div>';
+  else if(!inFin)box='<div class="pn abox"><b>你没有晋级资格</b><span class="small">可以在台下围观。</span></div>';
   else if(l&&st==='open'){const why=whyNotBid(me.id,l),v=ui.bid,n=parseInt(v,10);
     const bad=!v?'':!Number.isInteger(+v)||n<0?'出价要是整数':n<l.start?'起拍价是 '+l.start:n>me.score?'你只有 '+me.score+' 冥币':'';
     box='<div class="pn abox"><div class="shrow"><b>你的出价</b><span class="small">你有 <b class="mono">'+me.score+'</b> 冥币</span></div>'
@@ -668,7 +687,7 @@ const tuSeen=()=>{try{return sessionStorage.getItem(tuKey())==='1';}catch{return
 const staffAcked=id=>{try{return sessionStorage.getItem('borderland.sa.'+id)==='1';}catch{return !!(ui.sa&&ui.sa[id]);}};
 function tuDlg(){
   return '<div class="ovl" data-k="time"><div class="dlg" data-n="timeup" data-k="time" role="dialog" aria-modal="true" aria-labelledby="dt"><div class="new"><i></i>全场通知</div>'
-    +'<h3 id="dt">时间到</h3><div class="body">主游戏时间已用完，所有房间关闭。\n已经在房间里的人可以打完当前一局。鬼市不再收新人。\n请所有玩家到大房间集合，核对压轴资格。</div>'
+    +'<h3 id="dt">时间到</h3><div class="body">主游戏时间已用完，所有房间关闭。\n已经在房间里的人可以打完当前一局。鬼市不再收新人。\n请所有玩家到大房间集合，核对晋级资格。</div>'
     +'<div class="foot"><span class="cap">剩余时间</span><span class="cd over">0:00:00</span></div>'
     +'<button data-a="tuack" data-modal="1">知道了</button></div></div>';
 }
@@ -779,7 +798,7 @@ function render(){
   if(!S){$('#view').innerHTML='<section class="pn muted">正在连接服务器…</section>';return;}
   R.use(S);S.t=nowT();S.now=Date.now()+OFFSET;$('#clk').textContent=fmt(S.t);
   morph($('#view'),aucP?viewAucPlayer():ui.tab==='board'?viewBoard():ui.tab==='dealer'?viewDealer():ui.tab==='ctrl'?viewCtrl():ui.tab==='npc'?viewNpc():ui.tab==='auc'?viewAuc():ui.tab==='market'?viewMarket():ui.tab==='wuchang'?viewWuchang():viewPlayer());
-  fitStage();
+  fitStage();confettiCheck();
   { // 灯笼 / 面具的绳子接到页头那条线：算出它们离页头底边的距离（有标签栏时不上提，免得盖住标签）
     const root=document.documentElement,hb=$('#top').getBoundingClientRect().bottom;
     root.style.setProperty('--lfy',Math.max(0,Math.round(hb+window.scrollY))+'px'); // 手机固定背景的上沿 = 页头分割线
@@ -802,7 +821,7 @@ function renderLogin(){
   $('#view').innerHTML='<div class="lg" id="lgcard"><div class="t">百鬼夜行</div><div class="s">Cornell CSSA 万圣夜</div><div class="dv"><i></i><b></b><i></i></div>'
     +'<form id="loginf" style="display:flex;flex-direction:column;gap:inherit"><label class="k" for="pin">输入 6 位 PIN</label>'
     +'<div class="boxes" id="boxes">'+'<div class="bx"></div>'.repeat(6)+'<input id="pin" inputmode="numeric" autocomplete="one-time-code" maxlength="6" aria-label="PIN"></div>'
-    +'<button class="go">进入</button></form><div class="h" id="lgmsg" role="status">PIN 在你的身份卡上，扫卡上的二维码也能直接进入</div></div>';
+    +'<button class="go">进入</button></form><div class="h" id="lgmsg" role="status">PIN 印在你的身份卡上</div></div>';
   syncBoxes();$('#pin').focus();
 }
 function syncBoxes(err){
@@ -812,7 +831,7 @@ function syncBoxes(err){
   const g=$('#amb ghost-ambience');if(g)g.setAttribute('data-len',String(v.length));
 }
 // The message takes the place of the hint line, so the card never changes size.
-function loginMsg(msg){const e=$('#lgmsg');if(!e)return;e.classList.toggle('err',!!msg);e.textContent=msg||'PIN 在你的身份卡上，扫卡上的二维码也能直接进入';}
+function loginMsg(msg){const e=$('#lgmsg');if(!e)return;e.classList.toggle('err',!!msg);e.textContent=msg||'PIN 印在你的身份卡上';}
 function loginError(msg){
   if(!$('#lgmsg'))return;
   loginMsg(msg==='PIN 不正确'?'PIN 不正确，请核对身份卡':msg);
@@ -931,7 +950,7 @@ function localAdmin(a){
       else if(a.op==='reset'){CLOCK={running:false,base:0,at:Date.now()};FULL.t=0;R.log('计时重置为 0:00');}
       else return no('计时状态没有变化');
       return ok(CLOCK.running?'计时进行中':'计时已暂停');
-    case 'admin.reset':lSnap('重置前');FULL=R.newGame(!!a.demo);FULL.now=Date.now();CLOCK={running:false,base:a.demo?FULL.t:0,at:Date.now()};return ok(a.demo?'已载入演示数据（计时暂停）':'已重置为空白游戏（计时暂停）');
+    case 'admin.reset':lSnap('重置前');FULL=R.newGame(a.demo||false);FULL.now=Date.now();CLOCK={running:false,base:a.demo?FULL.t:0,at:Date.now()};return ok(a.demo?'已载入演示数据（计时暂停）':'已重置为空白游戏（计时暂停）');
     case 'admin.genpins':{
       const counts=a.counts||{};let made=0;const have=new Set(Object.values(LPINS).filter(v=>v.pid).map(v=>v.pid));
       for(const p of FULL.players)if(!have.has(p.id)){LPINS[lNewPin()]={role:'player',pid:p.id,label:p.id};made++;}
@@ -1032,6 +1051,7 @@ document.addEventListener('click',e=>{
   else if(a==='aucnext'){const nx=S.auc.lots.find(x=>x.st==='wait');if(nx)send({type:'auc.show',id:nx.id},()=>{ui.showBids=false;});}
   else if(a==='aucshow'){send({type:'auc.show',id:v},()=>{ui.showBids=false;});}
   else if(a==='showbids'){ui.showBids=!ui.showBids;}
+  else if(a==='addlot'){ui.addLot=v==='1';}
   else if(a==='lotadd'){send({type:'auc.add',f:ui.lot},()=>{ui.lot={name:'',desc:'',start:'100',big:false};});}
   else if(a==='lotedit'){const x=lot(v);ui.lotEdit=v;ui.le={name:x.name,desc:x.desc,start:String(x.start),big:x.big};}
   else if(a==='lotcancel'){ui.lotEdit=null;}
@@ -1056,6 +1076,7 @@ document.addEventListener('click',e=>{
   else if(a==='edstep'){ui.ed.amt=String((parseInt(ui.ed.amt,10)||0)+(+v));}
   else if(a==='edscore'){const p=pl(ui.ed.pid),amt=parseInt(ui.ed.amt,10)||0;if(p&&amt)send({type:'setscore',pid:p.id,v:Math.max(0,p.score+amt),why:ui.ed.why},()=>{ui.ed.amt='';ui.ed.why='';});}
   else if(a==='ednick'){send({type:'nick',pid:ui.ed.pid,nick:ui.ed.nick},()=>{ui.ed.nick='';});}
+  else if(a==='edsuit'){const p=pl(ui.ed.pid);if(p)send({type:'setcards',pid:p.id,cards:p.cards.includes(v)?p.cards.filter(x=>x!==v):[...p.cards,v]});}
   else if(a==='edstart'){send({type:'setstart',pid:ui.ed.pid,rid:v});}
   else if(a==='edon'){send({type:'seton',pid:ui.ed.pid,on:v==='1'});}
   else if(a==='finone'){send({type:'final',pid:ui.ed.pid,on:v==='1'});}
@@ -1086,7 +1107,7 @@ document.addEventListener('click',e=>{
   else if(a==='adm-resetpin'){A.ask=null;send({type:'admin.resetpin',pin:v},m=>{A.pins=m.data;});}
   else if(a==='adm-snaps'){send({type:'admin.snaps'},m=>{A.snaps=m.data;},true);}
   else if(a==='adm-restore'){A.ask=null;send({type:'admin.restore',key:v},()=>{A.snaps=null;});}
-  else if(a==='adm-reset'){A.ask=null;if(v==='blank'&&A.resetTxt!=='重置')return;A.resetTxt='';send({type:'admin.reset',demo:v==='demo'});}
+  else if(a==='adm-reset'){A.ask=null;if(v==='blank'&&A.resetTxt!=='重置')return;A.resetTxt='';send({type:'admin.reset',demo:v==='blank'?false:v});}
   else if(a==='adm-csv'){downloadPins();}
   else if(a==='sheet-now'){downloadSheet(false,true);}
   else if(a==='sheet-blank'){downloadSheet(true);}
@@ -1151,28 +1172,39 @@ function downloadPins(){
   setTimeout(()=>URL.revokeObjectURL(a.href),1000);
 }
 
-// 身份卡：每人一张，印编号、起始房间、PIN 和登录二维码（扫码 = 打开 ?pin= 链接，自动登录）。A4 纵向每页 8 张，在本机生成。
-async function printCards(){
-  const go=async pins=>{
-    let qr;try{qr=(await import('./qrcode.js')).default;}catch{say(no('二维码组件加载失败，请联网后重试'));return;}
+// 身份卡：每人一张，印编号、起始房间、PIN 和登录网址（不印二维码）。A4 纵向每页 8 张，在本机生成，风格同酆都通行证。
+function printCards(){
+  const go=pins=>{
     const ps=pins.filter(p=>p.role==='player'&&pl(p.pid)).sort((a,b)=>a.pid.localeCompare(b.pid));
     if(!ps.length){say(no('还没有玩家 PIN，先点「生成 PIN」'));return;}
-    const svg=t=>{const q=qr(0,'M');q.addData(t);q.make();return q.createSvgTag({cellSize:4,margin:0,scalable:true});};
-    const card=p=>{const q=pl(p.pid),r=room(q.start);
-      return '<div class="c"><div class="hd"><b>百鬼夜行</b><span>身份卡</span></div><div class="bd"><div class="l"><span class="k">编号</span><span class="id">'+q.id+'</span>'
-        +'<span class="k">起始房间</span><span class="rm"><b class="'+(isRed(r.suit)?'r':'')+'">'+r.suit+r.n+'</b> '+esc(r.name)+'</span><span class="k">PIN</span><span class="pin">'+p.pin+'</span></div>'
-        +'<div class="qr">'+svg(location.origin+'/?pin='+p.pin)+'</div></div><div class="ft">扫码直接进入；换手机时打开 '+esc(location.host)+' 输入 PIN。前 '+START_ONLY/60+' 分钟只能进起始房间。</div></div>';};
-    const css='@page{size:A4;margin:10mm}*{box-sizing:border-box}body{margin:0;font-family:"PingFang SC","Microsoft YaHei",sans-serif;color:#111}'
-      +'.pg{display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:66mm;gap:4mm;page-break-after:always}.pg:last-child{page-break-after:auto}'
-      +'.c{border:1.2px dashed #888;border-radius:3mm;padding:4mm 5mm;display:flex;flex-direction:column;gap:2mm;overflow:hidden}'
-      +'.hd{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid #111;padding-bottom:1.5mm}.hd b{font-size:15pt;letter-spacing:.2em}.hd span{font-size:9pt;color:#555}'
-      +'.bd{display:flex;gap:4mm;flex:1;min-height:0}.l{flex:1;display:flex;flex-direction:column;gap:.6mm}.k{font-size:7.5pt;color:#666}'
-      +'.id{font:800 26pt ui-monospace,Menlo,monospace;line-height:1}.rm{font-size:11pt}.rm b{font:800 13pt ui-monospace,monospace}.rm b.r{color:#b3332a}'
-      +'.pin{font:700 15pt ui-monospace,Menlo,monospace;letter-spacing:.12em}.qr{width:34mm;height:34mm;flex:none;align-self:center}.qr svg{width:100%;height:100%}'
-      +'.ft{font-size:7pt;color:#555;line-height:1.35}.np{padding:12px;font-size:14px}@media print{.np{display:none}}';
+    const host=location.host;
+    const card=p=>{const q=pl(p.pid),r=room(q.start),red=isRed(r.suit);
+      return '<div class="c"><i class="fr"></i><i class="cn tl"></i><i class="cn tr"></i><i class="cn bl"></i><i class="cn br"></i>'
+        +'<div class="hd"><b>酆都通行证</b><span>百鬼夜行 · 身份卡</span></div><div class="rule"></div>'
+        +'<div class="bd"><div class="l"><span class="k">持证人编号</span><span class="id">'+q.id+'</span>'
+        +'<span class="k">起始房间</span><span class="rm"><span class="tile'+(red?' r':'')+'"><b>'+r.n+'</b><i>'+r.suit+'</i></span><span>'+esc(r.name)+'<small>开场前 '+START_ONLY/60+' 分钟只能进这间</small></span></span></div>'
+        +'<div class="seal"><span>准</span><span>入</span></div></div>'
+        +'<div class="pinr"><span class="k">登录 PIN</span><span class="pin">'+p.pin.split('').join('</span><span class="pin">')+'</span></div>'
+        +'<div class="ft">手机打开 <b>'+esc(host)+'</b>，输入 PIN 进入 · 换手机时用同一个 PIN · 请勿外借</div></div>';};
+    const css='@page{size:A4;margin:9mm}*{box-sizing:border-box}body{margin:0;font-family:"Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif;color:#1b1712;-webkit-print-color-adjust:exact;print-color-adjust:exact}'
+      +'.pg{display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:67mm;gap:3.5mm;page-break-after:always}.pg:last-child{page-break-after:auto}'
+      +'.c{position:relative;background:#f4efe3;border:1px solid #b9ab8c;padding:5mm 6mm 4mm;display:flex;flex-direction:column;gap:1.6mm;overflow:hidden}'
+      +'.fr{position:absolute;inset:2mm;border:.5px solid #8c7d5c;pointer-events:none}.cn{position:absolute;width:4mm;height:4mm;border:1.4px solid #0b7658}'
+      +'.cn.tl{left:1.2mm;top:1.2mm;border-right:0;border-bottom:0}.cn.tr{right:1.2mm;top:1.2mm;border-left:0;border-bottom:0}.cn.bl{left:1.2mm;bottom:1.2mm;border-right:0;border-top:0}.cn.br{right:1.2mm;bottom:1.2mm;border-left:0;border-top:0}'
+      +'.hd{display:flex;justify-content:space-between;align-items:baseline}.hd b{font-family:"Ma Shan Zheng","Kaiti SC","STKaiti",serif;font-weight:400;font-size:19pt;letter-spacing:.12em;line-height:1}.hd span{font-size:7.5pt;color:#6a5d45;letter-spacing:.1em}'
+      +'.rule{height:0;border-top:.6px solid #8c7d5c;margin:.5mm 0}'
+      +'.bd{display:flex;gap:3mm;align-items:flex-start;flex:1;min-height:0}.l{flex:1;display:flex;flex-direction:column;gap:.4mm;min-width:0}.k{font-size:6.8pt;color:#7a6c50;letter-spacing:.12em}'
+      +'.id{font:800 27pt "JetBrains Mono",ui-monospace,Menlo,monospace;line-height:1;letter-spacing:.04em;margin-bottom:1mm}'
+      +'.rm{display:flex;align-items:center;gap:2mm;font-size:10.5pt;font-weight:700}.rm small{display:block;font-size:6.5pt;font-weight:400;color:#7a6c50}'
+      +'.tile{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;width:8.5mm;height:11mm;border:1.2px solid #1b1712;border-radius:1mm;background:#fffdf6;line-height:1}.tile b{font:800 11pt "JetBrains Mono",monospace}.tile i{font-style:normal;font-size:9pt}.tile.r{color:#b3332a;border-color:#b3332a}'
+      +'.seal{flex:none;width:15mm;height:15mm;border:1.6px solid #b3332a;color:#b3332a;display:grid;grid-template-columns:1fr;place-items:center;font-family:"Ma Shan Zheng","Kaiti SC",serif;font-size:12pt;line-height:1;transform:rotate(-6deg);opacity:.85;padding:1mm 0}'
+      +'.pinr{display:flex;align-items:center;gap:1.2mm;border-top:.6px dashed #8c7d5c;padding-top:1.6mm}.pinr .k{margin-right:1.5mm}'
+      +'.pin{display:inline-grid;place-items:center;width:6.6mm;height:8mm;border:1px solid #1b1712;background:#fffdf6;font:800 13pt "JetBrains Mono",monospace}'
+      +'.ft{font-size:6.6pt;color:#6a5d45;line-height:1.35}.ft b{color:#1b1712}'
+      +'.np{padding:12px;font-size:14px}@media print{.np{display:none}}';
     let pages='';for(let i=0;i<ps.length;i+=8)pages+='<div class="pg">'+ps.slice(i,i+8).map(card).join('')+'</div>';
-    const html='<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>百鬼夜行 身份卡</title><style>'+css+'</style></head><body>'
-      +'<div class="np">共 '+ps.length+' 张，每页 8 张。二维码指向 '+esc(location.origin)+'。<button onclick="print()">打印</button></div>'+pages+'</body></html>';
+    const html='<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><base href="'+esc(location.origin)+'/"><link rel="stylesheet" href="fonts.css"><title>百鬼夜行 身份卡</title><style>'+css+'</style></head><body>'
+      +'<div class="np">共 '+ps.length+' 张，每页 8 张。打印时勾选「背景图形」可印出纸色。<button onclick="print()">打印</button></div>'+pages+'</body></html>';
     const w=window.open('','_blank');
     if(w){w.document.open();w.document.write(html);w.document.close();}
     else{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([html],{type:'text/html'}));a.download='borderland-cards.html';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}

@@ -96,7 +96,7 @@ T('奖励只能领一次', !A('judge', { type: 'gatereward', pid: '003', kind: '
 T('奖励：拿一个花色；3 人发完自动结束', A('judge', { type: 'gatereward', pid: '004', kind: 'suit', arg: '♦' }).ok && P('004').cards.includes('♦') && !S.gp);
 T('通知上记了结果', S.notices.find(n => n.sub === 'gate').gr.length === 3);
 
-// ---------- 压轴资格与拍卖 ----------
+// ---------- 晋级资格与拍卖 ----------
 fresh(); S.t = 7300;
 const q = (id, sc) => { const p = P(id); p.on = true; p.cards = ['♠', '♦', '♣', '♥']; p.score = sc; };
 q('001', 2500); q('002', 3000); q('003', 2000); q('004', 1999); P('005').on = true;
@@ -145,4 +145,12 @@ T('玩家只看到播报日志和自己的通知', (() => { R.eliminate(P('002')
 T('新增身份卡', A('ctrl', { type: 'addplayers', n: 4 }).ok && S.players.length === 60 && P('060').start === '8H');
 T('旧存档要重置', R.needsReset({ v: 2, rooms: [] }) && !R.needsReset(S));
 T('演示数据可以生成', (() => { const g = R.newGame(true); return g.players.filter(p => p.on).length >= 36 && g.auc.lots.length === 5 && g.rooms.some(r => r.ps.length); })());
+// ---------- 第 2 轮：花色可改、三套演示数据 ----------
+fresh();
+T('总控改花色', A('ctrl', { type: 'setcards', pid: '001', cards: ['♥', '♠', 'x'] }).ok && P('001').cards.join('') === '♠♥' && S.log[0].text.includes('花色'));
+T('判官不能改花色', !A('judge', { type: 'setcards', pid: '001', cards: [] }).ok);
+{ const g = R.newGame('start'); T('演示·开局：前 10 分钟、房间里有人、没有晋级名单', g.t < R.START_ONLY && g.rooms.some(r => r.ps.length) && !g.fin); }
+{ const g = R.newGame('mid'); T('演示·中段：鬼门开进行中、鬼市有人', !!g.gp && g.gp.wins.length === 1 && g.players.some(p => p.st === 'market')); }
+{ const g = R.newGame('final'); R.use(g); T('演示·晋级与拍卖：时间已到、名单已锁、第 1 件成交、大屏在拍卖', R.timeUp() && g.fin.length >= 6 && g.auc.lots[0].st === 'done' && g.auc.cur === 'L2' && g.auc.screen === 'auction' && g.fin.every(id => R.qualifies(g.players.find(p => p.id === id)))); }
+T('newGame(true) = 中段', !!R.newGame(true).gp);
 console.log(bad ? bad + ' FAILED' : 'all passed'); process.exit(bad ? 1 : 0);

@@ -1500,3 +1500,49 @@ html{scrollbar-gutter:stable}
   .abtns{grid-template-columns:1fr}
 }
 .chips.c4 .cb .t{display:inline;white-space:nowrap;font:800 18px var(--mono)}
+
+/* ==== 2026-10-16 第 2 轮：房间三态（开放最醒目）、拍卖大屏精简、彩带 ==== */
+body .room.s-open{border-color:var(--accent);background:linear-gradient(180deg,var(--accent-soft),transparent 70%),var(--panel);box-shadow:inset 0 0 0 1px var(--accent),var(--shx,4px) var(--shx,4px) 0 var(--accent),0 0 26px var(--glow)}
+body .room.s-open .idle{color:var(--accent);font-weight:900;display:flex;align-items:center;gap:8px}
+body .room.s-open .cd{color:var(--ink)}
+body .room.s-play{border-color:var(--line);background:var(--panel2);box-shadow:none;opacity:.62}
+body .room.s-play .cd,body .room.s-play .pt{color:var(--sub)}
+body .room.s-play .on{color:var(--warn);font-weight:700}
+body .room.s-play .on .gd{background:var(--warn);color:var(--warn)}
+body .room.s-reset,body .room.s-shut{border-style:dotted;border-color:var(--line2);background:transparent;box-shadow:none;opacity:.4}
+body .room.s-reset .cd,body .room.s-shut .cd{color:var(--mute)}
+body .room.mine{opacity:1;border-color:var(--red);box-shadow:inset 0 0 0 1px var(--red),0 0 16px var(--red-soft)}
+.stage .room.s-open .idle{font-size:26px}
+/* 拍卖大屏：关键信息 = 拍品名、起拍价、倒计时；其他都退后 */
+.stage.auc{grid-template-columns:400px minmax(0,1fr)}
+.stage.auc .ttl{font-size:76px}
+.stage.auc .en{font-size:20px;letter-spacing:.2em;margin-top:6px}
+.stage.auc .alots{margin-top:12px;gap:8px}
+.stage .alot{font-size:22px;padding:10px 14px;opacity:.75}
+.stage .alot.cur{opacity:1}
+.stage .alot .ast{font-size:18px}
+.stage .amain{gap:18px;padding:36px 48px}
+.stage .aidx{font-size:24px;letter-spacing:.3em}
+.stage .aname{font-size:128px}
+.stage .adesc{font-size:30px;color:var(--sub)}
+.akey{display:flex;align-items:center;justify-content:center;gap:72px;margin-top:10px}
+.astartb{display:flex;flex-direction:column;align-items:center;gap:6px;padding:18px 34px;border:3px solid var(--warn);border-radius:18px}
+.stage .astartb b{font-size:110px;line-height:1;color:var(--warn)}
+.stage .astartb .acap{font-size:28px;letter-spacing:.4em;color:var(--warn)}
+.stage .aclk{font-size:200px}
+.stage .await{font-size:56px;color:var(--sub);letter-spacing:.2em}
+.stage .anb{font-size:28px;color:var(--sub)}.stage .anb b{font-size:36px;color:var(--ink2)}
+.amain.grand .aidx{color:var(--warn);font-weight:900}
+@media (max-width:819px){
+  .stage.auc .ttl{font-size:28px}.stage.auc .en{font-size:12px}
+  .akey{gap:16px;flex-wrap:wrap}.astartb{padding:8px 14px;border-width:2px}
+  .stage .astartb b{font-size:40px}.stage .astartb .acap{font-size:12px}
+  .stage .aname{font-size:40px}.stage .aclk{font-size:64px}.stage .await{font-size:22px}
+  .stage .amain{padding:18px 14px}.stage .alot{font-size:15px}.stage .alot .ast{font-size:13px}
+  .stage .room.s-open .idle{font-size:15px}
+}
+.confetti{position:fixed;inset:0;pointer-events:none;z-index:200;overflow:hidden}
+.confetti i{position:absolute;top:-24px;width:var(--w);height:var(--h);background:var(--c);border-radius:2px;opacity:.95;transform:rotate(var(--r));animation:cfall var(--d) cubic-bezier(.25,.6,.4,1) var(--dl) both}
+.confetti i:nth-child(3n){border-radius:50%;height:var(--w)}
+@keyframes cfall{0%{transform:translate(0,0) rotate(var(--r))}100%{transform:translate(var(--sw),110vh) rotate(calc(var(--r) + 720deg));opacity:.85}}
+.chips.c4 .cb{justify-content:center}.chips.c4 .cb .t{font-size:22px}

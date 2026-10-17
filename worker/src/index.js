@@ -329,7 +329,7 @@ export class Game extends DurableObject {
       }
       case 'admin.reset': {
         await this.snapshot('重置前');
-        this.S = R.newGame(!!a.demo); this.S.now = Date.now();
+        this.S = R.newGame(a.demo || false); this.S.now = Date.now();
         this.clock = { running: false, base: a.demo ? this.S.t : 0, at: Date.now() };
         return ok(a.demo ? '已载入演示数据（计时暂停）' : '已重置为空白游戏（计时暂停）');
       }

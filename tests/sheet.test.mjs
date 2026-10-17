@@ -14,7 +14,7 @@ t('总表只列上榜的人',D.players.length===S.players.filter(p=>p.on).length
 t('总表写进冥币和昵称',S.players.some(p=>p.on&&p.score>0&&h.includes('>'+p.score+'</td>')&&h.includes('>'+p.nick+'</td>')));
 t('不在场名单含鬼市里的人和筹码',S.players.filter(p=>p.st==='market').every(p=>h.includes('>'+p.id+'<')&&h.includes('>'+p.chips+'</td>')));
 t('不在场名单只列不在场的人',D.outs.length===S.players.filter(p=>p.st!=='alive').length);
-t('判官页含鬼门开名次和奖励',D.gates.length===3&&h.includes('救了 017')&&h.includes('拿了花色'));
+t('判官页含鬼门开名次和奖励',D.gates.length===4&&h.includes('救了 017')&&h.includes('拿了花色'));
 t('判官页含解谜兑换',D.puz.length===4&&h.includes('解谜题 占位 1'));
 const m=h.match(/<script type="application\/json" id="snap">([\s\S]*?)<\/script>/);
 t('内嵌快照可解析',!!m&&JSON.parse(m[1]).players.length===D.players.length);
