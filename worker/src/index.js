@@ -129,13 +129,12 @@ export class Game extends DurableObject {
   async alarm() {   // 每分钟记一个在线点；没人在线就不记、不再排下一次（下次有人连上时 connect 会重新排）
     const sockets = this.ctx.getWebSockets();
     if (!sockets.length) return;
-    const roles = {}, teams = {}; let n = 0;
+    const roles = {}; let n = 0;
     for (const ws of sockets) {
       const s = this.sessionOf(ws.deserializeAttachment()?.token); if (!s) continue;
       n++; const ro = this.roleOf(s); roles[ro] = (roles[ro] || 0) + 1;
-      if (s.role === 'player' && s.pid) { const t = String(s.pid).split('-')[0]; teams[t] = (teams[t] || 0) + 1; }
     }
-    this.ser.push({ at: Date.now(), n, r: roles, k: teams });
+    this.ser.push({ at: Date.now(), n, r: roles });
     if (this.ser.length > STATS_KEEP) this.ser.splice(0, this.ser.length - STATS_KEEP);
     await this.ctx.storage.put('statsS', this.ser);
     await this.ctx.storage.setAlarm(Date.now() + STATS_EVERY);
@@ -293,7 +292,7 @@ export class Game extends DurableObject {
     if (s.demo && (!s.dwrite || s.dmode === 'local')) return R.no(s.dmode === 'local' ? '本地展示模式不连服务器' : '展示模式现在是只读');
     const isDemo = !!s.demo, isShared = !!this.sbKey(s);
     if (s.role === 'dev') { // acts as the viewpoint chosen on the page, only when its 可操作 switch is on
-      const as = a.as || {}, roles = ['ctrl', 'dealer', 'judge', 'mengpo', 'screen', 'player'];
+      const as = a.as || {}, roles = ['ctrl', 'dealer', 'judge', 'mengpo', 'wuchang', 'screen', 'player'];
       if (!roles.includes(as.role)) return R.no('开发者模式：先打开右上角「可操作」');
       if (as.role === 'player' && !this.S.players.some(p => p.id === as.pid)) return R.no('没有这个玩家');
       s = { role: as.role, pid: as.role === 'player' ? as.pid : null, label: '开发者' };
@@ -304,7 +303,7 @@ export class Game extends DurableObject {
       if (s.role !== 'ctrl') return R.no('只有总控能做这个操作');
       return this.admin(a);
     }
-    this.S.t = this.now();
+    this.S.t = this.now(); this.S.now = Date.now();   // 拍卖倒计时用真实时间
     const r = R.apply(this.S, s, a);
     if (r.ok && ++this.acts % SNAP_EVERY === 0) await this.snapshot('auto');
     return r;
@@ -330,7 +329,7 @@ export class Game extends DurableObject {
       }
       case 'admin.reset': {
         await this.snapshot('重置前');
-        this.S = R.newGame(!!a.demo);
+        this.S = R.newGame(!!a.demo); this.S.now = Date.now();
         this.clock = { running: false, base: a.demo ? this.S.t : 0, at: Date.now() };
         return ok(a.demo ? '已载入演示数据（计时暂停）' : '已重置为空白游戏（计时暂停）');
       }
