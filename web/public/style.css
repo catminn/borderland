@@ -93,7 +93,6 @@ nav.pages button[aria-selected="true"],.subtabs.top button[aria-selected="true"]
 .shrow{display:flex;align-items:baseline;justify-content:space-between;gap:6px 12px;flex-wrap:wrap}
 .shrow .hint{font-size:14px;color:var(--sub)}
 .pn{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px 22px;display:flex;flex-direction:column;gap:12px;min-width:0}
-.pins .pinedit{padding:4px 0 10px;border-bottom:1px solid var(--line3)}
 .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,max(380px,calc(50% - 6px))),1fr));gap:12px;align-items:start}   /* 最多两列：宽屏左右各一半，窄屏一列 */
 .pn h3{margin:0;font-size:17px;font-weight:900}
 .lbl{font-size:14px;font-weight:700;color:var(--sub)}
@@ -259,6 +258,7 @@ textarea.in{height:auto;min-height:90px;padding:10px 12px;line-height:1.6;resize
 .pins .pin{font:700 15px var(--mono);letter-spacing:.12em}
 .pins .pinbtn{justify-self:start;background:none;border:0;padding:2px 0;color:inherit;cursor:pointer;text-decoration:underline dotted var(--sub);text-underline-offset:4px}
 .pins .pinbtn:hover{color:var(--accent)}
+.pins .pinin{width:92px;height:34px;padding:0 4px;border:1.5px solid var(--accent);border-radius:6px;background:var(--card);color:var(--ink);outline:none}
 .pins .btn-line{min-height:36px;padding:0 10px;font-size:13px}
 .danger{border:1.5px dashed var(--red);border-radius:16px;padding:20px 22px;display:flex;flex-direction:column;gap:10px}
 .danger h3{margin:0;font-size:16px;font-weight:900;color:var(--red)}

@@ -563,12 +563,16 @@ function adminPanel(){
   const A=ui.admin,c=A.counts,run=CLOCK&&CLOCK.running;
   const num=(k,l,fixed)=>'<label class="fld"><span>'+l+'</span><input class="in mono" type="number" id="adm-'+k+'" min="0" max="30" data-m="adm.'+k+'" value="'+c[k]+'"'+(fixed?' disabled':'')+'></label>';
   const pins=A.pins?'<div class="pins"><div class="pr h"><span>身份</span><span>编号 / 名称</span><span>PIN</span><span></span></div>'
-    +A.pins.map(p=>'<div class="pr"><span>'+esc(p.roleName)+'</span><span class="mono" style="font-weight:700">'+esc(p.pid||p.label)+'</span><button class="pin pinbtn" data-a="adm-ask" data-v="edit:'+p.pin+'" title="点击修改">'+p.pin+'</button><span>'
-      +(A.ask==='pin:'+p.pin?'<span class="btns" style="gap:4px"><button class="btn-line fillred" data-a="adm-resetpin" data-v="'+p.pin+'">确认随机换</button><button class="btn-line" data-a="adm-cancel">取消</button></span>'
-        :'<span class="btns" style="gap:4px"><button class="btn-line" data-a="copypin" data-v="'+p.pin+'">复制</button><button class="btn-line" data-a="adm-ask" data-v="pin:'+p.pin+'">随机</button></span>')+'</span>'
-      +'</div>'+(A.ask==='edit:'+p.pin?'<div class="btns pinedit"><span class="small">'+esc(p.pid||p.label)+' 的新 PIN</span><input class="in mono" id="pinto" data-m="admin.pinTo" value="'+esc(A.pinTo||'')+'" inputmode="numeric" maxlength="6" placeholder="6 位数字" style="max-width:130px">'
-        +'<button class="btn-line acc" data-a="adm-setpin" data-v="'+p.pin+'"'+(/^\d{6}$/.test(A.pinTo||'')?'':' disabled')+'>保存</button><button class="btn-line" data-a="adm-cancel">取消</button><span class="small">改了以后，用旧 PIN 登录的人会被踢下线</span></div>':'')).join('')+'</div>'
-    +'<div class="btns"><button class="btn-line" data-a="adm-csv">下载 PIN 表（CSV）</button><button class="btn-line" data-a="adm-hide">收起</button><span class="small">共 '+A.pins.length+' 个 · 点 PIN 数字可以修改</span></div>':'';
+    +A.pins.map(p=>{const ed=A.ask==='edit:'+p.pin,okTo=/^\d{6}$/.test(A.pinTo||'')&&A.pinTo!==p.pin;
+      return '<div class="pr"><span>'+esc(p.roleName)+'</span><span class="mono" style="font-weight:700">'+esc(p.pid||p.label)+'</span>'
+      +(ed?'<input class="pin pinin" id="pinto" data-m="admin.pinTo" value="'+esc(A.pinTo||'')+'" inputmode="numeric" maxlength="6" aria-label="'+esc(p.pid||p.label)+' 的新 PIN">'
+        :'<button class="pin pinbtn" data-a="adm-ask" data-v="edit:'+p.pin+'" title="点击修改">'+p.pin+'</button>')
+      +'<span class="btns" style="gap:4px">'
+      +(ed?'<button class="btn-line acc" data-a="adm-setpin" data-v="'+p.pin+'"'+(okTo?'':' disabled')+' title="改了以后，用旧 PIN 登录的人会被踢下线">保存</button><button class="btn-line" data-a="adm-cancel">取消</button>'
+        :A.ask==='pin:'+p.pin?'<button class="btn-line fillred" data-a="adm-resetpin" data-v="'+p.pin+'">确认随机换</button><button class="btn-line" data-a="adm-cancel">取消</button>'
+        :'<button class="btn-line" data-a="copypin" data-v="'+p.pin+'">复制</button><button class="btn-line" data-a="adm-ask" data-v="pin:'+p.pin+'">随机</button>')
+      +'</span></div>';}).join('')+'</div>'
+    +'<div class="btns"><button class="btn-line" data-a="adm-csv">下载 PIN 表（CSV）</button><button class="btn-line" data-a="adm-hide">收起</button><span class="small">共 '+A.pins.length+' 个 · 点 PIN 数字可以修改（改了以后，用旧 PIN 登录的人会被踢下线）</span></div>':'';
   const snaps=A.snaps?(A.snaps.length?'<div class="list">'+A.snaps.map(s=>'<div class="li"><div class="grow"><span class="x" style="font-size:15px">'+new Date(s.at).toLocaleTimeString()+'</span><span class="small">游戏 '+fmt(s.t||0)+'　'+esc(s.tag||'')+'</span></div>'
       +(A.ask==='snap:'+s.key?'<span class="btns"><button class="btn-line fillred" data-a="adm-restore" data-v="'+s.key+'">确认恢复</button><button class="btn-line" data-a="adm-cancel">取消</button></span>'
         :'<button class="btn-line" data-a="adm-ask" data-v="snap:'+s.key+'">恢复到这里</button>')+'</div>').join('')+'</div>':'<span class="small">还没有备份。每 10 次操作自动备份一次。</span>'):'';
@@ -1112,7 +1116,7 @@ document.addEventListener('click',e=>{
     if(n&&ME.pid&&!n.acks[ME.pid])n.acks[ME.pid]=S.t; // show the next notice right away; the server confirms
     send({type:'ack',nid},null,true);}
   // 总控工具
-  else if(a==='adm-ask'){A.ask=v;A.pinTo='';}
+  else if(a==='adm-ask'){A.ask=v;A.pinTo=v.startsWith('edit:')?v.slice(5):'';}
   else if(a==='adm-cancel'){A.ask=null;}
   else if(a==='adm-gen'){send({type:'admin.genpins',counts:A.counts},m=>{A.pins=m.data;});}
   else if(a==='adm-pins'){send({type:'admin.pins'},m=>{A.pins=m.data;},true);}
@@ -1132,9 +1136,11 @@ document.addEventListener('click',e=>{
   else if(a==='stats-cancel'){ui.statsAsk=false;}
   else if(a==='stats-clear'){ui.statsAsk=false;send({type:'dev.clearstats'},m=>{ui.stats=m.data;});}
   render();
+  if(a==='adm-ask'&&v.startsWith('edit:')){const el=$('#pinto');if(el){el.focus();el.select();}}
 });
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape'&&ui.statsAsk){ui.statsAsk=false;render();return;}
+  if(e.key==='Escape'&&e.target.id==='pinto'){ui.admin.ask=null;render();return;}
   if(e.key!=='Enter'||!e.target.dataset)return;const m=e.target.dataset.m;   // 输入框里按回车 = 点旁边的主按钮
   const go={ent:'enter',gw:'gatewin','pz.pid':'puz',bid:'bid',nick:'setnick','admin.pinTo':'adm-setpin'}[m];if(!go)return;
   const btn=document.querySelector('[data-a="'+go+'"]');if(btn&&!btn.disabled){e.preventDefault();e.target.blur();btn.click();}
