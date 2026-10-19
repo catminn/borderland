@@ -257,6 +257,8 @@ textarea.in{height:auto;min-height:90px;padding:10px 12px;line-height:1.6;resize
 .pins .pr{display:grid;grid-template-columns:80px minmax(0,1fr) 92px auto;gap:10px;padding:6px 0;align-items:center;border-bottom:1px solid var(--line3);font-size:14px}
 .pins .pr.h{font-size:12px;font-weight:700;color:var(--sub);position:sticky;top:0;background:var(--panel)}
 .pins .pin{font:700 15px var(--mono);letter-spacing:.12em}
+.pins .pinbtn{justify-self:start;background:none;border:0;padding:2px 0;color:inherit;cursor:pointer;text-decoration:underline dotted var(--sub);text-underline-offset:4px}
+.pins .pinbtn:hover{color:var(--accent)}
 .pins .btn-line{min-height:36px;padding:0 10px;font-size:13px}
 .danger{border:1.5px dashed var(--red);border-radius:16px;padding:20px 22px;display:flex;flex-direction:column;gap:10px}
 .danger h3{margin:0;font-size:16px;font-weight:900;color:var(--red)}
