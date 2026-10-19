@@ -14,7 +14,7 @@ let S=null, ME=null, CLOCK=null, OFFSET=0;
 // Developer mode: DEVME is the real (read-only) sign-in, FULL the full state; ME/S are swapped to the chosen viewpoint.
 let DEVME=null, FULL=null;
 let LG=null; // 本地展示局退出登录时先存起来，让本地演示 PIN 能在同一页面里登录
-function setMe(me){ME=me;DEVME=me&&me.role==='dev'?me:null;if(!DEVME&&!(me&&me.lpin)){if(LOCAL)LG={FULL,CLOCK,LPINS,LSNAPS};FULL=null;LOCAL=null;}}
+function setMe(me){ME=me;DEVME=me&&me.role==='dev'?me:null;if(DEVME&&DEVME.demo&&!ui.as&&DEVME.asRole)ui.as=DEVME.asRole;if(!DEVME&&!(me&&me.lpin)){if(LOCAL)LG={FULL,CLOCK,LPINS,LSNAPS};FULL=null;LOCAL=null;}}
 let LOCAL=null; // 展示模式·本地：浏览器自己跑一局演示数据，不连服务器
 function devMe(){const v=ui.as||'ctrl';return v.startsWith('player:')?{role:'player',pid:v.slice(7),label:'玩家'}:{role:v,pid:null,label:ROLE_NAME[v]};}
 // Phone vibration plus a visual shake. Android: navigator.vibrate. iPhone Safari has no vibrate API; toggling a hidden
@@ -495,15 +495,19 @@ function demoPanel(){
   if(!DEVME||DEVME.demo)return '';
   if(!ui.demoRows)ui.demoRows=(DEVME.demoCfg||[]).map(c=>({...c,old:c.pin}));
   const rows=ui.demoRows;
-  const one=(d,i)=>{d.write=d.write===true||d.write==='true';
-    const c=(DEVME.demoCfg||[]).find(x=>x.pin===d.old)||{},ok=/^\d{6}$/.test(d.pin),dirty=!d.old||d.pin!==c.pin||d.mode!==c.mode||d.write!==c.write,k='demoRows.'+i;
-    return '<div class="pn" style="gap:10px"><div class="btns"><input class="in mono" data-m="demoRow.pin" data-i="'+i+'" value="'+esc(d.pin)+'" inputmode="numeric" maxlength="6" placeholder="6 位数字" style="max-width:160px"><button class="btn-line" data-a="demo-rand" data-i="'+i+'">随机</button>'
-      +(d.old?'<button class="btn-line" data-a="demo-copy" data-i="'+i+'">复制登录链接</button>':'')+'<button class="btn-line" data-a="demo-del" data-i="'+i+'">删除</button></div>'
-      +'<div class="chips c2" style="grid-template-columns:repeat(3,minmax(0,1fr))">'+cb({k:k+'.mode',v:'server',on:d.mode==='server',label:'连接服务器',small:'看的是真实游戏',t:false})
-      +cb({k:k+'.mode',v:'shared',on:d.mode==='shared',label:'共享演示局',small:'同一 PIN 的人看同一场演示',t:false})+cb({k:k+'.mode',v:'local',on:d.mode==='local',label:'本地',small:'各自一局，互不影响',t:false})+'</div>'
-      +'<div class="chips c2">'+cb({k:k+'.write',v:false,on:!d.write,label:'只读',t:false})+cb({k:k+'.write',v:true,on:d.write,label:'可修改',small:d.mode==='server'?'会改动真实游戏':d.mode==='shared'?'改的是这个 PIN 的共享演示局':'',t:false})+'</div>'
+  const MODE_L={server:'连接服务器',shared:'共享演示局',local:'本地'};
+  const one=(d,i)=>{d.write=d.write===true||d.write==='true';d.asRole=d.asRole||'ctrl';
+    const c=(DEVME.demoCfg||[]).find(x=>x.pin===d.old)||{},ok=/^\d{6}$/.test(d.pin),
+      dirty=!d.old||d.pin!==c.pin||d.mode!==c.mode||d.write!==c.write||d.asRole!==(c.asRole||'ctrl'),k='demoRows.'+i;
+    return '<div class="pn" style="gap:8px"><div class="btns"><input class="in mono" data-m="demoRow.pin" data-i="'+i+'" value="'+esc(d.pin)+'" inputmode="numeric" maxlength="6" placeholder="6 位数字" style="max-width:150px"><button class="btn-line" data-a="demo-rand" data-i="'+i+'">随机</button>'
+      +(d.old?'<button class="btn-line" data-a="demo-copy" data-i="'+i+'">复制链接</button>':'')+'<button class="btn-line" data-a="demo-del" data-i="'+i+'">删除</button></div>'
+      +'<div class="btns" style="flex-wrap:nowrap">'
+      +dd(k+'.asRole',ROLE_NAME[d.asRole],'身份',null,L_ROLES.map(r=>({v:r,label:ROLE_NAME[r]})))
+      +dd(k+'.mode',MODE_L[d.mode]||MODE_L.server,'模式',null,[{v:'server',label:'连接服务器',note:'看真实游戏'},{v:'shared',label:'共享演示局',note:'同 PIN 的人看同一场演示'},{v:'local',label:'本地',note:'各自一局，互不影响'}])
+      +'<button class="btn-line'+(d.write?'':' acc')+'" data-a="pick" data-k="'+k+'.write" data-v="false" aria-pressed="'+!d.write+'" style="min-width:60px">只读</button>'
+      +'<button class="btn-line'+(d.write?' acc':'')+'" data-a="pick" data-k="'+k+'.write" data-v="true" aria-pressed="'+!!d.write+'" style="min-width:76px">可修改</button></div>'
       +'<div class="btns"><button class="btn-main" data-a="demo-save" data-i="'+i+'"'+(ok&&dirty?'':' disabled')+'>'+(d.old?'保存':'创建')+'</button>'+(d.old?'<span class="small">保存后正在用这个 PIN 的人需要重新登录</span>':'')+'</div></div>';};
-  return '<div class="pn" style="margin-top:16px"><div class="shrow"><h3>展示模式 PIN</h3><span class="small">开发者专用；可建多个，每个 PIN 各自选模式和权限，发给不同的人</span></div>'
+  return '<div class="pn" style="margin-top:16px"><div class="shrow"><h3>展示模式 PIN</h3><span class="small">开发者专用；可建多个，各自选身份、模式和权限，发给不同的人</span></div>'
     +(rows.length?rows.map(one).join(''):'<span class="small">还没有展示 PIN。</span>')
     +'<div class="btns"><button class="btn-line acc" data-a="demo-add">+ 新增展示 PIN</button></div></div>';
 }
@@ -1008,10 +1012,10 @@ document.addEventListener('click',e=>{
   else if(a==='copypin'){copyText(v).then(()=>say({ok:true,msg:'已复制 PIN '+v}),()=>say(no('复制失败，请手动选中 PIN')));}
   else if(a==='theme'){const r=themeKey(),nx=themeFor()==='dark'?'light':'dark';try{localStorage.setItem(THEME_KEY(r),nx);}catch{/* private mode */}}
   else if(a==='logout'){logout();return;}
-  else if(a==='demo-add'){(ui.demoRows=ui.demoRows||[]).push({pin:String(Math.floor(100000+Math.random()*900000)),old:'',mode:'shared',write:false});}
+  else if(a==='demo-add'){(ui.demoRows=ui.demoRows||[]).push({pin:String(Math.floor(100000+Math.random()*900000)),old:'',mode:'shared',write:false,asRole:'ctrl'});}
   else if(a==='demo-rand'){const r=ui.demoRows[+b.dataset.i];if(r)r.pin=String(Math.floor(100000+Math.random()*900000));}
   else if(a==='demo-copy'){const r=ui.demoRows[+b.dataset.i],u=location.origin+'/?pin='+r.old;copyText(u).then(()=>say({ok:true,msg:'已复制链接 '+u}),()=>say(no('复制失败')));}
-  else if(a==='demo-save'){const r=ui.demoRows[+b.dataset.i];send({type:'dev.setdemo',pin:r.pin,old:r.old,mode:r.mode,write:r.write},m=>{DEVME.demoCfg=m.data;SESSION.me=DEVME;store.set(SESSION);ui.demoRows=null;});}
+  else if(a==='demo-save'){const r=ui.demoRows[+b.dataset.i];send({type:'dev.setdemo',pin:r.pin,old:r.old,mode:r.mode,write:r.write,asRole:r.asRole},m=>{DEVME.demoCfg=m.data;SESSION.me=DEVME;store.set(SESSION);ui.demoRows=null;});}
   else if(a==='demo-del'){const i=+b.dataset.i,r=ui.demoRows[i];if(!r.old)ui.demoRows.splice(i,1);else send({type:'dev.deldemo',pin:r.old},m=>{DEVME.demoCfg=m.data;SESSION.me=DEVME;store.set(SESSION);ui.demoRows=null;});}
   else if(a==='devops'){if(DEVME.demo)return;ui.devOps=!ui.devOps;say({ok:true,msg:ui.devOps?'开发者模式：可操作（以当前视角的身份）':'开发者模式：只读'});}
   else if(a==='clockreset'){A.ask=null;send({type:'admin.clock',op:'reset'});}

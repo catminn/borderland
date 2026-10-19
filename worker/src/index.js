@@ -153,7 +153,7 @@ export class Game extends DurableObject {
     if (this.env.DEV_PIN && pin === String(this.env.DEV_PIN)) return { role: 'dev', label: '开发者' };
     // 展示模式 PIN: set by the developer from the page. Same viewpoints as developer mode; 本地 = the browser runs its own demo game, 服务器 = the real game.
     const d = (this.auth.demos || {})[pin];
-    if (d) return { role: 'dev', demo: true, dmode: ['local', 'shared'].includes(d.mode) ? d.mode : 'server', dwrite: !!d.write, label: '展示' };
+    if (d) return { role: 'dev', demo: true, dmode: ['local', 'shared'].includes(d.mode) ? d.mode : 'server', dwrite: !!d.write, asRole: STAFF_ROLES.includes(d.asRole) ? d.asRole : 'ctrl', label: '展示' };
     const real = (this.realAuth || this.auth).pins[pin];
     if (real) return real;
     for (const [box, D] of Object.entries(this.Ds)) {   // 共享演示局里生成的 PIN：登录后进入那一局，按各自角色/玩家身份
@@ -169,10 +169,10 @@ export class Game extends DurableObject {
     const id = this.identity(s.pin);
     return id ? { ...id, pin: s.pin } : null;   // PIN reset or deleted -> session no longer valid
   }
-  demoList() { return Object.entries(this.auth.demos || {}).map(([pin, v]) => ({ pin, mode: ['local', 'shared'].includes(v.mode) ? v.mode : 'server', write: !!v.write })); }
+  demoList() { return Object.entries(this.auth.demos || {}).map(([pin, v]) => ({ pin, mode: ['local', 'shared'].includes(v.mode) ? v.mode : 'server', write: !!v.write, asRole: STAFF_ROLES.includes(v.asRole) ? v.asRole : 'ctrl' })); }
   me(s) {
     const m = { role: s.role, pid: s.pid || null, label: s.label || ROLE_NAME[s.role], rooms: s.role === 'dealer' && Array.isArray(s.rooms) ? s.rooms : null };
-    if (s.demo) { m.demo = true; m.dmode = s.dmode; m.dwrite = s.dwrite; }
+    if (s.demo) { m.demo = true; m.dmode = s.dmode; m.dwrite = s.dwrite; m.asRole = s.asRole; }
     else if (s.role === 'dev') m.demoCfg = this.demoList();
     return m;
   }
@@ -285,7 +285,7 @@ export class Game extends DurableObject {
       if (!/^\d{6}$/.test(pin)) return R.no('展示 PIN 要是 6 位数字');
       if (pin !== old && this.takenPins().has(pin)) return R.no('这个 PIN 已被别的身份用了，换一个');
       if (old && old !== pin && this.auth.demos[old]) { kick(old); delete this.auth.demos[old]; delete this.Ds[old]; await this.ctx.storage.delete('sandbox:' + old); }
-      this.auth.demos[pin] = { mode: ['local', 'shared'].includes(a.mode) ? a.mode : 'server', write: !!a.write };
+      this.auth.demos[pin] = { mode: ['local', 'shared'].includes(a.mode) ? a.mode : 'server', write: !!a.write, asRole: STAFF_ROLES.includes(a.asRole) ? a.asRole : 'ctrl' };
       kick(pin);
       return done('展示模式已保存');
     }
