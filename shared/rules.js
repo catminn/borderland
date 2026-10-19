@@ -63,8 +63,8 @@ const ranking=()=>active().slice().sort((a,b)=>b.score-a.score||suitsOf(b).lengt
 function matches(n,p){
   switch(n.target){case 'all':case 'everyone':return true;case 'player':return n.ids.includes(p.id);
   case 'market':return p.st==='market';case 'alive':return p.st==='alive';case 'final':return !!(S.fin&&S.fin.includes(p.id));}return false;}
-// 已经结束的不再弹全屏：鬼门开不在进行中 / 播报过了 3 分钟
-const noticeStale=n=>n.sub==='gate'?!(S.gp&&S.gp.nid===n.id):n.sub==='done'?S.t-n.t>180:false;
+// 已经结束的鬼门开不再弹全屏
+const noticeStale=n=>n.sub==='gate'&&!(S.gp&&S.gp.nid===n.id);
 const staffSees=n=>n.target==='staff'||n.target==='everyone'||n.sub==='gate';
 function targetLabel(n){return n.target==='all'?'全体玩家':n.target==='player'?(n.ids.length<=4?n.ids.join('、'):n.ids.slice(0,3).join('、')+' 等 '+n.ids.length+' 人'):n.target==='market'?'鬼市中的人':n.target==='staff'?'工作人员':n.target==='everyone'?'所有人':n.target==='final'?'晋级资格者':'存活玩家';}
 function pushNotice(o){S.notices.unshift({id:S.nid++,sub:o.sub||null,tone:o.tone||'',t:S.t,kind:o.kind,title:o.title,body:o.body,target:o.target,ids:o.ids||[],due:o.mins?S.t+o.mins*60:null,acks:{}});}
@@ -160,7 +160,7 @@ function checkIn(pid,role){const p=pl(pid);
   return ok('已登记，等待另一方确认');}
 function confirmIn(pid,role){const p=pl(pid);
   if(!p||!['out','picked'].includes(p.st)||!p.chk)return no('没有待确认的登记');if(p.chk.ok)return no('已经确认过了');
-  const expected=p.chk.by==='mengpo'?'wuchang':['wuchang','ctrl'].includes(p.chk.by)?'mengpo':null;
+  const expected=p.chk.by==='mengpo'?'wuchang':p.chk.by==='wuchang'?'mengpo':null;
   if(!expected||role!==expected)return no('要由另一方确认，不能自己确认自己的登记');
   if(p.pickAt==null)p.pickAt=S.t;
   p.st='market';p.inAt=S.t;p.chips=CHIP_START;p.chk.ok=true;p.chk.by2=role;
@@ -304,9 +304,9 @@ function bid(pid,id,v){const l=lot(id),why=whyNotBid(pid,l);if(why)return no(why
   v=Number(v);if(!Number.isInteger(v)||v<0)return no('出价要是整数');
   if(v<l.start)return no('起拍价是 '+l.start);if(v>p.score)return no('你只有 '+p.score+' 冥币');
   l.bids[pid]={v,t:now()};return ok('已出价 '+v+'（截止前可以改，以最后一次为准）');}
-// 排序：价高者先；同价先出价者先；剔除被作废的人、拍到过别的拍品的人、钱不够的人
+// 排序：价高者先；同价先出价者先；剔除被作废的人、已不在晋级名单的人、拍到过别的拍品的人、钱不够的人
 function bidOrder(l){return Object.entries(l.bids).map(([pid,b])=>({pid,...b}))
-  .filter(b=>!l.bad.includes(b.pid)&&pl(b.pid)&&!(pl(b.pid).won&&pl(b.pid).won!==l.id)&&pl(b.pid).score+(l.win===b.pid?l.price:0)>=b.v)
+  .filter(b=>!l.bad.includes(b.pid)&&S.fin&&S.fin.includes(b.pid)&&pl(b.pid)&&!(pl(b.pid).won&&pl(b.pid).won!==l.id)&&pl(b.pid).score+(l.win===b.pid?l.price:0)>=b.v)
   .sort((a,b)=>b.v-a.v||a.t-b.t);}
 function settle(l){const top=bidOrder(l)[0];
   if(!top){l.st='pass';l.win=null;l.price=0;log('「'+l.name+'」流拍','',1);return '流拍';}
@@ -339,7 +339,7 @@ function setNick(pid,nick){const p=pl(pid);if(!p)return no('没有这个编号')
 function setCards(pid,cards){const p=pl(pid);if(!p)return no('没有这个编号');if(!Array.isArray(cards))return no('花色不对');
   const c=SUITS.filter(x=>cards.includes(x));const old=p.cards.join('')||'无';if(c.join('')===p.cards.join(''))return no('花色没有变化');
   p.cards=c;log('总控修改 '+nm(p)+' 花色：'+old+' → '+(c.join('')||'无'));return ok(p.id+' 花色已改为 '+(c.join('')||'无'));}
-function setStart(pid,rid){const p=pl(pid);if(!p)return no('没有这个编号');if(!room(rid))return no('没有这个房间');p.start=rid;return ok(p.id+' 起始房间改为 '+room(rid).card);}
+function setStart(pid,rid){const p=pl(pid);if(!p)return no('没有这个编号');if(!room(rid))return no('没有这个房间');if(p.start===rid)return no('起始房间没有变化');p.start=rid;log('总控把 '+nm(p)+' 的起始房间改为 '+room(rid).card);return ok(p.id+' 起始房间改为 '+room(rid).card);}
 function setOn(pid,on){const p=pl(pid);if(!p)return no('没有这个编号');p.on=!!on;log('总控把 '+nm(p)+(on?' 加入':' 移出')+'排行榜');return ok(on?'已加入排行':'已移出排行');}
 function addPlayers(n){n=Math.round(+n);if(!(n>=1&&n<=40))return no('一次加 1–40 个');const k=S.players.length;for(let i=1;i<=n;i++)S.players.push(mkPlayer(k+i));
   log('总控新增 '+n+' 张身份卡（'+pidOf(k+1)+'–'+pidOf(k+n)+'）');return ok('已新增 '+n+' 张，记得生成 PIN');}

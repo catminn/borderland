@@ -14,7 +14,7 @@ let S=null, ME=null, CLOCK=null, OFFSET=0;
 // Developer mode: DEVME is the real (read-only) sign-in, FULL the full state; ME/S are swapped to the chosen viewpoint.
 let DEVME=null, FULL=null;
 let LG=null; // 本地展示局退出登录时先存起来，让本地演示 PIN 能在同一页面里登录
-function setMe(me){ME=me;DEVME=me&&me.role==='dev'?me:null;if(DEVME&&DEVME.demo&&DEVME.asRole&&ui.asSeed!==DEVME.asRole){ui.as=DEVME.asRole;ui.asSeed=DEVME.asRole;ui.tab=null;}if(!DEVME&&!(me&&me.lpin)){if(LOCAL)LG={FULL,CLOCK,LPINS,LSNAPS};FULL=null;LOCAL=null;}}
+function setMe(me){ME=me;DEVME=me&&me.role==='dev'?me:null;if(!DEVME&&!(me&&me.lpin)){if(LOCAL)LG={FULL,CLOCK,LPINS,LSNAPS};FULL=null;LOCAL=null;}}
 let LOCAL=null; // 展示模式·本地：浏览器自己跑一局演示数据，不连服务器
 function devMe(){const v=ui.as||'ctrl';return v.startsWith('player:')?{role:'player',pid:v.slice(7),label:'玩家'}:{role:v,pid:null,label:ROLE_NAME[v]};}
 // Phone vibration plus a visual shake. Android: navigator.vibrate. iPhone Safari has no vibrate API; toggling a hidden
@@ -69,7 +69,7 @@ const remStr=t=>{const r=Math.max(0,((S&&S.dur)||7200)-t);return Math.floor(r/36
 const sub=(page,list,cls)=>'<nav class="subtabs '+(cls||'')+'" style="--n:'+list.length+'" aria-label="分页">'+list.map(([k,l],i)=>
   '<button data-a="sub" data-p="'+page+'" data-v="'+k+'" aria-selected="'+(ui.sub[page]===k)+'"><span class="n">'+p2(i+1)+'</span>'+l+'</button>').join('')+'</nav>';
 const sec=(page,k,html)=>'<section class="sec'+(ui.sub[page]===k?' on':'')+'" data-sec="'+k+'">'+html+'</section>';
-// A pick button (replaces every dropdown). k = ui path it sets, t = tap again to clear.
+// A pick button. k = ui path it sets, t = tap again to clear.
 function cb(o){
   return '<button class="cb'+(o.cls?' '+o.cls:'')+(o.on?' on':'')+'" data-a="pick" data-k="'+o.k+'" data-v="'+esc(o.v)+'"'+(o.t===false?'':' data-t="1"')
     +(o.off?' disabled':'')+(o.title?' title="'+esc(o.title)+'"':'')+' aria-pressed="'+!!o.on+'">'
@@ -77,8 +77,8 @@ function cb(o){
     +(o.mark===false?'':'<span class="mk">'+(o.on?'✓':'')+'</span>')+'</button>';
 }
 // Themed dropdown (no native <select>): a button that opens a list of pick buttons; ui.ddOpen holds the open one.
-function dd(k,valLabel,placeholder,valColor,options,curOverride){
-  const open=ui.ddOpen===k,cur=curOverride===undefined?getp(k):curOverride,isOn=v=>v===cur;
+function dd(k,valLabel,placeholder,valColor,options){
+  const open=ui.ddOpen===k,cur=getp(k),isOn=v=>v===cur;
   return '<div class="dd'+(open?' open':'')+'"><button class="dd-btn" data-a="dd" data-v="'+k+'" aria-expanded="'+open+'">'
     +(valColor?'<span class="sw" style="--c:'+valColor+'"></span>':'')+'<span class="t'+(valLabel?'':' ph')+'">'+(valLabel||placeholder)+'</span><span class="car">▾</span></button>'
     +(open?'<div class="dd-list" role="listbox">'+options.map(o=>o.group?'<div class="dd-g">'+o.group+'</div>'
@@ -313,7 +313,7 @@ function viewAuc(){
     +'<button class="sbtn'+(A.screen!=='auction'?' on':'')+'" data-a="aucscreen" data-v="0" aria-pressed="'+(A.screen!=='auction')+'">游戏大屏</button>'
     +'<button class="sbtn'+(A.screen==='auction'?' on':'')+'" data-a="aucscreen" data-v="1" aria-pressed="'+(A.screen==='auction')+'">拍卖大屏</button></div>'
     +(fin?'':'<div class="lot hot">开拍前要先锁定晋级资格名单（四花色 + '+FINAL_SCORE+' 冥币 + 在场）。<br>现在符合条件 <b class="mono">'+S.players.filter(p=>p.on&&qualifies(p)).length+'</b> 人。</div>'
-      +'<button class="btn-main" data-a="lockfinal" style="min-height:52px">锁定资格名单</button>')+'</div>';
+      +lockWarn()+ask2('lock','锁定资格名单','lockfinal','','abig'))+'</div>';
   let cur;
   if(!l)cur='<div class="pn acur"><h3>当前拍品</h3><span class="muted">还没有选拍品。在下面列表里点一件「选中」。</span></div>';
   else{
@@ -342,7 +342,7 @@ function viewAuc(){
   const list=L.map((x,i)=>{const s=lotState(x),w=s==='done'&&pl(x.win),ed=ui.lotEdit===x.id;
     if(ed)return '<div class="alrow ed">'+lotForm('le')+'<div class="btns"><button class="btn-main" data-a="lotsave" data-v="'+x.id+'">保存</button><button class="btn-line" data-a="lotcancel">取消</button>'+ask2('del:'+x.id,'删除','lotdel','data-v="'+x.id+'"','')+'</div></div>';
     return '<div class="alrow'+(x===l?' cur':'')+'"><span class="ai mono">'+(i+1)+'</span><div class="grow"><b>'+esc(x.name)+(x.big?' <span class="kb task">大奖</span>':'')+'</b><span class="small">'+LST[s]+(w?' · '+w.id+' '+esc(w.nick||'')+' '+x.price:'')+' · 起拍 '+x.start+'</span></div>'
-      +'<span class="btns">'+(x!==l?'<button class="btn-line" data-a="aucshow" data-v="'+x.id+'">选中</button>':'<span class="small acc">当前</span>')
+      +'<span class="btns">'+(x!==l?'<button class="btn-line" data-a="aucshow" data-v="'+x.id+'"'+(st==='open'||st==='closed'?' disabled title="当前这件揭晓后才能切换"':'')+'>选中</button>':'<span class="small acc">当前</span>')
       +(s==='wait'?'<button class="btn-line" data-a="lotedit" data-v="'+x.id+'">改</button><button class="btn-line" data-a="lotmove" data-v="'+x.id+'" data-d="-1" aria-label="上移">↑</button><button class="btn-line" data-a="lotmove" data-v="'+x.id+'" data-d="1" aria-label="下移">↓</button>':'')+'</span></div>';}).join('');
   const add='<div class="pn"><h3>拍品列表</h3><div class="alist">'+(list||'<div class="li small">还没有拍品</div>')+'</div>'
     +(ui.addLot||!L.length?'<div class="addlot"><div class="shrow"><b>添加拍品</b>'+(L.length?'<button class="btn-line" data-a="addlot" data-v="0">收起</button>':'')+'</div>'+lotForm('lot')+'<button class="btn-line acc" data-a="lotadd">添加</button></div>'
@@ -358,7 +358,7 @@ function lotForm(k){const f=k==='lot'?ui.lot:ui.le;
 // ---------- 鬼市 ----------
 // 入鬼市登记：黑白无常或孟婆谁点都行，另一方确认。
 const checkinParty=()=>ME.role==='ctrl'?(ui.tab==='wuchang'?'wuchang':'mengpo'):ME.role;
-const canConfirm=p=>!!p.chk&&!p.chk.ok&&(p.chk.by==='mengpo'?checkinParty()==='wuchang':['wuchang','ctrl'].includes(p.chk.by)&&checkinParty()==='mengpo');
+const canConfirm=p=>!!p.chk&&!p.chk.ok&&(p.chk.by==='mengpo'?checkinParty()==='wuchang':p.chk.by==='wuchang'&&checkinParty()==='mengpo');
 const chkBit=p=>!p.chk?'':p.chk.ok?'<span class="chk ok">登记已确认</span>':canConfirm(p)?'<button class="btn-line fill chkbtn" data-a="confirmin" data-p="'+p.id+'">确认入鬼市</button>':'<span class="chk wait">待'+(p.chk.by==='mengpo'?'黑白无常':'孟婆')+'确认</span>';
 function inboundPanel(){
   const wait=S.players.filter(p=>p.st==='out'||p.st==='picked'||(p.st==='market'&&p.chk&&!p.chk.ok)).sort((a,b)=>a.outAt-b.outAt);
@@ -409,7 +409,7 @@ function playerTable(){
   const q=ui.q.trim(),f=ui.flt;
   let list=S.players.filter(p=>f==='off'?!p.on:p.on);
   if(f==='alive')list=list.filter(p=>p.st==='alive');else if(f==='down')list=list.filter(p=>p.st!=='alive');else if(f==='fin')list=list.filter(qualifies);
-  if(q)list=list.filter(p=>p.id.includes(q.padStart(q.length>3?q.length:0,'0'))||p.id.includes(q)||(p.nick||'').includes(q));
+  if(q)list=list.filter(p=>p.id.includes(q)||(p.nick||'').includes(q));
   list=f==='off'?list:list.sort((a,b)=>b.score-a.score||a.id.localeCompare(b.id));
   const rows=list.map(p=>'<button class="ptr'+(ui.ed.pid===p.id?' on':'')+(p.st!=='alive'?' down':'')+'" data-a="edpick" data-v="'+p.id+'"><span class="mono b">'+p.id+'</span><span class="nk">'+esc(p.nick||'—')+'</span>'
     +'<span class="stt'+(p.st==='alive'?'':' red')+'">'+stLabel(p)+(p.inRoom?' · '+room(p.inRoom).card:'')+'</span>'+suits4(p)+'<span class="mono sc">'+p.score+'</span>'
@@ -439,14 +439,18 @@ function editPanel(){
     +(miss.length?'<span class="small">晋级还差：'+esc(miss.join('，'))+'</span>':'<span class="small acc">晋级条件已满足</span>')
     +(hist?'<div class="histp"><span class="lbl">房间记录</span>'+hist+'</div>':'')+'</div>';
 }
+// 锁定资格名单前的提醒：时间还没到 / 还有人可能复活
+function lockWarn(){
+  if(!timeUp())return '<div class="lot hot">时间还没到（还剩 '+remStr(S.t)+'）。现在锁定，所有房间会立刻停止放人。</div>';
+  const d=S.players.filter(p=>p.on&&p.st!=='alive').length;
+  return d&&!marketShut()?'<div class="lot hot">现在还有 <b class="mono">'+d+'</b> 人不在场（待接 / 鬼市），截止后 15 分钟内还能复活。最好等停止复活后再锁定，不然要手动把后来回来、满足条件的人加进名单。</div>':'';}
 function finalPanel(){
   const act=S.players.filter(p=>p.on),ok=act.filter(qualifies),near=act.filter(p=>!qualifies(p)&&p.st==='alive'&&suitsOf(p).length>=3).sort((a,b)=>b.score-a.score).slice(0,10);
   const row=(p,inFin)=>'<div class="li"><div class="grow"><span class="x">'+who(p)+' '+suits4(p)+' <b class="mono">'+p.score+'</b></span>'+(qualifies(p)?'':'<span class="small">'+esc(finalMiss(p).join('，'))+'</span>')+'</div>'
     +(S.fin?(inFin?'<button class="btn-line" data-a="finrm" data-v="'+p.id+'">移出</button>':'<button class="btn-line acc" data-a="finadd" data-v="'+p.id+'">加入</button>'):'')+'</div>';
   if(!S.fin)return '<div class="pn" style="gap:12px"><div class="shrow"><h3>晋级资格</h3><span class="small">四花色 + 冥币 ≥ '+FINAL_SCORE+' + 在场</span></div>'
     +'<div class="lot">时间截止后（8:00–8:15）核对，然后锁定名单。锁定后玩家手机会收到通知，拍卖才能开始；之后还可以手动加 / 减人。</div>'
-    +(()=>{const d=act.filter(p=>p.st!=='alive').length;return d&&!R.marketShut()?'<div class="lot hot">现在还有 <b class="mono">'+d+'</b> 人不在场（待接 / 鬼市），截止后 15 分钟内还能复活。最好等到 8:15 停止复活后再锁定，不然要手动把后来回来、满足条件的人加进名单。</div>':'';})()
-    +'<button class="btn-main glow" data-a="lockfinal" style="min-height:52px">锁定资格名单（现在 '+ok.length+' 人符合）</button>'
+    +lockWarn()+ask2('lock','锁定资格名单（现在 '+ok.length+' 人符合）','lockfinal','','abig')
     +'<span class="lbl">现在符合条件（'+ok.length+'）</span>'+(ok.map(p=>row(p,false)).join('')||'<div class="li small">暂无</div>')
     +'<span class="lbl">差一点的人</span>'+(near.map(p=>row(p,false)).join('')||'<div class="li small">暂无</div>')+'</div>';
   const inL=S.fin.map(pl).filter(Boolean),rest=act.filter(p=>!S.fin.includes(p.id)&&(qualifies(p)||suitsOf(p).length>=3)).sort((a,b)=>b.score-a.score).slice(0,12);
@@ -475,7 +479,7 @@ const PUB_TO=[['everyone','所有人'],['all','全体玩家'],['staff','工作�
 function pubPanel(){
   const f=ui.pub,gate=f.kind==='鬼门开',gq=GATES.find(x=>x.id===f.gate),ids=parseIds(f.players).filter(id=>pl(id));
   const target=gate?'<div class="fld"><span>题库</span>'+dd('pub.gate',gq?gq.title:f.gate==='custom'?'自定义':'','选择鬼门开',null,[...GATES.map(x=>({v:x.id,label:esc(x.title)})),{v:'custom',label:'自定义'}])+'</div>'+(gq?'<div class="lot">'+esc(gq.body)+'</div>':'')
-    :'<div class="fgrid"><div class="fld"><span>发给谁</span>'+dd('pub.target',(PUB_TO.find(([v])=>v===f.target)||[])[1],'选择对象',null,PUB_TO.map(([v,l])=>({v,label:l})))+'</div>'
+    :'<div class="fgrid"><div class="fld"><span>发给谁</span>'+dd('pub.target',(PUB_TO.find(([v])=>v===f.target)||[])[1],'选择对象',null,PUB_TO.map(([v,l])=>({v,label:l,off:v==='final'&&!S.fin,note:v==='final'&&!S.fin?'名单锁定后才能选':''})))+'</div>'
       +(f.target==='player'?'<label class="fld"><span>玩家编号（空格隔开）</span><input class="in mono" id="ppl" data-m="pub.players" value="'+esc(f.players)+'" inputmode="numeric" placeholder="例如 3 17 25"><small class="small">'+ids.length+' 人</small></label>':'')+'</div>';
   const form='<div class="pn" style="gap:14px">'
     +'<div class="fld"><span>类型</span><div class="seg2">'+['公告','鬼门开'].map(k=>'<button class="sbtn'+(f.kind===k?' on':'')+'" data-a="pick" data-k="pub.kind" data-v="'+k+'" aria-pressed="'+(f.kind===k)+'">'+k+'</button>').join('')+'</div></div>'
@@ -496,22 +500,17 @@ function demoPanel(){
   if(!ui.demoRows)ui.demoRows=(DEVME.demoCfg||[]).map(c=>({...c,old:c.pin}));
   const rows=ui.demoRows;
   const MODE_L={server:'连接服务器',shared:'共享演示局',local:'本地'};
-  const one=(d,i)=>{d.write=d.write===true||d.write==='true';d.asRole=d.asRole||'ctrl';
-    const c=(DEVME.demoCfg||[]).find(x=>x.pin===d.old)||{},
-      isPlayer=d.asRole.startsWith('player:'),pid=isPlayer?d.asRole.slice(7):'',
-      ok=/^\d{6}$/.test(d.pin)&&(!isPlayer||/^\d{1,3}$/.test(pid)),
-      dirty=!d.old||d.pin!==c.pin||d.mode!==c.mode||d.write!==c.write||d.asRole!==(c.asRole||'ctrl'),k='demoRows.'+i,
-      arLabel=isPlayer?('玩家'+(pid?' '+pid:'')):ROLE_NAME[d.asRole];
+  const one=(d,i)=>{d.write=d.write===true||d.write==='true';
+    const c=(DEVME.demoCfg||[]).find(x=>x.pin===d.old)||{},ok=/^\d{6}$/.test(d.pin),
+      dirty=!d.old||d.pin!==c.pin||d.mode!==c.mode||d.write!==c.write,k='demoRows.'+i;
     return '<div class="pn" style="gap:8px"><div class="btns"><input class="in mono" data-m="demoRow.pin" data-i="'+i+'" value="'+esc(d.pin)+'" inputmode="numeric" maxlength="6" placeholder="6 位数字" style="max-width:150px"><button class="btn-line" data-a="demo-rand" data-i="'+i+'">随机</button>'
       +(d.old?'<button class="btn-line" data-a="demo-copy" data-i="'+i+'">复制链接</button>':'')+'<button class="btn-line" data-a="demo-del" data-i="'+i+'">删除</button></div>'
       +'<div class="btns" style="flex-wrap:nowrap">'
-      +dd(k+'.asRole',arLabel,'身份',null,L_ROLES.map(r=>({v:r,label:ROLE_NAME[r]})).concat([{v:'player',label:'玩家'}]),isPlayer?'player':d.asRole)
       +dd(k+'.mode',MODE_L[d.mode]||MODE_L.server,'模式',null,[{v:'server',label:'连接服务器',note:'看真实游戏'},{v:'shared',label:'共享演示局',note:'同 PIN 的人看同一场演示'},{v:'local',label:'本地',note:'各自一局，互不影响'}])
       +'<button class="btn-line'+(d.write?'':' acc')+'" data-a="pick" data-k="'+k+'.write" data-v="false" aria-pressed="'+!d.write+'" style="min-width:60px">只读</button>'
       +'<button class="btn-line'+(d.write?' acc':'')+'" data-a="pick" data-k="'+k+'.write" data-v="true" aria-pressed="'+!!d.write+'" style="min-width:76px">可修改</button></div>'
-      +(isPlayer?'<div class="btns"><span class="small">编号</span><input class="in mono" data-m="demoRow.pid" data-i="'+i+'" value="'+esc(pid)+'" inputmode="numeric" maxlength="3" placeholder="如 001" style="max-width:100px"></div>':'')
       +'<div class="btns"><button class="btn-main" data-a="demo-save" data-i="'+i+'"'+(ok&&dirty?'':' disabled')+'>'+(d.old?'保存':'创建')+'</button>'+(d.old?'<span class="small">保存后正在用这个 PIN 的人需要重新登录</span>':'')+'</div></div>';};
-  return '<div class="pn" style="margin-top:16px"><div class="shrow"><h3>展示模式 PIN</h3><span class="small">开发者专用；可建多个，各自选身份、模式和权限，发给不同的人</span></div>'
+  return '<div class="pn" style="margin-top:16px"><div class="shrow"><h3>展示模式 PIN</h3><span class="small">开发者专用；可建多个，各自选模式和权限，发给不同的人</span></div>'
     +(rows.length?'<div class="grid2">'+rows.map(one).join('')+'</div>':'<span class="small">还没有展示 PIN。</span>')
     +'<div class="btns"><button class="btn-line acc" data-a="demo-add">+ 新增展示 PIN</button></div></div>';
 }
@@ -565,9 +564,10 @@ function adminPanel(){
   const num=(k,l,fixed)=>'<label class="fld"><span>'+l+'</span><input class="in mono" type="number" id="adm-'+k+'" min="0" max="30" data-m="adm.'+k+'" value="'+c[k]+'"'+(fixed?' disabled':'')+'></label>';
   const pins=A.pins?'<div class="pins"><div class="pr h"><span>身份</span><span>编号 / 名称</span><span>PIN</span><span></span></div>'
     +A.pins.map(p=>'<div class="pr"><span>'+esc(p.roleName)+'</span><span class="mono" style="font-weight:700">'+esc(p.pid||p.label)+'</span><span class="pin">'+p.pin+'</span><span>'
-      +(A.ask==='pin:'+p.pin?'<span class="btns" style="gap:4px"><button class="btn-line fillred" data-a="adm-resetpin" data-v="'+p.pin+'">确认</button><button class="btn-line" data-a="adm-cancel">取消</button></span>'
-        :'<span class="btns" style="gap:4px"><button class="btn-line" data-a="copypin" data-v="'+p.pin+'">复制</button><button class="btn-line" data-a="adm-ask" data-v="pin:'+p.pin+'">重置</button></span>')+'</span>'
-      +'</div>').join('')+'</div>'
+      +(A.ask==='pin:'+p.pin?'<span class="btns" style="gap:4px"><button class="btn-line fillred" data-a="adm-resetpin" data-v="'+p.pin+'">确认随机换</button><button class="btn-line" data-a="adm-cancel">取消</button></span>'
+        :'<span class="btns" style="gap:4px"><button class="btn-line" data-a="copypin" data-v="'+p.pin+'">复制</button><button class="btn-line" data-a="adm-ask" data-v="edit:'+p.pin+'">改</button><button class="btn-line" data-a="adm-ask" data-v="pin:'+p.pin+'">随机</button></span>')+'</span>'
+      +'</div>'+(A.ask==='edit:'+p.pin?'<div class="btns pinedit"><span class="small">'+esc(p.pid||p.label)+' 的新 PIN</span><input class="in mono" id="pinto" data-m="admin.pinTo" value="'+esc(A.pinTo||'')+'" inputmode="numeric" maxlength="6" placeholder="6 位数字" style="max-width:130px">'
+        +'<button class="btn-line acc" data-a="adm-setpin" data-v="'+p.pin+'"'+(/^\d{6}$/.test(A.pinTo||'')?'':' disabled')+'>保存</button><button class="btn-line" data-a="adm-cancel">取消</button><span class="small">改了以后，用旧 PIN 登录的人会被踢下线</span></div>':'')).join('')+'</div>'
     +'<div class="btns"><button class="btn-line" data-a="adm-csv">下载 PIN 表（CSV）</button><button class="btn-line" data-a="adm-hide">收起</button><span class="small">共 '+A.pins.length+' 个</span></div>':'';
   const snaps=A.snaps?(A.snaps.length?'<div class="list">'+A.snaps.map(s=>'<div class="li"><div class="grow"><span class="x" style="font-size:15px">'+new Date(s.at).toLocaleTimeString()+'</span><span class="small">游戏 '+fmt(s.t||0)+'　'+esc(s.tag||'')+'</span></div>'
       +(A.ask==='snap:'+s.key?'<span class="btns"><button class="btn-line fillred" data-a="adm-restore" data-v="'+s.key+'">确认恢复</button><button class="btn-line" data-a="adm-cancel">取消</button></span>'
@@ -586,7 +586,7 @@ function adminPanel(){
     +'<div class="setrow"><div class="swrow"><span>身份卡<small>现在共 <b class="mono" style="color:var(--ink)">'+S.players.length+'</b> 张（'+S.players[0].id+'–'+S.players[S.players.length-1].id+'），上榜 '+S.players.filter(p=>p.on).length+' 人</small></span>'
     +'<div class="btns" style="flex-wrap:nowrap"><input class="in mono" id="addn" data-m="addN" value="'+esc(ui.addN)+'" inputmode="numeric" style="max-width:80px"><button class="btn-line" data-a="addplayers">新增</button></div></div></div></div>'
     +'<div class="pn"><h3>应急记录表</h3><span class="small">断网或网站出问题时用：在本机生成，不联网。导出的 HTML 可打印，也能在浏览器里继续填写。</span>'
-    +'<div class="btns"><button class="btn-line acc" data-a="sheet-now">导出当前状态</button><button class="btn-line" data-a="sheet-blank">下载空白记录表</button></div></div>'
+    +'<div class="btns"><button class="btn-line acc" data-a="sheet-mine">导出当前状态</button><button class="btn-line" data-a="sheet-blank">下载空白记录表</button></div></div>'
     +'<div class="pn"><h3>备份与恢复</h3><span class="small">每 10 次操作自动备份一次；重置、恢复、载入演示数据前都会先备份当前数据。</span>'
     +'<div class="btns"><button class="btn-line" data-a="adm-snaps">查看备份</button>'
     +'</div><span class="lbl" style="padding-top:6px">载入演示数据（会先备份当前数据）</span><div class="btns">'
@@ -699,7 +699,7 @@ const tuSeen=()=>{try{return sessionStorage.getItem(tuKey())==='1';}catch{return
 const staffAcked=id=>{try{return sessionStorage.getItem('borderland.sa.'+id)==='1';}catch{return !!(ui.sa&&ui.sa[id]);}};
 function tuDlg(){
   return '<div class="ovl" data-k="time"><div class="dlg" data-n="timeup" data-k="time" role="dialog" aria-modal="true" aria-labelledby="dt"><div class="new"><i></i>全场通知</div>'
-    +'<h3 id="dt">时间到</h3><div class="body">主游戏时间已用完，所有房间关闭。\n已经在房间里的人可以打完当前一局。鬼市不再收新人。\n请所有玩家到大房间集合，核对晋级资格。</div>'
+    +'<h3 id="dt">时间到</h3><div class="body">主游戏时间已用完，所有房间关闭。\n已经在房间里的人可以打完当前一局。失败的人照常进鬼市，15 分钟后停止复活。\n请所有玩家到大房间集合，核对晋级资格。</div>'
     +'<div class="foot"><span class="cap">剩余时间</span><span class="cd over">0:00:00</span></div>'
     +'<button data-a="tuack" data-modal="1">知道了</button></div></div>';
 }
@@ -762,7 +762,6 @@ const themeKey=()=>ui.tab==='board'?'screen':ME&&ME.role==='player'?'player':'st
 const inMarketNow=()=>{const p=ME&&ME.role==='player'&&S&&S.players.find(x=>x.id===ME.pid);return !!(p&&p.st!=='alive');};
 function themeFor(){const r=themeKey();if(ME&&(ME.role==='mengpo'||ME.role==='wuchang'))return 'dark';if(r==='player'&&inMarketNow())return 'dark';let v=null;try{v=localStorage.getItem(THEME_KEY(r));}catch{/* private mode */}
   return v||'dark';}
-const themed=()=>true;
 
 function render(){
   if(DEVME&&!entering){ME=devMe();if(FULL)S=ME.role==='player'||ME.role==='screen'?R.viewFor(FULL,ME):FULL;}
@@ -780,7 +779,7 @@ function render(){
   const nickGate=ME.role==='player'&&!DEVME&&S&&(p=>p&&!p.nick)(S.players.find(x=>x.id===ME.pid));   // 还没取昵称：只显示取名页
   const tabs=nickGate?['player']:(ROLE_TABS[ME.role]||[]);
   if(!tabs.includes(ui.tab))ui.tab=tabs[0];
-  document.documentElement.dataset.theme=themed()?themeFor():'light';
+  document.documentElement.dataset.theme=themeFor();
   const aucP=ME.role==='player'&&ui.tab==='board'&&aucOn();   // 拍卖时玩家第一页是拍卖页，不是大屏
   document.body.classList.toggle('board',ui.tab==='board'&&!aucP);
   document.body.classList.toggle('inmk',ME.role==='player'&&inMarketNow());
@@ -805,7 +804,7 @@ function render(){
   $('#sheetbtn').hidden=!SHEET_SCOPE[ME.role]||!S;
   const run=CLOCK&&CLOCK.running;
   const cc=$('#clockctl');cc.hidden=ME.role!=='ctrl';cc.textContent=run?'暂停计时':'开始计时';
-  const th=$('#theme');th.hidden=!themed()||(themeKey()==='player'&&inMarketNow())||ME.role==='mengpo'||ME.role==='wuchang';th.textContent=themeFor()==='dark'?'浅色':'深色';
+  const th=$('#theme');th.hidden=(themeKey()==='player'&&inMarketNow())||ME.role==='mengpo'||ME.role==='wuchang';th.textContent=themeFor()==='dark'?'浅色':'深色';
   $('.clk').classList.toggle('paused',!run);$('#clkdot').className='gd'+(run?'':' off');
   if(!S){$('#view').innerHTML='<section class="pn muted">正在连接服务器…</section>';return;}
   R.use(S);S.t=nowT();S.now=Date.now()+OFFSET;$('#clk').textContent=fmt(S.t);
@@ -892,7 +891,7 @@ async function login(pin){
   setTimeout(()=>{entering=false;$('#view').innerHTML='';render();say(null);},reduce?1200:3600);
 }
 function logout(msg){
-  SESSION=null;store.set(null);STALE=null;try{localStorage.removeItem(LASTK);}catch{/* ignore */}setMe(null);S=null;CLOCK=null;connected=false;entering=false;
+  SESSION=null;store.set(null);STALE=null;ui.as='ctrl';ui.tab=null;try{localStorage.removeItem(LASTK);}catch{/* ignore */}setMe(null);S=null;CLOCK=null;connected=false;entering=false;
   if(ws){const w=ws;ws=null;try{w.close();}catch{/* ignore */}}
   clearTimeout(timer);$('#view').innerHTML='';render();say(null);if(msg)loginError(msg);
 }
@@ -974,7 +973,10 @@ function localAdmin(a){
       Object.values(LPINS).filter(v=>v.role==='dealer').forEach((v,i)=>{v.rooms=i<ROOMS.length?[ROOMS[i].id]:[];v.label='Dealer '+(v.rooms.length?ROOMS[i].card:'未绑定');});
       return ok('新生成 '+made+' 个 PIN'+(removed?'，删除多出的 '+removed+' 个':'')+'，共 '+Object.keys(LPINS).length+' 个（本地演示：退出后可在本页用这些 PIN 登录；换设备请用共享演示局）',lPinList());}
     case 'admin.pins':return ok('',lPinList());
-    case 'admin.resetpin':{const old=String(a.pin||''),v=LPINS[old];if(!v)return no('没有这个 PIN');const np=lNewPin();delete LPINS[old];LPINS[np]=v;return ok((v.pid||v.label)+' 的新 PIN：'+np,lPinList());}
+    case 'admin.resetpin':case 'admin.setpin':{const old=String(a.pin||''),v=LPINS[old];if(!v)return no('没有这个 PIN');
+      const np=a.type==='admin.setpin'?String(a.to||'').trim():lNewPin();
+      if(a.type==='admin.setpin'){if(!/^\d{6}$/.test(np))return no('PIN 要是 6 位数字');if(np===old)return no('PIN 没有变化');if(LPINS[np])return no('这个 PIN 已被别的身份用了，换一个');}
+      delete LPINS[old];LPINS[np]=v;return ok((v.pid||v.label)+' 的新 PIN：'+np,lPinList());}
     case 'admin.snaps':return ok('',LSNAPS.map(x=>({key:'l'+x.at,at:x.at,t:x.t,tag:x.tag})));
     case 'admin.restore':{const x=LSNAPS.find(y=>'l'+y.at===String(a.key));if(!x)return no('找不到这个备份');lSnap('恢复前');
       FULL=JSON.parse(JSON.stringify(x.S));CLOCK={running:false,base:x.t,at:Date.now()};R.use(FULL);return ok('已恢复到备份（计时暂停，确认无误后再开始）');}
@@ -992,7 +994,7 @@ function localSend(a,after,quiet){
 function send(a,after,quiet){
   if(LOCAL){localSend(a,after,quiet);return;}
   if(!ws||!connected){say(no('还没连上服务器，请稍等'));return;}
-  if(DEVME&&(a.type==='pincounts'||a.type==='setpincounts'||a.type==='dev.setdemo'||a.type==='dev.stats'||a.type==='dev.clearstats')){}
+  if(DEVME&&(a.type==='pincounts'||a.type==='setpincounts'||a.type.startsWith('dev.'))){}
   else if(DEVME){if(!ui.devOps){say(no('开发者模式现在是只读，点右上角「只读」切换成可操作'));return;}a={...a,as:{role:ME.role,pid:ME.pid}};}
   const id=++seq;
   pending.set(id,m=>{if(!quiet||!m.ok)say(m);if(m.ok&&after)after(m);requestRender();});
@@ -1011,18 +1013,15 @@ document.addEventListener('click',e=>{
   if(a==='tab'){ui.tab=v;say(null);}
   else if(a==='sub'){ui.sub[b.dataset.p]=v;scrollTo({top:0});$('#view').scrollTop=0;}
   else if(a==='dd'){ui.ddOpen=ui.ddOpen===v?null:v;}
-  else if(a==='pick'){ui.ddOpen=null;const k=b.dataset.k,cur=getp(k);let next=b.dataset.t&&cur===v?'':v;
-    if(v==='player'&&k.endsWith('.asRole'))next='player:'+(cur&&cur.startsWith('player:')?cur.slice(7):'001');
-    setp(k,next);
+  else if(a==='pick'){ui.ddOpen=null;const k=b.dataset.k;setp(k,b.dataset.t&&getp(k)===v?'':v);
     if(/^gr\.[^.]+\.k$/.test(k))setp(k.replace(/\.k$/,'.arg'),'');}
   else if(a==='copypin'){copyText(v).then(()=>say({ok:true,msg:'已复制 PIN '+v}),()=>say(no('复制失败，请手动选中 PIN')));}
   else if(a==='theme'){const r=themeKey(),nx=themeFor()==='dark'?'light':'dark';try{localStorage.setItem(THEME_KEY(r),nx);}catch{/* private mode */}}
   else if(a==='logout'){logout();return;}
-  else if(a==='demo-add'){(ui.demoRows=ui.demoRows||[]).push({pin:String(Math.floor(100000+Math.random()*900000)),old:'',mode:'shared',write:false,asRole:'ctrl'});}
+  else if(a==='demo-add'){(ui.demoRows=ui.demoRows||[]).push({pin:String(Math.floor(100000+Math.random()*900000)),old:'',mode:'shared',write:false});}
   else if(a==='demo-rand'){const r=ui.demoRows[+b.dataset.i];if(r)r.pin=String(Math.floor(100000+Math.random()*900000));}
   else if(a==='demo-copy'){const r=ui.demoRows[+b.dataset.i],u=location.origin+'/?pin='+r.old;copyText(u).then(()=>say({ok:true,msg:'已复制链接 '+u}),()=>say(no('复制失败')));}
-  else if(a==='demo-save'){const r=ui.demoRows[+b.dataset.i],ar=r.asRole.startsWith('player:')?'player:'+r.asRole.slice(7).padStart(3,'0').slice(-3):r.asRole;
-    send({type:'dev.setdemo',pin:r.pin,old:r.old,mode:r.mode,write:r.write,asRole:ar},m=>{DEVME.demoCfg=m.data;SESSION.me=DEVME;store.set(SESSION);ui.demoRows=null;});}
+  else if(a==='demo-save'){const r=ui.demoRows[+b.dataset.i];send({type:'dev.setdemo',pin:r.pin,old:r.old,mode:r.mode,write:r.write},m=>{DEVME.demoCfg=m.data;SESSION.me=DEVME;store.set(SESSION);ui.demoRows=null;});}
   else if(a==='demo-del'){const i=+b.dataset.i,r=ui.demoRows[i];if(!r.old)ui.demoRows.splice(i,1);else send({type:'dev.deldemo',pin:r.old},m=>{DEVME.demoCfg=m.data;SESSION.me=DEVME;store.set(SESSION);ui.demoRows=null;});}
   else if(a==='devops'){if(DEVME.demo)return;ui.devOps=!ui.devOps;say({ok:true,msg:ui.devOps?'开发者模式：可操作（以当前视角的身份）':'开发者模式：只读'});}
   else if(a==='clockreset'){A.ask=null;send({type:'admin.clock',op:'reset'});}
@@ -1052,7 +1051,7 @@ document.addEventListener('click',e=>{
   else if(a==='askyes'){ui.aucAsk=v;}
   else if(a==='askno'){ui.aucAsk=null;}
   else if(a==='aucscreen'){send({type:'auc.screen',on:v==='1'});}
-  else if(a==='lockfinal'){send({type:'lockfinal'});}
+  else if(a==='lockfinal'){ui.aucAsk=null;send({type:'lockfinal'});}
   else if(a==='unlockfinal'){send({type:'unlockfinal'});}
   else if(a==='secs'){ui.secs=v;}
   else if(a==='aucopen'){if(l)send({type:'auc.open',id:l.id,secs:+ui.secs},()=>{ui.showBids=false;});}
@@ -1113,17 +1112,17 @@ document.addEventListener('click',e=>{
     if(n&&ME.pid&&!n.acks[ME.pid])n.acks[ME.pid]=S.t; // show the next notice right away; the server confirms
     send({type:'ack',nid},null,true);}
   // 总控工具
-  else if(a==='adm-ask'){A.ask=v;}
+  else if(a==='adm-ask'){A.ask=v;A.pinTo='';}
   else if(a==='adm-cancel'){A.ask=null;}
   else if(a==='adm-gen'){send({type:'admin.genpins',counts:A.counts},m=>{A.pins=m.data;});}
   else if(a==='adm-pins'){send({type:'admin.pins'},m=>{A.pins=m.data;},true);}
   else if(a==='adm-hide'){A.pins=null;}
   else if(a==='adm-resetpin'){A.ask=null;send({type:'admin.resetpin',pin:v},m=>{A.pins=m.data;});}
+  else if(a==='adm-setpin'){send({type:'admin.setpin',pin:v,to:A.pinTo},m=>{A.ask=null;A.pinTo='';A.pins=m.data;});}
   else if(a==='adm-snaps'){send({type:'admin.snaps'},m=>{A.snaps=m.data;},true);}
   else if(a==='adm-restore'){A.ask=null;send({type:'admin.restore',key:v},()=>{A.snaps=null;});}
   else if(a==='adm-reset'){A.ask=null;if(v==='blank'&&A.resetTxt!=='重置')return;A.resetTxt='';send({type:'admin.reset',demo:v==='blank'?false:v});}
   else if(a==='adm-csv'){downloadPins();}
-  else if(a==='sheet-now'){downloadSheet(false,true);}
   else if(a==='sheet-blank'){downloadSheet(true);}
   else if(a==='sheet-mine'){downloadSheet(false,true);}
   else if(a==='stats-load'){send({type:'dev.stats'},m=>{ui.stats=m.data;},true);}
@@ -1137,7 +1136,7 @@ document.addEventListener('click',e=>{
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape'&&ui.statsAsk){ui.statsAsk=false;render();return;}
   if(e.key!=='Enter'||!e.target.dataset)return;const m=e.target.dataset.m;   // 输入框里按回车 = 点旁边的主按钮
-  const go={ent:'enter',gw:'gatewin','pz.pid':'puz',bid:'bid',nick:'setnick'}[m];if(!go)return;
+  const go={ent:'enter',gw:'gatewin','pz.pid':'puz',bid:'bid',nick:'setnick','admin.pinTo':'adm-setpin'}[m];if(!go)return;
   const btn=document.querySelector('[data-a="'+go+'"]');if(btn&&!btn.disabled){e.preventDefault();e.target.blur();btn.click();}
 });
 document.addEventListener('change',e=>{
@@ -1146,16 +1145,16 @@ document.addEventListener('change',e=>{
   if(e.target.type==='checkbox'){setp(m==='lot.big'?'lot.big':'le.big',e.target.checked);render();}
 });
 // 输入时只更新数据和少数按钮（不整页重绘，免得打断输入）；失焦后再整页重绘
-const LIVE={ent:1,gw:1,'pz.pid':1,'pz.title':1,bid:1,nick:1,'ed.amt':1,'ed.nick':1,'proxy.pid':1,'proxy.v':1,secs:1,q:1,'pub.players':1,ransomBy:1,chips:1,'demoRow.pid':1};
+const LIVE={ent:1,gw:1,'pz.pid':1,'pz.title':1,bid:1,nick:1,'ed.amt':1,'ed.nick':1,'proxy.pid':1,'proxy.v':1,secs:1,q:1,'pub.players':1,ransomBy:1,chips:1};
 document.addEventListener('input',e=>{
   if(e.target.id==='pin'){const el=e.target;el.value=el.value.replace(/\D/g,'').slice(0,6);if($('#lgmsg').classList.contains('err'))loginMsg('');syncBoxes();return;}
   const m=e.target.dataset.m,v=e.target.value;if(!m)return;
   if(m==='chips'){ui.chipsIn[e.target.dataset.p]=v.replace(/\D/g,'');}
   else if(m==='ransomBy'){ui.ransomBy[e.target.dataset.p]=v;}
   else if(m==='demoRow.pin'){const el=e.target,r=ui.demoRows&&ui.demoRows[+el.dataset.i];el.value=el.value.replace(/\D/g,'').slice(0,6);if(r)r.pin=el.value;}
-  else if(m==='demoRow.pid'){const el=e.target,r=ui.demoRows&&ui.demoRows[+el.dataset.i],digits=el.value.replace(/\D/g,'').slice(0,3);el.value=digits;if(r)r.asRole='player:'+digits;}
   else if(m==='adm.resetTxt'){ui.admin.resetTxt=v;const btn=$('#rstbtn');if(btn){btn.disabled=v!=='重置';btn.classList.toggle('fillred',v==='重置');}return;}
   else if(m==='durMin'){ui.admin.dur=v.replace(/[^\d.]/g,'');return;}
+  else if(m==='admin.pinTo'){const el=e.target;el.value=el.value.replace(/\D/g,'').slice(0,6);ui.admin.pinTo=el.value;liveRender();return;}
   else if(m==='capN'){ui.admin.cap=v.replace(/\D/g,'');return;}
   else if(m==='addN'){ui.addN=v.replace(/\D/g,'');return;}
   else if(m.startsWith('adm.')){ui.admin.counts[m.slice(4)]=+v;try{localStorage.setItem('borderland.pincounts',JSON.stringify(ui.admin.counts));}catch(e){}if(!LOCAL)send({type:'setpincounts',counts:ui.admin.counts},null,true);return;}

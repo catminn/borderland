@@ -93,7 +93,8 @@ nav.pages button[aria-selected="true"],.subtabs.top button[aria-selected="true"]
 .shrow{display:flex;align-items:baseline;justify-content:space-between;gap:6px 12px;flex-wrap:wrap}
 .shrow .hint{font-size:14px;color:var(--sub)}
 .pn{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px 22px;display:flex;flex-direction:column;gap:12px;min-width:0}
-.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(420px,100%),1fr));gap:12px;align-items:start}
+.pins .pinedit{padding:4px 0 10px;border-bottom:1px solid var(--line3)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,max(380px,calc(50% - 6px))),1fr));gap:12px;align-items:start}   /* 最多两列：宽屏左右各一半，窄屏一列 */
 .pn h3{margin:0;font-size:17px;font-weight:900}
 .lbl{font-size:14px;font-weight:700;color:var(--sub)}
 .lbl .st{font-family:var(--mono);color:var(--red)}
@@ -283,12 +284,10 @@ textarea.in{height:auto;min-height:90px;padding:10px 12px;line-height:1.6;resize
 .stage .rh span{font-size:22px;color:var(--sub)}
 .stage .rgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:1fr 1fr;gap:16px;flex:1;min-height:0}
 .room{background:var(--panel);border:2px solid var(--line);border-radius:12px;padding:16px 20px;display:flex;flex-direction:column;gap:8px;min-width:0}
-.room.busy{background:var(--cb);border-color:var(--accent)}
 .room .top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
 .room .cd{font:800 72px var(--mono);line-height:.95}
 .room .rr{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
 .room .typ{font-size:20px;border-width:1.5px;color:var(--sub);border-color:var(--sub)}
-.room.busy .typ{color:var(--cb-sub);border-color:var(--cb-sub)}
 .room .pt{font-size:26px;font-weight:900}
 .room .bt{margin-top:auto;display:flex;flex-direction:column;gap:6px}
 .room .on{font-size:20px;font-weight:900;color:var(--accent);display:flex;align-items:center;gap:8px}
@@ -426,7 +425,9 @@ body.login .notice{display:none}
   .tbl{display:none}
   .timer .big{font-size:36px}
   .cnts{grid-template-columns:repeat(3,minmax(0,1fr))}
-  .pins .pr{grid-template-columns:64px minmax(0,1fr) 80px auto;gap:6px;font-size:13px}
+  .pins .pr{grid-template-columns:64px minmax(0,1fr) auto;gap:4px 6px;font-size:13px}
+  .pins .pr>span:last-child{grid-column:1/-1;justify-self:end}
+  .pins .pr.h>span:last-child{display:none}
   .danger{padding:16px}
 }
 @media (min-width:720px){

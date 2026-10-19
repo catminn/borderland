@@ -6,9 +6,7 @@ import * as R from '../../shared/rules.js';
 
 const ROLE_NAME = { player: '玩家', dealer: 'Dealer', judge: '判官', mengpo: '孟婆', wuchang: '黑白无常', ctrl: '总控', screen: '大屏', dev: '开发者', demo: '展示' };
 const STAFF_ROLES = ['dealer', 'judge', 'mengpo', 'wuchang', 'ctrl', 'screen'];
-// 展示 PIN 的默认身份：工作人员角色，或 "player:编号"（指定某个玩家）
-const normAsRole = v => STAFF_ROLES.includes(v) ? v : (typeof v === 'string' && /^player:\d{3}$/.test(v) ? v : 'ctrl');
-const SNAP_EVERY = 10, SNAP_KEEP = 30, LOG_KEEP = 1500;
+const SNAP_EVERY = 10, SNAP_KEEP = 30, LOG_KEEP = 1500, SESSION_MAX = 3000;
 const STATS_KEEP = 360, STATS_EVERY = 60000;   // 统计：在线曲线每分钟一个点，只留最近 6 小时
 const SBOX_SNAP_KEEP = 8, SBOX_LOG_KEEP = 300, DEMO_MAX = 30;   // a shared demo game stays small: few backups, short log, capped number of 展示 PINs
 
@@ -47,7 +45,7 @@ export class Game extends DurableObject {
       // 展示模式: any number of 展示 PINs {pin: {mode, write}}. 共享 mode = one demo game per PIN (this.Ds), never touching the real game.
       this.Ds = {};
       for (const [k, d] of await ctx.storage.list({ prefix: 'sandbox:' })) { if (d && d.S && !R.needsReset(d.S)) { d.pins = d.pins || {}; d.snaps = d.snaps || []; this.Ds[k.slice(8)] = d; } }   // 演示局的 PIN 要能登录，所以启动时全部读进内存
-      if (!this.auth.demos) { this.auth.demos = {}; if (this.auth.demo && this.auth.demo.pin) this.auth.demos[this.auth.demo.pin] = { mode: this.auth.demo.mode, write: this.auth.demo.write }; delete this.auth.demo; await ctx.storage.put('auth', this.auth); }
+      this.auth.demos = this.auth.demos || {};
     });
   }
 
@@ -84,25 +82,25 @@ export class Game extends DurableObject {
   }
   genPins(counts) {
     const pins = this.auth.pins, taken = this.takenPins();
-        let made = 0;
-        const have = new Set(Object.values(pins).filter(v => v.pid).map(v => v.pid));
-        for (const p of this.S.players) if (!have.has(p.id)) { pins[newPin(taken)] = { role: 'player', pid: p.id, label: p.id }; made++; }
-        this.removedPins = 0;
-        for (const role of STAFF_ROLES) {
-          if (counts[role] == null) continue;   // 没传这个角色的数量 = 不动
-          const want = Math.max(0, Math.min(30, Math.round(+counts[role]) || 0));
-          const mine = () => Object.entries(pins).filter(([, v]) => v.role === role);
-          let n = mine().length;
-          while (n < want) { n++; const pin = newPin(taken); taken.add(pin); pins[pin] = { role, label: ROLE_NAME[role] + ' ' + n }; if (role === 'dealer') pins[pin].rooms = []; made++; }
-          if (n > want) {   // 数量改小：删掉多出来的（编号靠后的）PIN，用它们登录的人会被踢下线
-            const num = v => role === 'dealer' ? (v.rooms && v.rooms.length ? R.ROOMS.findIndex(r => r.id === v.rooms[0]) : 99) : parseInt(String(v.label || '').replace(/\D+/g, ' ').trim().split(' ').pop(), 10) || 0;
-            const extra = mine().sort((x, y) => num(y[1]) - num(x[1])).slice(0, n - want);
-            for (const [pin] of extra) { delete pins[pin]; this.removedPins++; }
-          }
-        }
-        // One Dealer per room, fixed: the i-th Dealer PIN runs the i-th room. No manual choice.
-        const dealers = Object.values(pins).filter(v => v.role === 'dealer');
-        dealers.forEach((v, i) => { v.rooms = i < R.ROOMS.length ? [R.ROOMS[i].id] : []; v.label = this.dealerLabel(v.rooms); });
+    let made = 0;
+    const have = new Set(Object.values(pins).filter(v => v.pid).map(v => v.pid));
+    for (const p of this.S.players) if (!have.has(p.id)) { const pin = newPin(taken); taken.add(pin); pins[pin] = { role: 'player', pid: p.id, label: p.id }; made++; }
+    this.removedPins = 0;
+    for (const role of STAFF_ROLES) {
+      if (counts[role] == null) continue;   // 没传这个角色的数量 = 不动
+      const want = Math.max(0, Math.min(30, Math.round(+counts[role]) || 0));
+      const mine = () => Object.entries(pins).filter(([, v]) => v.role === role);
+      let n = mine().length;
+      while (n < want) { n++; const pin = newPin(taken); taken.add(pin); pins[pin] = { role, label: ROLE_NAME[role] + ' ' + n }; if (role === 'dealer') pins[pin].rooms = []; made++; }
+      if (n > want) {   // 数量改小：删掉多出来的（编号靠后的）PIN，用它们登录的人会被踢下线
+        const num = v => role === 'dealer' ? (v.rooms && v.rooms.length ? R.ROOMS.findIndex(r => r.id === v.rooms[0]) : 99) : parseInt(String(v.label || '').replace(/\D+/g, ' ').trim().split(' ').pop(), 10) || 0;
+        const extra = mine().sort((x, y) => num(y[1]) - num(x[1])).slice(0, n - want);
+        for (const [pin] of extra) { delete pins[pin]; this.removedPins++; }
+      }
+    }
+    // One Dealer per room, fixed: the i-th Dealer PIN runs the i-th room. No manual choice.
+    const dealers = Object.values(pins).filter(v => v.role === 'dealer');
+    dealers.forEach((v, i) => { v.rooms = i < R.ROOMS.length ? [R.ROOMS[i].id] : []; v.label = this.dealerLabel(v.rooms); });
     return made;
   }
   async snapshot(tag) {
@@ -155,7 +153,7 @@ export class Game extends DurableObject {
     if (this.env.DEV_PIN && pin === String(this.env.DEV_PIN)) return { role: 'dev', label: '开发者' };
     // 展示模式 PIN: set by the developer from the page. Same viewpoints as developer mode; 本地 = the browser runs its own demo game, 服务器 = the real game.
     const d = (this.auth.demos || {})[pin];
-    if (d) return { role: 'dev', demo: true, dmode: ['local', 'shared'].includes(d.mode) ? d.mode : 'server', dwrite: !!d.write, asRole: normAsRole(d.asRole), label: '展示' };
+    if (d) return { role: 'dev', demo: true, dmode: ['local', 'shared'].includes(d.mode) ? d.mode : 'server', dwrite: !!d.write, label: '展示' };
     const real = (this.realAuth || this.auth).pins[pin];
     if (real) return real;
     for (const [box, D] of Object.entries(this.Ds)) {   // 共享演示局里生成的 PIN：登录后进入那一局，按各自角色/玩家身份
@@ -171,10 +169,10 @@ export class Game extends DurableObject {
     const id = this.identity(s.pin);
     return id ? { ...id, pin: s.pin } : null;   // PIN reset or deleted -> session no longer valid
   }
-  demoList() { return Object.entries(this.auth.demos || {}).map(([pin, v]) => ({ pin, mode: ['local', 'shared'].includes(v.mode) ? v.mode : 'server', write: !!v.write, asRole: normAsRole(v.asRole) })); }
+  demoList() { return Object.entries(this.auth.demos || {}).map(([pin, v]) => ({ pin, mode: ['local', 'shared'].includes(v.mode) ? v.mode : 'server', write: !!v.write })); }
   me(s) {
     const m = { role: s.role, pid: s.pid || null, label: s.label || ROLE_NAME[s.role], rooms: s.role === 'dealer' && Array.isArray(s.rooms) ? s.rooms : null };
-    if (s.demo) { m.demo = true; m.dmode = s.dmode; m.dwrite = s.dwrite; m.asRole = s.asRole; }
+    if (s.demo) { m.demo = true; m.dmode = s.dmode; m.dwrite = s.dwrite; }
     else if (s.role === 'dev') m.demoCfg = this.demoList();
     return m;
   }
@@ -193,8 +191,12 @@ export class Game extends DurableObject {
     try { pin = String((await req.json()).pin || '').trim(); } catch { /* bad body */ }
     const id = /^\d{6}$/.test(pin) ? this.identity(pin) : null;
     if (!id) { await this.failLogin(); return json({ error: 'PIN 不正确' }, 401); }   // no lockout: at the event everyone shares one Wi-Fi address
-    const token = randHex(16);
-    this.auth.sessions[token] = { pin, at: Date.now() };
+    const token = randHex(16), ss = this.auth.sessions;
+    ss[token] = { pin, at: Date.now() };
+    // 清理：PIN 已失效的会话直接删；总数超过上限时删最早的（每次刷新带 ?pin= 的链接都会多一个会话）
+    for (const [k, v] of Object.entries(ss)) if (!this.identity(v.pin)) delete ss[k];
+    const ks = Object.keys(ss);
+    if (ks.length > SESSION_MAX) ks.sort((a, b) => ss[a].at - ss[b].at).slice(0, ks.length - SESSION_MAX).forEach(k => delete ss[k]);
     await this.ctx.storage.put('auth', this.auth);
     await this.bump(this.keyOf(id, pin), this.roleOf(id), 'login', req.headers.get('user-agent'));
     return json({ token, me: this.me(id) });
@@ -287,7 +289,7 @@ export class Game extends DurableObject {
       if (!/^\d{6}$/.test(pin)) return R.no('展示 PIN 要是 6 位数字');
       if (pin !== old && this.takenPins().has(pin)) return R.no('这个 PIN 已被别的身份用了，换一个');
       if (old && old !== pin && this.auth.demos[old]) { kick(old); delete this.auth.demos[old]; delete this.Ds[old]; await this.ctx.storage.delete('sandbox:' + old); }
-      this.auth.demos[pin] = { mode: ['local', 'shared'].includes(a.mode) ? a.mode : 'server', write: !!a.write, asRole: normAsRole(a.asRole) };
+      this.auth.demos[pin] = { mode: ['local', 'shared'].includes(a.mode) ? a.mode : 'server', write: !!a.write };
       kick(pin);
       return done('展示模式已保存');
     }
@@ -341,10 +343,15 @@ export class Game extends DurableObject {
         return ok('新生成 ' + made + ' 个 PIN' + (this.removedPins ? '，删除多出的 ' + this.removedPins + ' 个' : '') + '，共 ' + Object.keys(pins).length + ' 个', { changed: false, auth: true, kick: this.removedPins > 0, data: this.pinList() });
       }
       case 'admin.pins': return ok('', { changed: false, data: this.pinList() });
-      case 'admin.resetpin': {
+      case 'admin.resetpin': case 'admin.setpin': {   // resetpin = 随机换一个；setpin = 改成指定的 6 位数
         const old = String(a.pin || ''), v = this.auth.pins[old];
         if (!v) return R.no('没有这个 PIN');
-        const taken = this.takenPins(), pin = newPin(taken);
+        const taken = this.takenPins(), pin = a.type === 'admin.setpin' ? String(a.to || '').trim() : newPin(taken);
+        if (a.type === 'admin.setpin') {
+          if (!/^\d{6}$/.test(pin)) return R.no('PIN 要是 6 位数字');
+          if (pin === old) return R.no('PIN 没有变化');
+          if (taken.has(pin)) return R.no('这个 PIN 已被别的身份用了，换一个');
+        }
         delete this.auth.pins[old]; this.auth.pins[pin] = v;
         for (const [tk, s] of Object.entries(this.auth.sessions)) if (s.pin === old) delete this.auth.sessions[tk];
         this.broadcast();   // closes sockets still logged in with the old PIN
