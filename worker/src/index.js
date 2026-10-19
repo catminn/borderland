@@ -6,6 +6,8 @@ import * as R from '../../shared/rules.js';
 
 const ROLE_NAME = { player: '玩家', dealer: 'Dealer', judge: '判官', mengpo: '孟婆', wuchang: '黑白无常', ctrl: '总控', screen: '大屏', dev: '开发者', demo: '展示' };
 const STAFF_ROLES = ['dealer', 'judge', 'mengpo', 'wuchang', 'ctrl', 'screen'];
+// 展示 PIN 的默认身份：工作人员角色，或 "player:编号"（指定某个玩家）
+const normAsRole = v => STAFF_ROLES.includes(v) ? v : (typeof v === 'string' && /^player:\d{3}$/.test(v) ? v : 'ctrl');
 const SNAP_EVERY = 10, SNAP_KEEP = 30, LOG_KEEP = 1500;
 const STATS_KEEP = 360, STATS_EVERY = 60000;   // 统计：在线曲线每分钟一个点，只留最近 6 小时
 const SBOX_SNAP_KEEP = 8, SBOX_LOG_KEEP = 300, DEMO_MAX = 30;   // a shared demo game stays small: few backups, short log, capped number of 展示 PINs
@@ -153,7 +155,7 @@ export class Game extends DurableObject {
     if (this.env.DEV_PIN && pin === String(this.env.DEV_PIN)) return { role: 'dev', label: '开发者' };
     // 展示模式 PIN: set by the developer from the page. Same viewpoints as developer mode; 本地 = the browser runs its own demo game, 服务器 = the real game.
     const d = (this.auth.demos || {})[pin];
-    if (d) return { role: 'dev', demo: true, dmode: ['local', 'shared'].includes(d.mode) ? d.mode : 'server', dwrite: !!d.write, asRole: STAFF_ROLES.includes(d.asRole) ? d.asRole : 'ctrl', label: '展示' };
+    if (d) return { role: 'dev', demo: true, dmode: ['local', 'shared'].includes(d.mode) ? d.mode : 'server', dwrite: !!d.write, asRole: normAsRole(d.asRole), label: '展示' };
     const real = (this.realAuth || this.auth).pins[pin];
     if (real) return real;
     for (const [box, D] of Object.entries(this.Ds)) {   // 共享演示局里生成的 PIN：登录后进入那一局，按各自角色/玩家身份
@@ -169,7 +171,7 @@ export class Game extends DurableObject {
     const id = this.identity(s.pin);
     return id ? { ...id, pin: s.pin } : null;   // PIN reset or deleted -> session no longer valid
   }
-  demoList() { return Object.entries(this.auth.demos || {}).map(([pin, v]) => ({ pin, mode: ['local', 'shared'].includes(v.mode) ? v.mode : 'server', write: !!v.write, asRole: STAFF_ROLES.includes(v.asRole) ? v.asRole : 'ctrl' })); }
+  demoList() { return Object.entries(this.auth.demos || {}).map(([pin, v]) => ({ pin, mode: ['local', 'shared'].includes(v.mode) ? v.mode : 'server', write: !!v.write, asRole: normAsRole(v.asRole) })); }
   me(s) {
     const m = { role: s.role, pid: s.pid || null, label: s.label || ROLE_NAME[s.role], rooms: s.role === 'dealer' && Array.isArray(s.rooms) ? s.rooms : null };
     if (s.demo) { m.demo = true; m.dmode = s.dmode; m.dwrite = s.dwrite; m.asRole = s.asRole; }
@@ -285,7 +287,7 @@ export class Game extends DurableObject {
       if (!/^\d{6}$/.test(pin)) return R.no('展示 PIN 要是 6 位数字');
       if (pin !== old && this.takenPins().has(pin)) return R.no('这个 PIN 已被别的身份用了，换一个');
       if (old && old !== pin && this.auth.demos[old]) { kick(old); delete this.auth.demos[old]; delete this.Ds[old]; await this.ctx.storage.delete('sandbox:' + old); }
-      this.auth.demos[pin] = { mode: ['local', 'shared'].includes(a.mode) ? a.mode : 'server', write: !!a.write, asRole: STAFF_ROLES.includes(a.asRole) ? a.asRole : 'ctrl' };
+      this.auth.demos[pin] = { mode: ['local', 'shared'].includes(a.mode) ? a.mode : 'server', write: !!a.write, asRole: normAsRole(a.asRole) };
       kick(pin);
       return done('展示模式已保存');
     }
