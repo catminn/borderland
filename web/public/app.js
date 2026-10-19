@@ -499,7 +499,7 @@ function demoPanel(){
   const one=(d,i)=>{d.write=d.write===true||d.write==='true';d.asRole=d.asRole||'ctrl';
     const c=(DEVME.demoCfg||[]).find(x=>x.pin===d.old)||{},ok=/^\d{6}$/.test(d.pin),
       dirty=!d.old||d.pin!==c.pin||d.mode!==c.mode||d.write!==c.write||d.asRole!==(c.asRole||'ctrl'),k='demoRows.'+i;
-    return '<div class="pn" style="gap:8px"><div class="btns"><input class="in mono" data-m="demoRow.pin" data-i="'+i+'" value="'+esc(d.pin)+'" inputmode="numeric" maxlength="6" placeholder="6 位数字" style="max-width:150px"><button class="btn-line" data-a="demo-rand" data-i="'+i+'">随机</button>'
+    return '<div class="pn" style="gap:8px;max-width:520px"><div class="btns"><input class="in mono" data-m="demoRow.pin" data-i="'+i+'" value="'+esc(d.pin)+'" inputmode="numeric" maxlength="6" placeholder="6 位数字" style="max-width:150px"><button class="btn-line" data-a="demo-rand" data-i="'+i+'">随机</button>'
       +(d.old?'<button class="btn-line" data-a="demo-copy" data-i="'+i+'">复制链接</button>':'')+'<button class="btn-line" data-a="demo-del" data-i="'+i+'">删除</button></div>'
       +'<div class="btns" style="flex-wrap:nowrap">'
       +dd(k+'.asRole',ROLE_NAME[d.asRole],'身份',null,L_ROLES.map(r=>({v:r,label:ROLE_NAME[r]})))
