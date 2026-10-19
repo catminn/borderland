@@ -2,7 +2,6 @@
 // The server owns the game state; this page signs in with a PIN, keeps a live WebSocket, renders the pages
 // for the signed-in role, and sends actions. Rule helpers come from rules.js (same file the server runs).
 import * as R from './rules.js';
-import {sheetHtml,sheetData} from './offline-sheet.js';
 const {ROOMS,SUITS,FINAL_SCORE,PUZZLES,GATES,PUZ_CAP,PUZ_PTS,GATE_WIN,GATE_COIN,CHIP_START,CHIP_GOAL,CARRY_MAX,RANSOM,START_ONLY,
   room,fmt,esc,matches,targetLabel,whyNotEnter,no,timeUp,marketShut,staffSees,finalMiss,qualifies,ranking,suitsOf,stLabel,inMk,pl,nm,puzInfo,
   lotLeft,lotState,whyNotBid,bidOrder}=R;
@@ -50,7 +49,6 @@ const $=s=>document.querySelector(s);
 const ROLE_TABS={ctrl:['ctrl'],dealer:['dealer'],judge:['npc','auc'],mengpo:['market'],wuchang:['wuchang'],screen:['board'],player:['board','player']};
 const TAB_NAME={board:'大屏',player:'我的',dealer:'Dealer',ctrl:'总控',npc:'判官',auc:'拍卖',market:'鬼市',wuchang:'黑白无常'};
 const ROLE_NAME={player:'玩家',dealer:'Dealer',judge:'判官',mengpo:'孟婆',wuchang:'黑白无常',ctrl:'总控',screen:'大屏'};
-const SHEET_SCOPE={ctrl:'all',dealer:'dealer',wuchang:'outs',mengpo:'outs',judge:'judge'};
 const nowT=()=>!CLOCK?0:CLOCK.running?CLOCK.base+Math.floor((Date.now()+OFFSET-CLOCK.at)/1000):CLOCK.base;
 const aucOn=()=>!!(S&&S.auc&&S.auc.screen==='auction');
 
@@ -588,13 +586,14 @@ function adminPanel(){
     +(S.capOn?'<div class="btns" style="flex-wrap:nowrap;margin-top:8px"><input class="in mono" id="capn" data-m="capN" value="'+esc(A.cap)+'" inputmode="numeric" placeholder="人数" style="max-width:110px"><button class="btn-line acc" data-a="setcap">设置</button></div>':'')+'</div>'
     +'<div class="setrow"><div class="swrow"><span>身份卡<small>现在共 <b class="mono" style="color:var(--ink)">'+S.players.length+'</b> 张（'+S.players[0].id+'–'+S.players[S.players.length-1].id+'），上榜 '+S.players.filter(p=>p.on).length+' 人</small></span>'
     +'<div class="btns" style="flex-wrap:nowrap"><input class="in mono" id="addn" data-m="addN" value="'+esc(ui.addN)+'" inputmode="numeric" style="max-width:80px"><button class="btn-line" data-a="addplayers">新增</button></div></div></div></div>'
-    +'<div class="pn"><h3>应急记录表</h3><span class="small">断网或网站出问题时用：在本机生成，不联网。导出的 HTML 可打印，也能在浏览器里继续填写。</span>'
-    +'<div class="btns"><button class="btn-line acc" data-a="sheet-mine">导出当前状态</button><button class="btn-line" data-a="sheet-blank">下载空白记录表</button></div></div>'
     +'<div class="pn"><h3>备份与恢复</h3><span class="small">每 10 次操作自动备份一次；重置、恢复、载入演示数据前都会先备份当前数据。</span>'
     +'<div class="btns"><button class="btn-line" data-a="adm-snaps">查看备份</button>'
     +'</div><span class="lbl" style="padding-top:6px">载入演示数据（会先备份当前数据）</span><div class="btns">'
     +Object.entries(R.DEMOS).map(([k,l])=>A.ask==='reset:'+k?'<button class="btn-line fillred" data-a="adm-reset" data-v="'+k+'">确认载入「'+l+'」</button><button class="btn-line" data-a="adm-cancel">取消</button>'
-      :'<button class="btn-line" data-a="adm-ask" data-v="reset:'+k+'">'+l+'</button>').join('')+'</div>'+snaps+'</div></div>';
+      :'<button class="btn-line" data-a="adm-ask" data-v="reset:'+k+'">'+l+'</button>').join('')+'</div>'
+    +(DEVME?'<span class="lbl" style="padding-top:6px">模拟离线（只影响这台设备，演示「离线记录 → 一键补录」）</span><div class="btns"><button class="btn-line'+(ui.simOff?' fillred':'')+'" data-a="simoff">'+(ui.simOff?'结束模拟离线':'开始模拟离线')+'</button>'
+      +'<span class="small">开始后在右上角切到 Dealer / 判官 / 孟婆 / 黑白无常 去记；结束 = 网络恢复'+(DEVME.demo&&!DEVME.dwrite?'（这个展示 PIN 是只读，补录会被拒绝）':DEVME.demo?'':'（补录要先打开「可操作」）')+'</span></div>':'')
+    +snaps+'</div></div>';
   const rs=A.resetTxt==='重置';
   const right='<div class="stack">'
     +'<div class="pn"><div class="shrow"><h3>PIN</h3><span class="small">按数量增减工作人员 PIN（改小会删掉编号靠后的，用它们登录的人会被踢下线）</span></div>'
@@ -731,6 +730,7 @@ let offSince=0;   // 断线开始的时刻；断线超过 5 秒（或用的是�
 const offKey=()=>'borderland.off.'+ME.role+(Array.isArray(ME.rooms)&&ME.rooms.length?'.'+ME.rooms.join(''):'')+(DEVME?'.dev':'');
 function offGet(){try{return JSON.parse(localStorage.getItem(offKey())||'[]');}catch{return ui.offMem||[];}}
 function offSet(rows){ui.offMem=rows;try{rows.length?localStorage.setItem(offKey(),JSON.stringify(rows)):localStorage.removeItem(offKey());}catch{/* 无痕模式：只留在本页 */}}
+const online=()=>connected&&!ui.simOff;   // 模拟离线时当作断网
 const offRid=()=>Array.isArray(ME.rooms)&&ME.rooms.length?ME.rooms[0]:ui.room;
 const OFF_MK=[['market','入鬼市'],['chips','记筹码'],['redeem','自赎'],['ransom','被别人赎'],['soup','孟婆汤']];
 function offDesc(x){const r=x.rid&&room(x.rid),z=x.zid&&PUZZLES.find(q=>q.id===x.zid);
@@ -747,8 +747,8 @@ function offWhy(){const f=ui.off,ids=parseIds(f.ids),k=ME.role==='dealer'?'room'
   if(k==='gate')return !f.rw?'选奖励':f.rw==='save'?(pl(parseIds(f.arg)[0])?null:'填要救的编号'):f.rw==='suit'?(SUITS.includes(f.arg)?null:'选花色'):null;
   return null;}
 function offBar(){
-  if(!ME||!OFF_ROLES.includes(ME.role)||LOCAL||!S)return '';
-  const rows=offGet(),down=!connected&&(!!STALE||(offSince&&Date.now()-offSince>5000));
+  if(!ME||!OFF_ROLES.includes(ME.role)||(LOCAL&&!ui.simOff)||!S)return '';
+  const rows=offGet(),down=!online()&&(ui.simOff||!!STALE||(offSince&&Date.now()-offSince>5000));
   if(down)ui.offOn=true;
   if(!rows.length&&!ui.offOn)return '';
   const f=ui.off,k=ME.role==='dealer'?'room':f.k,seg=(key,opts)=>'<div class="seg'+opts.length+'">'+opts.map(([v,l])=>'<button class="sbtn'+(getp(key)===v?' on':'')+'" data-a="pick" data-k="'+key+'" data-v="'+v+'" aria-pressed="'+(getp(key)===v)+'">'+l+'</button>').join('')+'</div>';
@@ -764,16 +764,16 @@ function offBar(){
       +(f.rw==='save'?'<input class="in mono" data-m="off.arg" id="offarg" value="'+esc(f.arg)+'" inputmode="numeric" placeholder="要救的人的编号">':'')
       +(f.rw==='suit'?'<div class="chips c4">'+SUITS.map(x=>cb({k:'off.arg',v:x,on:f.arg===x,label:suitG(x),mark:false})).join('')+'</div>':''):'');
   const why=offWhy();
-  const form=connected?'':'<div class="fgrid offf"><label class="fld"><span>编号'+(ME.role==='dealer'?'（可多个，空格隔开）· '+cardG(room(offRid())):'')+'</span><input class="in mono" data-m="off.ids" id="offids" value="'+esc(f.ids)+'" inputmode="numeric" placeholder="例如 7 15"></label>'
+  const form=online()?'':'<div class="fgrid offf"><label class="fld"><span>编号'+(ME.role==='dealer'?'（可多个，空格隔开）· '+cardG(room(offRid())):'')+'</span><input class="in mono" data-m="off.ids" id="offids" value="'+esc(f.ids)+'" inputmode="numeric" placeholder="例如 7 15"></label>'
     +'<div class="fld"><span>'+(ME.role==='dealer'?'结果':'做了什么')+'</span>'+what+'</div></div>'
     +'<button class="btn-main'+(why?'':' glow')+'" data-a="off-add"'+(why?' disabled':'')+'>'+(why||'记下')+'</button>';
   const list=rows.map((x,i)=>({x,i})).reverse().map(({x,i})=>'<div class="li"><div class="grow"><span class="t">'+new Date(x.at).toTimeString().slice(0,5)+'</span><span class="x">'+esc(offDesc(x))+'</span>'
     +(x.err?'<span class="small" style="color:var(--red)">没补上：'+esc(x.err)+'</span>':'')+'</div><button class="btn-line" data-a="off-del" data-v="'+i+'" aria-label="删除这条">删除</button></div>').join('');
   return '<div class="page offpage"><div class="pn offp"><div class="shrow"><h3>离线记录'+(rows.length?'（'+rows.length+' 条）':'')+'</h3><span class="small">'
-    +(connected?'网络已恢复':'网络断了：先在这里记，存在这台设备上')+'</span></div>'+form
-    +(list?'<div class="list">'+list+'</div>':connected?'':'<span class="small">还没有记录。</span>')
-    +(connected?(rows.length?'<button class="btn-main glow" data-a="off-send" style="min-height:56px;font-size:18px">一键补录 '+rows.length+' 条</button>':'<button class="btn-line" data-a="off-close">收起</button>')
-      :'<span class="small">连上网络后，这里会出现「一键补录」。</span>')+'</div></div>';
+    +(online()?'网络已恢复':ui.simOff?'模拟离线：先在这里记，存在这台设备上':'网络断了：先在这里记，存在这台设备上')+'</span></div>'+form
+    +(list?'<div class="list">'+list+'</div>':online()?'':'<span class="small">还没有记录。</span>')
+    +(online()?(rows.length?'<button class="btn-main glow" data-a="off-send" style="min-height:56px;font-size:18px">一键补录 '+rows.length+' 条</button>':'<button class="btn-line" data-a="off-close">收起</button>')
+      :ui.simOff?'<button class="btn-line" data-a="simoff">结束模拟离线（= 网络恢复）</button>':'<span class="small">连上网络后，这里会出现「一键补录」。</span>')+'</div></div>';
 }
 
 // ---------- shell ----------
@@ -856,7 +856,6 @@ function render(){
   $('#logo').innerHTML=ui.tab==='ctrl'?'<span class="scroll"></span>总控':'百鬼夜行';
   $('#who').textContent=(DEVME?(DEVME.demo?'展示 · ':'开发者 · '):'')+(ME.role==='player'?(DEVME?ME.pid:'玩家'):ME.role==='ctrl'?'总控':ME.label||ROLE_NAME[ME.role]);
   $('#logout').hidden=false;$('#conn').hidden=false;
-  $('#sheetbtn').hidden=!SHEET_SCOPE[ME.role]||!S;
   const run=CLOCK&&CLOCK.running;
   const cc=$('#clockctl');cc.hidden=ME.role!=='ctrl';cc.textContent=run?'暂停计时':'开始计时';
   const th=$('#theme');th.hidden=(themeKey()==='player'&&inMarketNow())||ME.role==='mengpo'||ME.role==='wuchang';th.textContent=themeFor()==='dark'?'浅色':'深色';
@@ -946,7 +945,7 @@ async function login(pin){
   setTimeout(()=>{entering=false;$('#view').innerHTML='';render();say(null);},reduce?1200:3600);
 }
 function logout(msg){
-  SESSION=null;store.set(null);STALE=null;ui.as='ctrl';ui.tab=null;try{localStorage.removeItem(LASTK);}catch{/* ignore */}setMe(null);S=null;CLOCK=null;connected=false;entering=false;
+  SESSION=null;store.set(null);STALE=null;ui.as='ctrl';ui.simOff=false;ui.tab=null;try{localStorage.removeItem(LASTK);}catch{/* ignore */}setMe(null);S=null;CLOCK=null;connected=false;entering=false;
   if(ws){const w=ws;ws=null;try{w.close();}catch{/* ignore */}}
   clearTimeout(timer);$('#view').innerHTML='';render();say(null);if(msg)loginError(msg);
 }
@@ -954,8 +953,9 @@ function logout(msg){
 // ---------- live connection ----------
 let ws=null,connected=false,retry=0,timer=null,seq=0,lastMsg=0;const pending=new Map();
 function setConn(){const c=$('#conn');c.className='pill '+(connected?'free':'bad');
+  if(ui.simOff){c.className='pill bad';c.textContent='模拟离线';return;}
   c.textContent=connected?(LOCAL?'本地展示':'已连接'):STALE?'离线 · 最后同步 '+new Date(STALE).toTimeString().slice(0,5):'重连中…';}
-// 离线重开：每隔几秒（和断线那一刻）把最后一次同步的状态存在本机；页面重开后连不上服务器时，用它显示，并可导出记录表。
+// 离线重开：每隔几秒（和断线那一刻）把最后一次同步的状态存在本机；页面重开后连不上服务器时，用它显示（只读）。
 // 只存这个账号自己看到的那份状态；退出登录时删除。冻结的计时只用于显示，不代表真实时间。
 const LASTK='borderland.last';let lastSave=0,STALE=null;
 function saveLast(force){
@@ -976,6 +976,7 @@ function connect(){
   sock.onopen=()=>{connected=true;retry=0;offSince=0;lastMsg=Date.now();setConn();};
   sock.onmessage=e=>{lastMsg=Date.now();let m;try{m=JSON.parse(e.data);}catch{return;}
     if(m.t==='hello'){setMe(m.me);SESSION.me=m.me;store.set(SESSION);}
+    if(m.t==='state'&&ui.simOff)return;   // 模拟离线：不接收新状态
     if(m.t==='hello'||m.t==='state'){S=m.S;if(DEVME)FULL=m.S;CLOCK=m.clock;OFFSET=m.now-Date.now();STALE=null;requestRender();saveLast();}
     else if(m.t==='res'){const cb=pending.get(m.id);pending.delete(m.id);if(cb)cb(m);}};
   sock.onclose=e=>{
@@ -1047,6 +1048,7 @@ function localSend(a,after,quiet){
   if(!quiet||!r.ok)say(r);if(r.ok&&after)after(r);requestRender();
 }
 function send(a,after,quiet){
+  if(ui.simOff){say(no('模拟离线中：要记的事写进页面顶部的「离线记录」'));return;}
   if(LOCAL){localSend(a,after,quiet);return;}
   if(!ws||!connected){say(no('还没连上服务器，请稍等'));return;}
   if(DEVME&&(a.type==='pincounts'||a.type==='setpincounts'||a.type.startsWith('dev.'))){}
@@ -1178,14 +1180,13 @@ document.addEventListener('click',e=>{
   else if(a==='adm-restore'){A.ask=null;send({type:'admin.restore',key:v},()=>{A.snaps=null;});}
   else if(a==='adm-reset'){A.ask=null;if(v==='blank'&&A.resetTxt!=='重置')return;A.resetTxt='';send({type:'admin.reset',demo:v==='blank'?false:v});}
   else if(a==='adm-csv'){downloadPins();}
-  else if(a==='sheet-blank'){downloadSheet(true);}
-  else if(a==='sheet-mine'){downloadSheet(false,true);}
   else if(a==='off-add'){if(!offWhy()){const f=ui.off,k=ME.role==='dealer'?'room':f.k,rows=offGet(),at=Date.now();
     parseIds(f.ids).forEach((pid,j)=>{const x={at:at+j,k,pid};if(k==='room'){x.rid=offRid();x.res=f.res;}if(k==='chips'||k==='redeem')x.v=f.v;
       if(k==='ransom')x.by=parseIds(f.by)[0];if(k==='puz')x.zid=f.zid;if(k==='gate'){x.rw=f.rw;x.arg=f.rw==='save'?parseIds(f.arg)[0]:f.arg;}rows.push(x);});
     offSet(rows);ui.off={...f,ids:'',v:'',by:'',arg:''};}}
   else if(a==='off-del'){const rows=offGet();rows.splice(+v,1);offSet(rows);}
   else if(a==='off-close'){ui.offOn=false;}
+  else if(a==='simoff'){ui.simOff=!ui.simOff;if(ui.simOff){offSince=Date.now()-6000;ui.offOn=true;}else{offSince=0;if(!LOCAL)connect();}setConn();}
   else if(a==='off-send'){const rows=offGet();if(rows.length)send({type:'offline',rows:rows.map(({err,...x})=>x)},m=>{const left=rows.map((x,i)=>({...x,err:m.data&&m.data[i]&&!m.data[i].ok?m.data[i].msg:null})).filter(x=>x.err);offSet(left);if(!left.length)ui.offOn=false;});}
   else if(a==='stats-load'){send({type:'dev.stats'},m=>{ui.stats=m.data;},true);}
   else if(a==='stats-view'){ui.statsView=v;}
@@ -1233,16 +1234,6 @@ function copyText(t){
   if(navigator.clipboard&&window.isSecureContext)return navigator.clipboard.writeText(t);
   return new Promise((ok,bad)=>{const x=document.createElement('textarea');x.value=t;x.style.cssText='position:fixed;opacity:0';document.body.appendChild(x);x.select();
     try{document.execCommand('copy')?ok():bad();}catch(e){bad(e);}x.remove();});}
-// 应急记录表：在本机生成，不联网。blank=true 给空白表，否则带上此刻浏览器里的最新状态。
-// 工作人员各自导出自己的部分（总控导出全部）；开发者看哪个角色就按哪个角色。
-function downloadSheet(blank,mine){
-  const sc=mine?SHEET_SCOPE[ME.role]:'all';
-  const rooms=mine&&sc==='dealer'&&Array.isArray(ME.rooms)&&ME.rooms.length?ME.rooms:null;
-  const D=sheetData(S,R,blank,sc,rooms);
-  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([sheetHtml(D)],{type:'text/html'}));
-  a.download=blank?'borderland-sheet-blank.html':'borderland-sheet-'+(mine?ME.role+'-':'')+new Date().toTimeString().slice(0,5).replace(':','')+'.html';a.click();
-  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
-}
 function downloadPins(){
   const rows=[['身份','编号/名称','昵称','起始房间','PIN','登录链接']].concat((ui.admin.pins||[]).map(p=>{const q=p.pid&&pl(p.pid);return [p.roleName,p.pid||p.label,q?q.nick:'',q?room(q.start).card:'',p.pin,location.origin+'/?pin='+p.pin];}));
   const csv='﻿'+rows.map(r=>r.map(x=>'"'+String(x).replace(/"/g,'""')+'"').join(',')).join('\r\n');
