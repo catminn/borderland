@@ -93,6 +93,7 @@ nav.pages button[aria-selected="true"],.subtabs.top button[aria-selected="true"]
 .shrow{display:flex;align-items:baseline;justify-content:space-between;gap:6px 12px;flex-wrap:wrap}
 .shrow .hint{font-size:14px;color:var(--sub)}
 .pn{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px 22px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.offpage{margin-bottom:14px}.offp{border:2px solid var(--warn)}.offp .offf{grid-template-columns:minmax(0,1fr) minmax(0,1.5fr)}.offp .offf .fld>.in{margin-top:6px}
 .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,max(380px,calc(50% - 6px))),1fr));gap:12px;align-items:start}   /* 最多两列：宽屏左右各一半，窄屏一列 */
 .pn h3{margin:0;font-size:17px;font-weight:900}
 .lbl{font-size:14px;font-weight:700;color:var(--sub)}

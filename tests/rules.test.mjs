@@ -161,4 +161,25 @@ T('判官不能改花色', !A('judge', { type: 'setcards', pid: '001', cards: []
 { const g = R.newGame('mid'); T('演示·中段：鬼门开进行中、鬼市有人', !!g.gp && g.gp.wins.length === 1 && g.players.some(p => p.st === 'market')); }
 { const g = R.newGame('final'); R.use(g); T('演示·晋级与拍卖：时间已到、名单已锁、第 1 件成交、大屏在拍卖', R.timeUp() && g.fin.length >= 6 && g.auc.lots[0].st === 'done' && g.auc.cur === 'L2' && g.auc.screen === 'auction' && g.fin.every(id => R.qualifies(g.players.find(p => p.id === id)))); }
 T('newGame(true) = 中段', !!R.newGame(true).gp);
+// ---------- 离线补录 ----------
+fresh(); S.t = 1000;
+{ const D4 = { rooms: ['4S'] }, off = (r, rows, x) => A(r, { type: 'offline', rows }, x);
+  T('离线补录：Dealer 只能补自己的房间', !off('dealer', [{ k: 'room', rid: '8S', pid: '001', res: 'win' }], D4).data[0].ok);
+  const r = off('dealer', [{ k: 'room', rid: '4S', pid: '001', res: 'win' }, { k: 'room', rid: '4S', pid: '001', res: 'win' }, { k: 'room', rid: '4S', pid: '002', res: 'lose' }, { k: 'room', rid: '4S', pid: '999', res: 'win' }], D4);
+  T('离线补录：赢 +400 和花色，重复的不再加分', P('001').score === 400 && P('001').cards.includes('♠') && r.data[1].ok && /没有再加分/.test(r.data[1].msg));
+  T('离线补录：输 → 待接；编号不存在的那行单独失败', P('002').st === 'out' && !r.data[3].ok && r.msg.includes('3 / 4'));
+  T('离线补录：不按时间规则拦（时间到了也照补）', (S.t = 9000, off('dealer', [{ k: 'room', rid: '4S', pid: '003', res: 'win' }], D4).data[0].ok) && P('003').score === 400);
+  T('离线补录：Dealer 不能补鬼市', !off('dealer', [{ k: 'market', pid: '002' }], D4).data[0].ok);
+  off('wuchang', [{ k: 'pickup', pid: '002' }, { k: 'market', pid: '002' }]);
+  T('离线补录：黑白无常接到 + 送入鬼市', P('002').st === 'market' && P('002').chips === R.CHIP_START);
+  off('mengpo', [{ k: 'redeem', pid: '002', v: 580 }]);
+  T('离线补录：自赎按填的筹码带出（截止后也照补）', P('002').st === 'alive' && P('002').score === 80);
+  off('mengpo', [{ k: 'market', pid: '004' }, { k: 'ransom', pid: '004', by: '001' }]);
+  T('离线补录：被别人赎，出钱人扣 500（不够就扣光）', P('004').st === 'alive' && P('001').score === 0);
+  P('005').cards = ['♠', '♥']; off('mengpo', [{ k: 'chips', pid: '005', v: 0 }, { k: 'soup', pid: '005' }]);
+  T('离线补录：孟婆汤忘掉一个花色', P('005').st === 'alive' && P('005').cards.length === 1);
+  const j = off('judge', [{ k: 'puz', pid: '006', zid: 'z1' }, { k: 'puz', pid: '006', zid: 'z1' }, { k: 'gate', pid: '006', rw: 'coin' }, { k: 'gate', pid: '007', rw: 'suit', arg: '♦' }]);
+  T('离线补录：判官解谜（同题不重复）+ 鬼门开奖励', P('006').score === R.PUZ_PTS + R.GATE_COIN && /已经兑换过/.test(j.data[1].msg) && P('007').cards.includes('♦'));
+  T('离线补录：总控和玩家不能补录', !A('ctrl', { type: 'offline', rows: [{ k: 'room', rid: '4S', pid: '001', res: 'win' }] }).ok && !A('player', { type: 'offline', rows: [] }, { pid: '001' }).ok);
+  T('离线补录：写进日志', S.log.some(l => l.text.includes('离线补录'))); }
 console.log(bad ? bad + ' FAILED' : 'all passed'); process.exit(bad ? 1 : 0);

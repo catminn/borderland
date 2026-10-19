@@ -345,6 +345,55 @@ function addPlayers(n){n=Math.round(+n);if(!(n>=1&&n<=40))return no('一次加 1
   log('总控新增 '+n+' 张身份卡（'+pidOf(k+1)+'–'+pidOf(k+n)+'）');return ok('已新增 '+n+' 张，记得生成 PIN');}
 function setDur(secs){secs=Math.round(+secs);if(!(secs>=60&&secs<=86400))return no('总时长要在 1 分钟到 24 小时之间');S.dur=secs;log('总控把总时长设为 '+Math.floor(secs/60)+' 分钟');return ok('总时长已设为 '+Math.floor(secs/60)+' 分钟');}
 
+// ---------- 离线补录 ----------
+// 工作人员断网时在自己页面上记的事，连上后一次性交给服务器。按记录先后执行；不按房间状态、时间、鬼市截止这些规则拦，
+// 记了什么就补什么（只防重复：同一间房已成功过不再加分，同一道题不重复兑换）。每一行单独成功或失败，互不影响。
+const OFF_KINDS={dealer:['room'],wuchang:['pickup','market'],mengpo:['market','chips','redeem','ransom','soup'],judge:['puz','gate']};
+function toMarket(p){if(p.inRoom){const r=S.rooms.find(x=>x.id===p.inRoom);r.ps=r.ps.filter(x=>x!==p.id);if(!r.ps.length&&r.st==='play')r.st='open';p.inRoom=null;}
+  if(p.st==='alive'){p.outAt=S.t;}p.st='market';p.inAt=S.t;if(p.pickAt==null)p.pickAt=S.t;p.chips=CHIP_START;p.chk={by:'off',ok:true};p.on=true;}
+function offRow(me,x,rnd){
+  if(!x||!(OFF_KINDS[me.role]||[]).includes(x.k))return no('你的身份不能补录这一类');
+  const p=pl(String(x.pid||''));if(!p)return no('没有编号 '+(x.pid||'？'));
+  const tag='（离线补录）';
+  if(x.k==='room'){const r=room(x.rid);if(!r)return no('没有这个房间');
+    if(Array.isArray(me.rooms)&&!me.rooms.includes(r.id))return no('这个房间不归你管');
+    if(!['win','lose','leave'].includes(x.res))return no('结果不对');
+    if(p.inRoom===r.id){const st=S.rooms.find(y=>y.id===r.id);st.ps=st.ps.filter(y=>y!==p.id);if(!st.ps.length&&st.st==='play')st.st='open';p.inRoom=null;}
+    p.on=true;const h={rid:r.id,t0:S.t,t1:S.t,res:x.res,pts:0};p.hist.push(h);
+    if(x.res==='win'){if(p.cleared.includes(r.id)){if(!p.cards.includes(r.suit))p.cards.push(r.suit);return ok(p.id+' 已成功过 '+r.card+'，没有再加分');}
+      h.pts=r.n*100;p.score+=h.pts;p.cleared.push(r.id);if(!p.cards.includes(r.suit))p.cards.push(r.suit);
+      log(nm(p)+' 赢下 '+r.card+'，+'+h.pts+' 冥币'+tag,'back',1);return ok(p.id+' 赢 '+r.card+' +'+h.pts);}
+    if(x.res==='lose'){if(p.st!=='alive'){log(nm(p)+' 挑战 '+r.card+' 失败'+tag);return ok(p.id+' 输 '+r.card+'（本来就不在场）');}
+      eliminate(p,'挑战 '+r.card+' 失败'+tag,r.card+' '+r.name);return ok(p.id+' 输 '+r.card);}
+    log(nm(p)+' 中途离开 '+r.card+tag);return ok(p.id+' 离开 '+r.card);}
+  if(x.k==='pickup'){if(p.st==='market'||p.st==='picked')return ok(p.id+' 已经接到了');
+    if(p.st==='alive')p.outAt=S.t;p.st='picked';p.pickAt=S.t;p.on=true;log('黑白无常接到 '+nm(p)+tag);return ok('接到 '+p.id);}
+  if(x.k==='market'){if(p.st==='market')return ok(p.id+' 已经在鬼市');toMarket(p);log(nm(p)+' 进入鬼市，领 '+CHIP_START+' 筹码'+tag,'back');return ok(p.id+' 入鬼市');}
+  const chipsOf=()=>{const c=Math.round(+x.v);return Number.isFinite(c)&&c>=0?c:null;};
+  if(x.k==='chips'){const c=chipsOf();if(c==null)return no('筹码数不对');if(p.st!=='market')toMarket(p);p.chips=c;log('孟婆记 '+nm(p)+' 筹码 '+c+tag);return ok(p.id+' 筹码 '+c);}
+  if(x.k==='redeem'){if(p.st==='alive')return ok(p.id+' 已经在场');const c=chipsOf()!=null?chipsOf():p.chips,carry=Math.min(CARRY_MAX,Math.max(0,c-CHIP_GOAL));
+    p.score+=carry;backAlive(p);log(nm(p)+' 自赎回到人间'+(carry?'，带出 '+carry+' 冥币':'')+tag,'back',1);return ok(p.id+' 自赎'+(carry?' +'+carry:''));}
+  if(x.k==='ransom'){if(p.st==='alive')return ok(p.id+' 已经在场');const by=pl(String(x.by||''));if(!by)return no('没有出钱人编号 '+(x.by||'？'));if(by.id===p.id)return no('出钱人不能是自己');
+    const paid=Math.min(RANSOM,by.score);by.score-=paid;backAlive(p);log(nm(by)+' 花 '+paid+' 冥币把 '+nm(p)+' 从鬼市赎了出来'+tag,'back',1);return ok(by.id+' 赎出 '+p.id+(paid<RANSOM?'（只有 '+paid+'）':''));}
+  if(x.k==='soup'){if(p.st==='alive')return ok(p.id+' 已经在场');let lost=null;
+    if(p.cards.length){const i=Math.floor((rnd==null?Math.random():rnd)*p.cards.length)%p.cards.length;lost=p.cards.splice(i,1)[0];p.cleared=p.cleared.filter(id=>room(id).suit!==lost);}
+    backAlive(p);log(nm(p)+' 喝下孟婆汤复活'+(lost?'，忘掉了 '+lost:'')+tag,'back',1);return ok(p.id+' 孟婆汤'+(lost?'，忘掉 '+lost:''));}
+  if(x.k==='puz'){const z=PUZZLES.find(q=>q.id===x.zid);if(!z)return no('题目不对');if(p.puz.some(r=>r.k===z.id))return ok(p.id+' 已经兑换过「'+z.title+'」');
+    const i=puzInfo(p);if(i.left<=0)return ok(p.id+' 解谜题已达上限');const pts=Math.min(PUZ_PTS,i.left);p.puz.push({k:z.id,title:z.title,t:S.t,pts});p.score+=pts;p.on=true;
+    log('判官记录 '+nm(p)+' 解出「'+z.title+'」，+'+pts+' 冥币'+tag,'back');return ok(p.id+' 解谜 +'+pts);}
+  if(x.k==='gate'){p.on=true;
+    if(x.rw==='coin'){p.score+=GATE_COIN;log(nm(p)+' 鬼门开奖励：+'+GATE_COIN+' 冥币'+tag,'back',1);return ok(p.id+' +'+GATE_COIN);}
+    if(x.rw==='save'){const q=pl(String(x.arg||''));if(!q)return no('没有要救的编号 '+(x.arg||'？'));if(q.st!=='alive')backAlive(q);log(nm(p)+' 用鬼门开奖励救出了 '+nm(q)+tag,'back',1);return ok(p.id+' 救了 '+q.id);}
+    if(x.rw==='suit'){if(!SUITS.includes(x.arg))return no('花色不对');if(!p.cards.includes(x.arg))p.cards.push(x.arg);log(nm(p)+' 鬼门开奖励：拿到花色 '+x.arg+tag,'back',1);return ok(p.id+' 拿到 '+x.arg);}
+    return no('奖励不对');}
+  return no('未知记录');}
+function offImport(me,rows,rnd){
+  if(!Array.isArray(rows)||!rows.length)return no('没有要补录的记录');if(rows.length>300)return no('一次最多补录 300 条');
+  const res=rows.map(x=>offRow(me,x,rnd)),n=res.filter(r=>r.ok).length;
+  if(n)log((ROLE_LABEL[me.role]||me.role)+' 离线补录 '+n+' 条'+(n<rows.length?'，'+(rows.length-n)+' 条没补上':''));
+  return ok('补录完成：'+n+' / '+rows.length+' 条',res.map(r=>({ok:r.ok,msg:r.msg})));}
+const ROLE_LABEL={dealer:'Dealer',judge:'判官',mengpo:'孟婆',wuchang:'黑白无常'};
+
 // ---------- 演示数据 ----------
 const DEMO_NICK=['阿鬼','小白','无常','纸扎','孟孟','判判','铜钱','灯笼','彼岸','骨花','黑猫','红绸','书生','狐狸','小倩','钟馗','小青','白蛇','花脸','长舌',
   '阿飘','画皮','聂聂','宁采','燕赤','山魈','魍魉','魑魅','夜叉','罗刹','鬼火','冥灯','奈何','忘川','孟汤','黄泉'];
@@ -416,7 +465,7 @@ const ROLE_OK={enter:['dealer'],finish:['dealer'],resetdone:['dealer'],kick:['de
   chips:['mengpo'],redeem:['mengpo'],ransom:['mengpo'],soup:['mengpo'],
   'auc.add':['judge'],'auc.edit':['judge'],'auc.del':['judge'],'auc.move':['judge'],'auc.open':['judge'],'auc.time':['judge'],'auc.reveal':['judge'],
   'auc.void':['judge'],'auc.redo':['judge'],'auc.screen':['judge'],'auc.show':['judge'],
-  ack:['player'],nick:['player','ctrl'],bid:['player','judge']};
+  ack:['player'],nick:['player','ctrl'],bid:['player','judge'],offline:['dealer','judge','mengpo','wuchang']};
 
 // Apply one action from one signed-in person. Returns {ok,msg}.
 export function apply(state,me,a){
@@ -470,6 +519,7 @@ export function apply(state,me,a){
     case 'auc.show':return aucShow(a.id);
     case 'ack':if(!me.pid)return no('只有玩家需要确认通知');ack(+a.nid,me.pid);return ok('');
     case 'nick':return setNick(me.role==='player'?me.pid:a.pid,a.nick);
+    case 'offline':return offImport(me,a.rows);
     case 'bid':return bid(me.role==='player'?me.pid:a.pid,a.id,a.v);   // 判官可以替手机打不开的人代出价
   }
 }
@@ -490,4 +540,4 @@ export function viewFor(state,me){
 
 export {noticeStale,staffSees,timeUp,marketShut,needsReset,whyNotEnter,eliminate,soup,puzInfo,finalMiss,qualifies,whyNotBid,bidOrder,lotLeft,lotState,
   ranking,suitsOf,stLabel,inMk,pl,nm,matches,targetLabel,room,fmt,esc,log,no,
-  ROOMS,SUITS,PUZZLES,GATES,FINAL_SCORE,CHIP_START,CHIP_GOAL,CARRY_MAX,RANSOM,PUZ_PTS,PUZ_CAP,GATE_WIN,GATE_COIN,ROOM_CAP0,START_ONLY,DEMOS};
+  OFF_KINDS,ROOMS,SUITS,PUZZLES,GATES,FINAL_SCORE,CHIP_START,CHIP_GOAL,CARRY_MAX,RANSOM,PUZ_PTS,PUZ_CAP,GATE_WIN,GATE_COIN,ROOM_CAP0,START_ONLY,DEMOS};

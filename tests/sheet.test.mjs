@@ -29,7 +29,8 @@ t('转义',sheetHtml({...D,puz:[{t:0,id:'001',nick:'<b>x</b>',title:'',pts:100}]
 const emptyRows=x=>(x.match(/<tr>(<td contenteditable="true" data-k="f\d+"><\/td>)+<\/tr>/g)||[]).length;
 const sec=(x,title)=>{const i=x.indexOf('<h2>'+title);if(i<0)return null;const j=x.indexOf('<section',i);return x.slice(i,j<0?undefined:j);};
 const all=sheetHtml(sheetData(S,R,false,'all'));
-t('总控导出：总控页有空行',emptyRows(sec(all,'总控'))>=16);
+t('总控导出：总控页只看不填（没有空行、没有冥币流水）',!!sec(all,'总控')&&emptyRows(sec(all,'总控'))===0&&!sec(all,'总控').includes('contenteditable')&&!all.includes('冥币流水'));
+t('空白表没有总控页',!b.includes('<h2>总控'));
 t('总控导出：其他页没有空行',[sec(all,'Dealer · '+R.ROOMS[0].card),sec(all,'黑白无常 / 孟婆'),sec(all,'判官')].every(x=>x&&emptyRows(x)===0));
 const dl=sheetHtml(sheetData(S,R,false,'dealer',['4C']));
 t('Dealer 导出：只含自己的房间',(dl.match(/Dealer · /g)||[]).length===1&&!dl.includes('>总控<')&&!dl.includes('黑白无常 / 孟婆')&&!dl.includes('>判官<'));

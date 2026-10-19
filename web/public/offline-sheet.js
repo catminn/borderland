@@ -45,13 +45,11 @@ export function sheetHtml(D){
 
   // ① 总控：每人一行的冥币总表（个人赛的账本就是每个人的冥币）+ 冥币流水
   const ps=[...D.players].sort((a,b)=>a.id.localeCompare(b.id));
-  const pRows=ps.map(p=>'<tr><th>'+esc(p.id)+'</th>'+cell(p.nick)+cell(p.score)+cell('')+cell(ST[p.st]||p.st)+SUITS.map(s=>box(p.cards.includes(s))).join('')+box(p.fin)+cell('')+'</tr>').join('')
-    +(own.ctrl?Array.from({length:D.blank?48:4},()=>'<tr>'+cell('','')+cell('')+cell('')+cell('')+cell('')+SUITS.map(()=>box(false)).join('')+box(false)+cell('')+'</tr>').join(''):'');
-  const ctrl=page(true,'总控','玩家冥币总表与冥币流水',
-    '<h3>玩家总表<small>「导出时冥币」是导出那一刻的数；之后每次变动，在「当前冥币」里改写，并在冥币流水里记一笔</small></h3>'
-    +'<table>'+th(['编号','昵称','导出时冥币','当前冥币','状态','♠','♦','♣','♥','晋级','备注'])+'<tbody>'+pRows+'</tbody></table>'
-    +'<h3>冥币流水<small>赢房 / 解谜 / 鬼门开 / 赎人 / 自赎带出 / 手动调整，每一笔一行</small></h3>'
-    +'<table>'+th(['时间','编号','原因','冥币变动（+ / −）','变动后','记录人'])+'<tbody>'+rows([],16,6,own.ctrl)+'</tbody></table>');
+  // 总控不用填写：只是导出那一刻的状态（之后的变动由各工作人员记、连上后各自补录）
+  const ok=v=>v?'✓':'';
+  const pRows=ps.map(p=>'<tr><th>'+esc(p.id)+'</th><td>'+esc(p.nick)+'</td><td>'+esc(p.score)+'</td><td>'+esc(ST[p.st]||p.st)+'</td>'+SUITS.map(s=>'<td class="c">'+ok(p.cards.includes(s))+'</td>').join('')+'<td class="c">'+ok(p.fin)+'</td></tr>').join('');
+  const ctrl=page(true,'总控','导出那一刻的玩家状态（只看，不用填）',
+    '<table>'+th(['编号','昵称','冥币','状态','♠','♦','♣','♥','晋级'])+'<tbody>'+(pRows||'<tr><td colspan="9" class="empty">暂无玩家</td></tr>')+'</tbody></table>');
 
   // ② 每个房间一页（给该房间的 Dealer）
   const roomPages=!show.room?'':D.rooms.filter(r=>!D.only||D.only.includes(r.id)).map(r=>{
@@ -86,7 +84,7 @@ export function sheetHtml(D){
     +'<li><b>解谜题：</b>每题 '+(K.PUZ_PTS||100)+'，每人最多 '+(K.PUZ_CAP||400)+'。<b>鬼门开：</b>最先完成的 '+(K.GATE_WIN||3)+' 人选奖励。</li>'
     +'<li><b>晋级资格：</b>时间截止时集齐 ♠♦♣♥、冥币 ≥ '+(K.FINAL_SCORE||2000)+'、人在场（不在鬼市）。</li>'
     +'<li><b>总时长：</b>'+Math.round((D.dur||7200)/60)+' 分钟；到时间后房间关闭，失败的人照常进鬼市；再过 15 分钟停止发放复活名额。</li>'
-    +'<li><b>离线原则：</b>每件事写下「时间 + 编号 + 结果」；恢复网站后，总控按冥币流水、Dealer 按房间记录、黑白无常/孟婆按名单、判官按判官页补录。</li>'
+    +'<li><b>离线原则：</b>谁断网谁记：网站页面还开着的话，就在页面上的「离线记录」里记，连上后点「一键补录」；页面打不开就记在纸上，连上后照着在「离线记录」里补。</li>'
     +'</ul>');
 
   const snap=D.blank?'':'<script type="application/json" id="snap">'+JSON.stringify(D).replace(/</g,'\\u003c')+'<\/script>';
@@ -107,7 +105,7 @@ export function sheetHtml(D){
   +'<h1>百鬼夜行 · '+(D.blank?'空白记录表':'应急记录表 · '+SN[sc])+'</h1><div class="meta">'+meta+'　'+(D.blank||sc==='all'?'每个角色一页，各自打印或各自填写':'只含你负责的部分，可继续填写')+'</div>'
   +'<div class="np"><button onclick="print()">打印</button><button onclick="if(confirm(\'清除你在本页填写的所有内容？\')){localStorage.removeItem(KEY);location.reload()}">清除本页填写</button>'
   +'<div class="tip">离线文件：不联网也能打开、填写（自动保存在这台设备的这个浏览器里），也可以打印后手写。'+(D.blank?'':(sc==='all'?'除总控页外，其他页只有已发生的记录、没有空行；':'')+'预填的是导出那一刻已发生的记录；网站恢复后以服务器为准，请按本页记录补录。')+'</div></div>'
-  +(show.ctrl?ctrl:'')+roomPages+(show.outs?outs:'')+(show.judge?judge:'')+ref+snap
+  +(show.ctrl&&!D.blank?ctrl:'')+roomPages+(show.outs?outs:'')+(show.judge?judge:'')+ref+snap
   +'<script>var KEY="'+sheetKey+'";(function(){var s={};try{s=JSON.parse(localStorage.getItem(KEY)||"{}")}catch(e){}'
   +'document.querySelectorAll("[data-k]").forEach(function(e){var key=e.dataset.k;if(key in s){if(e.type==="checkbox")e.checked=s[key];else e.textContent=s[key]}'
   +'e.addEventListener(e.type==="checkbox"?"change":"input",function(){try{s[key]=e.type==="checkbox"?e.checked:e.textContent;localStorage.setItem(KEY,JSON.stringify(s))}catch(x){}})})})()<\/script>'
