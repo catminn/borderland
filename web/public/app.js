@@ -205,13 +205,14 @@ function viewDealer(){
   if(mine&&!mine.includes(ui.room)){ui.room=mine[0];ui.ent='';ui.res={};ui.settled=null;}
   const r=room(ui.room),x=S.rooms.find(y=>y.id===r.id),st=x.st,cap=S.capOn?(S.cap||R.ROOM_CAP0):Infinity;
   const rooms=mine&&mine.length===1?'':'<div class="sec on" style="gap:10px"><span class="lbl">'+(mine?'我负责的房间':'全部房间'+(ME.role==='ctrl'?'（总控视角）':''))+'</span><div class="rooms8">'+ROOMS.filter(y=>!mine||mine.includes(y.id)).map(y=>{const q=S.rooms.find(z=>z.id===y.id);
+    const kc=RST[q.st][1];
     return '<button class="rbtn'+(y.id===ui.room?' on':'')+'" data-a="room" data-v="'+y.id+'" aria-pressed="'+(y.id===ui.room)+'"><span class="n">'+cardG(y)+'</span><span class="nm">'+y.name+'</span>'
-      +'<span class="st'+(q.st==='open'?'':' busy')+'">'+(q.st==='open'?'':'● ')+RST[q.st][0]+(q.ps.length?' '+q.ps.length+' 人':'')+'</span></button>';}).join('')+'</div></div>';
+      +'<span class="st '+kc+'">'+(kc!=='rst'?'<i class="gd"></i>':'')+RST[q.st][0]+(q.ps.length?' '+q.ps.length+' 人':'')+'</span></button>';}).join('')+'</div></div>';
   const timer=st!=='open'?'已 '+mmss(Math.max(0,S.t-x.at)):'';
   const hero='<div class="hero"><div class="tile"><span class="tn">'+r.n+'</span><span class="ts '+(isRed(r.suit)?'sr':'')+'">'+r.suit+'</span></div>'
     +'<div class="info"><div class="meta"><span class="typ">'+TYPE[r.suit]+'</span><span class="typ">'+(r.n===4?'简单':'困难')+'</span><span class="coins">+'+r.n*100+' <small>冥币</small></span></div>'
     +'<div class="name"><b>'+r.name+'</b>'+(ui.settled&&ui.settled.rid===r.id&&st==='reset'?'<span class="stamp">已结算</span>':'')+'</div>'
-    +'<span class="status'+(st==='open'?'':' busy')+'">'+(st==='open'?'':'<i class="gd"></i>')+RST[st][0]+(x.ps.length?' · '+x.ps.length+(S.capOn?' / '+cap:'')+' 人':'')+(timer?'　'+timer:'')+'</span></div></div>';
+    +'<span class="status '+RST[st][1]+'">'+(RST[st][1]!=='rst'?'<i class="gd"></i>':'')+RST[st][0]+(x.ps.length?' · '+x.ps.length+(S.capOn?' / '+cap:'')+' 人':'')+(timer?'　'+timer:'')+'</span></div></div>';
   // 入场：输入编号（可多人），或点起始房间名单里的人
   let entry;
   if(timeUp())entry='<div class="empty">时间到，房间已关闭。房间里还有人的话，照常结算。</div>';
