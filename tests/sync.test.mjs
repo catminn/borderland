@@ -23,7 +23,9 @@ const pins = gen.data, pinOf = f => pins.find(f).pin;
 T('pins generated (56 players + 8 dealers + 6 other staff)', pins.length === 56 + 8 + 2 + 1 + 1 + 1 + 1);
 T('player PINs are labelled with the card number', pins.filter(p => p.role === 'player').every(p => /^\d{3}$/.test(p.pid)));
 T('seed (mid) has one finished gate and one running', admin.S.notices.some(n => n.sub === 'gate' && n.gr) && !!admin.S.gp);
-await admin.act({ type: 'gateend' }); await sleep(200);
+const J0 = await client(pinOf(p => p.role === 'judge')), dcache = {}, D = async rid => dcache[rid] || (dcache[rid] = await client(pinOf(p => p.role === 'dealer' && p.rooms[0] === rid)));
+T('ctrl cannot do other staff actions', !(await admin.act({ type: 'gateend' })).ok && !(await admin.act({ type: 'enter', rid: '4H', pids: ['006'] })).ok);
+await J0.act({ type: 'gateend' }); await sleep(200);
 T('dealers fixed one room each', pins.filter(p => p.role === 'dealer').every(p => p.rooms.length === 1) && new Set(pins.filter(p => p.role === 'dealer').map(p => p.rooms[0])).size === 8);
 T('pins unique', new Set(pins.map(p => p.pin)).size === pins.length);
 const P = { player: pinOf(p => p.pid === '011'), fresh: pinOf(p => p.pid === '050'), judge: pinOf(p => p.role === 'judge'), judge2: pins.filter(p => p.role === 'judge')[1].pin,
@@ -63,7 +65,7 @@ T('player popup after gate publish', (await player.locator('#modal').innerText()
 await ack(player);
 await sleep(300); T('dealer and ctrl also get the gate popup, screen does not', await dealer.locator('[data-modal]').count() > 0 && await ctrl.locator('[data-modal]').count() > 0 && await screen.locator('[data-modal]').count() === 0);
 await ack(ctrl); await ack(judge); await ack(dealer); await ack(mengpo);
-T('gate does not pause the rooms', (await admin.act({ type: 'enter', rid: '4H', pids: ['006'] })).ok);
+T('gate does not pause the rooms', (await (await D('4H')).act({ type: 'enter', rid: '4H', pids: ['006'] })).ok);
 // judge records the first 3 finishers and gives rewards
 const sc11 = P_('011').score;
 await judge.fill('#gwin', '11'); await sleep(200); await judge.click('[data-a=gatewin]'); await sleep(400);
@@ -73,13 +75,13 @@ await judge.click('[data-a=pick][data-k="gr.011.k"][data-v=coin]'); await judge.
 T('gate reward +300 reaches the player', P_('011').score === sc11 + 300 && admin.S.gp.wins[0].rw.k === 'coin');
 { const [r1, r2] = await Promise.all([(await client(P.judge)).act({ type: 'gatewin', pid: '004' }), (await client(P.judge2)).act({ type: 'gatewin', pid: '004' })]);
   T('race: two judges record the same person, exactly one wins', r1.ok !== r2.ok); }
-await admin.act({ type: 'gatewin', pid: '006' }); await sleep(200);
-T('gate: no 4th finisher', admin.S.gp.wins.length === 3 && !(await admin.act({ type: 'gatewin', pid: '007' })).ok);
-await admin.act({ type: 'gatereward', pid: '004', kind: 'suit', arg: '♣' });
+await J0.act({ type: 'gatewin', pid: '006' }); await sleep(200);
+T('gate: no 4th finisher', admin.S.gp.wins.length === 3 && !(await J0.act({ type: 'gatewin', pid: '007' })).ok);
+await J0.act({ type: 'gatereward', pid: '004', kind: 'suit', arg: '♣' });
 const downs = admin.S.players.filter(p => p.st !== 'alive');
-{ const r = await admin.act({ type: 'gatereward', pid: '006', kind: 'save', arg: downs[0].id }); await sleep(300);
+{ const r = await J0.act({ type: 'gatereward', pid: '006', kind: 'save', arg: downs[0].id }); await sleep(300);
   T('gate: 3 rewards given → gate ends; save brings someone back', r.ok && !admin.S.gp && P_(downs[0].id).st === 'alive' && P_('004').cards.includes('♣')); }
-await ctrl.click('[data-a=tab][data-v=ctrl]'); await ctrl.click('[data-a=sub][data-p=ctrl][data-v=log]');
+await ctrl.click('[data-a=sub][data-p=ctrl][data-v=log]');
 T('ctrl log updated live', (await text(ctrl)).includes('011 黑猫 第 1 个完成鬼门开'));
 await ack(player); await ack(ctrl); await ack(judge); await ack(dealer); await ack(mengpo);
 
@@ -111,7 +113,7 @@ T('clock running and same on screens', t1 === t2 && t1 !== 'T+34:00'); if (t1 !=
 await ctrl.click('#clockctl');
 
 // typing is not wiped by live updates
-await ctrl.click('[data-a=tab][data-v=ctrl]'); await ctrl.click('[data-a=sub][data-p=ctrl][data-v=pub]'); await ctrl.click('#pti'); await ctrl.keyboard.type('正在输入');
+await ctrl.click('[data-a=sub][data-p=ctrl][data-v=pub]'); await ctrl.click('#pti'); await ctrl.keyboard.type('正在输入');
 await admin.act({ type: 'setscore', pid: '001', v: 4321 }); await sleep(600);
 T('typing survives broadcast', (await ctrl.inputValue('#pti')) === '正在输入');
 
@@ -131,7 +133,7 @@ const dealerOf = room => client(pinOf(p => p.role === 'dealer' && p.rooms[0] ===
   T('dealer cannot run other rooms', !(await d4.act({ type: 'finish', rid: '8S', results: {} })).ok);
   T('every person needs a result', !(await d4.act({ type: 'finish', rid: '4S', results: { '001': 'win' } })).ok);
   await d4.act({ type: 'finish', rid: '4S', results: { '001': 'win', '009': 'lose' } }); await sleep(250);
-  T('reset room cannot be entered', !(await admin.act({ type: 'enter', rid: '4S', pids: ['017'] })).ok);
+  T('reset room cannot be entered', !(await (await D('4S')).act({ type: 'enter', rid: '4S', pids: ['017'] })).ok);
   T('only the dealer of that room sets reset done', !(await (await dealerOf('8S')).act({ type: 'resetdone', rid: '4S' })).ok && (await d4.act({ type: 'resetdone', rid: '4S' })).ok);
   const v = '009';
   { const bd = await mp.act({ type: 'pickup', pid: v }), gd = await wc.act({ type: 'pickup', pid: v }); await sleep(250);
@@ -146,7 +148,7 @@ const dealerOf = room => client(pinOf(p => p.role === 'dealer' && p.rooms[0] ===
 
 // ---- 晋级 + 拍卖, through the real server and the player phone ----
 { await admin.act({ type: 'admin.clock', op: 'set', sec: 700 });
-  const q = async (id, rooms) => { for (const rid of rooms) { await admin.act({ type: 'enter', rid, pids: [id] }); await admin.act({ type: 'finish', rid, results: { [id]: 'win' } }); await admin.act({ type: 'resetdone', rid }); } };
+  const q = async (id, rooms) => { for (const rid of rooms) { const d = await D(rid); await d.act({ type: 'enter', rid, pids: [id] }); await d.act({ type: 'finish', rid, results: { [id]: 'win' } }); await d.act({ type: 'resetdone', rid }); } };
   await q('002', ['8S', '8D', '8C', '4H']); await q('003', ['8H', '4D', '4C', '4S']);
   await sleep(200);
   T('qualification: 4 suits + 2000', R_q('002') && R_q('003') && !R_q('001'));

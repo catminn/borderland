@@ -9,7 +9,7 @@ const res = []; const T = (n, c) => res.push((c ? 'PASS ' : 'FAIL ') + n);
 let srv = start(); await up();
 const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' }); const p = await b.newPage();
 await p.goto(BASE + '/?pin=' + (process.env.ADMIN_PIN || '888888')); await p.waitForSelector('#conn.free');
-await sleep(3800); await p.click('[data-a=tab][data-v=ctrl]'); await p.click('[data-a=flt][data-v=off]'); await p.click('[data-a=edpick][data-v="056"]');
+await sleep(3800); await p.click('[data-a=flt][data-v=off]'); await p.click('[data-a=edpick][data-v="056"]');
 await p.click('[data-a=edon][data-v="1"]'); await sleep(400); await p.click('[data-a=flt][data-v=all]');
 await p.fill('#eda', String(Math.floor(Math.random() * 9000) + 1000)); await sleep(200);
 const score = (await p.locator('[data-a=edscore]').innerText()).split('→').pop().trim(); await p.click('[data-a=edscore]'); await sleep(500);

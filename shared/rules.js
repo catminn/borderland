@@ -407,7 +407,7 @@ function seedFinal(){
 const seed=w=>w==='start'?seedStart():w==='final'?seedFinal():seedMid();
 export function newGame(demo){init();if(demo)seed(demo);return S;}
 
-// Which roles may perform each action ('ctrl' may do everything).
+// Which roles may perform each action. 总控只做自己页面上的事（冥币、名单、发布、设置），不代替其他工作人员操作。
 const ROLE_OK={enter:['dealer'],finish:['dealer'],resetdone:['dealer'],kick:['dealer'],
   setcap:['ctrl'],setcapon:['ctrl'],setdur:['ctrl'],setscore:['ctrl'],setstart:['ctrl'],setcards:['ctrl'],seton:['ctrl'],addplayers:['ctrl'],lockfinal:['ctrl','judge'],unlockfinal:['ctrl'],final:['ctrl'],
   publish:['ctrl','judge'],revoke:['ctrl','judge'],
@@ -423,7 +423,7 @@ export function apply(state,me,a){
   use(state);
   const roles=a&&ROLE_OK[a.type];
   if(!roles)return no('未知操作');
-  if(me.role!=='ctrl'&&!roles.includes(me.role))return no('你的身份不能做这个操作');
+  if(!roles.includes(me.role))return no('你的身份不能做这个操作');
   if(me.role==='dealer'&&Array.isArray(me.rooms)&&['enter','finish','resetdone','kick'].includes(a.type)&&!me.rooms.includes(a.rid))return no('这个房间不归你管，只能操作：'+me.rooms.map(r=>room(r).card).join(' '));
   aucSweep();
   switch(a.type){
@@ -451,8 +451,8 @@ export function apply(state,me,a){
     case 'puz':return puzRedeem(a.pid,a.zid,a.title);
     case 'puzundo':return puzUndo(a.pid,a.key);
     case 'pickup':return pickup(a.pid);
-    case 'checkin':{const role=me.role==='ctrl'?a.party:me.role;if(role!=='mengpo'&&role!=='wuchang')return no('请选择孟婆或黑白无常页面登记');return checkIn(a.pid,role);}
-    case 'confirm':return confirmIn(a.pid,me.role==='ctrl'?a.party:me.role);
+    case 'checkin':return checkIn(a.pid,me.role);
+    case 'confirm':return confirmIn(a.pid,me.role);
     case 'chips':return setChips(a.pid,a.v);
     case 'redeem':return selfRedeem(a.pid);
     case 'ransom':return ransom(a.pid,a.by);

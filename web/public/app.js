@@ -47,8 +47,8 @@ let ui={ddOpen:null,tab:null,room:'4S',as:'ctrl',devOps:false,demoRows:null,devA
   pub:{kind:'公告',title:'',body:'',target:'everyone',players:'',mins:0,gate:''},
   admin:{dur:'',cap:'',pins:null,snaps:null,counts:loadCounts(),ask:null,resetTxt:''}};
 const $=s=>document.querySelector(s);
-const ROLE_TABS={ctrl:['ctrl','board','dealer','npc','auc','market','wuchang'],dealer:['dealer'],judge:['npc','auc'],mengpo:['market'],wuchang:['wuchang'],screen:['board'],player:['board','player']};
-const TAB_NAME={board:'大屏',player:'我的',dealer:'Dealer',ctrl:'生死簿',npc:'判官',auc:'拍卖',market:'鬼市',wuchang:'黑白无常'};
+const ROLE_TABS={ctrl:['ctrl'],dealer:['dealer'],judge:['npc','auc'],mengpo:['market'],wuchang:['wuchang'],screen:['board'],player:['board','player']};
+const TAB_NAME={board:'大屏',player:'我的',dealer:'Dealer',ctrl:'总控',npc:'判官',auc:'拍卖',market:'鬼市',wuchang:'黑白无常'};
 const ROLE_NAME={player:'玩家',dealer:'Dealer',judge:'判官',mengpo:'孟婆',wuchang:'黑白无常',ctrl:'总控',screen:'大屏'};
 const SHEET_SCOPE={ctrl:'all',dealer:'dealer',wuchang:'outs',mengpo:'outs',judge:'judge'};
 const nowT=()=>!CLOCK?0:CLOCK.running?CLOCK.base+Math.floor((Date.now()+OFFSET-CLOCK.at)/1000):CLOCK.base;
@@ -204,7 +204,7 @@ function viewDealer(){
   if(mine&&!mine.length)return '<div class="page"><div class="pn"><h2 class="sh">还没有房间</h2><span class="muted">这个 Dealer PIN 没有对应的房间（Dealer 只有 8 个，一人一间）。请总控在「总控工具」里重新生成 PIN。</span></div></div>';
   if(mine&&!mine.includes(ui.room)){ui.room=mine[0];ui.ent='';ui.res={};ui.settled=null;}
   const r=room(ui.room),x=S.rooms.find(y=>y.id===r.id),st=x.st,cap=S.capOn?(S.cap||R.ROOM_CAP0):Infinity;
-  const rooms=mine&&mine.length===1?'':'<div class="sec on" style="gap:10px"><span class="lbl">'+(mine?'我负责的房间':'全部房间'+(ME.role==='ctrl'?'（总控视角）':''))+'</span><div class="rooms8">'+ROOMS.filter(y=>!mine||mine.includes(y.id)).map(y=>{const q=S.rooms.find(z=>z.id===y.id);
+  const rooms=mine&&mine.length===1?'':'<div class="sec on" style="gap:10px"><span class="lbl">'+(mine?'我负责的房间':'全部房间')+'</span><div class="rooms8">'+ROOMS.filter(y=>!mine||mine.includes(y.id)).map(y=>{const q=S.rooms.find(z=>z.id===y.id);
     const kc=RST[q.st][1];
     return '<button class="rbtn'+(y.id===ui.room?' on':'')+'" data-a="room" data-v="'+y.id+'" aria-pressed="'+(y.id===ui.room)+'"><span class="n">'+cardG(y)+'</span><span class="nm">'+y.name+'</span>'
       +'<span class="st '+kc+'">'+(kc!=='rst'?'<i class="gd"></i>':'')+RST[q.st][0]+(q.ps.length?' '+q.ps.length+' 人':'')+'</span></button>';}).join('')+'</div></div>';
@@ -357,8 +357,7 @@ function lotForm(k){const f=k==='lot'?ui.lot:ui.le;
 
 // ---------- 鬼市 ----------
 // 入鬼市登记：黑白无常或孟婆谁点都行，另一方确认。
-const checkinParty=()=>ME.role==='ctrl'?(ui.tab==='wuchang'?'wuchang':'mengpo'):ME.role;
-const canConfirm=p=>!!p.chk&&!p.chk.ok&&(p.chk.by==='mengpo'?checkinParty()==='wuchang':p.chk.by==='wuchang'&&checkinParty()==='mengpo');
+const canConfirm=p=>!!p.chk&&!p.chk.ok&&(p.chk.by==='mengpo'?ME.role==='wuchang':p.chk.by==='wuchang'&&ME.role==='mengpo');
 const chkBit=p=>!p.chk?'':p.chk.ok?'<span class="chk ok">登记已确认</span>':canConfirm(p)?'<button class="btn-line fill chkbtn" data-a="confirmin" data-p="'+p.id+'">确认入鬼市</button>':'<span class="chk wait">待'+(p.chk.by==='mengpo'?'黑白无常':'孟婆')+'确认</span>';
 function inboundPanel(){
   const wait=S.players.filter(p=>p.st==='out'||p.st==='picked'||(p.st==='market'&&p.chk&&!p.chk.ok)).sort((a,b)=>a.outAt-b.outAt);
@@ -463,7 +462,7 @@ function logTag(l){const x=l.text;
     :/解出|解谜/.test(x)?['解谜','var(--accent)']:/发布|撤销/.test(x)?['发布','var(--ink2)']:/赢下/.test(x)?['房间','var(--ink2)']:/冥币|晋级/.test(x)?['冥币','var(--warn)']:['系统','var(--sub)'];}
 function viewCtrl(){
   const status='<div class="cols-ed"><div class="stack"><h2 class="sh">玩家</h2>'+playerTable()+'</div><div class="stack"><h2 class="sh">修改</h2>'+editPanel()+'</div></div>';
-  return '<div class="page tabbed toptabs ledger">'+sub('ctrl',[['status','玩家'],['final','晋级资格'],['pub','发布'],['log','全场日志'],['tools','总控工具']],'top col')
+  return '<div class="page tabbed toptabs ledger">'+sub('ctrl',[['status','生死簿'],['final','晋级资格'],['pub','发布'],['log','全场日志'],['tools','总控工具']],'top col')
     +sec('ctrl','status',status)+sec('ctrl','final','<h2 class="sh">晋级资格</h2>'+finalPanel())+sec('ctrl','pub',pubPanel())
     +sec('ctrl','log','<h2 class="sh">全场日志</h2><div class="pn logl" style="gap:0">'+(S.log.length?S.log.slice(0,300).map(l=>{const [k,c]=logTag(l);
       return '<div class="le"><span class="t">'+fmt(l.t)+'</span><span class="k" style="--kc:'+c+'">'+k+'</span><span class="x">'+esc(l.text)+'</span></div>';}).join(''):'<span class="muted">还没有日志。</span>')+'</div>')
@@ -781,6 +780,7 @@ function render(){
   document.body.dataset.role=login?'':ME.role;
   if(login){document.body.classList.remove('board','natscroll','fullamb','inmk');document.documentElement.dataset.theme='dark';setAmb('login');renderLogin();return;}
   const nickGate=ME.role==='player'&&!DEVME&&S&&(p=>p&&!p.nick)(S.players.find(x=>x.id===ME.pid));   // 还没取昵称：只显示取名页
+  // 总控不显示标签栏：开发者用右上角下拉换视角；真总控用同一个下拉换页面
   const tabs=nickGate?['player']:(ROLE_TABS[ME.role]||[]);
   if(!tabs.includes(ui.tab))ui.tab=tabs[0];
   document.documentElement.dataset.theme=themeFor();
@@ -802,7 +802,7 @@ function render(){
     else{delete g.dataset.free;delete g.dataset.more;}}}
   const nav=$('#tabs');nav.hidden=tabs.length<2;
   morph(nav,tabs.map(v=>'<button role="tab" data-a="tab" data-v="'+v+'" aria-selected="'+(v===ui.tab)+'">'+(v==='board'&&aucOn()&&ME.role==='player'?'拍卖':TAB_NAME[v])+'</button>').join(''));
-  $('#logo').innerHTML=ui.tab==='ctrl'?'<span class="scroll"></span>生死簿':'百鬼夜行';
+  $('#logo').innerHTML=ui.tab==='ctrl'?'<span class="scroll"></span>总控':'百鬼夜行';
   $('#who').textContent=(DEVME?(DEVME.demo?'展示 · ':'开发者 · '):'')+(ME.role==='player'?(DEVME?ME.pid:'玩家'):ME.role==='ctrl'?'总控':ME.label||ROLE_NAME[ME.role]);
   $('#logout').hidden=false;$('#conn').hidden=false;
   $('#sheetbtn').hidden=!SHEET_SCOPE[ME.role]||!S;
@@ -1077,9 +1077,9 @@ document.addEventListener('click',e=>{
   else if(a==='proxybid'){const p=findP(ui.proxy.pid);if(p&&l)send({type:'bid',id:l.id,pid:p.id,v:+ui.proxy.v},()=>{ui.proxy={pid:'',v:''};});}
   else if(a==='bid'){if(l)send({type:'bid',id:l.id,v:+ui.bid},()=>{ui.bid='';});}
   // 鬼市 / 黑白无常
-  else if(a==='checkin'){send({type:'checkin',pid:b.dataset.p,party:checkinParty()});}
+  else if(a==='checkin'){send({type:'checkin',pid:b.dataset.p});}
   else if(a==='pickup'){send({type:'pickup',pid:b.dataset.p});}
-  else if(a==='confirmin'){send({type:'confirm',pid:b.dataset.p,party:checkinParty()});}
+  else if(a==='confirmin'){send({type:'confirm',pid:b.dataset.p});}
   else if(a==='mchip'){const q=pl(b.dataset.p);if(q){const c=parseInt(ui.chipsIn[q.id]!=null?ui.chipsIn[q.id]:q.chips,10)||0;ui.chipsIn[q.id]=String(Math.max(0,c+(+v)));}}
   else if(a==='chipsave'){const id=b.dataset.p;send({type:'chips',pid:id,v:parseInt(ui.chipsIn[id],10)||0},()=>{delete ui.chipsIn[id];});}
   else if(a==='mkask'){ui.mkAsk={pid:b.dataset.p,k:v};}
