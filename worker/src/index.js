@@ -295,7 +295,7 @@ export class Game extends DurableObject {
       kick(pin);
       return done('展示模式已保存');
     }
-    if (s.demo && (!s.dwrite || s.dmode === 'local')) return R.no(s.dmode === 'local' ? '本地展示模式不连服务器' : '展示模式现在是只读');
+    if (s.demo && (!s.dwrite || s.dmode === 'local')) return R.no(s.dmode === 'local' ? '本地展示模式不连服务器' : '只读模式');
     const isDemo = !!s.demo, isShared = !!this.sbKey(s);
     if (s.role === 'dev') { // acts as the viewpoint chosen on the page, only when its 可操作 switch is on
       const as = a.as || {}, roles = ['ctrl', 'dealer', 'judge', 'mengpo', 'wuchang', 'screen', 'player'];

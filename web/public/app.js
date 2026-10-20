@@ -2,7 +2,7 @@
 // The server owns the game state; this page signs in with a PIN, keeps a live WebSocket, renders the pages
 // for the signed-in role, and sends actions. Rule helpers come from rules.js (same file the server runs).
 import * as R from './rules.js';
-const {ROOMS,SUITS,FINAL_SCORE,GATES,PUZ_CAP,PUZ_PTS,GATE_WIN,GATE_COIN,CHIP_START,CHIP_GOAL,RANSOM,START_ONLY,puzCode,
+const {ROOMS,SUITS,FINAL_SCORE,GATES,PUZ_CAP,PUZ_PTS,GATE_WIN,GATE_COIN,CHIP_START,CHIP_GOAL,START_ONLY,puzCode,
   room,fmt,esc,matches,targetLabel,whyNotEnter,no,timeUp,marketShut,staffSees,finalMiss,qualifies,ranking,suitsOf,stLabel,inMk,pl,nm,puzInfo,
   lotLeft,lotState,whyNotBid,bidOrder}=R;
 // 拍品（用本页的 S，不依赖 rules.js 里的模块变量）
@@ -39,9 +39,9 @@ let ui={ddOpen:null,tab:null,room:'4S',as:'ctrl',devOps:false,demoRows:null,devA
   ent:'',res:{},settled:null,kickAsk:null,                       // Dealer
   gw:'',gr:{},jg:{gate:'',title:'',body:'',mins:10},gateEndAsk:false,pz:{pid:'',code:''},      // 判官
   lot:{name:'',desc:'',start:'100',big:false},le:{name:'',desc:'',start:'0',big:false},lotEdit:null,secs:'180',aucAsk:null,proxy:{pid:'',v:''},showBids:false,   // 拍卖
-  ransomBy:{},mkAsk:null,                              // 孟婆
+  mkAsk:null,                              // 孟婆
   q:'',flt:'all',revokeAsk:null,ed:{pid:'',amt:'',why:'',nick:''},addN:'8',     // 生死簿
-  bid:'',nick:'',histOpen:false,off:{ids:'',k:'',res:'',by:'',code:'',rw:'',arg:''},offOn:false,
+  bid:'',nick:'',histOpen:false,off:{ids:'',k:'',res:'',code:'',rw:'',arg:''},offOn:false,
   sub:{dealer:'info',npc:'gate',ctrl:'status',player:'me'},
   pub:{kind:'公告',title:'',body:'',target:'everyone',players:'',mins:0,gate:''},
   admin:{dur:'',cap:'',pins:null,snaps:null,counts:loadCounts(),ask:null,resetTxt:''}};
@@ -100,13 +100,13 @@ const RST={open:['开放','idle'],play:['游戏中','on'],reset:['重置中','rs
 function roomCard(r,me){
   const x=S.rooms.find(y=>y.id===r.id),st=x.st,mine=!!me&&me.inRoom===r.id;
   let bt;
-  if(st==='play')bt='<span class="on"><i class="gd"></i>'+(mine?'你在这里':'游戏中')+' · '+x.ps.length+' 人</span><span class="rtm">已 '+mmss(Math.max(0,S.t-x.at))+'</span>';
-  else if(st==='reset')bt='<span class="rs rst">重置中</span><span class="rtm">已 '+mmss(Math.max(0,S.t-x.at))+'</span>';
+  if(st==='play')bt='<span class="on"><i class="gd"></i>'+(mine?'你在这里':'游戏中')+' · '+x.ps.length+' 人</span>';
+  else if(st==='reset')bt='<span class="rs rst">重置中</span>';
   else bt='<span class="idle">'+(timeUp()?'已关闭':'<i class="gd"></i>开放中')+'</span>';
   if(me&&me.cleared.includes(r.id))bt+='<span class="idle okk">✓ 你已成功</span>';
   else if(me&&S.t<START_ONLY&&me.start===r.id)bt+='<span class="rtm ok">你的起始房间</span>';
   return '<div class="room s-'+(st==='open'&&timeUp()?'shut':st)+(mine?' mine':'')+'"><div class="top"><div class="cd">'+cardG(r)+'</div>'
-    +'<div class="rr"><span class="typ">'+(r.n===4?'简单':'困难')+'</span><span class="pt">+'+r.n*100+'</span></div></div>'
+    +'<div class="rr"><span class="pt">+'+r.n*100+'</span></div></div>'
     +'<div class="bt">'+bt+'</div></div>';
 }
 function rankRows(n){
@@ -119,11 +119,11 @@ function viewBoard(){
   if(aucOn())return viewAucBoard();
   const me=ME&&ME.role==='player'?pl(ME.pid):null;
   const act=S.players.filter(p=>p.on),mk=act.filter(p=>p.st!=='alive').length;
-  const bc=broadcast(),run=CLOCK&&CLOCK.running;
+  const bc=broadcast(3),run=CLOCK&&CLOCK.running;
   return '<div class="stage-wrap"><div class="stage">'
     +'<div class="left"><div class="hd"><div class="ttl">百鬼夜行</div><div class="en">CORNELL CSSA 万圣夜</div></div>'
     +'<div class="clock"><span class="cap">'+(run?'剩余时间':'已暂停 · 剩余时间')+'</span><span class="ck mono'+(run?'':' paused')+'" id="sclk">'+remStr(S.t)+'</span>'
-    +incense()+(S.gp?'<div class="gatebar"><b>鬼门开</b><span>最先完成的 '+GATE_WIN+' 人有奖励'+(S.gp.wins.length?'：已完成 '+S.gp.wins.map(w=>w.pid).join('、'):'')+'</span></div>':'')+'</div>'
+    +incense()+(S.gp?'<div class="gatebar"><b>鬼门开</b><span>'+(S.gp.wins.length?'已完成 '+S.gp.wins.length+' / '+GATE_WIN+' 人':'最先完成的 '+GATE_WIN+' 人有奖励')+'</span></div>':'')+'</div>'
     +'<div class="cast"><span class="cap" style="padding-bottom:8px">全场播报</span>'
     +(bc.length?bc.map(b=>'<div class="bc '+b.c+'"><span class="t">'+fmt(b.t)+'</span><span class="x">'+esc(b.x)+'</span></div>').join(''):'<div class="bc"><span class="x muted">暂无播报</span></div>')+'</div></div>'
     +'<div class="right"><div class="rank"><div class="rh"><b>冥币排行</b><span>在场 '+(act.length-mk)+' 人 · 鬼市 '+mk+' 人</span></div><div class="plist">'+rankRows(10)+'</div></div>'
@@ -240,11 +240,11 @@ function viewDealer(){
   const summary=done?esc(ui.settled.msg):!x.ps.length?'':!ready?'还有 '+pending+' 人没选结果'
     :[W.length?'赢 '+W.join('、')+'（各 +'+r.n*100+'）':'',Lo.length?'输 '+Lo.join('、')+'（进鬼市）':'',Le.length?'离开 '+Le.join('、'):''].filter(Boolean).join('；');
   const allBtns=x.ps.length>1?'<div class="btns"><button class="btn-line" data-a="resall" data-v="win">全部赢</button><button class="btn-line" data-a="resall" data-v="lose">全部输</button></div>':'';
-  const resetBtn='<button class="btn-main glow" data-a="resetdone" style="min-height:60px;font-size:19px;letter-spacing:.1em">重置完成，重新开放</button><span class="small center">'+(done?esc(ui.settled.msg)+'。':'')+'点了之后，玩家才能再进这间房</span>';
+  const resetBtn='<button class="btn-main glow" data-a="resetdone" style="min-height:60px;letter-spacing:.1em">重置完成，重新开放</button><span class="small center">'+(done?esc(ui.settled.msg)+'。':'')+'点了之后，玩家才能再进这间房</span>';
   const settle='<div class="pn" style="gap:14px"><div class="shrow"><h2 class="sh">房间里的人</h2><span class="hint" style="font-weight:700;color:'+(ready?'var(--accent)':pending?'var(--warn)':'var(--sub)')+'">'+(st==='reset'?'重置中':!x.ps.length?'等待入场':pending?'还差 '+pending+' 人':'都选好了')+'</span></div>'
     +(st==='reset'?resetBtn:(rows?allBtns+'<div class="rteams">'+rows+'</div>':'<div class="empty">房间里还没有人</div>')
     +'<span class="sum'+(ready?' ready':'')+'">'+summary+'</span>'
-    +'<button class="btn-main'+(ready?' glow':'')+'" id="finbtn" data-a="finish"'+(ready?'':' disabled')+' style="min-height:60px;font-size:19px;letter-spacing:.14em">结束并结算</button>'
+    +'<button class="btn-main'+(ready?' glow':'')+'" id="finbtn" data-a="finish"'+(ready?'':' disabled')+' style="min-height:60px;letter-spacing:.14em">结束并结算</button>'
     +'<span class="small center">结算后立即发放，房间随即进入重置，请先核对</span>')+'</div>';
   return '<div class="page tabbed">'+rooms+hero+'<div class="cols-dealer">'+sec('dealer','info',info)+sec('dealer','settle',settle)+'</div>'
     +sub('dealer',[['info','规则与入场'],['settle','结算'+(x.ps.length?'（'+x.ps.length+'）':'')]])+'</div>';
@@ -292,12 +292,12 @@ function puzPanel(){
   const z=ui.pz,p=findP(z.pid),code=puzCode(z.code),bank=S.bank||{},nb=Object.keys(bank).length,q=code&&bank[code],key=code&&'z'+code;
   const why=!z.pid?'先输入玩家编号':!p?'没有这个玩家':!code?'先输入谜题编码':p.st!=='alive'?p.id+' 不在场':p.puz.some(r=>r.k===key)?p.id+' 已经兑换过 #'+code:puzInfo(p).left<=0?p.id+' 已达上限 '+PUZ_CAP:'';
   const recs=S.players.flatMap(x=>x.puz.map(r=>({p:x,r}))).sort((a,b)=>b.r.t-a.r.t).slice(0,12);
-  const card=!code?'':q?'<div class="lot pzq"><div class="pzr"><span class="k">#'+code+' 问</span><span>'+esc(q.q)+'</span></div><div class="pzr"><span class="k">答</span><b>'+esc(q.a)+'</b></div></div>'
+  const card=!code?'':q?'<div class="pzq"><span class="k">#'+code+' 题目</span><div class="q">'+esc(q.q)+'</div><span class="k">答案</span><div class="a">'+esc(q.a)+'</div></div>'
     :'<div class="lot">题库里没有 #'+code+(nb?'':'（题库还没导入）')+'，照样可以兑换。</div>';
   return '<div class="pn" style="gap:12px"><div class="shrow"><h3>解谜题兑换</h3><span class="small">每题 +'+PUZ_PTS+'，每人最多 '+PUZ_CAP+'</span></div>'
     +'<div class="fgrid pz2"><label class="fld"><span>玩家编号</span><input class="in mono" id="pzp" data-m="pz.pid" value="'+esc(z.pid)+'" inputmode="numeric" placeholder="例如 7"></label>'
     +'<label class="fld"><span>谜题编码</span><input class="in mono" id="pzc" data-m="pz.code" value="'+esc(z.code)+'" inputmode="numeric" placeholder="例如 12"></label></div>'
-    +card+(p?'<span class="small">'+who(p)+'　已兑换 <b class="mono">'+puzInfo(p).used+' / '+PUZ_CAP+'</b></span>':'')
+    +card+(p?'<span class="small">'+p.id+(p.nick?' '+esc(p.nick):'')+' · 已兑换 '+puzInfo(p).used+' / '+PUZ_CAP+'</span>':'')
     +'<button class="btn-main'+(why?'':' glow')+'" data-a="puz"'+(why?' disabled':'')+'>'+(why||'确认 '+p.id+' 答对 #'+code+'，+'+PUZ_PTS)+'</button>'
     +'<div style="display:flex;flex-direction:column"><span class="lbl" style="padding-top:6px">最近兑换</span>'+(recs.length?recs.map(({p,r})=>'<div class="li"><div class="grow"><span class="t">'+fmt(r.t)+'</span><span class="x">'+p.id+(p.nick?' '+esc(p.nick):'')+' 解出 '+esc(r.title)+' <span class="mono">+'+r.pts+'</span></span></div>'
       +'<button class="btn-line" data-a="puzundo" data-p="'+p.id+'" data-v="'+esc(r.k)+'">撤销</button></div>').join(''):'<div class="li small">暂无记录</div>')+'</div>'
@@ -312,10 +312,9 @@ function viewNpc(){
 function viewAuc(){
   const A=S.auc,L=A.lots,l=curLot(),st=l&&lotState(l),fin=S.fin;
   const scr='<div class="pn ascr"><div class="shrow"><h3>大屏显示</h3><span class="small">'+(fin?'资格者 '+fin.length+' 人':'资格名单还没锁定')+'</span></div><div class="seg2">'
-    +'<button class="sbtn'+(A.screen!=='auction'?' on':'')+'" data-a="aucscreen" data-v="0" aria-pressed="'+(A.screen!=='auction')+'">游戏大屏</button>'
-    +'<button class="sbtn'+(A.screen==='auction'?' on':'')+'" data-a="aucscreen" data-v="1" aria-pressed="'+(A.screen==='auction')+'">拍卖大屏</button></div>'
-    +(fin?'':'<div class="lot hot">开拍前要先锁定晋级资格名单（四花色 + '+FINAL_SCORE+' 冥币 + 在场）。<br>现在符合条件 <b class="mono">'+S.players.filter(p=>p.on&&qualifies(p)).length+'</b> 人。</div>'
-      +lockWarn()+ask2('lock','锁定资格名单','lockfinal','','abig'))+'</div>';
+    +'<button class="sbtn'+(A.screen!=='auction'?' on':'')+'" data-a="scrask" data-v="0" aria-pressed="'+(A.screen!=='auction')+'">游戏大屏</button>'
+    +'<button class="sbtn'+(A.screen==='auction'?' on':'')+'" data-a="scrask" data-v="1" aria-pressed="'+(A.screen==='auction')+'">拍卖大屏</button></div>'
+    +(fin?'':'<button class="btn-main" data-a="lockask">锁定资格名单</button>')+'</div>';
   let cur;
   if(!l)cur='<div class="pn acur"><h3>当前拍品</h3><span class="muted">还没有选拍品。在下面列表里点一件「选中」。</span></div>';
   else{
@@ -373,15 +372,12 @@ function inboundPanel(){
 function viewMarket(){
   const mk=S.players.filter(inMk).sort((a,b)=>a.inAt-b.inAt),shut=marketShut();
   const rows=mk.map(p=>{const a=ui.mkAsk;
-    const byId=ui.ransomBy[p.id]||'',by=findP(byId),bw=!byId?'':!by?'没有这个编号':by.id===p.id?'不能自己赎自己':by.st!=='alive'?by.id+' 不在场':by.score<RANSOM?by.id+' 只有 '+by.score:'';
-    const act=a&&a.pid===p.id?'<div class="rvask"><button class="btn-main glow" data-a="mkok">'+({redeem:'确认自赎（筹码已赢到 '+CHIP_GOAL+'）',soup:'确认喝孟婆汤（随机忘掉一个花色）',ransom:'确认 '+(by?by.id:'')+' 出 '+RANSOM+' 冥币赎人'})[a.k]+'</button><button class="btn-line" data-a="mkno">取消</button></div>'
+    const act=a&&a.pid===p.id?'<div class="rvask"><button class="btn-main glow" data-a="mkok">'+({redeem:'确认自赎（筹码已赢到 '+CHIP_GOAL+'）',soup:'确认喝孟婆汤（随机忘掉一个花色）'})[a.k]+'</button><button class="btn-line" data-a="mkno">取消</button></div>'
       :shut?'<span class="chk wait">已停止发放复活名额</span>'
-      :'<div class="btns mkbtns two2"><button class="btn-main" data-a="mkask" data-p="'+p.id+'" data-v="redeem">自赎（赢到 '+CHIP_GOAL+'）</button><button class="btn-main red" data-a="mkask" data-p="'+p.id+'" data-v="soup">输光：孟婆汤</button></div>'
-        +'<div class="give"><input class="in mono" data-m="ransomBy" data-p="'+p.id+'" value="'+esc(byId)+'" inputmode="numeric" placeholder="出钱人编号" aria-label="出钱人编号">'
-        +'<button data-a="mkask" data-p="'+p.id+'" data-v="ransom"'+(by&&!bw?'':' disabled')+'>'+(bw||'别人花 '+RANSOM+' 冥币赎他')+'</button></div>';
+      :'<div class="btns mkbtns two2"><button class="btn-main" data-a="mkask" data-p="'+p.id+'" data-v="redeem">自赎（赢到 '+CHIP_GOAL+'）</button><button class="btn-main red" data-a="mkask" data-p="'+p.id+'" data-v="soup">输光：孟婆汤</button></div>';
     return '<div class="mrow"><div class="l1">'+who(p)+'<span class="stay">已待 <b class="mono">'+mm(S.t-p.inAt)+'</b></span><span class="stay">冻结冥币 <b class="mono">'+p.score+'</b></span><span class="stay">'+suits4(p)+'</span></div>'
       +act+'</div>';}).join('');
-  const left='<section class="mcol"><div class="shrow"><h2 class="sh">孟婆 · 鬼市</h2><span class="hint">实体筹码：领 '+CHIP_START+'，赢到 '+CHIP_GOAL+' 自赎；输光喝孟婆汤复活（随机忘一个花色）；别人可花 '+RANSOM+' 冥币赎人</span></div>'
+  const left='<section class="mcol"><div class="shrow"><h2 class="sh">孟婆 · 鬼市</h2><span class="hint">实体筹码：领 '+CHIP_START+'，赢到 '+CHIP_GOAL+' 自赎；输光喝孟婆汤复活（随机忘一个花色）</span></div>'
     +(shut?'<div class="gatebar"><b>已停止发放复活名额</b><span>时间截止 15 分钟后，鬼市里的人不能再复活</span></div>':'')
     +(rows?'<div class="mlist">'+rows+'</div>':'<div class="empty">鬼市现在没有人。</div>')+'</section>';
   return lanternsHtml()+'<div class="page mkt">'+left+inboundPanel()+'</div>';
@@ -435,18 +431,22 @@ function editPanel(){
     +(miss.length?'<span class="small">晋级还差：'+esc(miss.join('，'))+'</span>':'<span class="small acc">晋级条件已满足</span>')
     +(hist?'<div class="histp"><span class="lbl">房间记录</span>'+hist+'</div>':'')+'</div>';
 }
-// 锁定资格名单前的提醒：时间还没到 / 还有人可能复活
-function lockWarn(){
-  if(!timeUp())return '<div class="lot hot">时间还没到（还剩 '+remStr(S.t)+'）。现在锁定，所有房间会立刻停止放人。</div>';
-  const d=S.players.filter(p=>p.on&&p.st!=='alive').length;
-  return d&&!marketShut()?'<div class="lot hot">现在还有 <b class="mono">'+d+'</b> 人不在场（待接 / 鬼市），截止后 15 分钟内还能复活。最好等停止复活后再锁定，不然要手动把后来回来、满足条件的人加进名单。</div>':'';}
+// 确认弹窗（ui.cfm = {title, lines, ok, a, v, red}）：危险 / 影响全场的操作先弹窗再做
+function cfmDlg(){const c=ui.cfm;if(!c)return '';
+  return '<div class="sheet"><div class="sheet-bg" data-a="cfm-no"></div><div class="sheet-card pn cfm" role="dialog" aria-modal="true" aria-labelledby="cft"><h3 id="cft">'+esc(c.title)+'</h3>'
+    +(c.lines||[]).filter(Boolean).map(x=>'<p>'+esc(x)+'</p>').join('')
+    +'<div class="btns two2"><button class="btn-main'+(c.red?' red':'')+'" data-a="cfm-ok">'+esc(c.ok||'确认')+'</button><button class="btn-line" data-a="cfm-no">取消</button></div></div></div>';}
+// 锁定资格名单：弹窗里写清楚现在几个人符合、时间到没到、还有没有人可能复活
+function lockAsk(){const act=S.players.filter(p=>p.on),n=act.filter(qualifies).length,d=act.filter(p=>p.st!=='alive').length;
+  return {title:'锁定资格名单？',ok:'锁定',a:'lockfinal',lines:['现在符合条件 '+n+' 人（四花色 + '+FINAL_SCORE+' 冥币 + 在场）。',
+    timeUp()?'':'时间还没到：锁定后所有房间立刻停止放人。',d&&!marketShut()?'还有 '+d+' 人在鬼市或待接，之后复活的要手动加进名单。':'']};}
 function finalPanel(){
   const act=S.players.filter(p=>p.on),ok=act.filter(qualifies),near=act.filter(p=>!qualifies(p)&&p.st==='alive'&&suitsOf(p).length>=3).sort((a,b)=>b.score-a.score).slice(0,10);
   const row=(p,inFin)=>'<div class="li"><div class="grow"><span class="x">'+who(p)+' '+suits4(p)+' <b class="mono">'+p.score+'</b></span>'+(qualifies(p)?'':'<span class="small">'+esc(finalMiss(p).join('，'))+'</span>')+'</div>'
     +(S.fin?(inFin?'<button class="btn-line" data-a="finrm" data-v="'+p.id+'">移出</button>':'<button class="btn-line acc" data-a="finadd" data-v="'+p.id+'">加入</button>'):'')+'</div>';
   if(!S.fin)return '<div class="pn" style="gap:12px"><div class="shrow"><h3>晋级资格</h3><span class="small">四花色 + 冥币 ≥ '+FINAL_SCORE+' + 在场</span></div>'
-    +'<div class="lot">时间截止后（8:00–8:15）核对，然后锁定名单。锁定后玩家手机会收到通知，拍卖才能开始；之后还可以手动加 / 减人。</div>'
-    +lockWarn()+ask2('lock','锁定资格名单（现在 '+ok.length+' 人符合）','lockfinal','','abig')
+    +'<span class="small">时间截止后锁定；锁定后才能开拍，之后还能手动加 / 减人。</span>'
+    +'<button class="btn-main" data-a="lockask">锁定资格名单（现在 '+ok.length+' 人符合）</button>'
     +'<span class="lbl">现在符合条件（'+ok.length+'）</span>'+(ok.map(p=>row(p,false)).join('')||'<div class="li small">暂无</div>')
     +'<span class="lbl">差一点的人</span>'+(near.map(p=>row(p,false)).join('')||'<div class="li small">暂无</div>')+'</div>';
   const inL=S.fin.map(pl).filter(Boolean),rest=act.filter(p=>!S.fin.includes(p.id)&&(qualifies(p)||suitsOf(p).length>=3)).sort((a,b)=>b.score-a.score).slice(0,12);
@@ -485,7 +485,7 @@ function pubPanel(){
     +'<button class="btn-main" data-a="publish">发布'+(gate?'鬼门开（全场）':'公告')+'</button></div>';
   const list=S.notices.filter(n=>n.kind!=='通知').slice(0,10).map(n=>{
     const aud=S.players.filter(p=>p.on&&matches(n,p)),acked=aud.filter(p=>n.acks[p.id]).length,[kl,kc]=kindOf(n);
-    return '<div class="li"><div class="grow" style="gap:4px"><div class="thead"><span class="kb '+kc+'" style="font-size:12px;padding:0 7px">'+kl+'</span><b style="font-size:17px">'+esc(n.title)+'</b></div>'
+    return '<div class="li"><div class="grow" style="gap:4px"><div class="thead"><span class="kb '+kc+'" style="font-size:12px;padding:0 7px">'+kl+'</span><b>'+esc(n.title)+'</b></div>'
       +'<span class="small">'+(n.target==='staff'?'':'已读 <span class="mono" style="color:var(--ink)">'+acked+'/'+aud.length+'</span>')+'　'+esc(targetLabel(n))+(n.due?'　'+countdown(n):'')+'</span></div>'
       +(ui.revokeAsk===n.id?'<span class="btns"><button class="btn-line fillred" data-a="revokeok" data-n="'+n.id+'">确认撤销</button><button class="btn-line" data-a="revokeno">取消</button></span>'
         :'<button class="btn-line" data-a="revoke" data-n="'+n.id+'">撤销发布</button>')+'</div>';}).join('');
@@ -588,9 +588,9 @@ function adminPanel(){
       +(A.ask==='snap:'+s.key?'<span class="btns"><button class="btn-line fillred" data-a="adm-restore" data-v="'+s.key+'">确认恢复</button><button class="btn-line" data-a="adm-cancel">取消</button></span>'
         :'<button class="btn-line" data-a="adm-ask" data-v="snap:'+s.key+'">恢复到这里</button>')+'</div>').join('')+'</div>':'<span class="small">还没有备份。每 10 次操作自动备份一次。</span>'):'';
   const left='<div class="stack"><div class="pn"><span class="lbl" style="font-size:13px">游戏计时</span><div class="timer"><span class="big'+(run?'':' paused')+'" id="tclk">'+fmt(S.t)+'</span>'
-    +'<button class="btn-line '+(run?'':'fill')+'" data-a="clockctl" style="min-height:52px;padding:0 24px;font-size:17px;font-weight:900">'+(run?'暂停':'开始')+'</button>'
-    +(A.ask==='clockreset'?'<button class="btn-line fillred" data-a="clockreset" style="min-height:52px;padding:0 18px;font-size:16px;font-weight:900">确认重置为 0:00</button><button class="btn-line" data-a="adm-cancel" style="min-height:52px">取消</button>'
-      :'<button class="btn-line" data-a="adm-ask" data-v="clockreset" style="min-height:52px;padding:0 18px;font-size:16px;font-weight:900">重置</button>')+'</div>'
+    +'<button class="btn-line '+(run?'':'fill')+'" data-a="clockctl" style="min-height:52px;padding:0 24px">'+(run?'暂停':'开始')+'</button>'
+    +(A.ask==='clockreset'?'<button class="btn-line fillred" data-a="clockreset" style="min-height:52px;padding:0 18px">确认重置为 0:00</button><button class="btn-line" data-a="adm-cancel" style="min-height:52px">取消</button>'
+      :'<button class="btn-line" data-a="adm-ask" data-v="clockreset" style="min-height:52px;padding:0 18px">重置</button>')+'</div>'
     +'<span class="small" style="font-weight:700;color:'+(run?'var(--accent)':'var(--sub)')+'">'+(run?'● 计时中':'❚❚ 已暂停')+'</span></div>'
     +'<div class="pn"><h3>设置</h3>'
     +'<div class="setrow"><div class="swrow"><span>总时长<small>当前 <b class="mono" style="color:var(--ink)">'+Math.round((S.dur||7200)/60)+'</b> 分钟</small></span>'
@@ -628,7 +628,7 @@ function viewNick(me){
   return '<div class="page nickp"><div class="pn nickc"><span class="cap">欢迎来到百鬼夜行</span><h2>你的编号 <b class="mono">'+me.id+'</b></h2>'
     +'<span class="muted">给自己取个昵称，大屏排行榜上会显示（最多 12 个字，不能和别人重复）。</span>'
     +'<input class="in" id="nickin" data-m="nick" value="'+esc(ui.nick)+'" maxlength="12" placeholder="昵称" autocomplete="nickname">'
-    +'<button class="btn-main glow" data-a="setnick"'+(ui.nick.trim()?'':' disabled')+' style="min-height:56px;font-size:18px">进入游戏</button>'
+    +'<button class="btn-main glow" data-a="setnick"'+(ui.nick.trim()?'':' disabled')+' style="min-height:56px">进入游戏</button>'
     +'<span class="small">起始房间：<b>'+cardG(room(me.start))+' '+room(me.start).name+'</b>（开场前 '+START_ONLY/60+' 分钟只能进这间）</span></div></div>';
 }
 const LT_LAYOUT=[[0.04085, 0.04501, 0.10376, 0.0325], [0.04453, 0.01726, 0.09763, 0.0994], [0.05433, 0.02586, 0.1107, 0.1669], [0.04575, 0.04517, 0.10866, 0.2261], [0.05392, 0.04743, 0.10825, 0.29], [0.0433, 0.03474, 0.10294, 0.3547], [0.05188, 0.0, 0.1058, 0.4161], [0.04616, 0.03108, 0.11111, 0.4675], [0.04739, 0.01337, 0.10825, 0.5317], [0.04779, 0.04768, 0.11111, 0.5783], [0.0531, 0.00107, 0.11234, 0.6397], [0.04698, 0.00998, 0.11193, 0.6925], [0.04616, 0.00241, 0.12377, 0.7378], [0.05392, 0.02337, 0.11356, 0.7769], [0.05106, 0.03881, 0.11111, 0.8264], [0.05229, 0.02952, 0.10539, 0.8708], [0.05433, 0.01043, 0.11193, 0.9228], [0.04943, 0.0266, 0.10539, 0.9686]]; // [宽, 顶(相对最高那盏), 高, 原图中心x]，单位 = 原图宽 2448 的比例；每盏灯笼单独一张图 img/lt/dNN.webp
@@ -701,7 +701,7 @@ function viewAucPlayer(){
     box='<div class="pn abox"><div class="shrow"><b>你的出价</b><span class="small">你有 <b class="mono">'+me.score+'</b> 冥币</span></div>'
       +(my?'<div class="amy">已出价 <b class="mono">'+my.v+'</b><span class="small">截止前可以改，以最后一次为准</span></div>':'')
       +(why?'<div class="lot">'+esc(why)+'</div>':'<input class="in mono abid" id="bidin" data-m="bid" value="'+esc(v)+'" inputmode="numeric" placeholder="输入出价（起拍 '+l.start+'）">'
-      +'<button class="btn-main glow" data-a="bid"'+(v&&!bad?'':' disabled')+' style="min-height:56px;font-size:19px">'+(bad||(my?'改成 '+(v||'…'):'出价 '+(v||'…')))+'</button>')+'</div>';}
+      +'<button class="btn-main glow" data-a="bid"'+(v&&!bad?'':' disabled')+' style="min-height:56px">'+(bad||(my?'改成 '+(v||'…'):'出价 '+(v||'…')))+'</button>')+'</div>';}
   else if(l&&(st==='done'||st==='pass'))box='';
   else box='<div class="pn abox"><b>'+(l&&st==='closed'?'已截止，等待揭晓':'等待开拍')+'</b>'+(my?'<span class="small">你的出价：<b class="mono">'+my.v+'</b></span>':'')+'<span class="small">你有 <b class="mono">'+(me?me.score:0)+'</b> 冥币</span></div>';
   const head=!l?'<div class="pn acard"><div class="aname">鬼市大拍卖</div><div class="adesc">即将开始</div></div>'
@@ -747,16 +747,15 @@ function offGet(){try{return JSON.parse(localStorage.getItem(offKey())||'[]');}c
 function offSet(rows){ui.offMem=rows;try{rows.length?localStorage.setItem(offKey(),JSON.stringify(rows)):localStorage.removeItem(offKey());}catch{/* 无痕模式：只留在本页 */}}
 const online=()=>connected&&!ui.simOff;   // 模拟离线时当作断网
 const offRid=()=>Array.isArray(ME.rooms)&&ME.rooms.length?ME.rooms[0]:ui.room;
-const OFF_MK=[['market','入鬼市'],['redeem','自赎'],['ransom','被别人赎'],['soup','孟婆汤']];
+const OFF_MK=[['market','入鬼市'],['redeem','自赎'],['soup','孟婆汤']];
 function offDesc(x){const r=x.rid&&room(x.rid);
   return x.k==='room'?x.pid+' '+({win:'赢',lose:'输',leave:'离开'})[x.res]+' '+(r?r.card:''):x.k==='pickup'?'接到 '+x.pid:x.k==='market'?x.pid+' 入鬼市'
-    :x.k==='redeem'?x.pid+' 自赎':x.k==='ransom'?x.pid+' 被 '+x.by+' 赎出':x.k==='soup'?x.pid+' 喝孟婆汤'
+    :x.k==='redeem'?x.pid+' 自赎':x.k==='soup'?x.pid+' 喝孟婆汤'
     :x.k==='puz'?x.pid+' 解出 #'+x.code:x.k==='gate'?x.pid+' 鬼门开奖励：'+(x.rw==='coin'?'+'+GATE_COIN+' 冥币':x.rw==='save'?'救 '+x.arg:'拿 '+x.arg):'';}
 // 表单填好了吗：返回 null = 可以记；否则是按钮上显示的提示
 function offWhy(){const f=ui.off,ids=parseIds(f.ids),k=ME.role==='dealer'?'room':f.k;
   if(!ids.length)return '先输入编号';const bad=ids.find(id=>!pl(id));if(bad)return '没有编号 '+bad;
   if(k==='room')return f.res?null:'选结果';if(!k)return '选做了什么';
-  if(k==='ransom')return !f.by?'填出钱人编号':!pl(parseIds(f.by)[0])?'没有编号 '+f.by:null;
   if(k==='puz')return puzCode(f.code)?null:'填谜题编码';
   if(k==='gate')return !f.rw?'选奖励':f.rw==='save'?(pl(parseIds(f.arg)[0])?null:'填要救的编号'):f.rw==='suit'?(SUITS.includes(f.arg)?null:'选花色'):null;
   return null;}
@@ -769,8 +768,7 @@ function offBar(){
   let what='';
   if(ME.role==='dealer')what=seg('off.res',[['win','赢'],['lose','输'],['leave','离开']]);
   else if(ME.role==='wuchang')what=seg('off.k',[['pickup','接到了'],['market','送入鬼市']]);
-  else if(ME.role==='mengpo')what=dd('off.k',(OFF_MK.find(([v])=>v===f.k)||[])[1],'做了什么',null,OFF_MK.map(([v,label])=>({v,label})))
-    +(k==='ransom'?'<input class="in mono" data-m="off.by" id="offby" value="'+esc(f.by)+'" inputmode="numeric" placeholder="出钱人编号">':'');
+  else if(ME.role==='mengpo')what=seg('off.k',OFF_MK);
   else what=seg('off.k',[['puz','解谜题'],['gate','鬼门开奖励']])
     +(k==='puz'?'<input class="in mono" data-m="off.code" id="offcode" value="'+esc(f.code)+'" inputmode="numeric" placeholder="谜题编码">':'')
     +(k==='gate'?seg('off.rw',[['coin','+'+GATE_COIN+' 冥币'],['save','救一个人'],['suit','拿一个花色']])
@@ -785,7 +783,7 @@ function offBar(){
   return '<div class="page offpage"><div class="pn offp"><div class="shrow"><h3>离线记录'+(rows.length?'（'+rows.length+' 条）':'')+'</h3><span class="small">'
     +(online()?'网络已恢复':ui.simOff?'模拟离线：先在这里记，存在这台设备上':'网络断了：先在这里记，存在这台设备上')+'</span></div>'+form
     +(list?'<div class="list">'+list+'</div>':online()?'':'<span class="small">还没有记录。</span>')
-    +(online()?(rows.length?'<button class="btn-main glow" data-a="off-send" style="min-height:56px;font-size:18px">一键补录 '+rows.length+' 条</button>':'<button class="btn-line" data-a="off-close">收起</button>')
+    +(online()?(rows.length?'<button class="btn-main glow" data-a="off-send" style="min-height:56px">一键补录 '+rows.length+' 条</button>':'<button class="btn-line" data-a="off-close">收起</button>')
       :ui.simOff?'<button class="btn-line" data-a="simoff">结束模拟离线（= 网络恢复）</button>':'<span class="small">连上网络后，这里会出现「一键补录」。</span>')+'</div></div>';
 }
 
@@ -875,7 +873,7 @@ function render(){
   $('.clk').classList.toggle('paused',!run);$('#clkdot').className='gd'+(run?'':' off');
   if(!S){$('#view').innerHTML='<section class="pn muted">正在连接服务器…</section>';return;}
   R.use(S);S.t=nowT();S.now=Date.now()+OFFSET;$('#clk').textContent=fmt(S.t);
-  morph($('#view'),offBar()+(aucP?viewAucPlayer():ui.tab==='board'?viewBoard():ui.tab==='dealer'?viewDealer():ui.tab==='ctrl'?viewCtrl():ui.tab==='npc'?viewNpc():ui.tab==='auc'?viewAuc():ui.tab==='market'?viewMarket():ui.tab==='wuchang'?viewWuchang():viewPlayer()));
+  morph($('#view'),offBar()+(aucP?viewAucPlayer():ui.tab==='board'?viewBoard():ui.tab==='dealer'?viewDealer():ui.tab==='ctrl'?viewCtrl():ui.tab==='npc'?viewNpc():ui.tab==='auc'?viewAuc():ui.tab==='market'?viewMarket():ui.tab==='wuchang'?viewWuchang():viewPlayer())+cfmDlg());
   fitStage();confettiCheck();
   { // 灯笼 / 面具的绳子接到页头那条线：算出它们离页头底边的距离（有标签栏时不上提，免得盖住标签）
     const root=document.documentElement,hb=$('#top').getBoundingClientRect().bottom;
@@ -927,7 +925,7 @@ function showSeal(){
 
 let sayT=null;
 function say(r){const n=$('#notice');clearTimeout(sayT);if(!r||!r.msg){n.className='notice';n.innerHTML='';return;}
-  n.className='notice '+(r.ok?'ok':'bad');n.innerHTML='<b>'+(r.ok?'已记录':'不能这样操作')+'</b><span></span>';n.querySelector('span').textContent=r.msg;
+  n.className='notice '+(r.ok?'ok':'bad');const ro=!r.ok&&r.msg==='只读模式';n.innerHTML='<b>'+(ro?'只读模式':r.ok?'已记录':'不能这样操作')+'</b>'+(ro?'':'<span></span>');if(!ro)n.querySelector('span').textContent=r.msg;
   sayT=setTimeout(()=>say(null),r.ok?6000:10000);}
 
 // ---------- session ----------
@@ -1053,7 +1051,7 @@ function localAdmin(a){
   return no('未知的管理操作');
 }
 function localSend(a,after,quiet){
-  if(!ui.devOps&&!ME.lpin){say(no('展示模式现在是只读'));return;}
+  if(!ui.devOps&&!ME.lpin){say(no('只读模式'));return;}
   let r;const t=a.type||'';
   if(t.startsWith('admin.'))r=ME.role==='ctrl'?localAdmin(a):no('只有总控视角能用总控工具');
   else{FULL.t=nowT();FULL.now=Date.now();r=R.apply(FULL,{role:ME.role,pid:ME.pid,label:ME.label,rooms:ME.lpin?ME.rooms:null},a);}
@@ -1065,7 +1063,7 @@ function send(a,after,quiet){
   if(LOCAL){localSend(a,after,quiet);return;}
   if(!ws||!connected){say(no('还没连上服务器，请稍等'));return;}
   if(DEVME&&(a.type==='pincounts'||a.type==='setpincounts'||a.type.startsWith('dev.'))){}
-  else if(DEVME){if(!ui.devOps){say(no('开发者模式现在是只读，点右上角「只读」切换成可操作'));return;}a={...a,as:{role:ME.role,pid:ME.pid}};}
+  else if(DEVME){if(!ui.devOps){say(no(DEVME.demo?'只读模式':'开发者模式现在是只读，点右上角「只读」切换成可操作'));return;}a={...a,as:{role:ME.role,pid:ME.pid}};}
   const id=++seq;
   pending.set(id,m=>{if(!quiet||!m.ok)say(m);if(m.ok&&after)after(m);requestRender();});
   ws.send(JSON.stringify({t:'act',id,a}));
@@ -1120,8 +1118,10 @@ document.addEventListener('click',e=>{
   // 拍卖
   else if(a==='askyes'){ui.aucAsk=v;}
   else if(a==='askno'){ui.aucAsk=null;}
-  else if(a==='aucscreen'){send({type:'auc.screen',on:v==='1'});}
-  else if(a==='lockfinal'){ui.aucAsk=null;send({type:'lockfinal'});}
+  else if(a==='lockask'){ui.cfm=lockAsk();}
+  else if(a==='scrask'){const on=v==='1';if(on!==aucOn())ui.cfm={title:on?'大屏切到拍卖？':'大屏切回游戏？',lines:['所有大屏和玩家手机的第一页会马上切换。'],ok:'切换',a:'aucscreen',v};}
+  else if(a==='cfm-no'){ui.cfm=null;}
+  else if(a==='cfm-ok'){const c=ui.cfm;ui.cfm=null;if(c&&c.a==='lockfinal')send({type:'lockfinal'});else if(c&&c.a==='aucscreen')send({type:'auc.screen',on:c.v==='1'});}
   else if(a==='unlockfinal'){send({type:'unlockfinal'});}
   else if(a==='secs'){ui.secs=v;}
   else if(a==='aucopen'){if(l)send({type:'auc.open',id:l.id,secs:+ui.secs},()=>{ui.showBids=false;});}
@@ -1148,8 +1148,7 @@ document.addEventListener('click',e=>{
   else if(a==='confirmin'){send({type:'confirm',pid:b.dataset.p});}
   else if(a==='mkask'){ui.mkAsk={pid:b.dataset.p,k:v};}
   else if(a==='mkno'){ui.mkAsk=null;}
-  else if(a==='mkok'){const k=ui.mkAsk;ui.mkAsk=null;if(k){const by=findP(ui.ransomBy[k.pid]);
-    send(k.k==='ransom'?{type:'ransom',pid:k.pid,by:by&&by.id}:{type:k.k==='redeem'?'redeem':'soup',pid:k.pid},()=>{delete ui.ransomBy[k.pid];});}}
+  else if(a==='mkok'){const k=ui.mkAsk;ui.mkAsk=null;if(k)send({type:k.k==='redeem'?'redeem':'soup',pid:k.pid});}
   // 生死簿
   else if(a==='flt'){ui.flt=v;}
   else if(a==='edpick'){ui.ed={pid:v,amt:'',why:'',nick:''};}
@@ -1195,8 +1194,8 @@ document.addEventListener('click',e=>{
   else if(a==='adm-csv'){downloadPins();}
   else if(a==='off-add'){if(!offWhy()){const f=ui.off,k=ME.role==='dealer'?'room':f.k,rows=offGet(),at=Date.now();
     parseIds(f.ids).forEach((pid,j)=>{const x={at:at+j,k,pid};if(k==='room'){x.rid=offRid();x.res=f.res;}
-      if(k==='ransom')x.by=parseIds(f.by)[0];if(k==='puz')x.code=puzCode(f.code);if(k==='gate'){x.rw=f.rw;x.arg=f.rw==='save'?parseIds(f.arg)[0]:f.arg;}rows.push(x);});
-    offSet(rows);ui.off={...f,ids:'',by:'',code:'',arg:''};}}
+      if(k==='puz')x.code=puzCode(f.code);if(k==='gate'){x.rw=f.rw;x.arg=f.rw==='save'?parseIds(f.arg)[0]:f.arg;}rows.push(x);});
+    offSet(rows);ui.off={...f,ids:'',code:'',arg:''};}}
   else if(a==='off-del'){const rows=offGet();rows.splice(+v,1);offSet(rows);}
   else if(a==='off-close'){ui.offOn=false;}
   else if(a==='simoff'){ui.simOff=!ui.simOff;if(ui.simOff){offSince=Date.now()-6000;ui.offOn=true;}else{offSince=0;if(!LOCAL)connect();}setConn();}
@@ -1211,7 +1210,7 @@ document.addEventListener('click',e=>{
   if(a==='adm-ask'&&v.startsWith('edit:')){const el=$('#pinto');if(el){el.focus();el.select();}}
 });
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'&&ui.statsAsk){ui.statsAsk=false;render();return;}
+  if(e.key==='Escape'&&(ui.statsAsk||ui.cfm)){ui.statsAsk=false;ui.cfm=null;render();return;}
   if(e.key==='Escape'&&e.target.id==='pinto'){ui.admin.ask=null;render();return;}
   if(e.key!=='Enter'||!e.target.dataset)return;const m=e.target.dataset.m;   // 输入框里按回车 = 点旁边的主按钮
   const go={ent:'enter',gw:'gatewin','pz.pid':'puz','pz.code':'puz',bid:'bid',nick:'setnick','admin.pinTo':'adm-setpin'}[m];if(!go)return;
@@ -1223,12 +1222,11 @@ document.addEventListener('change',e=>{
   if(e.target.type==='checkbox'){setp(m==='lot.big'?'lot.big':'le.big',e.target.checked);render();}
 });
 // 输入时只更新数据和少数按钮（不整页重绘，免得打断输入）；失焦后再整页重绘
-const LIVE={ent:1,gw:1,'pz.pid':1,'pz.code':1,bid:1,nick:1,'ed.amt':1,'ed.nick':1,'proxy.pid':1,'proxy.v':1,secs:1,q:1,'pub.players':1,ransomBy:1,'off.code':1,'admin.bankTxt':1,'off.ids':1,'off.by':1,'off.arg':1};
+const LIVE={ent:1,gw:1,'pz.pid':1,'pz.code':1,bid:1,nick:1,'ed.amt':1,'ed.nick':1,'proxy.pid':1,'proxy.v':1,secs:1,q:1,'pub.players':1,'off.code':1,'admin.bankTxt':1,'off.ids':1,'off.arg':1};
 document.addEventListener('input',e=>{
   if(e.target.id==='pin'){const el=e.target;el.value=el.value.replace(/\D/g,'').slice(0,6);if($('#lgmsg').classList.contains('err'))loginMsg('');syncBoxes();return;}
   const m=e.target.dataset.m,v=e.target.value;if(!m)return;
-  if(m==='ransomBy'){ui.ransomBy[e.target.dataset.p]=v;}
-  else if(m==='demoRow.pin'){const el=e.target,r=ui.demoRows&&ui.demoRows[+el.dataset.i];el.value=el.value.replace(/\D/g,'').slice(0,6);if(r)r.pin=el.value;}
+  if(m==='demoRow.pin'){const el=e.target,r=ui.demoRows&&ui.demoRows[+el.dataset.i];el.value=el.value.replace(/\D/g,'').slice(0,6);if(r)r.pin=el.value;}
   else if(m==='adm.resetTxt'){ui.admin.resetTxt=v;const btn=$('#rstbtn');if(btn){btn.disabled=v!=='重置';btn.classList.toggle('fillred',v==='重置');}return;}
   else if(m==='durMin'){ui.admin.dur=v.replace(/[^\d.]/g,'');return;}
   else if(m==='admin.pinTo'){const el=e.target;el.value=el.value.replace(/\D/g,'').slice(0,6);ui.admin.pinTo=el.value;liveRender();return;}
