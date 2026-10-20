@@ -1548,3 +1548,6 @@ body .room.mine .on .gd{background:var(--red);color:var(--red)}
 body .room.mine :is(.cd,.pt){color:var(--ink)}
 /* 大屏小标题用展示字体 */
 .stage .cap,.stage .rh b,.gbox .gh b{font-family:var(--disp);font-weight:400}
+
+/* Dealer 页房间规则：保留换行 */
+.rule.rtx{white-space:pre-line;overflow-wrap:anywhere}

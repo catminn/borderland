@@ -237,7 +237,7 @@ function mapSvg(fk,me){
       +'<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+hh+'" rx="3"/>'
       +t(cx,cy-(small?8:14),'mp-num',r.loc)+t(cx,cy+(small?16:20),'mp-st',mine?'你在这里':done?'✓ 已成功':sl)+t(cx,cy,'mp-num mp-only',r.loc)
       +'<g class="mp-tag'+(isRed(r.suit)?' red':'')+'" transform="translate('+x+' '+ty+')"><rect width="44" height="26" rx="4"/>'+t(22,19,'',r.n+r.suit)+'</g>'
-      +t(x+54,ty+20,'mp-gn',esc(r.name)+(r.tbd?'（待定）':''))+'</g>';});
+      +t(x+54,ty+20,'mp-gn',esc(r.name))+'</g>';});
   if(F.entry)h+='<g class="mp-in"><rect x="802" y="276" width="84" height="48" rx="4"/>'+t(844,307,'','签到')+'</g>'
     +'<path class="mp-door" d="'+line([[925,300],[917,322]])+line([[1000,300],[1008,322]])+'"/>'
     +'<path class="mp-arrow" d="'+line([[962,382],[962,316]])+line([[954,326],[962,316],[970,326]])+'"/>'+t(962,410,'mp-ent','入口');
@@ -280,6 +280,7 @@ function viewDealer(){
   }
   const info='<div class="pn" style="gap:14px"><h2 class="sh">入场</h2>'
     +'<div class="rwl"><span><b class="acc">赢</b> '+(r.solo?'独自通关 +'+r.solo+'，带人通关各 +'+r.n*100:'+'+r.n*100)+' 冥币 + '+r.suit+'</span><span><b class="red">输</b> 进鬼市，原地等黑白无常</span><span class="sub">中途放弃算输，每人每间只能成功一次</span></div>'+entry+'</div>';
+  const rulePn=r.rule?'<div class="pn" style="gap:10px"><h2 class="sh">规则</h2><div class="rule rtx">'+esc(r.rule)+'</div></div>':'';
   // 结算：每人一行 赢 / 输（中途放弃算输）
   const done=ui.settled&&ui.settled.rid===r.id&&st==='reset';
   Object.keys(ui.res).forEach(id=>{if(!x.ps.includes(id))delete ui.res[id];});
@@ -302,7 +303,7 @@ function viewDealer(){
     +'<span class="sum'+(ready?' ready':'')+'">'+summary+'</span>'
     +'<button class="btn-main'+(ready?' glow':'')+'" id="finbtn" data-a="finish"'+(ready?'':' disabled')+' style="min-height:60px;letter-spacing:.14em">结束并结算</button>'
     +'<span class="small center">结算后立即发放，房间随即进入重置，请先核对</span>')+'</div>';
-  return '<div class="page tabbed">'+rooms+hero+'<div class="cols-dealer">'+sec('dealer','info',info)+sec('dealer','settle',settle)+'</div>'
+  return '<div class="page tabbed">'+rooms+hero+'<div class="cols-dealer">'+sec('dealer','info',info+rulePn)+sec('dealer','settle',settle)+'</div>'
     +sub('dealer',[['info','入场'],['settle','结算'+(x.ps.length?'（'+x.ps.length+'）':'')]])+'</div>';
 }
 
