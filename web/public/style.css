@@ -988,7 +988,10 @@ body .setrow .swrow>span{max-width:34em}
 .fin3 .fk{font-size:12px;font-weight:900;color:var(--sub);padding:1px 8px;border:1px solid var(--stroke-c);border-radius:var(--r-s);background:var(--card);
   box-shadow:inset 0 0 0 calc(var(--stroke-s) - 1px) var(--stroke-c),var(--shs) var(--shs) 0 var(--sh-c);white-space:nowrap}
 .fin3 .fc.ok .fk{color:var(--accent);background:var(--accent-soft)}
-.fin3 .suits4{display:flex;flex-wrap:wrap;gap:6px}
+.fin3 .suits4{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.fin3 .s4{justify-content:flex-start;padding:6px 10px;gap:6px;min-width:0}
+.fin3 .s4 .g{font-size:18px;width:20px;text-align:center}
+.fin3 .s4 .l{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fin3 .fscore{font-size:26px;font-weight:800;line-height:1}
 .fin3 .fx{font-size:13px;color:var(--sub)}
 .fin3 .fx,.fin3 .bar{margin-top:auto}
@@ -1335,7 +1338,7 @@ body .room.mine{opacity:1;border-color:var(--red);box-shadow:inset 0 0 0 1px var
   body .stage .room{padding:18px 22px;gap:10px}
   body .stage .room .cd{font-size:96px}
   body .stage .room .pt{font-size:32px}
-  body .stage .room :is(.on,.idle,.rs,.rtm){font-size:28px}
+  body .stage .room :is(.on,.idle,.rs,.rtm,.np){font-size:28px}
   /* 拍卖大屏 */
   body .stage.auc{grid-template-columns:440px minmax(0,1fr)}
   body .stage.auc .ttl{font-size:80px}
@@ -1368,7 +1371,7 @@ body .room.mine{opacity:1;border-color:var(--red);box-shadow:inset 0 0 0 1px var
   body .stage .room .cd{font-size:30px}
   body .stage .rgrid{grid-auto-rows:1fr}   /* 手机上 8 间房一样高 */
   body .stage .room .pt{font-size:15px}
-  body .stage .room :is(.on,.idle,.rs,.rtm){font-size:13px}
+  body .stage .room :is(.on,.idle,.rs,.rtm,.np){font-size:13px}
   body .stage .alot :is(.ai,b,.ast){font-size:15px}
   body .stage .aidx{font-size:13px}
   body .stage .aname{font-size:26px}
@@ -1532,3 +1535,16 @@ body:has(#modal .ovl) :is(.wrap,#amb,#scene){visibility:hidden}
   body .stage .cast .bc .x{display:inline;font-size:28px;-webkit-line-clamp:unset}
   .stage .left{gap:28px}
 }
+
+/* 大屏房间卡：游戏中（已用时间），人数放右下；自己所在的房间跟「开放」一样醒目，但用红色（2026-10-20） */
+.room .bln{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px}
+.room .np{margin-left:auto}
+.room .np{font-weight:700;color:var(--sub);white-space:nowrap;font-variant-numeric:tabular-nums}
+.room .on .tx{white-space:nowrap}
+.room .on [data-rt]{font-variant-numeric:tabular-nums}
+body .room.mine{opacity:1;border-color:var(--red);background:linear-gradient(180deg,var(--red-soft),transparent 70%),var(--panel);box-shadow:inset 0 0 0 1px var(--red),var(--shx,4px) var(--shx,4px) 0 var(--red),0 0 26px var(--red-soft)}
+body .room.mine .on{color:var(--red);font-weight:900}
+body .room.mine .on .gd{background:var(--red);color:var(--red)}
+body .room.mine :is(.cd,.pt){color:var(--ink)}
+/* 大屏小标题用展示字体 */
+.stage .cap,.stage .rh b,.gbox .gh b{font-family:var(--disp);font-weight:400}

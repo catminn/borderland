@@ -100,16 +100,19 @@ function broadcast(n){return S.log.filter(l=>l.b).slice(0,n||5).map(l=>({t:l.t,x
 // 房间状态：开放 / 游戏中（几人）/ 重置中。游戏、重置的计时只是显示，不会自动结束。
 const RST={open:['开放','idle'],play:['游戏中','on'],reset:['重置中','rst']};
 function roomCard(r,me){
-  const x=S.rooms.find(y=>y.id===r.id),st=x.st,mine=!!me&&me.inRoom===r.id;
-  let bt;
-  if(st==='play')bt='<span class="on"><i class="gd"></i>'+(mine?'你在这里':'游戏中')+' '+x.ps.length+' 人</span>';
-  else if(st==='reset')bt='<span class="rs rst">重置中</span>';
-  else bt='<span class="idle">'+(timeUp()?'已关闭':'<i class="gd"></i>开放中')+'</span>';
-  if(me&&me.cleared.includes(r.id))bt+='<span class="idle okk">✓ 你已成功</span>';
+  const x=S.rooms.find(y=>y.id===r.id),st=x.st,mine=!!me&&me.inRoom===r.id,L=[];
+  if(st==='play')L.push('<span class="on"><i class="gd"></i><span class="tx">'+(mine?'你在这里':'游戏中')+'（<span data-rt="'+(x.at||0)+'">'+rtStr(x.at)+'</span>）</span></span>');
+  else if(st==='reset')L.push('<span class="rs rst">重置中</span>');
+  else L.push('<span class="idle">'+(timeUp()?'已关闭':'<i class="gd"></i>开放中')+'</span>');
+  if(me&&me.cleared.includes(r.id))L.push('<span class="idle okk">✓ 你已成功</span>');
+  // 人数放在最后一行的右边（放不下就自己换到下一行，仍靠右）
+  if(st==='play')L[L.length-1]='<div class="bln">'+L[L.length-1]+'<span class="np">'+x.ps.length+' 人</span></div>';
   return '<div class="room s-'+(st==='open'&&timeUp()?'shut':st)+(mine?' mine':'')+'"><div class="top"><div class="cd">'+cardG(r)+'</div>'
     +'<div class="rr"><span class="pt lc">'+r.loc+'</span><span class="pt">+'+r.n*100+'</span></div></div>'
-    +'<div class="bt">'+bt+'</div></div>';
+    +'<div class="bt">'+L.join('')+'</div></div>';
 }
+// 房间已玩时间（游戏秒）：m:ss，每秒由 tickClocks 更新
+const rtStr=at=>{const s=Math.max(0,nowT()-(at||0));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');};
 function rankRows(n){
   const list=ranking();let rk=0,prev=null;
   return list.slice(0,n).map((p,i)=>{if(p.score!==prev){rk=i+1;prev=p.score;}
@@ -207,11 +210,11 @@ function confetti(big){
 // rooms：[房间 id, x, y, w, h, 牌签位置 'up'/'down']；房间号、楼层在 rules.js 的 ROOMS 里。walls：折线点。
 const MAP={
   '1':{name:'一层',note:'规则讲解、拍卖、鬼市',walls:[[[340,95],[340,150],[548,150]],[[592,150],[768,150]],[[812,150],[830,150]],[[30,300],[575,300],[575,440],[830,440],[830,300],[900,300]]],
-    common:[575,300,255,140],ctitle:'鬼市',csub:'',
+    common:[575,300,255,140],cap:'淘汰区域',ctitle:'鬼市',csub:'',
     rooms:[['4S',30,214,130,86,'down'],['8C',400,88,100,62,'up'],['4D',365,300,155,82,'down']],
     fixed:[[30,72,130,130,'175','规则讲解','最终拍卖']],tables:true},
   'B':{name:'B 层',note:'入口、签到、鬼门开',walls:[[[340,95],[340,150],[548,150]],[[592,150],[768,150]],[[812,150],[1010,150]],[[30,300],[575,300],[575,445],[830,445],[830,325]],[[885,300],[925,300]],[[1000,300],[1010,300]]],
-    common:[575,300,255,145],ctitle:'鬼门开',csub:'服务台',
+    common:[575,300,255,145],ctitle:'鬼门开',csub:'info desk',
     rooms:[['4C',30,72,130,130,'up'],['8D',30,214,130,86,'down'],['8H',400,92,100,58,'up'],['8S',872,92,118,58,'up'],['4H',365,300,155,82,'down']],
     empty:[618,78,122,72],entry:true}};
 function mapSt(r){const x=S.rooms.find(y=>y.id===r.id);
@@ -225,7 +228,7 @@ function mapSvg(fk,me){
     +'<defs><pattern id="mph'+fk+'" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="8" class="mp-hl"/></pattern></defs>'
     +'<rect class="mp-common" x="'+c[0]+'" y="'+c[1]+'" width="'+c[2]+'" height="'+c[3]+'"/><path class="mp-wall" d="'+F.walls.map(line).join('')+'"/>'
     +t(190,232,'mp-cor','走 廊')+stairs(548)+stairs(768)
-    +t(600,c[1]+30,'mp-cap','公共区域')+t(600,c[1]+72,'mp-ct',F.ctitle)+(F.csub?t(600,c[1]+100,'mp-cs',F.csub):'');
+    +t(600,c[1]+30,'mp-cap',F.cap||'公共区域')+t(600,c[1]+72,'mp-ct',F.ctitle)+(F.csub?t(600,c[1]+100,'mp-cs',F.csub):'');
   if(F.tables)h+=[620,670,720,770].map(x=>'<g class="mp-tb" transform="translate('+x+' 416)"><circle class="t" r="9"/>'+[[0,-14],[0,14],[-14,0],[14,0]].map(([q,w])=>'<circle class="c" cx="'+q+'" cy="'+w+'" r="2.5"/>').join('')+'</g>').join('');
   if(F.empty)h+='<rect class="mp-empty" x="'+F.empty[0]+'" y="'+F.empty[1]+'" width="'+F.empty[2]+'" height="'+F.empty[3]+'" fill="url(#mph'+fk+')"/>';
   (F.fixed||[]).forEach(([x,y,w,hh,n,a,b])=>{h+='<g class="mp-fix"><rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+hh+'"/>'+t(x+w/2,y+hh/2,'mp-num',n)+'</g>'+t(x,y-40,'mp-gn plain',a)+t(x,y-12,'mp-gn plain',b);});
@@ -369,9 +372,9 @@ function viewAuc(){
     +'<button class="sbtn'+(A.screen==='auction'?' on':'')+'" data-a="scrask" data-v="1" aria-pressed="'+(A.screen==='auction')+'">拍卖大屏</button></div>'
     +'</div>'
     +'<div class="pn finl"><div class="shrow"><h3>晋级名单</h3><span class="small">'+finL().length+' 人</span></div>'
-    +(fin?'<div class="finchips">'+fin.map(id=>{const p=pl(id);return p?'<span class="kb">'+who(p)+'</span>':'';}).join('')+'</div>':'<span class="muted">还没有人晋级，由总控在生死簿里操作</span>')+'</div>';
+    +(fin?'<div class="finchips">'+fin.map(id=>{const p=pl(id);return p?'<span class="kb">'+who(p)+'</span>':'';}).join('')+'</div>':'<span class="muted">还没有人晋级</span>')+'</div>';
   let cur;
-  if(!l)cur='<div class="pn acur"><h3>当前拍品</h3><span class="muted">在下面列表里「选中」一件。</span></div>';
+  if(!l)cur='<div class="pn acur"><h3>当前拍品</h3><span class="muted">在拍品列表里「选中」一件。</span></div>';
   else{
     const bids=bidOrder(l),nb=Object.keys(l.bids).length;
     let ctl='';
@@ -687,7 +690,7 @@ function viewPlayer(){
   // 酆都通行证: a clearance document, stamped with the current state
   const wst=inMkt||out?'market':'alive',wseal=out?'待接':inMkt?'鬼市':inFin?'晋级':'在场';
   const wnote=out?'<span class="w-hint">挑战失败</span><span class="w-lab">'+(me.st==='picked'?'黑白无常已接到你，正在送你去鬼市':'留在原地，等黑白无常来接你')+'</span>'
-    :inMkt?'<span class="w-hint">你在鬼市</span><span class="w-lab">实体筹码赢到 '+CHIP_GOAL+' 可自赎</span><span class="w-lab">冥币已冻结 <b class="mono">'+me.score+'</b></span>'
+    :inMkt?'<span class="w-hint">你在鬼市</span><span class="w-lab">实体筹码赢到 '+CHIP_GOAL+' 可自赎</span><span class="w-lab">冥币已冻结</span>'
     :inFin?'<span class="w-hint">已获得晋级资格</span><span class="w-lab">到大房间参加鬼市大拍卖</span>'
     :'<span class="w-hint">冥币 <b class="mono">'+me.score+'</b></span><span class="w-lab">'+(myRank(me)?'排第 '+myRank(me)+' 名':'')+'</span>';
   const wch=[...wseal],wn=wch.length,wh=wn>2?78:58,wy=wn>2?[27,51,75]:[29,55];
@@ -856,6 +859,7 @@ const isTyping=()=>{const a=document.activeElement;return !!a&&/^(INPUT|TEXTAREA
 function requestRender(){if(isTyping()){dirty=true;tickClocks();}else render();}
 document.addEventListener('focusout',()=>setTimeout(()=>{if(dirty&&!isTyping()){dirty=false;render();}},0));
 function tickClocks(){const n=nowT(),t=fmt(n);$('#clk').textContent=t;const a=document.getElementById('sclk');if(a)a.textContent=remStr(n);const b=document.getElementById('tclk');if(b)b.textContent=t;
+  document.querySelectorAll('[data-rt]').forEach(e=>{e.textContent=rtStr(+e.dataset.rt);});
   const c=document.getElementById('aclk'),l=curLot();if(c&&l&&l.st==='open'){R.use(S);S.now=Date.now()+OFFSET;c.textContent=mmss(msLeft(l));}}
 function setAmb(mode,tone){
   if(ambMode!==mode){ambMode=mode;
