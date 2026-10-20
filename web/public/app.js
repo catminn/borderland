@@ -42,12 +42,13 @@ let ui={ddOpen:null,tab:null,room:'4S',as:'ctrl',devOps:false,demoRows:null,devA
   ransomBy:{},mkAsk:null,                              // 孟婆
   q:'',flt:'all',revokeAsk:null,ed:{pid:'',amt:'',why:'',nick:''},addN:'8',     // 生死簿
   bid:'',nick:'',histOpen:false,off:{ids:'',k:'',res:'',code:'',rw:'',arg:'',by:''},offOn:false,
-  sub:{dealer:'info',npc:'gate',ctrl:'status',player:'me'},
+  sub:{dealer:'info',npc:'gate',ctrl:'status',player:'me',map:'1'},msel:null,
   pub:{kind:'公告',title:'',body:'',target:'everyone',players:'',mins:0,gate:''},
   admin:{dur:'',cap:'',pins:null,snaps:null,counts:loadCounts(),ask:null,resetTxt:''}};
 const $=s=>document.querySelector(s);
-const ROLE_TABS={ctrl:['ctrl'],dealer:['dealer'],judge:['npc','auc'],mengpo:['market'],wuchang:['wuchang'],screen:['board'],player:['board','player']};
-const TAB_NAME={board:'大屏',player:'我的',dealer:'Dealer',ctrl:'总控',npc:'判官',auc:'拍卖',market:'鬼市',wuchang:'黑白无常'};
+// 每个角色：自己的页 + 地图 + 大屏（大屏角色只有大屏）。手机上一级分页在底部，二级分页在顶部。
+const ROLE_TABS={ctrl:['ctrl','map','board'],dealer:['dealer','map','board'],judge:['npc','auc','map','board'],mengpo:['market','map','board'],wuchang:['wuchang','map','board'],screen:['board'],player:['board','player','map']};
+const TAB_NAME={board:'大屏',map:'地图',player:'我的',dealer:'Dealer',ctrl:'总控',npc:'判官',auc:'拍卖',market:'鬼市',wuchang:'黑白无常'};
 const ROLE_NAME={player:'玩家',dealer:'Dealer',judge:'判官',mengpo:'孟婆',wuchang:'黑白无常',ctrl:'总控',screen:'大屏'};
 const nowT=()=>!CLOCK?0:CLOCK.running?CLOCK.base+Math.floor((Date.now()+OFFSET-CLOCK.at)/1000):CLOCK.base;
 const aucOn=()=>!!(S&&S.auc&&S.auc.screen==='auction');
@@ -105,7 +106,7 @@ function roomCard(r,me){
   else bt='<span class="idle">'+(timeUp()?'已关闭':'<i class="gd"></i>开放中')+'</span>';
   if(me&&me.cleared.includes(r.id))bt+='<span class="idle okk">✓ 你已成功</span>';
   return '<div class="room s-'+(st==='open'&&timeUp()?'shut':st)+(mine?' mine':'')+'"><div class="top"><div class="cd">'+cardG(r)+'</div>'
-    +'<div class="rr"><span class="pt">+'+r.n*100+'</span></div></div>'
+    +'<div class="rr"><span class="pt lc">'+r.loc+'</span><span class="pt">+'+r.n*100+'</span></div></div>'
     +'<div class="bt">'+bt+'</div></div>';
 }
 function rankRows(n){
@@ -195,6 +196,67 @@ function confetti(big){
   box.innerHTML=h;document.body.appendChild(box);setTimeout(()=>box.remove(),(big?8000:6500));
 }
 
+// ---------- 地图（场地两层平面图，房间显示实时状态） ----------
+// 坐标沿用场地图（横向 1040×460）。手机上整张图顺时针转 90°（460×1040，文字保持正向），房间更大、字能看清。
+// rooms：[房间 id, x, y, w, h, 牌签位置 'up'/'down']；房间号、楼层在 rules.js 的 ROOMS 里。walls：折线点。
+const MAP={
+  '1':{name:'一层',note:'规则讲解、拍卖、鬼市',walls:[[[340,95],[340,150],[548,150]],[[592,150],[768,150]],[[812,150],[830,150]],[[30,300],[575,300],[575,440],[830,440],[830,300],[900,300]]],
+    common:[575,300,255,140],ctitle:'鬼市',csub:'这里有很多桌椅',
+    rooms:[['4S',30,214,130,86,'down'],['8C',400,88,100,62,'up'],['4D',365,300,155,82,'down']],
+    fixed:[[30,72,130,130,'175','规则讲解','最终拍卖']],tables:true},
+  'B':{name:'B 层',note:'入口、签到、鬼门开',walls:[[[340,95],[340,150],[548,150]],[[592,150],[768,150]],[[812,150],[1010,150]],[[30,300],[575,300],[575,445],[830,445],[830,325]],[[885,300],[925,300]],[[1000,300],[1010,300]]],
+    common:[575,300,255,145],ctitle:'鬼门开',csub:'服务台',
+    rooms:[['4C',30,72,130,130,'up'],['8D',30,214,130,86,'down'],['8H',400,92,100,58,'up'],['8S',872,92,118,58,'up'],['4H',365,300,155,82,'down']],
+    empty:[618,78,122,72],entry:true}};
+function mapSt(r){const x=S.rooms.find(y=>y.id===r.id);
+  return x.st==='play'?['游戏中 '+x.ps.length+' 人','on']:x.st==='reset'?['重置中','rst']:timeUp()?['已关闭','shut']:['开放','idle'];}
+function mapSvg(fk,me,v){
+  const F=MAP[fk],P=(x,y)=>v?[460-y,x]:[x,y];
+  const R=(x,y,w,h)=>{const [a,b]=v?[460-y-h,x]:[x,y];return 'x="'+a+'" y="'+b+'" width="'+(v?h:w)+'" height="'+(v?w:h)+'"';};
+  const t=(x,y,c,txt,raw)=>{const [a,b]=raw?[x,y]:P(x,y);return '<text x="'+a+'" y="'+b+'" class="'+c+'">'+txt+'</text>';};
+  const line=pts=>pts.map((q,i)=>(i?'L':'M')+P(q[0],q[1]).join(' ')).join('');
+  const stairs=x=>{const [a,b]=P(x,112);return '<g class="mp-stair"><rect '+R(x,112,44,38)+'/>'+[121,130,139].map(y=>'<path d="'+line([[x,y],[x+44,y]])+'"/>').join('')
+    +(v?t(a+22,b+26,'mp-sl','楼梯',1):t(x+22,102,'mp-sl','楼梯'))+'</g>';};
+  const c=F.common,cc=v?P(c[0]+c[2]/2,c[1]+c[3]/2):null;
+  let h='<svg class="'+(v?'mp-v':'mp-h')+'" viewBox="0 0 '+(v?'460 1040':'1040 460')+'" role="img" aria-label="'+F.name+'平面图">'
+    +'<defs><pattern id="mph'+fk+(v?'v':'')+'" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="8" class="mp-hl"/></pattern></defs>'
+    +'<rect class="mp-common" '+R(c[0],c[1],c[2],c[3])+'/>'+'<path class="mp-wall" d="'+F.walls.map(line).join('')+'"/>'
+    +(v?'':t(190,232,'mp-cor','走 廊'))+stairs(548)+stairs(768)
+    +(v?t(cc[0]-62,cc[1]-90,'mp-cap','公共区域',1)+t(cc[0]-62,cc[1]-50,'mp-ct',F.ctitle,1)+t(cc[0]-62,cc[1]-22,'mp-cs',F.csub,1)
+       :t(600,c[1]+30,'mp-cap','公共区域')+t(600,c[1]+68,'mp-ct',F.ctitle)+t(600,c[1]+94,'mp-cs',F.csub));
+  if(F.tables)h+=(v?[[60,735],[120,735],[60,795],[120,795]]:[620,670,720,770].map(x=>[x,422])).map(([a,b])=>{return '<g class="mp-tb" transform="translate('+a+' '+b+')"><circle class="t" r="9"/>'+[[0,-14],[0,14],[-14,0],[14,0]].map(([q,w])=>'<circle class="c" cx="'+q+'" cy="'+w+'" r="2.5"/>').join('')+'</g>';}).join('');
+  if(F.empty)h+='<rect class="mp-empty" '+R(...F.empty)+' fill="url(#mph'+fk+(v?'v':'')+')"/>';
+  (F.fixed||[]).forEach(([x,y,w,hh,n,a,b])=>{const [cx,cy]=P(x+w/2,y+hh/2);
+    h+='<g class="mp-fix"><rect '+R(x,y,w,hh)+'/>'+(v?t(cx,cy-30,'mp-num',n,1)+t(cx,cy+12,'mp-gn plain mid',a,1)+t(cx,cy+40,'mp-gn plain mid',b,1):t(cx,cy,'mp-num',n,1)+t(x,y-40,'mp-gn plain',a)+t(x,y-12,'mp-gn plain',b))+'</g>';});
+  F.rooms.forEach(([id,x,y,w,hh,pos])=>{const r=room(id),[sl,sc]=mapSt(r),mine=me&&me.inRoom===id,done=me&&me.cleared.includes(id),[cx,cy]=P(x+w/2,y+hh/2),small=hh<70,st=mine?'你在这里':done?'✓ 已成功':sl;
+    h+='<g class="mp-room s-'+sc+(mine?' mine':'')+(ui.msel===id?' sel':'')+'" data-a="msel" data-v="'+id+'" role="button" aria-label="'+r.loc+' '+r.card+' '+esc(r.name)+' '+sl+'">'
+      +'<rect '+R(x,y,w,hh)+' rx="3"/>';
+    if(v)h+=t(cx,cy-16,'mp-num',r.loc,1)+t(cx,cy+18,'mp-cd'+(isRed(r.suit)?' red':''),r.n+r.suit,1)+(mine||done?t(cx,cy+46,'mp-st sm',mine?'在这里':'✓',1):'')+'</g>';
+    else{const ty=pos==='up'?y-36:y+hh+14;
+      h+=t(cx,cy-(small?8:14),'mp-num',r.loc,1)+t(cx,cy+(small?16:20),'mp-st',st,1)
+        +'<g class="mp-tag'+(isRed(r.suit)?' red':'')+'" transform="translate('+x+' '+ty+')"><rect width="44" height="26" rx="4"/>'+t(22,19,'',r.n+r.suit,1)+'</g>'
+        +t(x+54,ty+20,'mp-gn',esc(r.name)+(r.tbd?'（待定）':''))+'</g>';}});
+  if(F.entry){const [ax,ay]=P(844,300);
+    h+='<g class="mp-in"><rect '+R(802,276,84,48)+' rx="4"/>'+t(ax,ay+7,'',v?'签到':'签到',1)+'</g>'
+    +'<path class="mp-door" d="'+line([[925,300],[917,322]])+line([[1000,300],[1008,322]])+'"/>'
+    +'<path class="mp-arrow" d="'+line([[962,382],[962,316]])+line([[954,326],[962,316],[970,326]])+'"/>'+(v?t(70,1000,'mp-ent','入口',1):t(962,410,'mp-ent','入口'));}
+  return h+'</svg>';
+}
+function viewMap(){
+  const me=ME&&ME.role==='player'?pl(ME.pid):null;
+  if(!ui.mapInit){ui.mapInit=1;if(me&&me.inRoom)ui.sub.map=room(me.inRoom).fl;}
+  const sel=ui.msel&&room(ui.msel);
+  const floor=fk=>{const F=MAP[fk];return sec('map',fk,'<div class="mp-head"><h2 class="sh">'+F.name+'</h2><span class="hint">'+F.note+'</span></div><div class="mp-plan">'+mapSvg(fk,me,0)+mapSvg(fk,me,1)+'</div>');};
+  let info='';
+  if(sel){const [sl,sc]=mapSt(sel);
+    info='<div class="pn mp-info"><div class="mp-ih"><span class="mp-card'+(isRed(sel.suit)?' sr':'')+'">'+sel.n+sel.suit+'</span><b>'+esc(sel.name)+'</b><span class="typ">'+sel.loc+'</span><span class="typ">'+TYPE[sel.suit]+'</span><span class="mp-s '+sc+'">'+sl+'</span><button class="btn-line" data-a="msel" data-v="'+sel.id+'">关闭</button></div>'
+      +'<div class="rule">'+esc(sel.rule)+'</div><span class="small">赢 +'+(sel.solo?sel.solo+' 或 +'+sel.n*100:sel.n*100)+' 冥币 + '+sel.suit+'</span></div>';}
+  const list=fk=>'<div class="mp-list"><h3>'+MAP[fk].name+'</h3>'+ROOMS.filter(r=>r.fl===fk).map(r=>{const [sl,sc]=mapSt(r);
+    return '<button class="mp-li'+(ui.msel===r.id?' on':'')+'" data-a="msel" data-v="'+r.id+'"><span class="mono">'+r.loc+'</span><span class="mp-card'+(isRed(r.suit)?' sr':'')+'">'+r.n+r.suit+'</span><span class="nm">'+esc(r.name)+'</span><span class="mp-s '+sc+'">'+(me&&me.inRoom===r.id?'你在这里':me&&me.cleared.includes(r.id)?'✓ 已成功':sl)+'</span></button>';}).join('')+'</div>';
+  return '<div class="page tabbed mapp">'+sub('map',[['1','一层'],['B','B 层']],'top')+floor('1')+floor('B')+info
+    +'<div class="pn mp-idx">'+list('1')+list('B')+'</div></div>';
+}
+
 // ---------- Dealer ----------
 function viewDealer(){
   const mine=ME.role==='dealer'&&Array.isArray(ME.rooms)?ME.rooms:null;
@@ -207,7 +269,7 @@ function viewDealer(){
       +'<span class="st '+kc+'">'+(kc!=='rst'?'<i class="gd"></i>':'')+RST[q.st][0]+(q.ps.length?' '+q.ps.length+' 人':'')+'</span></button>';}).join('')+'</div></div>';
   const timer=st!=='open'?'已 '+mmss(Math.max(0,S.t-x.at)):'';
   const hero='<div class="hero"><div class="tile"><span class="tn">'+r.n+'</span><span class="ts '+(isRed(r.suit)?'sr':'')+'">'+r.suit+'</span></div>'
-    +'<div class="info"><div class="meta"><span class="typ">'+TYPE[r.suit]+'</span><span class="coins">+'+r.n*100+' <small>冥币</small></span></div>'
+    +'<div class="info"><div class="meta"><span class="typ">'+r.loc+'</span><span class="typ">'+TYPE[r.suit]+'</span><span class="coins">+'+r.n*100+' <small>冥币</small></span></div>'
     +'<div class="name"><b>'+r.name+'</b>'+(ui.settled&&ui.settled.rid===r.id&&st==='reset'?'<span class="stamp">已结算</span>':'')+'</div>'
     +'<span class="status '+RST[st][1]+'">'+(RST[st][1]!=='rst'?'<i class="gd"></i>':'')+RST[st][0]+(x.ps.length?' '+x.ps.length+(S.capOn?' / '+cap:'')+' 人':'')+(timer?'　'+timer:'')+'</span></div></div>';
   // 入场：输入编号（可多人）
@@ -221,22 +283,23 @@ function viewDealer(){
       +'<button class="btn-main" data-a="enter"'+(okIds.length&&!bad.length&&!full?'':' disabled')+'>'+(!ids.length?'先输入编号':bad.length?'有 '+bad.length+' 人不能入场':full?'超过房间容量 '+cap+' 人':'放行 '+ids.length+' 人入场')+'</button>';
   }
   const info='<div class="pn" style="gap:14px"><h2 class="sh">规则与入场</h2><div class="rule">'+r.rule+'</div>'
-    +'<div class="rwl"><span><b class="acc">赢</b> +'+r.n*100+' 冥币 + '+r.suit+'</span><span><b class="red">输</b> 进鬼市，原地等黑白无常</span><span class="sub">中途放弃算输，每人每间只能成功一次</span></div>'+entry+'</div>';
+    +'<div class="rwl"><span><b class="acc">赢</b> '+(r.solo?'独自通关 +'+r.solo+'，带人通关各 +'+r.n*100:'+'+r.n*100)+' 冥币 + '+r.suit+'</span><span><b class="red">输</b> 进鬼市，原地等黑白无常</span><span class="sub">中途放弃算输，每人每间只能成功一次</span></div>'+entry+'</div>';
   // 结算：每人一行 赢 / 输（中途放弃算输）
   const done=ui.settled&&ui.settled.rid===r.id&&st==='reset';
   Object.keys(ui.res).forEach(id=>{if(!x.ps.includes(id))delete ui.res[id];});
   const pending=x.ps.filter(id=>!ui.res[id]).length,ready=x.ps.length&&!pending;
   const rows=x.ps.map(id=>{const p=pl(id),v=ui.res[id]||'';
-    return '<div class="rt rp"><div class="hd">'+who(p)+'</div>'+(v?'<span class="stamp">'+({win:'胜',lose:'负'})[v]+'</span>':'')
-      +'<div class="wl" role="group" aria-label="'+id+' 结果"><button class="w" data-a="res" data-t="'+id+'" data-v="win" aria-pressed="'+(v==='win')+'">赢</button>'
+    return '<div class="rt rp"><div class="hd">'+who(p)+'</div>'+(v?'<span class="stamp">'+({win:'胜',solo:'胜',lose:'负'})[v]+'</span>':'')
+      +'<div class="wl'+(r.solo?' w3':'')+'" role="group" aria-label="'+id+' 结果">'+(r.solo?'<button class="w" data-a="res" data-t="'+id+'" data-v="solo" aria-pressed="'+(v==='solo')+'">独自通关</button>':'')
+      +'<button class="w" data-a="res" data-t="'+id+'" data-v="win" aria-pressed="'+(v==='win')+'">'+(r.solo?'带人通关':'赢')+'</button>'
       +'<button class="l" data-a="res" data-t="'+id+'" data-v="lose" aria-pressed="'+(v==='lose')+'">输</button>'
       +'</div>'
       +(ui.kickAsk===id?'<span class="btns"><button class="btn-line fillred" data-a="kick" data-v="'+id+'">确认移出（不计结果）</button><button class="btn-line" data-a="kickno">取消</button></span>'
         :'<button class="btn-line kickb" data-a="kickask" data-v="'+id+'">进错了，移出</button>')+'</div>';}).join('');
-  const W=x.ps.filter(i=>ui.res[i]==='win'),Lo=x.ps.filter(i=>ui.res[i]==='lose');
+  const W=x.ps.filter(i=>ui.res[i]==='win'),So=x.ps.filter(i=>ui.res[i]==='solo'),Lo=x.ps.filter(i=>ui.res[i]==='lose');
   const summary=done?esc(ui.settled.msg):!x.ps.length?'':!ready?'还有 '+pending+' 人没选结果'
-    :[W.length?'赢 '+W.join('、')+'（各 +'+r.n*100+'）':'',Lo.length?'输 '+Lo.join('、')+'（进鬼市）':''].filter(Boolean).join('；');
-  const allBtns=x.ps.length>1?'<div class="btns"><button class="btn-line" data-a="resall" data-v="win">全部赢</button><button class="btn-line" data-a="resall" data-v="lose">全部输</button></div>':'';
+    :[So.length?'独自通关 '+So.join('、')+'（+'+r.solo+'）':'',W.length?'赢 '+W.join('、')+'（各 +'+r.n*100+'）':'',Lo.length?'输 '+Lo.join('、')+'（进鬼市）':''].filter(Boolean).join('；');
+  const allBtns=x.ps.length>1&&!r.solo?'<div class="btns"><button class="btn-line" data-a="resall" data-v="win">全部赢</button><button class="btn-line" data-a="resall" data-v="lose">全部输</button></div>':'';
   const resetBtn='<button class="btn-main glow" data-a="resetdone" style="min-height:60px;letter-spacing:.1em">重置完成，重新开放</button><span class="small center">'+(done?esc(ui.settled.msg)+'。':'')+'点了之后，玩家才能再进这间房</span>';
   const settle='<div class="pn" style="gap:14px"><div class="shrow"><h2 class="sh">房间里的人</h2><span class="hint" style="font-weight:700;color:'+(ready?'var(--accent)':pending?'var(--sub)':'var(--sub)')+'">'+(st==='reset'?'重置中':!x.ps.length?'等待入场':pending?x.ps.length+' 人':'都选好了')+'</span></div>'
     +(st==='reset'?resetBtn:(rows?allBtns+'<div class="rteams">'+rows+'</div>':'<div class="empty">房间里还没有人</div>')
@@ -747,7 +810,7 @@ const online=()=>connected&&!ui.simOff;   // 模拟离线时当作断网
 const offRid=()=>Array.isArray(ME.rooms)&&ME.rooms.length?ME.rooms[0]:ui.room;
 const OFF_MK=[['market','入鬼市'],['redeem','自赎'],['ransom','被别人赎'],['soup','孟婆汤']];
 function offDesc(x){const r=x.rid&&room(x.rid);
-  return x.k==='room'?x.pid+' '+({win:'赢',lose:'输'})[x.res]+' '+(r?r.card:''):x.k==='pickup'?'接到 '+x.pid:x.k==='market'?x.pid+' 入鬼市'
+  return x.k==='room'?x.pid+' '+({win:'赢',solo:'独自通关',lose:'输'})[x.res]+' '+(r?r.card:''):x.k==='pickup'?'接到 '+x.pid:x.k==='market'?x.pid+' 入鬼市'
     :x.k==='redeem'?x.pid+' 自赎':x.k==='ransom'?x.pid+' 被 '+x.by+' 赎出':x.k==='soup'?x.pid+' 喝孟婆汤'
     :x.k==='puz'?x.pid+' 解出 #'+x.code:x.k==='gate'?x.pid+' 鬼门开奖励：'+(x.rw==='coin'?'+'+GATE_COIN+' 冥币':x.rw==='save'?'救 '+x.arg:'拿 '+x.arg):'';}
 // 表单填好了吗：返回 null = 可以记；否则是按钮上显示的提示
@@ -765,7 +828,7 @@ function offBar(){
   if(!rows.length&&!ui.offOn)return '';
   const f=ui.off,k=ME.role==='dealer'?'room':f.k,seg=(key,opts)=>'<div class="seg'+opts.length+'">'+opts.map(([v,l])=>'<button class="sbtn'+(getp(key)===v?' on':'')+'" data-a="pick" data-k="'+key+'" data-v="'+v+'" aria-pressed="'+(getp(key)===v)+'">'+l+'</button>').join('')+'</div>';
   let what='';
-  if(ME.role==='dealer')what=seg('off.res',[['win','赢'],['lose','输']]);
+  if(ME.role==='dealer'){const dr=room(offRid());what=seg('off.res',dr&&dr.solo?[['solo','独自通关'],['win','带人通关'],['lose','输']]:[['win','赢'],['lose','输']]);}
   else if(ME.role==='wuchang')what=seg('off.k',[['pickup','接到了'],['market','送入鬼市']]);
   else if(ME.role==='mengpo')what=seg('off.k',OFF_MK)+(k==='ransom'?'<input class="in mono" data-m="off.by" id="offby" value="'+esc(f.by||'')+'" inputmode="numeric" placeholder="出钱人编号">':'');
   else what=seg('off.k',[['puz','解谜题'],['gate','鬼门开奖励']])
@@ -839,19 +902,20 @@ function render(){
   document.body.classList.toggle('login',login);if(login)document.body.classList.remove('inmk');document.body.classList.toggle('dev',!!DEVME&&!login);
   document.body.classList.toggle('screen',!login&&ME.role==='screen');
   document.body.dataset.role=login?'':ME.role;
-  if(login){document.body.classList.remove('board','natscroll','fullamb','inmk');document.documentElement.dataset.theme='dark';setAmb('login');renderLogin();return;}
+  if(login){document.body.classList.remove('board','natscroll','fullamb','inmk','bt');document.documentElement.dataset.theme='dark';setAmb('login');renderLogin();return;}
   const nickGate=ME.role==='player'&&!DEVME&&S&&(p=>p&&!p.nick)(S.players.find(x=>x.id===ME.pid));   // 还没取昵称：只显示取名页
   // 总控不显示标签栏：开发者用右上角下拉换视角；真总控用同一个下拉换页面
   const tabs=nickGate?['player']:(ROLE_TABS[ME.role]||[]);
   if(!tabs.includes(ui.tab))ui.tab=tabs[0];
+  document.body.classList.toggle('bt',tabs.length>1);
   document.documentElement.dataset.theme=themeFor();
   const aucP=ME.role==='player'&&ui.tab==='board'&&aucOn();   // 拍卖时玩家第一页是拍卖页，不是大屏
   document.body.classList.toggle('board',ui.tab==='board'&&!aucP);
   document.body.classList.toggle('inmk',ME.role==='player'&&inMarketNow());
-  document.body.classList.toggle('natscroll',ui.tab==='market'||ui.tab==='wuchang'||ui.tab==='auc'||aucP||(ui.tab==='player'&&ME&&ME.role==='player'));
+  document.body.classList.toggle('natscroll',ui.tab==='market'||ui.tab==='wuchang'||ui.tab==='auc'||ui.tab==='map'||aucP||(ui.tab==='player'&&ME&&ME.role==='player'));
   // Staff and player pages: the big screen's full-window background on computers, and on phones in dark mode;
   // flames and eyes only show where no panel covers them (data-free). Phones in light mode keep the header strip.
-  const userTab=['dealer','npc','auc','market','wuchang','ctrl','player'].includes(ui.tab)||aucP,tone=themeFor(),full=userTab&&(innerWidth>=720||tone==='dark');
+  const userTab=['dealer','npc','auc','market','wuchang','ctrl','player','map'].includes(ui.tab)||aucP,tone=themeFor(),full=userTab&&(innerWidth>=720||tone==='dark');
   document.body.classList.toggle('fullamb',full);
   setAmb((ui.tab==='board'&&!aucP)||full?'screen':userTab?'page':null,tone);
   {const g=$('#amb ghost-ambience');if(g){
@@ -872,7 +936,7 @@ function render(){
   $('.clk').classList.toggle('paused',!run);$('#clkdot').className='gd'+(run?'':' off');
   if(!S){$('#view').innerHTML='<section class="pn muted">正在连接服务器…</section>';return;}
   R.use(S);S.t=nowT();S.now=Date.now()+OFFSET;$('#clk').textContent=fmt(S.t);
-  morph($('#view'),offBar()+(aucP?viewAucPlayer():ui.tab==='board'?viewBoard():ui.tab==='dealer'?viewDealer():ui.tab==='ctrl'?viewCtrl():ui.tab==='npc'?viewNpc():ui.tab==='auc'?viewAuc():ui.tab==='market'?viewMarket():ui.tab==='wuchang'?viewWuchang():viewPlayer())+cfmDlg());
+  morph($('#view'),offBar()+(aucP?viewAucPlayer():ui.tab==='board'?viewBoard():ui.tab==='map'?viewMap():ui.tab==='dealer'?viewDealer():ui.tab==='ctrl'?viewCtrl():ui.tab==='npc'?viewNpc():ui.tab==='auc'?viewAuc():ui.tab==='market'?viewMarket():ui.tab==='wuchang'?viewWuchang():viewPlayer())+cfmDlg());
   fitStage();confettiCheck();
   { // 灯笼 / 面具的绳子接到页头那条线：算出它们离页头底边的距离（有标签栏时不上提，免得盖住标签）
     const root=document.documentElement,hb=$('#top').getBoundingClientRect().bottom;
@@ -1078,6 +1142,7 @@ document.addEventListener('click',e=>{
   const b=e.target.closest('[data-a]');if(!b||b.disabled)return;
   const a=b.dataset.a,v=b.dataset.v,A=ui.admin,l=curLot();
   if(a==='tab'){ui.tab=v;say(null);}
+  else if(a==='msel'){ui.msel=ui.msel===v?null:v;}
   else if(a==='sub'){ui.sub[b.dataset.p]=v;scrollTo({top:0});$('#view').scrollTop=0;}
   else if(a==='dd'){ui.ddOpen=ui.ddOpen===v?null:v;}
   else if(a==='pick'){ui.ddOpen=null;const k=b.dataset.k;setp(k,b.dataset.t&&getp(k)===v?'':v);

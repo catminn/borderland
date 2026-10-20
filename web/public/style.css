@@ -791,13 +791,13 @@ body.lgerr .lg{border-color:#7a2a26}
 
 /* ===== 玩家手机页：下方一级菜单（大屏/本队），上方二级菜单（本队/任务/鬼市/房间，只在「本队」出现） ===== */
 @media (max-width:719px){
-  body[data-role="player"]:not(.login) #tabs{position:fixed;left:0;right:0;bottom:0;z-index:41;margin:0;gap:0;overflow:visible;background:var(--panel2);border-top:1px solid var(--line);padding:0 6px calc(env(safe-area-inset-bottom) + 8px)}
-  body[data-role="player"]:not(.login) #tabs button{flex:1 1 0;min-height:64px;border:none;border-top:3px solid transparent;border-radius:0;background:transparent;font-size:19px;justify-content:center;color:var(--sub)}
-  body[data-role="player"]:not(.login) #tabs button[aria-selected="true"]{border-top-color:var(--accent);color:var(--accent);font-weight:900;background:transparent}
-  body[data-role="player"]:not(.login) .wrap{padding-bottom:96px}
-  body[data-role="player"] .subtabs.top{position:static;display:flex;gap:6px;flex-wrap:nowrap;overflow-x:auto;background:none;border:0;padding:0;grid-column:1/-1}
-  body[data-role="player"] .subtabs.top button{flex:none;min-height:34px;padding:0 14px;border:1px solid var(--line);border-radius:999px;font-size:13px;font-weight:700;background:transparent;color:var(--sub)}
-  body[data-role="player"] .subtabs.top button[aria-selected="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:900}
+  body.bt #tabs{position:fixed;left:0;right:0;bottom:0;z-index:41;margin:0;gap:0;overflow:visible;background:var(--panel2);border-top:1px solid var(--line);padding:0 6px calc(env(safe-area-inset-bottom) + 8px)}
+  body.bt #tabs button{flex:1 1 0;min-height:64px;border:none;border-top:3px solid transparent;border-radius:0;background:transparent;font-size:19px;justify-content:center;color:var(--sub)}
+  body.bt #tabs button[aria-selected="true"]{border-top-color:var(--accent);color:var(--accent);font-weight:900;background:transparent}
+  body.bt .wrap{padding-bottom:96px}
+  body.bt .page .subtabs{position:static;display:flex;gap:6px;flex-wrap:nowrap;overflow-x:auto;background:none;border:0;padding:0;grid-column:1/-1}
+  body.bt .page .subtabs button{flex:none;min-height:34px;padding:0 14px;border:1px solid var(--line);border-radius:999px;font-size:13px;font-weight:700;background:transparent;color:var(--sub)}
+  body.bt .page .subtabs button[aria-selected="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:900}
 }
 @media (max-width:819px){.stage .rh{flex-wrap:wrap;gap:2px 12px}.stage .rh b{white-space:nowrap}}
 /* 大屏在总控/开发者窗口里：舞台按宽高缩放，不出现内部滚动条 */
@@ -1038,19 +1038,19 @@ body .lg::before,body .lg::after{content:none}
 /* ---------- 玩家手机：一级（底部）与二级分页 ---------- */
 @media (max-width:719px){
   /* 底部菜单（玩家一级 / 工作人员分页）统一：纸面底栏，选中项是带描边的实心色块 */
-  :root body[data-role="player"]:not(.login) #tabs,:root body:not([data-role="player"]) .subtabs,:root body[data-role="player"] .subtabs:not(.top){background:var(--panel);border-top:var(--stroke) solid var(--stroke-c);gap:6px;padding:8px 8px calc(env(safe-area-inset-bottom) + 8px)}
-  :root body[data-role="player"]:not(.login) #tabs button,:root body:not([data-role="player"]) .subtabs button,:root body[data-role="player"] .subtabs:not(.top) button{min-height:50px;border:1px solid transparent;border-radius:var(--r-m);background:transparent;color:var(--sub);box-shadow:none;transform:none;font-weight:800}
-  :root body[data-role="player"]:not(.login) #tabs button[aria-selected="true"],:root body:not([data-role="player"]) .subtabs button[aria-selected="true"],:root body[data-role="player"] .subtabs:not(.top) button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--stroke-c);font-weight:900;
+  :root body.bt #tabs,:root body:not(.bt) .subtabs{background:var(--panel);border-top:var(--stroke) solid var(--stroke-c);gap:6px;padding:8px 8px calc(env(safe-area-inset-bottom) + 8px)}
+  :root body.bt #tabs button,:root body:not(.bt) .subtabs button{min-height:50px;border:1px solid transparent;border-radius:var(--r-m);background:transparent;color:var(--sub);box-shadow:none;transform:none;font-weight:800}
+  :root body.bt #tabs button[aria-selected="true"],:root body:not(.bt) .subtabs button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--stroke-c);font-weight:900;
     box-shadow:inset 0 0 0 calc(var(--stroke) - 1px) var(--stroke-c),var(--shs) var(--shs) 0 var(--sh-c)}
-  :root body[data-role="player"]:not(.login) #tabs button[aria-selected="true"] .n,:root body:not([data-role="player"]) .subtabs button[aria-selected="true"] .n,:root body[data-role="player"] .subtabs:not(.top) button[aria-selected="true"] .n{opacity:.75}
-  :root body[data-role="player"]:not(.login) #tabs button:active,:root body:not([data-role="player"]) .subtabs button:active,:root body[data-role="player"] .subtabs:not(.top) button:active{transform:none}
+  :root body.bt #tabs button[aria-selected="true"] .n,:root body:not(.bt) .subtabs button[aria-selected="true"] .n{opacity:.75}
+  :root body.bt #tabs button:active,:root body:not(.bt) .subtabs button:active{transform:none}
   /* 二级：一条分段控件，外框描边 + 硬投影，内部按钮平铺 */
-  body[data-role="player"] .subtabs.top{gap:0;width:fit-content;max-width:100%;border:1px solid var(--stroke-c);border-radius:var(--r-m);
+  body.bt .page .subtabs{gap:0;width:fit-content;max-width:100%;border:1px solid var(--stroke-c);border-radius:var(--r-m);
     box-shadow:inset 0 0 0 calc(var(--stroke) - 1px) var(--stroke-c),var(--sh);background:var(--panel);padding:var(--stroke)}
-  body[data-role="player"] .subtabs.top button{border:0;border-radius:calc(var(--r-m) - 2px);box-shadow:none;transform:none;background:transparent;min-height:34px}
-  body[data-role="player"] .subtabs.top button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink);border:0;box-shadow:none}
-  body[data-role="player"] .subtabs.top button[aria-selected="true"] .n{opacity:.7}
-  body[data-role="player"] .subtabs.top button:active{transform:none}
+  body.bt .page .subtabs button{border:0;border-radius:calc(var(--r-m) - 2px);box-shadow:none;transform:none;background:transparent;min-height:34px}
+  body.bt .page .subtabs button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink);border:0;box-shadow:none}
+  body.bt .page .subtabs button[aria-selected="true"] .n{opacity:.7}
+  body.bt .page .subtabs button:active{transform:none}
 
   /* 终极任务：手机精简为一张卡，三条件各一行（标题 · 进度 · 状态） */
   .fin3{gap:0;border:1px solid var(--stroke-c);border-radius:var(--r-m);background:var(--panel);box-shadow:inset 0 0 0 calc(var(--stroke) - 1px) var(--stroke-c),var(--sh)}
@@ -1302,7 +1302,7 @@ body .room.mine{opacity:1;border-color:var(--red);box-shadow:inset 0 0 0 1px var
   .nickc .in{font-size:20px}
   .mrow .give .in{font-size:17px}
   .btn-main[style*="font-size"],.abig{font-size:17px!important}
-  body[data-role="player"]:not(.login) #tabs button{font-size:16px}
+  body.bt #tabs button{font-size:16px}
   /* 名称类标题 */
   .hero .name b{font-size:26px}
   .acard .aname{font-size:26px}
@@ -1428,7 +1428,7 @@ header.top .devops.ro,header.top .devops.ro:disabled{opacity:1!important;border:
 /* iPhone（iOS 26 Safari）上下两端：浮动地址栏后面会露出页面内容
    1) 玩家底部菜单往下多铺一截底色，菜单下面不再露出房间卡
    2) 全屏弹窗打开时，把页面本身藏起来、整页底色换成弹窗的颜色，状态栏和地址栏区域跟弹窗同色 */
-body[data-role="player"]:not(.login) #tabs::after{content:"";position:absolute;left:0;right:0;top:100%;height:160px;background:inherit;pointer-events:none}
+@media (max-width:719px){body.bt #tabs::after{content:"";position:absolute;left:0;right:0;top:100%;height:160px;background:inherit;pointer-events:none}}
 .ovl{background-color:var(--overlay)}
 .ovl[data-k="out"]{background-color:#3a0909}
 :root[data-theme] .ovl[data-k="time"]{background-color:#140a22}
@@ -1436,3 +1436,78 @@ html:has(#modal .ovl),html:has(#modal .ovl) body{background:var(--overlay)!impor
 html:has(#modal .ovl[data-k="out"]),html:has(#modal .ovl[data-k="out"]) body{background:#3a0909!important}
 html:has(#modal .ovl[data-k="time"]),html:has(#modal .ovl[data-k="time"]) body{background:#140a22!important}
 body:has(#modal .ovl) :is(.wrap,#amb,#scene){visibility:hidden}
+
+/* ===== 2026-10-20 所有角色手机端：一级分页（自己的页 / 地图 / 大屏）在底部，页面里的二级分页一律在顶部 ===== */
+@media (max-width:719px){
+  body.bt .page>.subtabs{order:-1}
+  body.bt .page .subtabs button{flex-direction:row}
+}
+.wl.w3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.wl.w3 button{font-size:17px;letter-spacing:.04em}
+.room .pt.lc{color:var(--sub)}
+
+/* ===== 地图 ===== */
+.mapp .sec{display:flex;flex-direction:column;gap:10px}
+.mp-head{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.mp-plan{overflow-x:auto;background:var(--panel);border:var(--stroke) solid var(--stroke-c);border-radius:var(--r-m);box-shadow:var(--sh)}
+.mp-plan svg{display:block;width:100%;height:auto}
+.mp-plan .mp-v{display:none;max-width:460px;margin:0 auto}
+@media (max-width:719px){.mp-plan .mp-h{display:none}.mp-plan .mp-v{display:block}}
+.mp-gn.mid,.mp-cd,.mp-st.sm{text-anchor:middle;dominant-baseline:central}
+.mp-cd{font-family:var(--mono)!important;font-weight:700;font-size:24px}.mp-cd.red{fill:var(--red)!important}
+.mp-st.sm{font-size:16px}
+@media (min-width:1300px){.page.mapp{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;align-items:start}.page.mapp>.mp-info,.page.mapp>.mp-idx,.page.mapp>.offpage{grid-column:1/-1}}
+.mp-plan text{font-family:var(--sans);fill:var(--ink)}
+.mp-wall{fill:none;stroke:var(--ink);stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
+.mp-common{fill:var(--red-soft)}
+.mp-cap{font-size:13px;letter-spacing:.3em;fill:var(--sub)!important}
+.mp-ct{font-family:var(--disp)!important;font-size:34px;letter-spacing:.08em}
+.mp-cs{font-size:15px;fill:var(--sub)!important}
+.mp-cor{font-size:14px;letter-spacing:1em;fill:var(--mute)!important}
+.mp-stair rect{fill:var(--panel2);stroke:var(--warn);stroke-width:2}
+.mp-stair path{stroke:var(--warn);stroke-width:2}
+.mp-sl{fill:var(--warn)!important;font-size:14px;text-anchor:middle;letter-spacing:.15em}
+.mp-hl{stroke:var(--line2);stroke-width:2}
+.mp-empty{stroke:var(--line2);stroke-width:2;stroke-dasharray:6 5}
+.mp-fix rect{fill:var(--panel2);stroke:var(--line2);stroke-width:2.5}
+.mp-num{font-family:var(--mono)!important;font-weight:700;font-size:26px;text-anchor:middle;dominant-baseline:central}
+.mp-st{font-size:17px;font-weight:700;text-anchor:middle;dominant-baseline:central}
+.mp-gn{font-size:20px;font-weight:700}
+.mp-gn.plain{fill:var(--warn)!important}
+.mp-tb .t{fill:none;stroke:var(--sub);stroke-width:1.5}.mp-tb .c{fill:var(--sub)}
+.mp-in rect{fill:var(--red)}.mp-in text{fill:#fff!important;font-weight:900;font-size:17px;text-anchor:middle;letter-spacing:.2em}
+.mp-door{stroke:var(--red);stroke-width:3;stroke-linecap:round}
+.mp-arrow{fill:none;stroke:var(--red);stroke-width:2.5}
+.mp-ent{fill:var(--red)!important;font-size:17px;font-weight:900;text-anchor:middle;letter-spacing:.2em}
+.mp-room{cursor:pointer}
+.mp-room>rect{stroke-width:2.5;transition:fill .2s,stroke-width .2s}
+.mp-room.s-idle>rect{fill:var(--accent-soft);stroke:var(--accent);stroke-width:3.5}
+.mp-room.s-idle .mp-st{fill:var(--accent)}
+.mp-room.s-on>rect{fill:rgba(242,193,78,.12);stroke:var(--warn)}
+.mp-room.s-on .mp-st{fill:var(--warn)}
+.mp-room.s-rst>rect,.mp-room.s-shut>rect{fill:var(--off-bg);stroke:var(--line2);stroke-dasharray:6 5}
+.mp-room.s-rst .mp-st,.mp-room.s-shut .mp-st,.mp-room.s-rst .mp-num,.mp-room.s-shut .mp-num{fill:var(--mute)}
+.mp-room.mine>rect{stroke:var(--red);stroke-width:5;stroke-dasharray:none}
+.mp-room.mine .mp-st{fill:var(--red)}
+.mp-room.sel>rect,.mp-room:hover>rect{stroke-width:6}
+.mp-tag rect{fill:var(--card);stroke:var(--stroke-c);stroke-width:1.5}
+.mp-tag text{font-family:var(--mono);font-weight:700;font-size:16px;text-anchor:middle;fill:var(--ink)}
+.mp-tag.red text{fill:var(--red)}
+.mp-info{gap:10px}
+.mp-ih{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.mp-ih b{font-size:22px}
+.mp-ih .btn-line{margin-left:auto;min-height:36px}
+.mp-card{display:inline-grid;place-items:center;min-width:40px;height:26px;padding:0 6px;border:1.5px solid var(--stroke-c);border-radius:4px;background:var(--card);font:700 15px var(--mono);color:var(--ink)}
+.mp-card.sr{color:var(--red)}
+.mp-s{font-weight:700;white-space:nowrap}
+.mp-s.idle{color:var(--accent)}.mp-s.on{color:var(--warn)}.mp-s.rst,.mp-s.shut{color:var(--mute)}
+.mp-idx{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px}
+.mp-list{display:flex;flex-direction:column}
+.mp-list h3{font-family:var(--disp);font-weight:400;font-size:22px;margin:0 0 6px}
+.mp-li{display:grid;grid-template-columns:48px 44px minmax(0,1fr) auto;align-items:center;gap:10px;padding:10px 8px;border:0;border-bottom:1px solid var(--line);background:transparent;text-align:left;border-radius:6px;cursor:pointer}
+.mp-li .mono{color:var(--sub);font-weight:700}
+.mp-li .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mp-li.on,.mp-li:hover{background:var(--accent-soft)}
+@media (min-width:720px){.page.mapp>.subtabs{display:none}.page.mapp>.sec{display:flex}}
+@media (max-width:719px){.mp-idx{gap:12px}.mp-li{grid-template-columns:40px 40px minmax(0,1fr) auto;gap:8px;font-size:15px}}
+@media (prefers-reduced-motion:reduce){.mp-room>rect{transition:none}}

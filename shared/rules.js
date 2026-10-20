@@ -4,15 +4,18 @@
 export let S;
 export function use(state){S=state;}
 // 4 种花色各有 简单(4) / 困难(8) 两间房，共 8 间。成功得 n×100 冥币和该花色；每人每间房最多成功一次。
+// loc = 房间号，fl = 楼层（'1' 一层 / 'B' B 层），以场地地图为准（2026-10-20）。rule = Dealer 页的规则摘要（来自规则表）。
+// solo：♥8 孟婆的交易，拿到「生」的人可以独自通关（得 solo 冥币），或带一人通关（两人各得 n×100）。
 const ROOMS=[
-  {id:'4S',card:'♠4',suit:'♠',n:4,name:'一二三纸扎人',rule:'木头人玩法。Dealer 扮纸扎人，转身时还在动的人回起点。'},
-  {id:'8S',card:'♠8',suit:'♠',n:8,name:'奈何桥',rule:'格子布上的安全路线只亮几秒，凭记忆走过，踩错回起点。'},
-  {id:'4H',card:'♥4',suit:'♥',n:4,name:'少数派',rule:'每轮匿名选红 / 黑，少数派得分，可 bluff。'},
-  {id:'8H',card:'♥8',suit:'♥',n:8,name:'孟婆的交易',rule:'玩法待定。'},
-  {id:'4C',card:'♣4',suit:'♣',n:4,name:'冥界传话',rule:'Relay Drawing，一路画下去，最后一人猜。'},
-  {id:'8C',card:'♣8',suit:'♣',n:8,name:'心有灵犀',rule:'两组背对背答相同问题，答对越多越好。'},
-  {id:'4D',card:'♦4',suit:'♦',n:4,name:'生死簿',rule:'30 秒看桌上物品，盖布后回答问题。'},
-  {id:'8D',card:'♦8',suit:'♦',n:8,name:'符咒密码',rule:'倒计时内从真假 clue 里破解密码锁。'}];
+  {id:'4S',card:'♠4',suit:'♠',n:4,loc:'173',fl:'1',name:'一二三纸扎人',rule:'木头人：纸扎人转身时还在动的人回起点，定住时要摆出规定动作。2 分钟一轮，结束时没到终点的人输。'},
+  {id:'8S',card:'♠8',suit:'♠',n:8,loc:'B02',fl:'B',name:'红线劫',rule:'每次 1 人。穿过挂着铃铛的红线到终点，可以弯腰、下蹲、侧身、跨越，不能用手拨线，不能绕路。90 秒内到达且铃铛没响算赢，铃响或超时算输。'},
+  {id:'4H',card:'♥4',suit:'♥',n:4,loc:'B51',fl:'B',name:'少数派',rule:'每轮讨论后每人秘密选红或黑，同时亮牌，人少的一方各得 1 分（人数相同或全选一色都不得分）。每 3 轮淘汰累计分最低的人（并列一起淘汰），被淘汰的人输。可以谈判、误导、结盟，投票时不能交流。'},
+  {id:'8H',card:'♥8',suit:'♥',n:8,loc:'B50',fl:'B',name:'孟婆的交易',solo:1000,rule:'6 人各抽一个信封（1 生 5 死），只能自己看，可以撒谎、结盟、许诺。讨论（6 人 3 分钟、5 人 2 分钟、4 人 90 秒、3 人 60 秒）后匿名投票，得票最多的人开信封：死则输，其余人重抽进下一轮；生则立即获胜，选独自通关 1000 冥币或带一人通关各 800，其余人输。平票各陈述 20 秒后在平票者里重投，再平随机开。只剩 2 人时：一人抽信封后可说真话或说谎，另一人选抢走或拿剩下的。'},
+  {id:'4C',card:'♣4',suit:'♣',n:4,loc:'B75',fl:'B',name:'冥界传话',rule:'第一人按题目画 20 秒，下一人看画写描述 20 秒，画和写交替传下去，最后一人看画猜原题。猜对算赢，猜错或超时算输。全程不能交流，不能看别人的内容。'},
+  {id:'8C',card:'♣8',suit:'♣',n:8,loc:'150',fl:'1',name:'心有灵犀',rule:'3 对 3 背对背，先演示 1 题。动作同步 5 题、背对背答题 5 题，每题组内小声讨论 30 秒后同时出，两边一致得 1 分。满分 10，5 分及以上全体赢，0–4 分全体输；超时或出多个答案算 0 分。'},
+  {id:'4D',card:'♦4',suit:'♦',n:4,loc:'151',fl:'1',name:'生死簿',rule:'30 秒记住桌上或大屏上的物品，盖布后答题，共 4 题。答对 2 题及以上算赢，1 题及以下算输。'},
+  {id:'8D',card:'♦8',suit:'♦',n:8,loc:'B73',fl:'B',name:'符咒密码',tbd:true,rule:'限时从真假线索里破解密码锁（玩法待定）。'}];
+const winPts=(r,res)=>res==='solo'&&r.solo?r.solo:r.n*100;
 const SUITS=['♠','♦','♣','♥'];
 // 身份卡：编号 001 起，默认 56 张。没有起始房间（2026-10-19 删掉了，现场见机行事）。
 const N_PLAYERS=56;
@@ -124,12 +127,15 @@ function enterRoom(rid,pids){
 function finishRoom(rid,results){
   const r=room(rid),st=S.rooms.find(x=>x.id===rid);results=results||{};
   if(!st||!st.ps.length)return no('房间里没有人');
-  for(const id of st.ps)if(!['win','lose'].includes(results[id]))return no('请为 '+nameOf(id)+' 选择赢 / 输');
+  const okv=r.solo?['win','solo','lose']:['win','lose'];
+  for(const id of st.ps)if(!okv.includes(results[id]))return no('请为 '+nameOf(id)+' 选择赢 / 输');
+  if(r.solo){const so=st.ps.filter(id=>results[id]==='solo').length,w=st.ps.filter(id=>results[id]==='win').length;
+    if(so>1)return no('独自通关只能有 1 人');if(so&&w)return no('独自通关时其他人都算输');if(w>2)return no('带人通关最多 2 人');}
   const notes=[];
   for(const id of st.ps){const p=pl(id),res=results[id];p.inRoom=null;
     const h=p.hist.filter(x=>x.rid===rid&&x.res===null).pop()||(p.hist[p.hist.length]={rid,t0:st.at,res:null,pts:0});h.t1=S.t;h.res=res;
-    if(res==='win'){const pts=r.n*100;p.score+=pts;h.pts=pts;if(!p.cleared.includes(rid))p.cleared.push(rid);if(!p.cards.includes(r.suit))p.cards.push(r.suit);
-      log(nm(p)+' 赢下 '+r.card+'，+'+pts+' 冥币','back',1);notes.push(p.id+' 赢');}
+    if(res!=='lose'){const pts=winPts(r,res);h.res='win';p.score+=pts;h.pts=pts;if(!p.cleared.includes(rid))p.cleared.push(rid);if(!p.cards.includes(r.suit))p.cards.push(r.suit);
+      log(nm(p)+' 赢下 '+r.card+'，+'+pts+' 冥币'+(res==='solo'?'（独自通关）':''),'back',1);notes.push(p.id+' 赢');}
     else{eliminate(p,'挑战 '+r.card+' 失败',r.card+' '+r.name);notes.push(p.id+' 输');}}
   st.ps=[];st.st='reset';st.at=S.t;
   return ok(r.card+' 结算完成：'+notes.join('，'));}
@@ -356,11 +362,11 @@ function offRow(me,x,rnd){
   const tag='（离线补录）';
   if(x.k==='room'){const r=room(x.rid);if(!r)return no('没有这个房间');
     if(Array.isArray(me.rooms)&&!me.rooms.includes(r.id))return no('这个房间不归你管');
-    if(!['win','lose'].includes(x.res))return no('结果不对');
+    if(!['win','lose'].concat(r.solo?['solo']:[]).includes(x.res))return no('结果不对');
     if(p.inRoom===r.id){const st=S.rooms.find(y=>y.id===r.id);st.ps=st.ps.filter(y=>y!==p.id);if(!st.ps.length&&st.st==='play')st.st='open';p.inRoom=null;}
     p.on=true;const h={rid:r.id,t0:S.t,t1:S.t,res:x.res,pts:0};p.hist.push(h);
-    if(x.res==='win'){if(p.cleared.includes(r.id)){if(!p.cards.includes(r.suit))p.cards.push(r.suit);return ok(p.id+' 已成功过 '+r.card+'，没有再加分');}
-      h.pts=r.n*100;p.score+=h.pts;p.cleared.push(r.id);if(!p.cards.includes(r.suit))p.cards.push(r.suit);
+    if(x.res!=='lose'){h.res='win';if(p.cleared.includes(r.id)){if(!p.cards.includes(r.suit))p.cards.push(r.suit);return ok(p.id+' 已成功过 '+r.card+'，没有再加分');}
+      h.pts=winPts(r,x.res);p.score+=h.pts;p.cleared.push(r.id);if(!p.cards.includes(r.suit))p.cards.push(r.suit);
       log(nm(p)+' 赢下 '+r.card+'，+'+h.pts+' 冥币'+tag,'back',1);return ok(p.id+' 赢 '+r.card+' +'+h.pts);}
     if(x.res==='lose'){if(p.st!=='alive'){log(nm(p)+' 挑战 '+r.card+' 失败'+tag);return ok(p.id+' 输 '+r.card+'（本来就不在场）');}
       eliminate(p,'挑战 '+r.card+' 失败'+tag,r.card+' '+r.name);return ok(p.id+' 输 '+r.card);}}

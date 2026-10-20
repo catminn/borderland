@@ -182,4 +182,17 @@ fresh(); S.t = 1000;
   T('离线补录：判官解谜（同题不重复）+ 鬼门开奖励', P('006').score === R.PUZ_PTS + R.GATE_COIN && /已经兑换过/.test(j.data[1].msg) && P('007').cards.includes('♦'));
   T('离线补录：总控和玩家不能补录', !A('ctrl', { type: 'offline', rows: [{ k: 'room', rid: '4S', pid: '001', res: 'win' }] }).ok && !A('player', { type: 'offline', rows: [] }, { pid: '001' }).ok);
   T('离线补录：写进日志', S.log.some(l => l.text.includes('离线补录'))); }
+
+// ---------- ♥8 孟婆的交易：独自通关 1000 / 带人通关各 800 ----------
+fresh(); S.t = 60;
+A('dealer', { type: 'enter', rid: '8H', pids: ['001', '002', '003'] });
+T('♥8：独自通关只能 1 人', !A('dealer', { type: 'finish', rid: '8H', results: { '001': 'solo', '002': 'solo', '003': 'lose' } }).ok);
+T('♥8：独自通关时其他人不能赢', !A('dealer', { type: 'finish', rid: '8H', results: { '001': 'solo', '002': 'win', '003': 'lose' } }).ok);
+T('♥8：带人通关最多 2 人', !A('dealer', { type: 'finish', rid: '8H', results: { '001': 'win', '002': 'win', '003': 'win' } }).ok);
+T('♥8：独自通关 +1000 + ♥', A('dealer', { type: 'finish', rid: '8H', results: { '001': 'solo', '002': 'lose', '003': 'lose' } }).ok && P('001').score === 1000 && P('001').cards.includes('♥') && P('001').hist[0].res === 'win');
+A('dealer', { type: 'resetdone', rid: '8H' }); A('dealer', { type: 'enter', rid: '8H', pids: ['004', '005'] });
+T('♥8：带人通关各 +800', A('dealer', { type: 'finish', rid: '8H', results: { '004': 'win', '005': 'win' } }).ok && P('004').score === 800 && P('005').score === 800);
+T('其他房间不能选独自通关', A('dealer', { type: 'enter', rid: '4S', pids: ['006'] }).ok && !A('dealer', { type: 'finish', rid: '4S', results: { '006': 'solo' } }).ok);
+T('离线补录：♥8 独自通关 +1000', A('dealer', { type: 'offline', rows: [{ k: 'room', rid: '8H', pid: '007', res: 'solo' }] }).data[0].ok && P('007').score === 1000);
+T('房间号与地图一致', ['4S:173', '8S:B02', '4H:B51', '8H:B50', '4C:B75', '8C:150', '4D:151', '8D:B73'].every(x => { const [id, loc] = x.split(':'); return R.ROOMS.find(r => r.id === id).loc === loc; }));
 console.log(bad ? bad + ' FAILED' : 'all passed'); process.exit(bad ? 1 : 0);
