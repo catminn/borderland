@@ -45,10 +45,12 @@ const text = p => p.locator('#view').textContent();
 const ctrl = await page(ADMIN), judge = await page(P.judge), dealer = await page(P.dealer), screen = await page(P.screen), mengpo = await page(P.mengpo);
 const player = await page(P.player, 390);
 T('roles see only their tabs', (await text(judge)).includes('鬼门开') && (await text(judge)).includes('解谜题') && (await text(mengpo)).includes('孟婆'));
-T('player first page is the big screen with the ranking', (await text(player)).includes('全场播报') && (await text(player)).includes('冥币排行'));
+T('player tabs: mine, big screen, map', (await player.locator('#tabs button').allTextContents()).join('/') === '我的/大屏/地图');
+await ack(player); await player.click('#tabs button[data-v="board"]'); await sleep(300);
+T('player big screen tab shows the ranking', (await text(player)).includes('全场播报') && (await text(player)).includes('冥币排行'));
 await ack(player);
 await player.click('[data-a=tab][data-v=player]');
-{ const tx = await text(player); T('player sees own page (2nd tab)', tx.includes('011') && tx.includes('黑猫') && tx.includes('晋级资格进度')); }
+{ const tx = await text(player); T('player sees own page (mine tab)', tx.includes('011') && tx.includes('黑猫') && tx.includes('晋级资格进度')); }
 await ack(player); await ack(ctrl);
 
 // a fresh card asks for a nickname first
@@ -161,7 +163,8 @@ const dealerOf = room => client(pinOf(p => p.role === 'dealer' && p.rooms[0] ===
   T('judge opens with a countdown; big screen switches', (await jd.act({ type: 'auc.show', id: 'L1' })).ok && (await jd.act({ type: 'auc.open', id: 'L1', secs: 90 })).ok && (await sleep(200), admin.S.auc.screen === 'auction'));
   await admin.act({ type: 'nick', pid: '003', nick: '出价人' });
   const pp = await page(pinOf(p => p.pid === '003'), 390), sp = await page(P.screen, 1100); await ack(pp);
-  T('qualified player sees the bid box on the first page', (await text(pp)).includes('你的出价'));
+  await pp.click('#tabs button[data-v="board"]'); await sleep(300);
+  T('qualified player sees the bid box on the auction tab', (await pp.locator('#tabs button[data-v="board"]').textContent()) === '拍卖' && (await text(pp)).includes('你的出价'));
   T('big screen shows the auction', (await text(sp)).includes('鬼市大拍卖') && (await text(sp)).includes('盲盒'));
   await pp.fill('#bidin', '700'); await sleep(200); await pp.click('[data-a=bid]'); await sleep(400);
   T('player bids from the phone', admin.S.auc.lots[0].bids['003'] && admin.S.auc.lots[0].bids['003'].v === 700);

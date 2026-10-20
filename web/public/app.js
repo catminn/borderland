@@ -46,8 +46,8 @@ let ui={ddOpen:null,tab:null,room:'4S',as:'ctrl',devOps:false,demoRows:null,devA
   pub:{kind:'公告',title:'',body:'',target:'everyone',players:'',mins:0,gate:''},
   admin:{dur:'',cap:'',pins:null,snaps:null,counts:loadCounts(),ask:null,resetTxt:''}};
 const $=s=>document.querySelector(s);
-// 每个角色：自己的页 + 地图 + 大屏（大屏角色只有大屏）。手机上一级分页在底部，二级分页在顶部。
-const ROLE_TABS={ctrl:['ctrl','map','board'],dealer:['dealer','map','board'],judge:['npc','auc','map','board'],mengpo:['market','map','board'],wuchang:['wuchang','map','board'],screen:['board'],player:['board','player','map']};
+// 每个角色：自己的页 + 大屏 + 地图（大屏角色只有大屏）。手机上一级分页在底部，二级分页在顶部。
+const ROLE_TABS={ctrl:['ctrl','board','map'],dealer:['dealer','board','map'],judge:['npc','auc','board','map'],mengpo:['market','board','map'],wuchang:['wuchang','board','map'],screen:['board'],player:['player','board','map']};
 const TAB_NAME={board:'大屏',map:'地图',player:'我的',dealer:'Dealer',ctrl:'总控',npc:'判官',auc:'拍卖',market:'鬼市',wuchang:'黑白无常'};
 const ROLE_NAME={player:'玩家',dealer:'Dealer',judge:'判官',mengpo:'孟婆',wuchang:'黑白无常',ctrl:'总控',screen:'大屏'};
 const nowT=()=>!CLOCK?0:CLOCK.running?CLOCK.base+Math.floor((Date.now()+OFFSET-CLOCK.at)/1000):CLOCK.base;
@@ -119,26 +119,31 @@ function viewBoard(){
   if(aucOn())return viewAucBoard();
   const me=ME&&ME.role==='player'?pl(ME.pid):null;
   const act=S.players.filter(p=>p.on),mk=act.filter(p=>p.st!=='alive').length;
-  const bc=broadcast(3),run=CLOCK&&CLOCK.running;
+  const bc=broadcast(8),run=CLOCK&&CLOCK.running;
   return '<div class="stage-wrap"><div class="stage">'
     +'<div class="left"><div class="hd"><div class="ttl">百鬼夜行</div><div class="en">CORNELL CSSA 万圣夜</div></div>'
     +'<div class="clock"><span class="cap">'+(run?'剩余时间':'已暂停')+'</span><span class="ck mono'+(run?'':' paused')+'" id="sclk">'+remStr(S.t)+'</span>'
-    +incense()+(S.gp?'<div class="gatebar"><b>鬼门开</b><span>'+(S.gp.wins.length?'已完成 '+S.gp.wins.length+' / '+GATE_WIN+' 人':'最先完成的 '+GATE_WIN+' 人有奖励')+'</span></div>':'')+'</div>'
+    +'</div>'+gateBox()
     +'<div class="cast"><span class="cap" style="padding-bottom:8px">全场播报</span>'
     +(bc.length?bc.map(b=>'<div class="bc '+b.c+'"><span class="t">'+fmt(b.t)+'</span><span class="x">'+esc(b.x)+'</span></div>').join(''):'<div class="bc"><span class="x muted">暂无播报</span></div>')+'</div></div>'
     +'<div class="right"><div class="rank"><div class="rh"><b>冥币排行</b><span>在场 '+(act.length-mk)+' 人'+(mk?'　鬼市 '+mk+' 人':'')+'</span></div><div class="plist">'+rankRows(10)+'</div></div>'
     +'<div class="rgrid">'+ROOMS.map(r=>roomCard(r,me)).join('')+'</div></div>'
     +'</div></div>';
 }
-// Game progress as a burning incense stick: ash on the left, a glowing ember at "now", five watches.
-function incense(){
-  const p=Math.min(1,Math.max(0,S.t/(S.dur||7200))),cur=Math.min(4,Math.floor(p*5));
-  return '<div class="xiang" style="--p:'+p.toFixed(4)+'" role="img" aria-label="进度 '+Math.round(p*100)+'%"><div class="stick"><i class="ash"></i></div>'
-    +'<i class="ember"></i>'
-    +'<div class="watch">'+['一更','二更','三更','四更','五更'].map((w,i)=>'<span class="'+(i===cur?'on':i<cur?'past':'')+'">'+w+'</span>').join('')+'</div></div>';
+// 鬼门开进行中：标题 + 三个名额（最先完成的 3 人），完成一个点亮一个
+function gateBox(){
+  if(!S.gp)return '';
+  const n=(S.notices||[]).find(x=>x.id===S.gp.nid),w=S.gp.wins;
+  return '<div class="gbox"><div class="gh"><b>鬼门开</b>'+(n&&n.title&&n.title!=='鬼门开'?'<span>'+esc(n.title)+'</span>':'')+'</div>'
+    +'<div class="gs">'+[0,1,2].slice(0,GATE_WIN).map(i=>{const x=w[i],p=x&&pl(x.pid);
+      return '<div class="sl'+(x?' on':'')+'"><i>'+['壹','贰','叁'][i]+'</i><span>'+(x?'<b class="mono">'+x.pid+'</b>'+(p&&p.nick?' '+esc(p.nick):''):'虚位以待')+'</span></div>';}).join('')+'</div></div>';
 }
+// 全场播报：放不下的整条藏起来（不截半条）
+function clipCast(){const c=$('.stage .cast');if(!c)return;const cb=c.getBoundingClientRect().bottom;
+  c.querySelectorAll('.bc').forEach(e=>{e.style.visibility=innerWidth>=820&&e.getBoundingClientRect().bottom>cb+1?'hidden':'';});}
 function fitStage(){
   const w=$('.stage-wrap'),st=w&&w.firstChild;if(!w)return;
+  requestAnimationFrame(clipCast);
   const g=$('#amb ghost-ambience');
   if(innerWidth<820){st.style.removeProperty('--k');w.style.height='';w.style.width='';if(g)g.removeAttribute('data-keep');return;}
   const v=$('#view'),k=ME&&ME.role==='screen'?Math.min(innerWidth/1920,innerHeight/1080):Math.min(w.parentElement.clientWidth/1920,(v.clientHeight-24)/1080);

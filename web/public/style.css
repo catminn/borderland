@@ -520,16 +520,6 @@ body.login .notice{display:none}
 
 /* big-screen progress: burning incense */
 @keyframes ember{0%,100%{box-shadow:0 0 8px 2px currentColor;transform:scale(1)}50%{box-shadow:0 0 18px 6px currentColor;transform:scale(1.15)}}
-.xiang{position:relative;padding-top:40px}
-.xiang .stick{position:relative;height:9px;border-radius:5px;overflow:hidden;background:linear-gradient(180deg,#4f7268,#2a463f)}
-.xiang .ash{position:absolute;left:0;top:0;bottom:0;width:calc(var(--p)*100%);background:repeating-linear-gradient(90deg,#a3b3ad 0 7px,#84958f 7px 10px);opacity:.8}
-.xiang .ember{position:absolute;left:calc(var(--p)*100%);top:40px;width:14px;height:14px;margin:-2.5px 0 0 -7px;border-radius:50%;color:var(--accent);background:radial-gradient(circle,#f2fff9 0,#8ff3cf 42%,var(--accent) 72%);animation:ember 1.8s ease-in-out infinite}
-.xiang .watch{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));margin-top:10px}
-.xiang .watch span{border-left:2px solid var(--line);padding-left:8px;font-family:var(--disp);font-size:22px;color:var(--sub);line-height:1.2}
-.xiang .watch span.past{opacity:.5}
-.xiang .watch span.on{color:var(--accent);border-left-color:var(--accent)}
-@media (max-width:819px){.xiang{padding-top:30px}.xiang .ember{top:30px}.xiang .watch span{font-size:13px;padding-left:4px}}
-
 /* themed dropdown */
 .dd{position:relative;min-width:0}
 .dd-btn{width:100%;min-height:48px;display:flex;align-items:center;gap:8px;padding:0 12px;border:1.5px solid var(--line2);border-radius:10px;background:var(--card);color:var(--ink);font-size:16px;font-weight:700;text-align:left}
@@ -813,7 +803,6 @@ body.lgerr .lg{border-color:#7a2a26}
 @media (max-width:719px){.lantern-band{--band:300vw;height:190px}}
 
 /* 大屏排名柱：顶边只留很轻的起伏；纸纹用上传的纸 */
-.xiang .stick{background-image:url(img/paper.webp);background-size:cover;background-blend-mode:multiply;background-color:#4f7268;border-radius:2px}
 
 /* 黑白无常：中间大面具（绳子向上接到页头那条线），左右各一栏 */
 .wc-mask{pointer-events:none;user-select:none;display:flex;justify-content:center;align-items:flex-start}
@@ -836,7 +825,6 @@ body.login{overflow:hidden}
 :root[data-theme] .ovl[data-k="time"] .dlg .new i{background:#ffcf6b}
 /* 手机上的大屏：排名只留队名 + 柱子 + 花色；房间卡字号与玩家页房间卡一致 */
 @media (max-width:819px){
-  .stage .xiang{display:none}
   .stage .room .rs,.stage .room .idle{font-size:13px}
   .stage .room .rtm{font-size:12px}
   .stage .room .on{font-size:13px}
@@ -1330,8 +1318,7 @@ body .room.mine{opacity:1;border-color:var(--red);box-shadow:inset 0 0 0 1px var
   body .stage .ttl{font-size:96px}
   body .stage .en,body .stage .cap{font-size:24px}
   body .stage .ck{font-size:104px}
-  body .stage .xiang .watch span{font-size:24px}
-  body .stage .gatebar b{font-size:32px}body .stage .gatebar span{font-size:24px}
+  body .stage   body .stage .gatebar b{font-size:32px}body .stage .gatebar span{font-size:24px}
   body .stage .cast .bc{padding:16px 0;gap:6px}
   body .stage .bc .t{font-size:24px}
   body .stage .bc .x{font-size:30px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
@@ -1471,7 +1458,7 @@ body:has(#modal .ovl) :is(.wrap,#amb,#scene){visibility:hidden}
 .mp-cap{font-size:13px;letter-spacing:.3em;fill:var(--sub)!important}
 .mp-ct{font-family:var(--disp)!important;font-size:34px;letter-spacing:.08em}
 .mp-cs{font-size:15px;fill:var(--sub)!important}
-.mp-cor{font-size:14px;letter-spacing:1em;fill:var(--mute)!important}
+.mp-cor{font-size:22px;font-weight:700;letter-spacing:.8em;fill:var(--sub)!important}
 .mp-stair rect{fill:var(--panel2);stroke:var(--warn);stroke-width:2}
 .mp-stair path{stroke:var(--warn);stroke-width:2}
 .mp-sl{fill:var(--warn)!important;font-size:14px;text-anchor:middle;letter-spacing:.15em}
@@ -1497,7 +1484,6 @@ body:has(#modal .ovl) :is(.wrap,#amb,#scene){visibility:hidden}
 .mp-room.s-rst .mp-st,.mp-room.s-shut .mp-st,.mp-room.s-rst .mp-num,.mp-room.s-shut .mp-num{fill:var(--mute)}
 .mp-room.mine>rect{stroke:var(--red);stroke-width:5;stroke-dasharray:none}
 .mp-room.mine .mp-st{fill:var(--red)}
-.mp-room.sel>rect,.mp-room:hover>rect{stroke-width:6}
 .mp-tag rect{fill:var(--card);stroke:var(--stroke-c);stroke-width:1.5}
 .mp-tag text{font-family:var(--mono);font-weight:700;font-size:16px;text-anchor:middle;fill:var(--ink)}
 .mp-tag.red text{fill:var(--red)}
@@ -1515,3 +1501,36 @@ body:has(#modal .ovl) :is(.wrap,#amb,#scene){visibility:hidden}
 @media (min-width:720px){.page.mapp>.subtabs{display:none}.page.mapp>.sec{display:flex}}
 @media (max-width:719px){.mp-idx{gap:12px}.mp-li{grid-template-columns:40px 40px minmax(0,1fr) auto;gap:8px;font-size:15px}}
 @media (prefers-reduced-motion:reduce){.mp-room>rect{transition:none}}
+
+/* ===== 大屏：鬼门开板块（2026-10-20，替代燃香进度条和旧的 gatebar） ===== */
+.gbox{position:relative;z-index:1;display:flex;flex-direction:column;gap:14px;padding:18px 20px 20px;border:2px solid var(--red);border-radius:var(--r-m);
+  background:linear-gradient(180deg,var(--red-soft),transparent 140%);box-shadow:inset 0 0 0 4px var(--bg),inset 0 0 0 5px var(--red),var(--sh)}
+.gbox .gh{display:flex;align-items:baseline;gap:16px}
+.gbox .gh b{font-family:var(--disp);font-weight:400;font-size:44px;letter-spacing:.3em;color:var(--red);line-height:1}
+.gbox .gh span{font-family:var(--disp);font-size:44px;color:var(--ink);line-height:1}
+.gbox .gs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.gbox .sl{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 6px;border:2px dashed var(--red);border-radius:var(--r-m);color:var(--sub);text-align:center;min-width:0}
+.gbox .sl i{font-style:normal;font-family:var(--disp);font-size:24px;color:var(--red)}
+.gbox .sl span{font-size:24px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.gbox .sl.on{border-style:solid;background:var(--red);color:#fff}
+.gbox .sl.on i{color:#fff}
+@media (max-width:819px){
+  .stage .gbox{order:3;padding:12px 14px 14px;gap:10px}
+  .gbox .gh b,.gbox .gh span{font-size:26px}
+  .gbox .gs{gap:8px}
+  .gbox .sl{padding:8px 4px;gap:2px}
+  .gbox .sl i,.gbox .sl span{font-size:15px}
+}
+
+/* 地图悬停：像原图一样加深底色（不加粗），地图和下面的列表互相联动；手机点一下也一样 */
+.mp-room:hover>rect,.mp-room.sel>rect,.mapp:has(.mp-li[data-v="4S"]:hover) .mp-room[data-v="4S"]>rect,.mapp:has(.mp-li[data-v="8S"]:hover) .mp-room[data-v="8S"]>rect,.mapp:has(.mp-li[data-v="4H"]:hover) .mp-room[data-v="4H"]>rect,.mapp:has(.mp-li[data-v="8H"]:hover) .mp-room[data-v="8H"]>rect,.mapp:has(.mp-li[data-v="4C"]:hover) .mp-room[data-v="4C"]>rect,.mapp:has(.mp-li[data-v="8C"]:hover) .mp-room[data-v="8C"]>rect,.mapp:has(.mp-li[data-v="4D"]:hover) .mp-room[data-v="4D"]>rect,.mapp:has(.mp-li[data-v="8D"]:hover) .mp-room[data-v="8D"]>rect{fill:color-mix(in srgb,var(--accent) 34%,transparent)}
+.mp-room.s-on:hover>rect,.mp-room.s-on.sel>rect{fill:color-mix(in srgb,var(--warn) 34%,transparent)}
+.mp-room.s-rst:hover>rect,.mp-room.s-shut:hover>rect,.mp-room.s-rst.sel>rect,.mp-room.s-shut.sel>rect{fill:color-mix(in srgb,var(--mute) 30%,transparent)}
+.mapp:has(.mp-room[data-v="4S"]:hover) .mp-li[data-v="4S"],.mapp:has(.mp-room[data-v="8S"]:hover) .mp-li[data-v="8S"],.mapp:has(.mp-room[data-v="4H"]:hover) .mp-li[data-v="4H"],.mapp:has(.mp-room[data-v="8H"]:hover) .mp-li[data-v="8H"],.mapp:has(.mp-room[data-v="4C"]:hover) .mp-li[data-v="4C"],.mapp:has(.mp-room[data-v="8C"]:hover) .mp-li[data-v="8C"],.mapp:has(.mp-room[data-v="4D"]:hover) .mp-li[data-v="4D"],.mapp:has(.mp-room[data-v="8D"]:hover) .mp-li[data-v="8D"]{background:var(--accent-soft)}
+/* 大屏全场播报（桌面舞台）：时间和内容同一行同字号，时间淡色，每条最多两行，放得下更多条 */
+@media (min-width:820px){
+  body .stage .cast .bc{flex-shrink:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;padding:12px 0;font-size:28px;line-height:1.35}
+  body .stage .cast .bc .t{display:inline;font:500 28px var(--mono);color:var(--mute);margin-right:.5em}
+  body .stage .cast .bc .x{display:inline;font-size:28px;-webkit-line-clamp:unset}
+  .stage .left{gap:28px}
+}
