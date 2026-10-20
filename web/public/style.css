@@ -1379,6 +1379,7 @@ body .room.mine{opacity:1;border-color:var(--red);box-shadow:inset 0 0 0 1px var
   body .stage .prow .who{display:flex;gap:6px;align-items:baseline;min-width:0}
   body .stage .prow .who b{font-weight:500;color:var(--mute)}
   body .stage .room .cd{font-size:30px}
+  body .stage .rgrid{grid-auto-rows:1fr}   /* 手机上 8 间房一样高 */
   body .stage .room .pt{font-size:15px}
   body .stage .room :is(.on,.idle,.rs,.rtm){font-size:13px}
   body .stage .alot :is(.ai,b,.ast){font-size:15px}

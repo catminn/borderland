@@ -53,9 +53,9 @@ await ack(player); await ack(ctrl);
 
 // a fresh card asks for a nickname first
 { const fp = await page(P.fresh, 390);
-  T('fresh card: nickname page only', (await text(fp)).includes('给自己取个昵称') && await fp.locator('#tabs').isHidden());
+  T('fresh card: nickname page only', (await text(fp)).includes('取个昵称，显示在') && await fp.locator('#tabs').isHidden());
   await fp.fill('#nickin', '新来的'); await fp.click('[data-a=setnick]'); await sleep(500);
-  T('nickname saved, game opens', P_('050').nick === '新来的' && P_('050').on && !(await text(fp)).includes('给自己取个昵称'));
+  T('nickname saved, game opens', P_('050').nick === '新来的' && P_('050').on && !(await text(fp)).includes('取个昵称，显示在'));
   await fp.context().close(); }
 
 // judge publishes a gate -> player popup; staff popup (not the big screen)
