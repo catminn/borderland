@@ -1554,7 +1554,7 @@ body .room.mine :is(.cd,.pt){color:var(--ink)}
 
 /* ===== 大屏版式（2026-10-20 重排，放最后，覆盖前面的大屏字号）=====
    桌面 1920 舞台，五级字号，各司其职：
-   20 辅助（时间戳、人数、房间号） · 26 小标题（展示字体、淡色、统一样式） · 32 内容（排行、播报正文、房间状态）
+   20 辅助（时间戳、人数、房间号） · 38 小标题（展示字体、统一样式） · 32 内容（排行、播报正文、房间状态）
    · 88 房间牌 / 96 标题 · 116 时钟。版块之间 44，标题和内容之间 14，行与行之间靠细线和留白分开。 */
 @media (min-width:820px){
   body .stage{padding:56px 64px;gap:60px;grid-template-columns:480px minmax(0,1fr)}
@@ -1565,16 +1565,16 @@ body .room.mine :is(.cd,.pt){color:var(--ink)}
   body .stage .ttl{font-size:96px;letter-spacing:.06em}
   body .stage .en{font-size:20px;letter-spacing:.32em}
   /* 小标题：同一个样式 */
-  body .stage .cap,body .stage .rh b{font-family:var(--disp);font-weight:400;font-size:26px;letter-spacing:.24em;color:var(--sub)}
+  body .stage .cap,body .stage .rh b{font-family:var(--disp);font-weight:400;font-size:38px;letter-spacing:.16em;color:var(--ink2)}
   body .stage .rh{gap:28px;padding-bottom:6px}
-  body .stage .rh span{font-size:20px;font-weight:500;color:var(--mute);letter-spacing:.06em}
+  body .stage .rh span{font-size:24px;font-weight:500;color:var(--sub);letter-spacing:.04em}
   /* 时钟 */
   body .stage .clock{border-top:3px solid var(--accent);padding-top:22px;gap:10px}
   body .stage .ck{font-size:116px;letter-spacing:-.02em}
   /* 鬼门开 */
   body .stage .gbox{padding:20px 22px 22px;gap:16px}
-  body .stage .gbox .gh{font-size:26px;letter-spacing:.06em}
-  body .stage .gbox .gh b{font-size:26px;letter-spacing:.24em}
+  body .stage .gbox .gh{font-size:30px;letter-spacing:.04em}
+  body .stage .gbox .gh b{font-size:38px;letter-spacing:.16em}
   body .stage .gbox .sl{font-size:22px;padding:12px 14px;gap:6px}
   body .stage .gbox .sl span{font-size:18px}
   /* 全场播报：时间小一号、淡色，正文常规粗细，条与条之间留白 */
@@ -1602,11 +1602,10 @@ body .room.mine :is(.cd,.pt){color:var(--ink)}
 }
 /* 手机竖排大屏：同样的层级，缩小版 —— 13 辅助 · 15 小标题（展示字体、淡色） · 15 内容 · 30 房间牌 · 44 时钟 */
 @media (max-width:819px){
-  body .stage .cap,body .stage .rh b{font-family:var(--disp);font-weight:400;font-size:15px;letter-spacing:.2em;color:var(--sub)}
+  body .stage .cap,body .stage .rh b{font-family:var(--disp);font-weight:400;font-size:20px;letter-spacing:.12em;color:var(--ink2)}
   body .stage .rh{gap:2px 14px;padding-bottom:2px}
   body .stage .rh span{font-size:13px;font-weight:500;color:var(--mute)}
-  body .stage .gbox .gh,body .stage .gbox .gh b{font-size:15px}
-  body .stage .gbox .gh b{letter-spacing:.2em}
+  body .stage .gbox .gh{font-size:15px}body .stage .gbox .gh b{font-size:20px;letter-spacing:.12em}
   body .stage .room .pt.lc{font-size:12px;letter-spacing:.06em}
   body .stage .prow .who b{font-size:13px}
 }
