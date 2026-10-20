@@ -60,7 +60,7 @@ const now=()=>S.now||0;           // 真实时间（毫秒），服务器在每�
 function mkPlayer(i){return {id:pidOf(i),nick:'',on:false,st:'alive',score:0,cards:[],cleared:[],inRoom:null,hist:[],puz:[],
   outAt:null,inAt:null,pickAt:null,at:'',chk:null,won:null};}
 function init(){
-  S={v:3,t:0,now:0,bank:{},dur:DUR0,cap:ROOM_CAP0,capOn:false,gp:null,fin:[],log:[],notices:[],nid:1,
+  S={v:3,t:0,now:0,bank:{},rules:{},dur:DUR0,cap:ROOM_CAP0,capOn:false,gp:null,fin:[],log:[],notices:[],nid:1,
      rooms:ROOMS.map(r=>({id:r.id,st:'open',at:0,ps:[]})),players:[],
      auc:{lots:[],cur:null,screen:'game',lid:1}};
   for(let i=1;i<=N_PLAYERS;i++)S.players.push(mkPlayer(i));
@@ -215,6 +215,11 @@ function soup(pid,rnd){const p=pl(pid);if(!inMk(p))return no('该玩家不在鬼
 // ---------- 解谜题 ----------
 function puzInfo(p){const used=p.puz.reduce((a,r)=>a+r.pts,0);return {used,left:Math.max(0,PUZ_CAP-used),cap:PUZ_CAP};}
 // 判官输入谜题编码兑换：题库里有就记下题目，没有也照记（标成「第 N 号谜题」）
+// 房间规则：默认是 ROOMS[].rule，Dealer 在自己页面上可以改（存 S.rules，只发给工作人员；清空 = 恢复原文）
+const roomRule=id=>{const o=S.rules&&S.rules[id];return o!=null&&o!==''?o:(room(id)||{}).rule||'';};
+function setRule(rid,text){const r=room(rid);if(!r)return no('没有这个房间');text=String(text==null?'':text).replace(/\r/g,'').trim().slice(0,4000);
+  S.rules=S.rules||{};if(text===''||text===r.rule)delete S.rules[rid];else S.rules[rid]=text;
+  log(r.card+' 的规则'+(rid in S.rules?'改了':'恢复原文'));return ok(rid in S.rules?'规则已保存':'已恢复原文');}
 const puzTitle=code=>{const z=(S.bank||{})[code];return '#'+code+' '+(z&&z.q?String(z.q).replace(/\s+/g,' ').slice(0,30):'谜题');};
 function puzRedeem(pid,code){const p=pl(pid);if(!p)return no('没有这个编号');
   code=puzCode(code);if(!code)return no('先输入谜题编码');const key='z'+code,t=puzTitle(code);
@@ -479,7 +484,7 @@ const seed=w=>w==='start'?seedStart():w==='final'?seedFinal():w==='pre'?seedFina
 export function newGame(demo){init();if(demo)seed(demo);return S;}
 
 // Which roles may perform each action. 总控只做自己页面上的事（冥币、名单、发布、设置），不代替其他工作人员操作。
-const ROLE_OK={enter:['dealer'],finish:['dealer'],resetdone:['dealer'],kick:['dealer'],
+const ROLE_OK={setrule:['dealer','ctrl'],enter:['dealer'],finish:['dealer'],resetdone:['dealer'],kick:['dealer'],
   setcap:['ctrl'],setcapon:['ctrl'],setdur:['ctrl'],setscore:['ctrl'],setcards:['ctrl'],seton:['ctrl'],addplayers:['ctrl'],setbank:['ctrl'],finalall:['ctrl'],final:['ctrl'],
   publish:['ctrl','judge'],revoke:['ctrl','judge'],
   gatewin:['judge'],gateunwin:['judge'],gatereward:['judge'],gateend:['judge'],puz:['judge'],puzundo:['judge'],
@@ -495,7 +500,7 @@ export function apply(state,me,a){
   const roles=a&&ROLE_OK[a.type];
   if(!roles)return no('未知操作');
   if(!roles.includes(me.role))return no('你的身份不能做这个操作');
-  if(me.role==='dealer'&&Array.isArray(me.rooms)&&['enter','finish','resetdone','kick'].includes(a.type)&&!me.rooms.includes(a.rid))return no('这个房间不归你管，只能操作：'+me.rooms.map(r=>room(r).card).join(' '));
+  if(me.role==='dealer'&&Array.isArray(me.rooms)&&['enter','finish','resetdone','kick','setrule'].includes(a.type)&&!me.rooms.includes(a.rid))return no('这个房间不归你管，只能操作：'+me.rooms.map(r=>room(r).card).join(' '));
   aucSweep();
   switch(a.type){
     case 'enter':return enterRoom(a.rid,a.pids||a.pid);
@@ -510,6 +515,7 @@ export function apply(state,me,a){
     case 'seton':return setOn(a.pid,a.on);
     case 'addplayers':return addPlayers(a.n);
     case 'setbank':return setBank(a.rows);
+    case 'setrule':return setRule(a.rid,a.text);
     case 'finalall':return finalAll();
     case 'final':return setFinal(a.pid,!!a.on);
     case 'publish':if(me.role==='judge'&&!(a.f&&a.f.kind==='鬼门开'))return no('判官只能发布鬼门开');return publish(a.f);
@@ -551,14 +557,14 @@ function hideBids(state,pid){return {...state.auc,lots:state.auc.lots.map(l=>{co
 const STAFF_LOG=300;   // 工作人员页最多看 300 行日志（全场日志页也只显示 300 行）；完整日志留在服务器
 export function viewFor(state,me){
   const lg=state.log.length>STAFF_LOG?state.log.slice(0,STAFF_LOG):state.log;
-  if(me.role==='screen')return {...state,log:lg,bank:{},auc:hideBids(state,null)};
+  if(me.role==='screen')return {...state,log:lg,bank:{},rules:{},auc:hideBids(state,null)};
   if(['ctrl','judge','dev'].includes(me.role))return lg===state.log?state:{...state,log:lg};
   if(me.role!=='player')return {...state,log:lg,bank:{}};   // 题库（含答案）只给判官和总控
   use(state);const p=state.players.find(x=>x.id===me.pid);
-  return {...state,bank:{},log:state.log.filter(isBcast).slice(0,30),notices:state.notices.filter(n=>p&&matches(n,p)),
+  return {...state,bank:{},rules:{},log:state.log.filter(isBcast).slice(0,30),notices:state.notices.filter(n=>p&&matches(n,p)),
     players:state.players.map(x=>x.id===me.pid?x:{...x,hist:[],puz:[]}),auc:hideBids(state,me.pid)};
 }
 
-export {noticeStale,staffSees,puzCode,timeUp,marketShut,needsReset,whyNotEnter,eliminate,soup,puzInfo,finalMiss,qualifies,whyNotBid,bidOrder,lotLeft,lotState,
+export {roomRule,noticeStale,staffSees,puzCode,timeUp,marketShut,needsReset,whyNotEnter,eliminate,soup,puzInfo,finalMiss,qualifies,whyNotBid,bidOrder,lotLeft,lotState,
   ranking,suitsOf,stLabel,inMk,pl,nm,matches,targetLabel,room,fmt,esc,log,no,
   OFF_KINDS,ROOMS,SUITS,GATES,FINAL_SCORE,CHIP_START,CHIP_GOAL,RANSOM,PUZ_PTS,PUZ_CAP,GATE_WIN,GATE_COIN,ROOM_CAP0,DEMOS};

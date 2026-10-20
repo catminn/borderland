@@ -280,7 +280,7 @@ textarea.in{height:auto;min-height:90px;padding:10px 12px;line-height:1.6;resize
 .stage>.left,.stage>.right{position:relative;z-index:1}
 .stage .left{display:flex;flex-direction:column;gap:40px;min-height:0}
 .stage .ttl{font-family:var(--disp);font-size:104px;line-height:1;letter-spacing:.04em}
-.stage .en{font-size:22px;color:var(--sub);letter-spacing:.15em;border-bottom:4px solid var(--accent);padding-bottom:16px;display:inline-block}
+.stage .en{font-size:22px;color:var(--sub);letter-spacing:.15em}
 .stage .clock{border-top:4px solid var(--accent);padding-top:20px;display:flex;flex-direction:column;gap:12px}
 .stage .cap{font-size:22px;color:var(--sub);letter-spacing:.3em}
 .stage .ck{font:800 86px var(--mono);line-height:1;color:var(--accent)}
@@ -1551,3 +1551,63 @@ body .room.mine :is(.cd,.pt){color:var(--ink)}
 
 /* Dealer 页房间规则：保留换行 */
 .rule.rtx{white-space:pre-line;overflow-wrap:anywhere}
+
+/* ===== 大屏版式（2026-10-20 重排，放最后，覆盖前面的大屏字号）=====
+   桌面 1920 舞台，五级字号，各司其职：
+   20 辅助（时间戳、人数、房间号） · 26 小标题（展示字体、淡色、统一样式） · 32 内容（排行、播报正文、房间状态）
+   · 88 房间牌 / 96 标题 · 116 时钟。版块之间 44，标题和内容之间 14，行与行之间靠细线和留白分开。 */
+@media (min-width:820px){
+  body .stage{padding:56px 64px;gap:60px;grid-template-columns:480px minmax(0,1fr)}
+  body .stage .left{gap:44px}
+  body .stage .right{gap:44px}
+  /* 标题 */
+  body .stage .hd{display:flex;flex-direction:column;gap:14px}
+  body .stage .ttl{font-size:96px;letter-spacing:.06em}
+  body .stage .en{font-size:20px;letter-spacing:.32em}
+  /* 小标题：同一个样式 */
+  body .stage .cap,body .stage .rh b{font-family:var(--disp);font-weight:400;font-size:26px;letter-spacing:.24em;color:var(--sub)}
+  body .stage .rh{gap:28px;padding-bottom:6px}
+  body .stage .rh span{font-size:20px;font-weight:500;color:var(--mute);letter-spacing:.06em}
+  /* 时钟 */
+  body .stage .clock{border-top:3px solid var(--accent);padding-top:22px;gap:10px}
+  body .stage .ck{font-size:116px;letter-spacing:-.02em}
+  /* 鬼门开 */
+  body .stage .gbox{padding:20px 22px 22px;gap:16px}
+  body .stage .gbox .gh{font-size:26px;letter-spacing:.06em}
+  body .stage .gbox .gh b{font-size:26px;letter-spacing:.24em}
+  body .stage .gbox .sl{font-size:22px;padding:12px 14px;gap:6px}
+  body .stage .gbox .sl span{font-size:18px}
+  /* 全场播报：时间小一号、淡色，正文常规粗细，条与条之间留白 */
+  body .stage .cast .cap{padding-bottom:14px}
+  body .stage .cast .bc{padding:16px 0;font-size:26px;line-height:1.45}
+  body .stage .cast .bc .t{font:500 20px var(--mono);color:var(--mute);margin-right:.7em}
+  body .stage .cast .bc .x{font-size:26px;font-weight:500}
+  /* 冥币排行 */
+  body .stage .plist{height:400px;grid-template-rows:repeat(5,80px);gap:0 56px}
+  body .stage .prow{padding:0 4px;align-items:center;grid-template-columns:44px minmax(0,1fr) auto 120px;gap:20px}
+  body .stage .prow :is(.rk,.who span,.su4,.sc){font-size:32px}
+  body .stage .prow .rk{font-size:26px}
+  body .stage .prow .who b{font-size:22px}
+  body .stage .prow .su4{font-size:26px}
+  /* 房间卡：牌最大；右上房间号小、分值中；底部状态和人数 */
+  body .stage .rgrid{gap:22px}
+  body .stage .room{padding:20px 24px 18px;gap:12px}
+  body .stage .room .cd{font-size:88px}
+  body .stage .room .rr{gap:4px}
+  body .stage .room .pt{font-size:32px}
+  body .stage .room .pt.lc{font-size:20px;font-weight:700;letter-spacing:.08em}
+  body .stage .room .bt{gap:6px}
+  body .stage .room :is(.on,.idle,.rs,.rtm){font-size:26px}
+  body .stage .room .np,body .stage .room .idle.okk{font-size:22px}
+}
+/* 手机竖排大屏：同样的层级，缩小版 —— 13 辅助 · 15 小标题（展示字体、淡色） · 15 内容 · 30 房间牌 · 44 时钟 */
+@media (max-width:819px){
+  body .stage .cap,body .stage .rh b{font-family:var(--disp);font-weight:400;font-size:15px;letter-spacing:.2em;color:var(--sub)}
+  body .stage .rh{gap:2px 14px;padding-bottom:2px}
+  body .stage .rh span{font-size:13px;font-weight:500;color:var(--mute)}
+  body .stage .gbox .gh,body .stage .gbox .gh b{font-size:15px}
+  body .stage .gbox .gh b{letter-spacing:.2em}
+  body .stage .room .pt.lc{font-size:12px;letter-spacing:.06em}
+  body .stage .prow .who b{font-size:13px}
+}
+.rulein{width:100%;min-height:260px;resize:vertical;font:inherit;font-size:16px;line-height:1.6;padding:12px 14px}

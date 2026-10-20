@@ -280,7 +280,12 @@ function viewDealer(){
   }
   const info='<div class="pn" style="gap:14px"><h2 class="sh">入场</h2>'
     +'<div class="rwl"><span><b class="acc">赢</b> '+(r.solo?'独自通关 +'+r.solo+'，带人通关各 +'+r.n*100:'+'+r.n*100)+' 冥币 + '+r.suit+'</span><span><b class="red">输</b> 进鬼市，原地等黑白无常</span><span class="sub">中途放弃算输，每人每间只能成功一次</span></div>'+entry+'</div>';
-  const rulePn=r.rule?'<div class="pn" style="gap:10px"><h2 class="sh">规则</h2><div class="rule rtx">'+esc(r.rule)+'</div></div>':'';
+  // 规则：Dealer 自己能改（点「修改」→ 文本框 → 保存；清空保存 = 恢复原文）
+  const rTxt=R.roomRule(r.id),rEd=ui.ruleEd===r.id,rMod=!!(S.rules&&S.rules[r.id]);
+  const rulePn='<div class="pn" style="gap:10px"><div class="shrow"><h2 class="sh">规则</h2>'+(rEd?'':'<button class="btn-line" data-a="ruleed">修改</button>')+'</div>'
+    +(rEd?'<textarea class="in rulein" id="rulein" data-m="ruleTx" rows="12" placeholder="清空后保存 = 恢复原文">'+esc(ui.ruleTx)+'</textarea>'
+      +'<div class="btns"><button class="btn-main" data-a="rulesave">保存</button><button class="btn-line" data-a="rulecancel">取消</button>'+(rMod?'<button class="btn-line" data-a="rulereset">恢复原文</button>':'')+'</div>'
+      :(rTxt?'<div class="rule rtx">'+esc(rTxt)+'</div>':'<span class="muted">还没有规则，点「修改」写一份</span>'))+'</div>';
   // 结算：每人一行 赢 / 输（中途放弃算输）
   const done=ui.settled&&ui.settled.rid===r.id&&st==='reset';
   Object.keys(ui.res).forEach(id=>{if(!x.ps.includes(id))delete ui.res[id];});
@@ -1146,6 +1151,9 @@ document.addEventListener('click',e=>{
   else if(a==='room'){ui.room=v;ui.ent='';ui.res={};ui.settled=null;ui.kickAsk=null;}
   else if(a==='enter'){const pids=parseIds(ui.ent);send({type:'enter',rid:ui.room,pids},()=>{ui.ent='';ui.settled=null;});}
   else if(a==='res'){ui.res[b.dataset.t]=ui.res[b.dataset.t]===v?undefined:v;}
+  else if(a==='ruleed'){ui.ruleEd=ui.room;ui.ruleTx=R.roomRule(ui.room);}
+  else if(a==='rulecancel'){ui.ruleEd=null;}
+  else if(a==='rulesave'||a==='rulereset'){const rid=ui.ruleEd,el=$('#rulein'),t=a==='rulereset'?'':(el?el.value:ui.ruleTx);send({type:'setrule',rid,text:t},res=>{if(res&&res.ok)ui.ruleEd=null;});}
   else if(a==='resall'){const x=S.rooms.find(y=>y.id===ui.room);x.ps.forEach(id=>{ui.res[id]=v;});}
   else if(a==='kickask'){ui.kickAsk=v;}
   else if(a==='kickno'){ui.kickAsk=null;}

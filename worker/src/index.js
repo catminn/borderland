@@ -337,7 +337,7 @@ export class Game extends DurableObject {
       }
       case 'admin.reset': {
         await this.snapshot('重置前');
-        const bank = this.S.bank; this.S = R.newGame(a.demo || false); this.S.now = Date.now(); if (bank) this.S.bank = bank;   // 题库不随重置清掉
+        const bank = this.S.bank, rules = this.S.rules; this.S = R.newGame(a.demo || false); this.S.now = Date.now(); if (bank) this.S.bank = bank; if (rules) this.S.rules = rules;   // 题库不随重置清掉
         this.clock = { running: false, base: a.demo ? this.S.t : 0, at: Date.now() };
         return ok(a.demo ? '已载入演示数据（计时暂停）' : '已重置为空白游戏（计时暂停）');
       }
@@ -368,13 +368,13 @@ export class Game extends DurableObject {
       case 'admin.restore': {
         if (this.inSandbox) {
           const D = this.inSandbox, x = D.snaps.find(y => 's' + y.at === String(a.key)); if (!x) return R.no('找不到这个备份');
-          await this.snapshot('恢复前'); const bank = this.S.bank; this.S = JSON.parse(JSON.stringify(x.S)); if (bank) this.S.bank = bank; this.clock = { ...x.clock, running: false, base: x.t, at: Date.now() };
+          await this.snapshot('恢复前'); const bank = this.S.bank, rules = this.S.rules; this.S = JSON.parse(JSON.stringify(x.S)); if (bank) this.S.bank = bank; if (rules) this.S.rules = rules; this.clock = { ...x.clock, running: false, base: x.t, at: Date.now() };
           return ok('已恢复到备份（计时暂停，确认无误后再开始）');
         }
         const snap = await this.ctx.storage.get(String(a.key || ''));
         if (!snap || !String(a.key).startsWith('snap:')) return R.no('找不到这个备份');
         await this.snapshot('恢复前');
-        const bank = this.S.bank; this.S = snap.S; if (bank) this.S.bank = bank; this.clock = { ...snap.clock, running: false, base: snap.t, at: Date.now() };
+        const bank = this.S.bank, rules = this.S.rules; this.S = snap.S; if (bank) this.S.bank = bank; if (rules) this.S.rules = rules; this.clock = { ...snap.clock, running: false, base: snap.t, at: Date.now() };
         return ok('已恢复到备份（计时暂停，确认无误后再开始）');
       }
     }
