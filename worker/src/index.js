@@ -246,15 +246,17 @@ export class Game extends DurableObject {
 
   broadcast(which) {
     const base = { t: 'state', clock: this.clock, now: Date.now() };
-    const staff = JSON.stringify({ ...base, S: R.viewFor(this.S, { role: 'ctrl' }) });
+    const staff = JSON.stringify({ ...base, S: R.viewFor(this.S, { role: 'ctrl' }) });   // 总控 / 判官 / 开发者（含题库）
+    let lite = null;   // 其他工作人员：不含题库
+    const liteMsg = () => lite || (lite = JSON.stringify({ ...base, S: R.viewFor(this.S, { role: 'dealer' }) }));
     const sbD = which && this.Ds[which] ? this.Ds[which] : null, sbox = sbD ? JSON.stringify({ t: 'state', clock: sbD.clock, now: Date.now(), S: R.viewFor(sbD.S, { role: 'ctrl' }) }) : '';
     for (const ws of this.ctx.getWebSockets()) {
       const s = this.sessionOf(ws.deserializeAttachment()?.token);
       if (!s) { try { ws.close(4001, 'login expired'); } catch { /* ignore */ } continue; }
       const box = this.sbKey(s);
       if (box ? box !== which : !!which) continue;   // real-game changes go to real sockets; a shared-demo change goes only to sockets on that 展示 PIN's game
-      if (box) { try { ws.send(s.demo || (s.role !== 'player' && s.role !== 'screen') ? sbox : JSON.stringify({ t: 'state', clock: sbD.clock, now: Date.now(), S: R.viewFor(sbD.S, s) })); } catch { /* socket gone */ } continue; }
-      try { ws.send(s.role === 'player' || s.role === 'screen' ? JSON.stringify({ ...base, S: R.viewFor(this.S, s) }) : staff); } catch { /* socket gone */ }
+      if (box) { try { ws.send(s.demo || s.role === 'ctrl' || s.role === 'judge' ? sbox : JSON.stringify({ t: 'state', clock: sbD.clock, now: Date.now(), S: R.viewFor(sbD.S, s) })); } catch { /* socket gone */ } continue; }
+      try { ws.send(s.role === 'player' || s.role === 'screen' ? JSON.stringify({ ...base, S: R.viewFor(this.S, s) }) : ['ctrl', 'judge', 'dev'].includes(s.role) ? staff : liteMsg()); } catch { /* socket gone */ }
     }
   }
 
@@ -335,7 +337,7 @@ export class Game extends DurableObject {
       }
       case 'admin.reset': {
         await this.snapshot('重置前');
-        this.S = R.newGame(a.demo || false); this.S.now = Date.now();
+        const bank = this.S.bank; this.S = R.newGame(a.demo || false); this.S.now = Date.now(); if (bank) this.S.bank = bank;   // 题库不随重置清掉
         this.clock = { running: false, base: a.demo ? this.S.t : 0, at: Date.now() };
         return ok(a.demo ? '已载入演示数据（计时暂停）' : '已重置为空白游戏（计时暂停）');
       }
@@ -366,13 +368,13 @@ export class Game extends DurableObject {
       case 'admin.restore': {
         if (this.inSandbox) {
           const D = this.inSandbox, x = D.snaps.find(y => 's' + y.at === String(a.key)); if (!x) return R.no('找不到这个备份');
-          await this.snapshot('恢复前'); this.S = JSON.parse(JSON.stringify(x.S)); this.clock = { ...x.clock, running: false, base: x.t, at: Date.now() };
+          await this.snapshot('恢复前'); const bank = this.S.bank; this.S = JSON.parse(JSON.stringify(x.S)); if (bank) this.S.bank = bank; this.clock = { ...x.clock, running: false, base: x.t, at: Date.now() };
           return ok('已恢复到备份（计时暂停，确认无误后再开始）');
         }
         const snap = await this.ctx.storage.get(String(a.key || ''));
         if (!snap || !String(a.key).startsWith('snap:')) return R.no('找不到这个备份');
         await this.snapshot('恢复前');
-        this.S = snap.S; this.clock = { ...snap.clock, running: false, base: snap.t, at: Date.now() };
+        const bank = this.S.bank; this.S = snap.S; if (bank) this.S.bank = bank; this.clock = { ...snap.clock, running: false, base: snap.t, at: Date.now() };
         return ok('已恢复到备份（计时暂停，确认无误后再开始）');
       }
     }

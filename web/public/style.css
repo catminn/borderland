@@ -95,6 +95,11 @@ nav.pages button[aria-selected="true"],.subtabs.top button[aria-selected="true"]
 .pn{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px 22px;display:flex;flex-direction:column;gap:12px;min-width:0}
 .offpage{margin-bottom:14px;position:relative;z-index:2}   /* 离线记录盖在灯笼 / 面具上面 */
 @media (min-width:720px){.offpage~.lantern-band{position:absolute;left:0;top:var(--lfy,64px);margin:0;z-index:1}}   /* 有离线记录时灯笼不占位置，留在页头下面被面板盖住，下面的内容跟在面板后面 */.offp{border:2px solid var(--warn)}.offp .offf{grid-template-columns:minmax(0,1fr) minmax(0,1.5fr)}.offp .offf .fld>.in{margin-top:6px}
+.fgrid.pz2{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.pzq,.gref{display:flex;flex-direction:column;gap:6px;font-weight:500}.pzq{color:var(--ink)}
+.pzr{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:baseline}
+.pzr .k{font-size:13px;font-weight:700;color:var(--sub);white-space:nowrap}.pzr>span:not(.k){white-space:pre-wrap;line-height:1.55}.pzr b{font-size:17px;font-weight:900}
+.gref b{font-weight:800}
 .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,max(380px,calc(50% - 6px))),1fr));gap:12px;align-items:start}   /* 最多两列：宽屏左右各一半，窄屏一列 */
 .pn h3{margin:0;font-size:17px;font-weight:900}
 .lbl{font-size:14px;font-weight:700;color:var(--sub)}
@@ -1214,6 +1219,7 @@ html{scrollbar-gutter:stable}
 .mrow .give button{min-height:48px;padding:0 16px;background:var(--accent);color:var(--accent-ink);border:none;font-size:15px;font-weight:900;border-radius:10px;white-space:nowrap}
 .mrow .give button:disabled{background:var(--track);color:var(--sub)}
 .mkbtns .btn-main{flex:1}
+.mrow .mkbtns .btn-main{background-image:none;-webkit-mask:none;mask:none;padding:0 8px}   /* 两个并排的按钮太窄，去掉票孔装饰，免得压住字 */
 .btn-main.red{background:var(--red);border-color:var(--red);color:#fff}
 /* 玩家：取昵称、拍卖页 */
 .nickp{display:grid;place-items:center;min-height:60vh}

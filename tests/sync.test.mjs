@@ -61,7 +61,7 @@ await ack(player); await ack(ctrl);
 // judge publishes a gate -> player popup; staff popup (not the big screen)
 await judge.click('[data-a=dd][data-v="jg.gate"]'); await judge.click('[data-a=pick][data-k="jg.gate"][data-v=g1]'); await judge.click('[data-a=jgpub]');
 await player.waitForSelector('#modal .dlg', { timeout: 4000 }).catch(() => {});
-T('player popup after gate publish', (await player.locator('#modal').innerText()).includes('鬼门开 占位 1'));
+T('player popup after gate publish', (await player.locator('#modal').innerText()).includes('阎王点名'));
 await ack(player);
 await sleep(300); T('dealer and ctrl also get the gate popup, screen does not', await dealer.locator('[data-modal]').count() > 0 && await ctrl.locator('[data-modal]').count() > 0 && await screen.locator('[data-modal]').count() === 0);
 await ack(ctrl); await ack(judge); await ack(dealer); await ack(mengpo);
@@ -86,8 +86,12 @@ T('ctrl log updated live', (await text(ctrl)).includes('011 黑猫 第 1 个完�
 await ack(player); await ack(ctrl); await ack(judge); await ack(dealer); await ack(mengpo);
 
 // puzzles via the judge page
-{ await judge.fill('#pzp', '7'); await judge.click('[data-a=dd][data-v="pz.zid"]'); await judge.click('[data-a=pick][data-k="pz.zid"][data-v=z5]'); await sleep(200); await judge.click('[data-a=puz]'); await sleep(400);
-  T('puzzle redeemed by the judge (+100)', P_('007').puz.length === 1 && P_('007').score === 100); }
+await admin.act({ type: 'setbank', rows: [['5', '什么水果最忙', '芒果']] }); await sleep(300);
+T('puzzle bank reaches the judge but not dealers', Object.keys(J0.S.bank || {}).length === 1 && !Object.keys((await D('4H')).S.bank || {}).length);
+{ await judge.fill('#pzp', '7'); await judge.fill('#pzc', '5'); await sleep(300);
+  T('judge sees question and answer after typing the code', (await judge.locator('.pzq').innerText()).includes('芒果'));
+  await judge.click('[data-a=puz]'); await sleep(400);
+  T('puzzle redeemed by the judge (+100)', P_('007').puz.length === 1 && P_('007').score === 100 && P_('007').puz[0].title.includes('#5')); }
 
 // permissions
 const pc = await client(P.player);
@@ -140,10 +144,9 @@ const dealerOf = room => client(pinOf(p => p.role === 'dealer' && p.rooms[0] ===
     T('only wuchang picks up', !bd.ok && gd.ok && P_(v).st === 'picked'); }
   { const r = await wc.act({ type: 'checkin', pid: v }); await sleep(250); T('check-in alone keeps the player pending', r.ok && P_(v).st === 'picked' && !P_(v).chk.ok); }
   T('cannot confirm your own check-in', !(await wc.act({ type: 'confirm', pid: v })).ok);
-  { const r = await mp.act({ type: 'confirm', pid: v }); await sleep(250); T('the other side confirms: market, 200 chips', r.ok && P_(v).st === 'market' && P_(v).chips === 200); }
-  T('not enough chips to self-redeem', !(await mp.act({ type: 'redeem', pid: v })).ok);
-  await mp.act({ type: 'chips', pid: v, v: 580 });
-  { const r = await mp.act({ type: 'redeem', pid: v }); await sleep(200); T('self-redeem carries out up to 100', r.ok && P_(v).st === 'alive' && P_(v).score === 80); }
+  { const r = await mp.act({ type: 'confirm', pid: v }); await sleep(250); T('the other side confirms: market (wallet frozen)', r.ok && P_(v).st === 'market'); }
+  T('chips are physical: mengpo cannot record chips', !(await mp.act({ type: 'chips', pid: v, v: 580 })).ok);
+  { const sc = P_(v).score, r = await mp.act({ type: 'redeem', pid: v }); await sleep(200); T('self-redeem just unfreezes (no carry-out)', r.ok && P_(v).st === 'alive' && P_(v).score === sc); }
   d4.close(); }
 
 // ---- 晋级 + 拍卖, through the real server and the player phone ----
