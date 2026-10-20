@@ -158,8 +158,8 @@ const dealerOf = room => client(pinOf(p => p.role === 'dealer' && p.rooms[0] ===
   await sleep(200);
   T('qualification: 4 suits + 2000', R_q('002') && R_q('003') && !R_q('001'));
   await jd.act({ type: 'auc.add', f: { name: '盲盒', start: 100 } }); await jd.act({ type: 'auc.add', f: { name: '大奖', start: 0, big: true } });
-  T('judge cannot open before lock', !(await jd.act({ type: 'auc.open', id: 'L1', secs: 60 })).ok);
-  T('judge locks the list', (await jd.act({ type: 'lockfinal' })).ok && (await sleep(200), admin.S.fin.length === 2));
+  T('judge cannot open before anyone is promoted', !(await jd.act({ type: 'auc.open', id: 'L1', secs: 60 })).ok);
+  T('ctrl one-click promotes qualified players', (await admin.act({ type: 'finalall' })).ok && (await sleep(200), admin.S.fin.length === 2));
   T('judge opens with a countdown; big screen switches', (await jd.act({ type: 'auc.show', id: 'L1' })).ok && (await jd.act({ type: 'auc.open', id: 'L1', secs: 90 })).ok && (await sleep(200), admin.S.auc.screen === 'auction'));
   await admin.act({ type: 'nick', pid: '003', nick: '出价人' });
   const pp = await page(pinOf(p => p.pid === '003'), 390), sp = await page(P.screen, 1100); await ack(pp);

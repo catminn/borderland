@@ -51,7 +51,7 @@ const now=()=>S.now||0;           // 真实时间（毫秒），服务器在每�
 function mkPlayer(i){return {id:pidOf(i),nick:'',on:false,st:'alive',score:0,cards:[],cleared:[],inRoom:null,hist:[],puz:[],
   outAt:null,inAt:null,pickAt:null,at:'',chk:null,won:null};}
 function init(){
-  S={v:3,t:0,now:0,bank:{},dur:DUR0,cap:ROOM_CAP0,capOn:false,gp:null,fin:null,log:[],notices:[],nid:1,
+  S={v:3,t:0,now:0,bank:{},dur:DUR0,cap:ROOM_CAP0,capOn:false,gp:null,fin:[],log:[],notices:[],nid:1,
      rooms:ROOMS.map(r=>({id:r.id,st:'open',at:0,ps:[]})),players:[],
      auc:{lots:[],cur:null,screen:'game',lid:1}};
   for(let i=1;i<=N_PLAYERS;i++)S.players.push(mkPlayer(i));
@@ -69,7 +69,7 @@ const ranking=()=>active().slice().sort((a,b)=>b.score-a.score||suitsOf(b).lengt
 // ---------- 通知 ----------
 function matches(n,p){
   switch(n.target){case 'all':case 'everyone':return true;case 'player':return n.ids.includes(p.id);
-  case 'market':return p.st==='market';case 'alive':return p.st==='alive';case 'final':return !!(S.fin&&S.fin.includes(p.id));}return false;}
+  case 'market':return p.st==='market';case 'alive':return p.st==='alive';case 'final':return fins().includes(p.id);}return false;}
 // 已经结束的鬼门开不再弹全屏
 const noticeStale=n=>n.sub==='gate'&&!(S.gp&&S.gp.nid===n.id);
 const staffSees=n=>(n.target==='staff'||n.target==='everyone')&&n.sub!=='gate';   // 鬼门开不弹给工作人员
@@ -88,7 +88,7 @@ function publish(f){f=f||{};const str=(v,n)=>String(v==null?'':v).slice(0,n);f={
   }else{
     if(!['all','player','alive','market','staff','everyone','final'].includes(target))return no('发布对象不对');
     if(!f.title.trim())return no('先写标题');
-    if(target==='final'&&!S.fin)return no('晋级名单还没锁定，发给「晋级资格者」没有人能收到');
+    if(target==='final'&&!fins().length)return no('还没有人晋级，发给「晋级资格者」没有人能收到');
     if(target==='player'){const want=Array.isArray(f.players)?f.players:f.player?[f.player]:[];ids=[...new Set(want)].filter(id=>pl(id));if(!ids.length)return no('先选玩家');}
   }
   pushNotice({kind:f.kind,sub,title:f.title.trim(),body:f.body.trim(),target,ids,mins:Math.max(0,+f.mins||0)});
@@ -106,7 +106,6 @@ function whyNotEnter(pid,rid){
   const p=pl(pid),r=S.rooms.find(x=>x.id===rid);
   if(!p)return '没有这个编号';if(!r)return '没有这个房间';
   if(p.st!=='alive')return '不在场（'+stLabel(p)+'）';
-  if(S.fin)return '已进入晋级阶段';
   if(timeUp())return '时间到，房间已关闭';
   if(r.st==='reset')return '房间重置中';
   if(p.inRoom)return p.inRoom===rid?'已经在这间房里':'正在 '+room(p.inRoom).card;
@@ -256,16 +255,17 @@ function finalMiss(p){const m=[],miss=SUITS.filter(x=>!p.cards.includes(x));
   if(p.score<FINAL_SCORE)m.push('冥币 '+p.score+' / '+FINAL_SCORE);
   return m;}
 const qualifies=p=>!finalMiss(p).length;
-// 总控锁定资格名单（时间截止后，8:00–8:15 验证）；之后可以手动加 / 减
-function lockFinal(){if(S.fin)return no('资格名单已经锁定');S.fin=active().filter(qualifies).map(p=>p.id);
-  S.fin.forEach(id=>tell(id,'获得晋级资格',FINAL_MSG,'final'));
-  log('晋级资格名单锁定：'+S.fin.length+' 人','back',1);return ok('已锁定 '+S.fin.length+' 人');}
-function unlockFinal(){if(!S.fin)return no('还没有锁定');if(S.auc.lots.some(l=>l.st!=='wait'))return no('拍卖已经开始，不能解锁');S.fin=null;log('总控解锁晋级资格名单');return ok('已解锁');}
-function setFinal(pid,on){if(!S.fin)return no('先锁定资格名单');const p=pl(pid);if(!p)return no('没有这个编号');
-  const has=S.fin.includes(pid);if(!!on===has)return no(p.id+(has?' 已在名单里':' 本来就不在名单里'));
-  if(on){S.fin.push(pid);tell(pid,'获得晋级资格',FINAL_MSG,'final');log('总控把 '+nm(p)+' 加入晋级名单（'+(finalMiss(p).join('，')||'条件已满足')+'）');}
-  else{S.fin=S.fin.filter(x=>x!==pid);log('总控把 '+nm(p)+' 移出晋级名单');}
-  return ok(on?'已加入':'已移出');}
+// 晋级名单（2026-10-20 起没有「锁定」）：S.fin 一直是数组。总控在生死簿里一键晋级所有符合条件的人，
+// 也可以单个晋级（不符合条件也行，界面上先提示）或取消晋级。只有名单里的人能在拍卖出价。
+const fins=()=>S.fin||(S.fin=[]);
+function setFinal(pid,on){const p=pl(pid);if(!p)return no('没有这个编号');
+  const has=fins().includes(pid);if(!!on===has)return no(p.id+(has?' 已经晋级':' 本来就没有晋级'));
+  if(on){S.fin.push(pid);tell(pid,'获得晋级资格',FINAL_MSG,'final');log('总控让 '+nm(p)+' 晋级'+(qualifies(p)?'':'（'+finalMiss(p).join('，')+'）'),'back',1);}
+  else{S.fin=S.fin.filter(x=>x!==pid);log('总控取消 '+nm(p)+' 的晋级');}
+  return ok(on?p.id+' 已晋级':p.id+' 已取消晋级');}
+function finalAll(){const add=active().filter(p=>qualifies(p)&&!fins().includes(p.id));if(!add.length)return no('没有新的符合条件的人');
+  add.forEach(p=>{S.fin.push(p.id);tell(p.id,'获得晋级资格',FINAL_MSG,'final');});
+  log(add.length+' 人晋级：'+add.map(nm).join('、'),'back',1);return ok(add.length+' 人已晋级');}
 
 // ---------- 拍卖（判官主持） ----------
 // 拍品状态：wait 待拍 · open 出价中（倒计时，可暂停）· closed 已截止待揭晓 · done 已成交 · pass 流拍
@@ -284,7 +284,7 @@ function aucDel(id){const l=lot(id);if(!l)return no('没有这件拍品');if(l.s
   S.auc.lots=S.auc.lots.filter(x=>x!==l);if(S.auc.cur===id)S.auc.cur=null;return ok('已删除「'+l.name+'」');}
 function aucMove(id,d){const a=S.auc.lots,i=a.findIndex(l=>l.id===id),j=i+(d<0?-1:1);if(i<0||j<0||j>=a.length)return no('不能再移了');[a[i],a[j]]=[a[j],a[i]];return ok('');}
 function aucOpen(id,secs){const l=lot(id);if(!l)return no('没有这件拍品');if(l.st!=='wait')return no('这件拍品不是待拍状态（要重来请用「重拍」）');
-  if(!S.fin)return no('先由总控锁定晋级资格名单');
+  if(!fins().length)return no('还没有人晋级');
   const c=curLot();if(c&&(c.st==='open'||c.st==='closed'))return no('「'+c.name+'」还没结束');
   secs=Math.round(+secs);if(!(secs>=10&&secs<=3600))return no('倒计时要在 10 秒到 60 分钟之间');
   l.st='open';l.bids={};l.bad=[];l.win=null;l.price=0;l.secs=secs;l.end=now()+secs*1000;l.left=null;S.auc.cur=l.id;S.auc.screen='auction';
@@ -302,7 +302,7 @@ const lotState=l=>l&&l.st==='open'&&l.left==null&&now()>=l.end?'closed':l&&l.st;
 function whyNotBid(pid,l){const p=pl(pid);
   if(!l||lotState(l)!=='open')return '现在没有可以出价的拍品';
   if(l.left!=null)return '拍卖暂停中';
-  if(!S.fin||!S.fin.includes(pid))return '你没有晋级资格';
+  if(!fins().includes(pid))return '你没有晋级资格';
   if(!p||p.st!=='alive')return '你不在场';
   if(p.won)return '你已经拍到一件了（每人最多 1 件）';
   return null;}
@@ -312,7 +312,7 @@ function bid(pid,id,v){const l=lot(id),why=whyNotBid(pid,l);if(why)return no(why
   l.bids[pid]={v,t:now()};return ok('已出价 '+v+'（截止前可以改，以最后一次为准）');}
 // 排序：价高者先；同价先出价者先；剔除被作废的人、已不在晋级名单的人、拍到过别的拍品的人、钱不够的人
 function bidOrder(l){return Object.entries(l.bids).map(([pid,b])=>({pid,...b}))
-  .filter(b=>!l.bad.includes(b.pid)&&S.fin&&S.fin.includes(b.pid)&&pl(b.pid)&&!(pl(b.pid).won&&pl(b.pid).won!==l.id)&&pl(b.pid).score+(l.win===b.pid?l.price:0)>=b.v)
+  .filter(b=>!l.bad.includes(b.pid)&&fins().includes(b.pid)&&pl(b.pid)&&!(pl(b.pid).won&&pl(b.pid).won!==l.id)&&pl(b.pid).score+(l.win===b.pid?l.price:0)>=b.v)
   .sort((a,b)=>b.v-a.v||a.t-b.t);}
 function settle(l){const top=bidOrder(l)[0];
   if(!top){l.st='pass';l.win=null;l.price=0;log('「'+l.name+'」流拍','',1);return '流拍';}
@@ -399,7 +399,7 @@ const ROLE_LABEL={dealer:'Dealer',judge:'判官',mengpo:'孟婆',wuchang:'黑白
 const DEMO_NICK=['阿鬼','小白','无常','纸扎','孟孟','判判','铜钱','灯笼','彼岸','骨花','黑猫','红绸','书生','狐狸','小倩','钟馗','小青','白蛇','花脸','长舌',
   '阿飘','画皮','聂聂','宁采','燕赤','山魈','魍魉','魑魅','夜叉','罗刹','鬼火','冥灯','奈何','忘川','孟汤','黄泉'];
 // 三套演示数据（总控工具里「载入演示数据」可选）：start 开局 · mid 游戏中段 · final 时间截止后（晋级名单 + 拍卖）
-const DEMOS={start:'开局（T+5 分钟）',mid:'游戏中段（鬼门开进行中）',final:'晋级与拍卖（时间截止后）'};
+const DEMOS={start:'开局（T+5 分钟）',mid:'游戏中段（鬼门开进行中）',pre:'拍卖前（时间截止，还没晋级）',final:'晋级与拍卖（时间截止后）'};
 function demoBase(n){init();S.now=Date.parse('2026-10-31T23:00:00Z');S.players.slice(0,n).forEach((p,i)=>{p.nick=DEMO_NICK[i]||('玩家'+p.id);p.on=true;});}
 const demoLots=()=>{['第一件拍品','第二件拍品','第三件拍品','第四件拍品'].forEach(n=>aucAdd({name:n+'（占位）',desc:'盲盒',start:100}));aucAdd({name:'最终大奖（占位）',desc:'神秘大奖',start:300,big:true});};
 function seedStart(){
@@ -445,9 +445,9 @@ function seedMid(){
   S.t=M(43); log('演示数据（游戏中段）：第二次鬼门开进行中（已有 1 人完成），♦8、♠4、♠8 进行中，♣4 刚结算、重置中，鬼市 1 人，待接 1 人');
   demoLots();
 }
-function seedFinal(){
+// 时间截止后：一批人四花色 + 2000 冥币。pre = 还没人晋级、拍卖没开始；final = 已晋级，拍卖第 1 件已成交，第 2 件选中待开拍
+function seedFinal(pre){
   demoBase(40);
-  // 时间截止后：一批人四花色 + 2000 冥币，资格名单已锁定；拍卖第 1 件已成交，第 2 件选中待开拍
   let k=7;const rnd=()=>(k=(k*1103515245+12345)%2147483648)/2147483648;
   const play=(pid,rid,res)=>{if(whyNotEnter(pid,rid))return;enterRoom(rid,[pid]);finishRoom(rid,{[pid]:res});resetDone(rid);};
   const plans={'001':['8S','8H','8C','8D'],'002':['8S','8H','8C','4D','4S'],'003':['4S','8H','8C','8D'],'004':['8S','4H','8C','8D'],'005':['4S','4H','4C','4D','8S','8D'],
@@ -457,20 +457,21 @@ function seedFinal(){
   S.players.slice(8,40).forEach(p=>{const n=1+Math.floor(rnd()*4);for(let i=0;i<n;i++){S.t+=55;play(p.id,ROOMS[Math.floor(rnd()*8)].id,rnd()<.7?'win':'lose');
     if(p.st==='out'){pickup(p.id);checkIn(p.id,'wuchang');confirmIn(p.id,'mengpo');if(rnd()<.6){rnd();selfRedeem(p.id);}}}});
   ['009','015','022','030'].forEach((id,i)=>{puzRedeem(id,'1');puzRedeem(id,'2');});
-  S.t=7300; lockFinal();
-  demoLots();
+  S.t=7300; demoLots();
+  if(pre){S.t=7320;log('演示数据（拍卖前）：时间已截止，'+active().filter(qualifies).length+' 人符合晋级条件，还没晋级');return;}
+  finalAll();
   const ids=S.fin.slice();
   aucOpen('L1',120);[[ids[0],900],[ids[1],1200],[ids[2],1200],[ids[3],500]].forEach(([pid,v],i)=>{if(pid){S.now+=1000;bid(pid,'L1',v);}});
   S.now+=5000;aucTime('close','L1');aucReveal('L1');
   S.auc.cur='L2';S.auc.screen='auction';
-  S.t=7500; log('演示数据（晋级与拍卖）：资格名单已锁定 '+S.fin.length+' 人，第 1 件已成交，第 2 件已选中、等判官开拍');
+  S.t=7500; log('演示数据（晋级与拍卖）：'+S.fin.length+' 人已晋级，第 1 件已成交，第 2 件已选中、等判官开拍');
 }
-const seed=w=>w==='start'?seedStart():w==='final'?seedFinal():seedMid();
+const seed=w=>w==='start'?seedStart():w==='final'?seedFinal():w==='pre'?seedFinal(true):seedMid();
 export function newGame(demo){init();if(demo)seed(demo);return S;}
 
 // Which roles may perform each action. 总控只做自己页面上的事（冥币、名单、发布、设置），不代替其他工作人员操作。
 const ROLE_OK={enter:['dealer'],finish:['dealer'],resetdone:['dealer'],kick:['dealer'],
-  setcap:['ctrl'],setcapon:['ctrl'],setdur:['ctrl'],setscore:['ctrl'],setcards:['ctrl'],seton:['ctrl'],addplayers:['ctrl'],setbank:['ctrl'],lockfinal:['ctrl','judge'],unlockfinal:['ctrl'],final:['ctrl'],
+  setcap:['ctrl'],setcapon:['ctrl'],setdur:['ctrl'],setscore:['ctrl'],setcards:['ctrl'],seton:['ctrl'],addplayers:['ctrl'],setbank:['ctrl'],finalall:['ctrl'],final:['ctrl'],
   publish:['ctrl','judge'],revoke:['ctrl','judge'],
   gatewin:['judge'],gateunwin:['judge'],gatereward:['judge'],gateend:['judge'],puz:['judge'],puzundo:['judge'],
   pickup:['wuchang'],checkin:['wuchang','mengpo'],confirm:['wuchang','mengpo'],
@@ -500,8 +501,7 @@ export function apply(state,me,a){
     case 'seton':return setOn(a.pid,a.on);
     case 'addplayers':return addPlayers(a.n);
     case 'setbank':return setBank(a.rows);
-    case 'lockfinal':return lockFinal();
-    case 'unlockfinal':return unlockFinal();
+    case 'finalall':return finalAll();
     case 'final':return setFinal(a.pid,!!a.on);
     case 'publish':if(me.role==='judge'&&!(a.f&&a.f.kind==='鬼门开'))return no('判官只能发布鬼门开');return publish(a.f);
     case 'revoke':return revokeNotice(+a.nid);

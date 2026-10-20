@@ -104,8 +104,8 @@ fresh(); S.t = 7300;
 const q = (id, sc) => { const p = P(id); p.on = true; p.cards = ['♠', '♦', '♣', '♥']; p.score = sc; };
 q('001', 2500); q('002', 3000); q('003', 2000); q('004', 1999); P('005').on = true;
 T('资格条件', R.qualifies(P('001')) && R.qualifies(P('003')) && !R.qualifies(P('004')) && R.finalMiss(P('004'))[0].includes('1999'));
-T('锁定前不能开拍', (() => { A('judge', { type: 'auc.add', f: { name: '盲盒', start: 100 } }); return !A('judge', { type: 'auc.open', id: 'L1', secs: 60 }).ok; })());
-T('锁定资格名单', A('ctrl', { type: 'lockfinal' }).ok && S.fin.length === 3 && !S.fin.includes('004'));
+T('还没人晋级不能开拍', (() => { A('judge', { type: 'auc.add', f: { name: '盲盒', start: 100 } }); return !A('judge', { type: 'auc.open', id: 'L1', secs: 60 }).ok; })());
+T('一键晋级：只晋级符合条件的人', A('ctrl', { type: 'finalall' }).ok && S.fin.length === 3 && !S.fin.includes('004'));
 T('总控可以手动加人', A('ctrl', { type: 'final', pid: '004', on: true }).ok && S.fin.includes('004'));
 T('开拍（判官输入倒计时），大屏切到拍卖', A('judge', { type: 'auc.open', id: 'L1', secs: 60 }).ok && S.auc.screen === 'auction' && S.auc.cur === 'L1');
 const B = (pid, v) => A('player', { type: 'bid', id: 'L1', v }, { pid });
@@ -156,10 +156,11 @@ T('演示数据可以生成', (() => { const g = R.newGame(true); return g.playe
 fresh();
 T('总控改花色', A('ctrl', { type: 'setcards', pid: '001', cards: ['♥', '♠', 'x'] }).ok && P('001').cards.join('') === '♠♥' && S.log[0].text.includes('花色'));
 T('判官不能改花色', !A('judge', { type: 'setcards', pid: '001', cards: [] }).ok);
-{ for (const d of ['start', 'mid', 'final']) { const g = R.newGame(d), t = g.log.map(l => l.t).reverse(); T('演示数据时间顺序正确：' + d, t.every((x, i) => !i || x >= t[i - 1])); }
-  const g = R.newGame('start'); T('演示·开局：前 10 分钟、房间里有人、没有晋级名单', g.t < 600 && g.rooms.some(r => r.ps.length) && !g.fin); }
+{ for (const d of ['start', 'mid', 'pre', 'final']) { const g = R.newGame(d), t = g.log.map(l => l.t).reverse(); T('演示数据时间顺序正确：' + d, t.every((x, i) => !i || x >= t[i - 1])); }
+  const g = R.newGame('start'); T('演示·开局：前 10 分钟、房间里有人、没有晋级名单', g.t < 600 && g.rooms.some(r => r.ps.length) && !g.fin.length); }
 { const g = R.newGame('mid'); T('演示·中段：鬼门开进行中、鬼市有人', !!g.gp && g.gp.wins.length === 1 && g.players.some(p => p.st === 'market')); }
-{ const g = R.newGame('final'); R.use(g); T('演示·晋级与拍卖：时间已到、名单已锁、第 1 件成交、大屏在拍卖', R.timeUp() && g.fin.length >= 6 && g.auc.lots[0].st === 'done' && g.auc.cur === 'L2' && g.auc.screen === 'auction' && g.fin.every(id => R.qualifies(g.players.find(p => p.id === id)))); }
+{ const g = R.newGame('pre'); R.use(g); T('演示·拍卖前：时间已到、还没人晋级、符合条件的人已经够了', R.timeUp() && g.fin.length === 0 && g.players.some(R.qualifies)); }
+{ const g = R.newGame('final'); R.use(g); T('演示·晋级与拍卖：时间已到、已晋级、第 1 件成交、大屏在拍卖', R.timeUp() && g.fin.length >= 6 && g.auc.lots[0].st === 'done' && g.auc.cur === 'L2' && g.auc.screen === 'auction' && g.fin.every(id => R.qualifies(g.players.find(p => p.id === id)))); }
 T('newGame(true) = 中段', !!R.newGame(true).gp);
 // ---------- 离线补录 ----------
 fresh(); S.t = 1000;
