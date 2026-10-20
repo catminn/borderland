@@ -303,7 +303,7 @@ function viewDealer(){
     +'<span class="sum'+(ready?' ready':'')+'">'+summary+'</span>'
     +'<button class="btn-main'+(ready?' glow':'')+'" id="finbtn" data-a="finish"'+(ready?'':' disabled')+' style="min-height:60px;letter-spacing:.14em">结束并结算</button>'
     +'<span class="small center">结算后立即发放，房间随即进入重置，请先核对</span>')+'</div>';
-  return '<div class="page tabbed">'+rooms+hero+'<div class="cols-dealer">'+sec('dealer','info',info+rulePn)+sec('dealer','settle',settle)+'</div>'
+  return '<div class="page tabbed">'+rooms+hero+'<div class="cols-dealer">'+sec('dealer','info',info)+sec('dealer','settle',settle)+'</div>'+(rulePn?sec('dealer','info',rulePn):'')
     +sub('dealer',[['info','入场'],['settle','结算'+(x.ps.length?'（'+x.ps.length+'）':'')]])+'</div>';
 }
 
