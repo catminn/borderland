@@ -1413,3 +1413,13 @@ body .swrow small{font-size:13px}
   .ptr{font-size:15px}
   .btns .in{font-size:16px}
 }
+
+/* Dealer 页整理（2026-10-19）：输赢规则改成中性的一行，不再用红框；编号输入框占位字正常大小；起始房间名单格子一样高 */
+.rwl{display:flex;flex-wrap:wrap;gap:6px 20px;font-size:15px;padding:10px 0;border-top:1px solid var(--line3);border-bottom:1px solid var(--line3)}
+.rwl b{font-weight:900;margin-right:4px}.rwl .acc{color:var(--accent)}.rwl .red{color:var(--red)}.rwl .sub{color:var(--sub)}
+.entin::placeholder{font-size:15px;letter-spacing:0;font-family:var(--sans,inherit)}
+@media (min-width:720px){.entin{font-size:20px!important}}
+.cb.id .t{display:flex;flex-direction:column;align-items:center;gap:2px}
+.cb.id small{font:500 13px var(--sans,inherit);color:var(--sub)}
+/* 展示 PIN 只读：页头醒目的「只读模式」标 */
+header.top .devops.ro,header.top .devops.ro:disabled{opacity:1!important;border:1.5px solid var(--warn)!important;color:#1b1406!important;background:var(--warn)!important;background-image:none!important;font-weight:900;cursor:default}

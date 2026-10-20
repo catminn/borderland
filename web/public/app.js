@@ -208,7 +208,7 @@ function viewDealer(){
       +'<span class="st '+kc+'">'+(kc!=='rst'?'<i class="gd"></i>':'')+RST[q.st][0]+(q.ps.length?' '+q.ps.length+' 人':'')+'</span></button>';}).join('')+'</div></div>';
   const timer=st!=='open'?'已 '+mmss(Math.max(0,S.t-x.at)):'';
   const hero='<div class="hero"><div class="tile"><span class="tn">'+r.n+'</span><span class="ts '+(isRed(r.suit)?'sr':'')+'">'+r.suit+'</span></div>'
-    +'<div class="info"><div class="meta"><span class="typ">'+TYPE[r.suit]+'</span><span class="typ">'+(r.n===4?'简单':'困难')+'</span><span class="coins">+'+r.n*100+' <small>冥币</small></span></div>'
+    +'<div class="info"><div class="meta"><span class="typ">'+TYPE[r.suit]+'</span><span class="coins">+'+r.n*100+' <small>冥币</small></span></div>'
     +'<div class="name"><b>'+r.name+'</b>'+(ui.settled&&ui.settled.rid===r.id&&st==='reset'?'<span class="stamp">已结算</span>':'')+'</div>'
     +'<span class="status '+RST[st][1]+'">'+(RST[st][1]!=='rst'?'<i class="gd"></i>':'')+RST[st][0]+(x.ps.length?' · '+x.ps.length+(S.capOn?' / '+cap:'')+' 人':'')+(timer?'　'+timer:'')+'</span></div></div>';
   // 入场：输入编号（可多人），或点起始房间名单里的人
@@ -219,12 +219,12 @@ function viewDealer(){
     const ids=parseIds(ui.ent),bad=ids.map(id=>[id,whyNotEnter(id,r.id)]).filter(([,w])=>w),okIds=ids.filter(id=>!whyNotEnter(id,r.id)),full=x.ps.length+ids.length>cap;
     const early=S.t<START_ONLY?S.players.filter(p=>p.start===r.id&&p.st==='alive'&&!p.inRoom&&!p.cleared.includes(r.id)):[];
     entry='<label class="fld"><span>玩家编号（可一次输入多个，用空格隔开）</span><input class="in mono entin" id="entin" data-m="ent" value="'+esc(ui.ent)+'" inputmode="numeric" placeholder="例如 1 9 17" autocomplete="off"></label>'
-      +(early.length?'<span class="lbl">起始房间在这里的人（前 '+START_ONLY/60+' 分钟只能进起始房间）</span><div class="chips ids">'+early.map(p=>'<button class="cb id'+(ids.includes(p.id)?' on':'')+'" data-a="entadd" data-v="'+p.id+'" aria-pressed="'+ids.includes(p.id)+'"><span class="t">'+p.id+(p.nick?'<small>'+esc(p.nick)+'</small>':'')+'</span></button>').join('')+'</div>':'')
+      +(early.length?'<span class="lbl">起始房间在这里的人（前 '+START_ONLY/60+' 分钟只能进起始房间）</span><div class="chips ids">'+early.map(p=>'<button class="cb id'+(ids.includes(p.id)?' on':'')+'" data-a="entadd" data-v="'+p.id+'" aria-pressed="'+ids.includes(p.id)+'"><span class="t">'+p.id+'<small>'+(p.nick?esc(p.nick):'&nbsp;')+'</small></span></button>').join('')+'</div>':'')
       +(ids.length?'<div class="entl">'+ids.map(id=>{const p=pl(id),w=whyNotEnter(id,r.id);return '<span class="ent'+(w?' bad':'')+'"><b class="mono">'+id+'</b>'+(p&&p.nick?' '+esc(p.nick):'')+(w?'<small>'+esc(w)+'</small>':'')+'</span>';}).join('')+'</div>':'')
       +'<button class="btn-main" data-a="enter"'+(okIds.length&&!bad.length&&!full?'':' disabled')+'>'+(!ids.length?'先输入编号':bad.length?'有 '+bad.length+' 人不能入场':full?'超过房间容量 '+cap+' 人':'放行 '+ids.length+' 人入场')+'</button>';
   }
   const info='<div class="pn" style="gap:14px"><h2 class="sh">规则与入场</h2><div class="rule">'+r.rule+'</div>'
-    +'<div class="lot hot">赢：+'+r.n*100+' 冥币 + '+r.suit+'；输：进鬼市（原地等黑白无常）。每人每间房只能成功一次，失败可再挑战。</div>'+entry+'</div>';
+    +'<div class="rwl"><span><b class="acc">赢</b> +'+r.n*100+' 冥币 + '+r.suit+'</span><span><b class="red">输</b> 进鬼市，原地等黑白无常</span><span class="sub">每人每间只能成功一次</span></div>'+entry+'</div>';
   // 结算：每人一行 赢 / 输 / 离开
   const done=ui.settled&&ui.settled.rid===r.id&&st==='reset';
   Object.keys(ui.res).forEach(id=>{if(!x.ps.includes(id))delete ui.res[id];});
@@ -241,7 +241,7 @@ function viewDealer(){
     :[W.length?'赢 '+W.join('、')+'（各 +'+r.n*100+'）':'',Lo.length?'输 '+Lo.join('、')+'（进鬼市）':'',Le.length?'离开 '+Le.join('、'):''].filter(Boolean).join('；');
   const allBtns=x.ps.length>1?'<div class="btns"><button class="btn-line" data-a="resall" data-v="win">全部赢</button><button class="btn-line" data-a="resall" data-v="lose">全部输</button></div>':'';
   const resetBtn='<button class="btn-main glow" data-a="resetdone" style="min-height:60px;letter-spacing:.1em">重置完成，重新开放</button><span class="small center">'+(done?esc(ui.settled.msg)+'。':'')+'点了之后，玩家才能再进这间房</span>';
-  const settle='<div class="pn" style="gap:14px"><div class="shrow"><h2 class="sh">房间里的人</h2><span class="hint" style="font-weight:700;color:'+(ready?'var(--accent)':pending?'var(--warn)':'var(--sub)')+'">'+(st==='reset'?'重置中':!x.ps.length?'等待入场':pending?'还差 '+pending+' 人':'都选好了')+'</span></div>'
+  const settle='<div class="pn" style="gap:14px"><div class="shrow"><h2 class="sh">房间里的人</h2><span class="hint" style="font-weight:700;color:'+(ready?'var(--accent)':pending?'var(--sub)':'var(--sub)')+'">'+(st==='reset'?'重置中':!x.ps.length?'等待入场':pending?x.ps.length+' 人':'都选好了')+'</span></div>'
     +(st==='reset'?resetBtn:(rows?allBtns+'<div class="rteams">'+rows+'</div>':'<div class="empty">房间里还没有人</div>')
     +'<span class="sum'+(ready?' ready':'')+'">'+summary+'</span>'
     +'<button class="btn-main'+(ready?' glow':'')+'" id="finbtn" data-a="finish"'+(ready?'':' disabled')+' style="min-height:60px;letter-spacing:.14em">结束并结算</button>'
@@ -832,7 +832,7 @@ function render(){
   if(DEVME&&!entering){ME=devMe();if(FULL)S=ME.role==='player'||ME.role==='screen'?R.viewFor(FULL,ME):FULL;}
   if(DEVME&&DEVME.demo)ui.devOps=!!DEVME.dwrite;
   const da=$('#devas');da.hidden=!DEVME||entering;
-  const dop=$('#devops');dop.hidden=da.hidden;dop.disabled=!!(DEVME&&DEVME.demo);dop.textContent=ui.devOps?'可操作':'只读';dop.classList.toggle('on',ui.devOps);dop.setAttribute('aria-pressed',String(ui.devOps));
+  const dop=$('#devops');dop.hidden=da.hidden;dop.disabled=!!(DEVME&&DEVME.demo);dop.textContent=ui.devOps?'可操作':DEVME&&DEVME.demo?'只读模式':'只读';dop.classList.toggle('ro',!!(DEVME&&DEVME.demo&&!ui.devOps));dop.classList.toggle('on',ui.devOps);dop.setAttribute('aria-pressed',String(ui.devOps));
   if(DEVME&&!entering){const src=FULL||S,h='<optgroup label="工作人员">'+['ctrl','dealer','judge','mengpo','wuchang','screen'].map(r=>'<option value="'+r+'">'+ROLE_NAME[r]+'</option>').join('')+'</optgroup>'
       +(src?'<optgroup label="玩家">'+src.players.map(p=>'<option value="player:'+p.id+'">'+p.id+(p.nick?' '+esc(p.nick):'')+'</option>').join('')+'</optgroup>':'');
     if(da.dataset.h!==h){da.innerHTML=h;da.dataset.h=h;}if(da.value!==ui.as)da.value=ui.as;}
