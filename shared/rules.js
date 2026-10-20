@@ -27,7 +27,7 @@ const GATES=[
    rule:'每轮先给一条提示（如「阴阳颠倒，少者为生」），玩家 10 秒内选生门或死门，选错的出局观战，直到剩 3 人；最后超过 3 人就用一道抢答题决出。'}];
 const FINAL_MSG='你已获得晋级资格！请到大房间集合，参加鬼市大拍卖。';
 const FINAL_SCORE=2000;           // 时间截止时攒够 2000 冥币
-const CHIP_START=200, CHIP_GOAL=500;   // 鬼市用实体筹码（和冥币完全不互通，网站不记）：领 200，赢到 500 自赎，输光喝孟婆汤
+const CHIP_START=200, CHIP_GOAL=500, RANSOM=500;   // 鬼市用实体筹码（网站不记）：领 200，赢到 500 自赎，输光喝孟婆汤；在场的人花 500 冥币可以赎人
 const PUZ_PTS=100, PUZ_CAP=400;   // 解谜题 100 / 题，每人最多 400
 const GATE_WIN=3, GATE_COIN=300;  // 鬼门开：最先完成的 3 人，每人选 300 冥币 / 救一个人 / 拿一个花色
 const ROOM_CAP0=6, DUR0=7200, MARKET_GRACE=900;  // 房间默认容量；主游戏 2 小时；鬼市复活名额在时间截止后再留 15 分钟
@@ -120,18 +120,17 @@ function enterRoom(rid,pids){
   pids.forEach(id=>{const p=pl(id);r.ps.push(id);p.inRoom=rid;p.on=true;p.hist.push({rid,t0:S.t,res:null,pts:0});});
   log(pids.map(nameOf).join('、')+' 进入 '+room(rid).card+' '+room(rid).name);
   return ok(pids.length+' 人已入场 '+room(rid).card);}
-// 结算：每人 win / lose / leave（中途离开，不算输赢）。赢：+n×100 + 花色；输：进入淘汰流程（等黑白无常）。
+// 结算：每人 win / lose（中途放弃一律算输）。赢：+n×100 + 花色；输：进入淘汰流程（等黑白无常）。
 function finishRoom(rid,results){
   const r=room(rid),st=S.rooms.find(x=>x.id===rid);results=results||{};
   if(!st||!st.ps.length)return no('房间里没有人');
-  for(const id of st.ps)if(!['win','lose','leave'].includes(results[id]))return no('请为 '+nameOf(id)+' 选择赢 / 输 / 离开');
+  for(const id of st.ps)if(!['win','lose'].includes(results[id]))return no('请为 '+nameOf(id)+' 选择赢 / 输');
   const notes=[];
   for(const id of st.ps){const p=pl(id),res=results[id];p.inRoom=null;
     const h=p.hist.filter(x=>x.rid===rid&&x.res===null).pop()||(p.hist[p.hist.length]={rid,t0:st.at,res:null,pts:0});h.t1=S.t;h.res=res;
     if(res==='win'){const pts=r.n*100;p.score+=pts;h.pts=pts;if(!p.cleared.includes(rid))p.cleared.push(rid);if(!p.cards.includes(r.suit))p.cards.push(r.suit);
       log(nm(p)+' 赢下 '+r.card+'，+'+pts+' 冥币','back',1);notes.push(p.id+' 赢');}
-    else if(res==='lose'){eliminate(p,'挑战 '+r.card+' 失败',r.card+' '+r.name);notes.push(p.id+' 输');}
-    else{log(nm(p)+' 中途离开 '+r.card);notes.push(p.id+' 离开');}}
+    else{eliminate(p,'挑战 '+r.card+' 失败',r.card+' '+r.name);notes.push(p.id+' 输');}}
   st.ps=[];st.st='reset';st.at=S.t;
   return ok(r.card+' 结算完成：'+notes.join('，'));}
 function resetDone(rid){const r=S.rooms.find(x=>x.id===rid);if(!r)return no('没有这个房间');
@@ -178,6 +177,17 @@ function selfRedeem(pid){const p=pl(pid);if(!inMk(p))return no('该玩家不在�
   backAlive(p);log(nm(p)+' 在鬼市赢够筹码，自赎回到人间','back',1);
   tell(p.id,'自赎成功','你回到了人间，冥币已解冻。');
   return ok(p.id+' 已自赎');}
+// 赎人：任何在场的人花 500 冥币把鬼市里的人赎出来
+function ransom(pid,byId){const p=pl(pid),by=pl(byId);if(!inMk(p))return no('该玩家不在鬼市');
+  if(marketShut())return no('已停止复活');
+  if(!by)return no('先输入出钱人的编号');if(by.id===p.id)return no('不能自己赎自己');
+  if(by.st!=='alive')return no(by.id+' 不在场，不能出钱');
+  if(by.score<RANSOM)return no(by.id+' 只有 '+by.score+' 冥币，不够 '+RANSOM);
+  by.score-=RANSOM;backAlive(p);
+  log(nm(by)+' 花 '+RANSOM+' 冥币把 '+nm(p)+' 从鬼市赎了出来','back',1);
+  tell(p.id,'有人赎你','你被 '+nm(by)+' 花 '+RANSOM+' 冥币赎了出来，冥币已解冻。');
+  tell(by.id,'赎人成功','你花 '+RANSOM+' 冥币赎出了 '+nm(p)+'。');
+  return ok(by.id+' 赎出 '+p.id+'，扣 '+RANSOM+' 冥币');}
 // 孟婆汤：实体筹码输光 → 免费复活，但随机忘掉一个花色（rnd 只给测试用）
 function soup(pid,rnd){const p=pl(pid);if(!inMk(p))return no('该玩家不在鬼市');
   if(marketShut())return no('已停止发放复活名额');
@@ -337,7 +347,7 @@ function setDur(secs){secs=Math.round(+secs);if(!(secs>=60&&secs<=86400))return 
 // ---------- 离线补录 ----------
 // 工作人员断网时在自己页面上记的事，连上后一次性交给服务器。按记录先后执行；不按房间状态、时间、鬼市截止这些规则拦，
 // 记了什么就补什么（只防重复：同一间房已成功过不再加分，同一道题不重复兑换）。每一行单独成功或失败，互不影响。
-const OFF_KINDS={dealer:['room'],wuchang:['pickup','market'],mengpo:['market','redeem','soup'],judge:['puz','gate']};
+const OFF_KINDS={dealer:['room'],wuchang:['pickup','market'],mengpo:['market','redeem','ransom','soup'],judge:['puz','gate']};
 function toMarket(p){if(p.inRoom){const r=S.rooms.find(x=>x.id===p.inRoom);r.ps=r.ps.filter(x=>x!==p.id);if(!r.ps.length&&r.st==='play')r.st='open';p.inRoom=null;}
   if(p.st==='alive'){p.outAt=S.t;}p.st='market';p.inAt=S.t;if(p.pickAt==null)p.pickAt=S.t;p.chk={by:'off',ok:true};p.on=true;}
 function offRow(me,x,rnd){
@@ -346,19 +356,20 @@ function offRow(me,x,rnd){
   const tag='（离线补录）';
   if(x.k==='room'){const r=room(x.rid);if(!r)return no('没有这个房间');
     if(Array.isArray(me.rooms)&&!me.rooms.includes(r.id))return no('这个房间不归你管');
-    if(!['win','lose','leave'].includes(x.res))return no('结果不对');
+    if(!['win','lose'].includes(x.res))return no('结果不对');
     if(p.inRoom===r.id){const st=S.rooms.find(y=>y.id===r.id);st.ps=st.ps.filter(y=>y!==p.id);if(!st.ps.length&&st.st==='play')st.st='open';p.inRoom=null;}
     p.on=true;const h={rid:r.id,t0:S.t,t1:S.t,res:x.res,pts:0};p.hist.push(h);
     if(x.res==='win'){if(p.cleared.includes(r.id)){if(!p.cards.includes(r.suit))p.cards.push(r.suit);return ok(p.id+' 已成功过 '+r.card+'，没有再加分');}
       h.pts=r.n*100;p.score+=h.pts;p.cleared.push(r.id);if(!p.cards.includes(r.suit))p.cards.push(r.suit);
       log(nm(p)+' 赢下 '+r.card+'，+'+h.pts+' 冥币'+tag,'back',1);return ok(p.id+' 赢 '+r.card+' +'+h.pts);}
     if(x.res==='lose'){if(p.st!=='alive'){log(nm(p)+' 挑战 '+r.card+' 失败'+tag);return ok(p.id+' 输 '+r.card+'（本来就不在场）');}
-      eliminate(p,'挑战 '+r.card+' 失败'+tag,r.card+' '+r.name);return ok(p.id+' 输 '+r.card);}
-    log(nm(p)+' 中途离开 '+r.card+tag);return ok(p.id+' 离开 '+r.card);}
+      eliminate(p,'挑战 '+r.card+' 失败'+tag,r.card+' '+r.name);return ok(p.id+' 输 '+r.card);}}
   if(x.k==='pickup'){if(p.st==='market'||p.st==='picked')return ok(p.id+' 已经接到了');
     if(p.st==='alive')p.outAt=S.t;p.st='picked';p.pickAt=S.t;p.on=true;log('黑白无常接到 '+nm(p)+tag);return ok('接到 '+p.id);}
   if(x.k==='market'){if(p.st==='market')return ok(p.id+' 已经在鬼市');toMarket(p);log(nm(p)+' 进入鬼市，冥币冻结'+tag,'back');return ok(p.id+' 入鬼市');}
   if(x.k==='redeem'){if(p.st==='alive')return ok(p.id+' 已经在场');backAlive(p);log(nm(p)+' 自赎回到人间'+tag,'back',1);return ok(p.id+' 自赎');}
+  if(x.k==='ransom'){if(p.st==='alive')return ok(p.id+' 已经在场');const by=pl(String(x.by||''));if(!by)return no('没有出钱人编号 '+(x.by||'？'));if(by.id===p.id)return no('出钱人不能是自己');
+    const paid=Math.min(RANSOM,by.score);by.score-=paid;backAlive(p);log(nm(by)+' 花 '+paid+' 冥币把 '+nm(p)+' 从鬼市赎了出来'+tag,'back',1);return ok(by.id+' 赎出 '+p.id+(paid<RANSOM?'（只有 '+paid+'）':''));}
   if(x.k==='soup'){if(p.st==='alive')return ok(p.id+' 已经在场');let lost=null;
     if(p.cards.length){const i=Math.floor((rnd==null?Math.random():rnd)*p.cards.length)%p.cards.length;lost=p.cards.splice(i,1)[0];p.cleared=p.cleared.filter(id=>room(id).suit!==lost);}
     backAlive(p);log(nm(p)+' 喝下孟婆汤复活'+(lost?'，忘掉了 '+lost:'')+tag,'back',1);return ok(p.id+' 孟婆汤'+(lost?'，忘掉 '+lost:''));}
@@ -402,7 +413,7 @@ function seedMid(){
   S.t=M(1); enterRoom('4S',['001','009','017']); enterRoom('8S',['002','010']); enterRoom('4H',['003','011','019']);
   S.t=M(1,30); enterRoom('4C',['005','013']);
   fin('4H',{'003':'win','011':'win','019':'win'},6);
-  fin('4C',{'005':'win','013':'leave'},7);
+  fin('4C',{'005':'win','013':'win'},7);
   fin('4S',{'001':'win','009':'win','017':'lose'},8);
   S.t=M(9); pickup('017');
   fin('8S',{'002':'win','010':'lose'},9,30);
@@ -457,7 +468,7 @@ const ROLE_OK={enter:['dealer'],finish:['dealer'],resetdone:['dealer'],kick:['de
   publish:['ctrl','judge'],revoke:['ctrl','judge'],
   gatewin:['judge'],gateunwin:['judge'],gatereward:['judge'],gateend:['judge'],puz:['judge'],puzundo:['judge'],
   pickup:['wuchang'],checkin:['wuchang','mengpo'],confirm:['wuchang','mengpo'],
-  redeem:['mengpo'],soup:['mengpo'],
+  redeem:['mengpo'],ransom:['mengpo'],soup:['mengpo'],
   'auc.add':['judge'],'auc.edit':['judge'],'auc.del':['judge'],'auc.move':['judge'],'auc.open':['judge'],'auc.time':['judge'],'auc.reveal':['judge'],
   'auc.void':['judge'],'auc.redo':['judge'],'auc.screen':['judge'],'auc.show':['judge'],
   ack:['player'],nick:['player','ctrl'],bid:['player','judge'],offline:['dealer','judge','mengpo','wuchang']};
@@ -498,6 +509,7 @@ export function apply(state,me,a){
     case 'checkin':return checkIn(a.pid,me.role);
     case 'confirm':return confirmIn(a.pid,me.role);
     case 'redeem':return selfRedeem(a.pid);
+    case 'ransom':return ransom(a.pid,a.by);
     case 'soup':return soup(a.pid);
     case 'auc.add':return aucAdd(a.f);
     case 'auc.edit':return aucEdit(a.id,a.f);
@@ -534,4 +546,4 @@ export function viewFor(state,me){
 
 export {noticeStale,staffSees,puzCode,timeUp,marketShut,needsReset,whyNotEnter,eliminate,soup,puzInfo,finalMiss,qualifies,whyNotBid,bidOrder,lotLeft,lotState,
   ranking,suitsOf,stLabel,inMk,pl,nm,matches,targetLabel,room,fmt,esc,log,no,
-  OFF_KINDS,ROOMS,SUITS,GATES,FINAL_SCORE,CHIP_START,CHIP_GOAL,PUZ_PTS,PUZ_CAP,GATE_WIN,GATE_COIN,ROOM_CAP0,DEMOS};
+  OFF_KINDS,ROOMS,SUITS,GATES,FINAL_SCORE,CHIP_START,CHIP_GOAL,RANSOM,PUZ_PTS,PUZ_CAP,GATE_WIN,GATE_COIN,ROOM_CAP0,DEMOS};
