@@ -9,7 +9,7 @@ const fresh = () => { S = R.newGame(false); R.use(S); S.now = 1e12; };
 // ---------- 身份卡 ----------
 fresh();
 T('56 张身份卡，编号 001–056', S.players.length === 56 && S.players[0].id === '001' && S.players[55].id === '056');
-T('起始房间轮流分配，每间 7 张', R.ROOMS.every(r => S.players.filter(p => p.start === r.id).length === 7) && P('001').start === '4S' && P('009').start === '4S' && P('002').start === '8S');
+T('没有起始房间', S.players.every(p => !('start' in p)));
 T('没登录的人不进排行', R.ranking().length === 0);
 T('玩家取昵称', A('player', { type: 'nick', nick: '阿鬼' }, { pid: '001' }).ok && P('001').nick === '阿鬼' && P('001').on);
 T('昵称不能重复', !A('player', { type: 'nick', nick: '阿鬼' }, { pid: '002' }).ok);
@@ -18,7 +18,7 @@ T('总控能改别人的昵称', A('ctrl', { type: 'nick', pid: '003', nick: '�
 
 // ---------- 房间 ----------
 fresh(); S.t = 60;
-T('前 10 分钟只能进起始房间', !A('dealer', { type: 'enter', rid: '8S', pids: ['001'] }).ok);
+T('开场就能进任何房间（没有起始房间限制）', A('dealer', { type: 'enter', rid: '8S', pids: ['002'] }).ok && A('dealer', { type: 'kick', rid: '8S', pid: '002' }).ok && S.rooms[1].st === 'open');
 T('可以一次放多人入场', A('dealer', { type: 'enter', rid: '4S', pids: ['001', '009', '017'] }).ok && S.rooms[0].ps.length === 3 && S.rooms[0].st === 'play');
 T('入场即算参与（进排行）', P('009').on);
 T('已在房间里不能再进', !A('dealer', { type: 'enter', rid: '4S', pids: ['001'] }).ok);
@@ -146,14 +146,15 @@ T('Dealer 不能改冥币', !A('dealer', { type: 'setscore', pid: '001', v: 9 })
 T('总控改冥币写原因', A('ctrl', { type: 'setscore', pid: '001', v: 300, why: '补录' }).ok && S.log[0].text.includes('补录'));
 T('公告发给工作人员可见', (() => { A('ctrl', { type: 'publish', f: { kind: '公告', title: 'x', target: 'staff' } }); return R.staffSees(S.notices[0]); })());
 T('玩家只看到播报日志和自己的通知', (() => { R.eliminate(P('002'), '测试', ''); const v = R.viewFor(S, { role: 'player', pid: '001' }); return v.log.every(l => l.b) && v.notices.every(n => n.target !== 'player' || n.ids.includes('001')); })());
-T('新增身份卡', A('ctrl', { type: 'addplayers', n: 4 }).ok && S.players.length === 60 && P('060').start === '8H');
+T('新增身份卡', A('ctrl', { type: 'addplayers', n: 4 }).ok && S.players.length === 60 && !!P('060'));
 T('旧存档要重置', R.needsReset({ v: 2, rooms: [] }) && !R.needsReset(S));
 T('演示数据可以生成', (() => { const g = R.newGame(true); return g.players.filter(p => p.on).length >= 36 && g.auc.lots.length === 5 && g.rooms.some(r => r.ps.length); })());
 // ---------- 第 2 轮：花色可改、三套演示数据 ----------
 fresh();
 T('总控改花色', A('ctrl', { type: 'setcards', pid: '001', cards: ['♥', '♠', 'x'] }).ok && P('001').cards.join('') === '♠♥' && S.log[0].text.includes('花色'));
 T('判官不能改花色', !A('judge', { type: 'setcards', pid: '001', cards: [] }).ok);
-{ const g = R.newGame('start'); T('演示·开局：前 10 分钟、房间里有人、没有晋级名单', g.t < R.START_ONLY && g.rooms.some(r => r.ps.length) && !g.fin); }
+{ for (const d of ['start', 'mid', 'final']) { const g = R.newGame(d), t = g.log.map(l => l.t).reverse(); T('演示数据时间顺序正确：' + d, t.every((x, i) => !i || x >= t[i - 1])); }
+  const g = R.newGame('start'); T('演示·开局：前 10 分钟、房间里有人、没有晋级名单', g.t < 600 && g.rooms.some(r => r.ps.length) && !g.fin); }
 { const g = R.newGame('mid'); T('演示·中段：鬼门开进行中、鬼市有人', !!g.gp && g.gp.wins.length === 1 && g.players.some(p => p.st === 'market')); }
 { const g = R.newGame('final'); R.use(g); T('演示·晋级与拍卖：时间已到、名单已锁、第 1 件成交、大屏在拍卖', R.timeUp() && g.fin.length >= 6 && g.auc.lots[0].st === 'done' && g.auc.cur === 'L2' && g.auc.screen === 'auction' && g.fin.every(id => R.qualifies(g.players.find(p => p.id === id)))); }
 T('newGame(true) = 中段', !!R.newGame(true).gp);

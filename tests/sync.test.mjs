@@ -133,7 +133,7 @@ await admin.act({ type: 'admin.reset', demo: false });
 const wc = await client(P.wuchang), mp = await client(P.mengpo), jd = await client(P.judge);
 const dealerOf = room => client(pinOf(p => p.role === 'dealer' && p.rooms[0] === room));
 { const d4 = await dealerOf('4S');
-  T('first 10 minutes: only the start room', !(await d4.act({ type: 'enter', rid: '4S', pids: ['002'] })).ok && (await d4.act({ type: 'enter', rid: '4S', pids: ['001', '009'] })).ok);
+  T('no start room: anyone can enter any room from the start', (await d4.act({ type: 'enter', rid: '4S', pids: ['001', '009'] })).ok);
   T('dealer cannot run other rooms', !(await d4.act({ type: 'finish', rid: '8S', results: {} })).ok);
   T('every person needs a result', !(await d4.act({ type: 'finish', rid: '4S', results: { '001': 'win' } })).ok);
   await d4.act({ type: 'finish', rid: '4S', results: { '001': 'win', '009': 'lose' } }); await sleep(250);

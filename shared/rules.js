@@ -14,7 +14,7 @@ const ROOMS=[
   {id:'4D',card:'♦4',suit:'♦',n:4,name:'生死簿',rule:'30 秒看桌上物品，盖布后回答问题。'},
   {id:'8D',card:'♦8',suit:'♦',n:8,name:'符咒密码',rule:'倒计时内从真假 clue 里破解密码锁。'}];
 const SUITS=['♠','♦','♣','♥'];
-// 身份卡：编号 001 起，起始房间按编号轮流分配（56 张 = 每间 7 张）。
+// 身份卡：编号 001 起，默认 56 张。没有起始房间（2026-10-19 删掉了，现场见机行事）。
 const N_PLAYERS=56;
 const pidOf=i=>String(i).padStart(3,'0');
 // 解谜题题库不写在代码里（仓库公开、rules.js 会下载到每个玩家手机上）：总控在网站上粘贴导入，存在 S.bank = {编码:{q,a}}，只发给判官和总控。
@@ -30,7 +30,7 @@ const FINAL_SCORE=2000;           // 时间截止时攒够 2000 冥币
 const CHIP_START=200, CHIP_GOAL=500;   // 鬼市用实体筹码（和冥币完全不互通，网站不记）：领 200，赢到 500 自赎，输光喝孟婆汤
 const PUZ_PTS=100, PUZ_CAP=400;   // 解谜题 100 / 题，每人最多 400
 const GATE_WIN=3, GATE_COIN=300;  // 鬼门开：最先完成的 3 人，每人选 300 冥币 / 救一个人 / 拿一个花色
-const ROOM_CAP0=6, START_ONLY=600, DUR0=7200, MARKET_GRACE=900;  // 房间默认容量；前 10 分钟只能进起始房间；主游戏 2 小时；鬼市复活名额在时间截止后再留 15 分钟
+const ROOM_CAP0=6, DUR0=7200, MARKET_GRACE=900;  // 房间默认容量；主游戏 2 小时；鬼市复活名额在时间截止后再留 15 分钟
 const KINDS=['公告','鬼门开'];
 
 const room=id=>ROOMS.find(r=>r.id===id);
@@ -45,7 +45,7 @@ const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'
 const isBcast=l=>!!l.b;
 const now=()=>S.now||0;           // 真实时间（毫秒），服务器在每次操作前设置；拍卖倒计时用它，不受游戏计时暂停影响
 
-function mkPlayer(i){return {id:pidOf(i),nick:'',on:false,start:ROOMS[(i-1)%ROOMS.length].id,st:'alive',score:0,cards:[],cleared:[],inRoom:null,hist:[],puz:[],
+function mkPlayer(i){return {id:pidOf(i),nick:'',on:false,st:'alive',score:0,cards:[],cleared:[],inRoom:null,hist:[],puz:[],
   outAt:null,inAt:null,pickAt:null,at:'',chk:null,won:null};}
 function init(){
   S={v:3,t:0,now:0,bank:{},dur:DUR0,cap:ROOM_CAP0,capOn:false,gp:null,fin:null,log:[],notices:[],nid:1,
@@ -108,7 +108,6 @@ function whyNotEnter(pid,rid){
   if(r.st==='reset')return '房间重置中';
   if(p.inRoom)return p.inRoom===rid?'已经在这间房里':'正在 '+room(p.inRoom).card;
   if(p.cleared.includes(rid))return '已成功过这间房';
-  if(S.t<START_ONLY&&p.start!==rid)return '前 '+START_ONLY/60+' 分钟只能进起始房间 '+room(p.start).card;
   if(S.capOn&&r.ps.length>=(S.cap||ROOM_CAP0))return '房间已满（'+r.ps.length+' 人）';
   return null;}
 // Dealer 放人入场（可以一次放多人）。第一个人进来时房间变成「游戏中」。
@@ -330,7 +329,6 @@ function setNick(pid,nick){const p=pl(pid);if(!p)return no('没有这个编号')
 function setCards(pid,cards){const p=pl(pid);if(!p)return no('没有这个编号');if(!Array.isArray(cards))return no('花色不对');
   const c=SUITS.filter(x=>cards.includes(x));const old=p.cards.join('')||'无';if(c.join('')===p.cards.join(''))return no('花色没有变化');
   p.cards=c;log('总控修改 '+nm(p)+' 花色：'+old+' → '+(c.join('')||'无'));return ok(p.id+' 花色已改为 '+(c.join('')||'无'));}
-function setStart(pid,rid){const p=pl(pid);if(!p)return no('没有这个编号');if(!room(rid))return no('没有这个房间');if(p.start===rid)return no('起始房间没有变化');p.start=rid;log('总控把 '+nm(p)+' 的起始房间改为 '+room(rid).card);return ok(p.id+' 起始房间改为 '+room(rid).card);}
 function setOn(pid,on){const p=pl(pid);if(!p)return no('没有这个编号');p.on=!!on;log('总控把 '+nm(p)+(on?' 加入':' 移出')+'排行榜');return ok(on?'已加入排行':'已移出排行');}
 function addPlayers(n){n=Math.round(+n);if(!(n>=1&&n<=40))return no('一次加 1–40 个');const k=S.players.length;for(let i=1;i<=n;i++)S.players.push(mkPlayer(k+i));
   log('总控新增 '+n+' 张身份卡（'+pidOf(k+1)+'–'+pidOf(k+n)+'）');return ok('已新增 '+n+' 张，记得生成 PIN');}
@@ -384,39 +382,50 @@ const ROLE_LABEL={dealer:'Dealer',judge:'判官',mengpo:'孟婆',wuchang:'黑白
 const DEMO_NICK=['阿鬼','小白','无常','纸扎','孟孟','判判','铜钱','灯笼','彼岸','骨花','黑猫','红绸','书生','狐狸','小倩','钟馗','小青','白蛇','花脸','长舌',
   '阿飘','画皮','聂聂','宁采','燕赤','山魈','魍魉','魑魅','夜叉','罗刹','鬼火','冥灯','奈何','忘川','孟汤','黄泉'];
 // 三套演示数据（总控工具里「载入演示数据」可选）：start 开局 · mid 游戏中段 · final 时间截止后（晋级名单 + 拍卖）
-const DEMOS={start:'开局（T+3 分钟）',mid:'游戏中段（鬼门开进行中）',final:'晋级与拍卖（时间截止后）'};
+const DEMOS={start:'开局（T+5 分钟）',mid:'游戏中段（鬼门开进行中）',final:'晋级与拍卖（时间截止后）'};
 function demoBase(n){init();S.now=Date.parse('2026-10-31T23:00:00Z');S.players.slice(0,n).forEach((p,i)=>{p.nick=DEMO_NICK[i]||('玩家'+p.id);p.on=true;});}
 const demoLots=()=>{['第一件拍品','第二件拍品','第三件拍品','第四件拍品'].forEach(n=>aucAdd({name:n+'（占位）',desc:'盲盒',start:100}));aucAdd({name:'最终大奖（占位）',desc:'神秘大奖',start:300,big:true});};
 function seedStart(){
   demoBase(30);
-  // 开场 3 分钟：大家都在起始房间，有一间刚结束
-  S.t=40; enterRoom('4S',['001','009']); enterRoom('8S',['002','010','018']); enterRoom('4H',['003','011']); enterRoom('8H',['004','012','020']);
-  S.t=70; enterRoom('4C',['005','013','021']); enterRoom('8C',['006']);
-  S.t=150; finishRoom('4C',{'005':'win','013':'win','021':'lose'});
-  S.t=180; log('演示数据（开局）：6 间房有人，♣4 刚结算、重置中，♦4 ♦8 还空着');
+  // 开场 5 分钟：大家陆续进房间；♣4（简单）最先结束，1 人输了在原地等黑白无常
+  S.t=30; enterRoom('4S',['001','009']); enterRoom('8S',['002','010','018']); enterRoom('4H',['003','011']);
+  S.t=60; enterRoom('8H',['004','012','020']); enterRoom('4C',['005','013','021']);
+  S.t=90; enterRoom('8C',['006']); enterRoom('4D',['014','022']);
+  S.t=270; finishRoom('4C',{'005':'win','013':'win','021':'lose'});
+  S.t=300; log('演示数据（开局）：7 间房有人，♣4 刚结算、重置中，♦8 还空着；021 输了在等黑白无常');
   demoLots();
 }
 function seedMid(){
   demoBase(36);
-  const fin=(rid,res)=>{finishRoom(rid,res);resetDone(rid);};
-  S.t=60; enterRoom('4S',['001','009','017']); enterRoom('8S',['002','010']); enterRoom('4H',['003','011','019']); enterRoom('4C',['005','013']);
-  S.t=8*60; fin('4S',{'001':'win','009':'win','017':'lose'}); fin('8S',{'002':'win','010':'lose'}); fin('4H',{'003':'win','011':'win','019':'win'}); fin('4C',{'005':'win','013':'leave'});
-  S.t=9*60; pickup('017'); checkIn('017','wuchang'); confirmIn('017','mengpo');
-  S.t=9*60+30; checkIn('010','mengpo'); confirmIn('010','wuchang');
-  S.t=15*60; enterRoom('8H',['001','003']); enterRoom('4D',['002','009']); enterRoom('8C',['005']);
-  S.t=22*60; fin('8H',{'001':'win','003':'lose'}); fin('4D',{'002':'win','009':'win'}); fin('8C',{'005':'win'});
-  S.t=23*60; pickup('003');
-  S.t=24*60; puzRedeem('011','1'); puzRedeem('011','2'); puzRedeem('019','1'); puzRedeem('001','3');
-  S.t=26*60; publish({kind:'鬼门开',gate:'g1',mins:10});
-  S.t=28*60; gateWin('002'); gateWin('011'); gateWin('005');
-  gateReward('002','coin'); gateReward('011','save','017'); gateReward('005','suit','♥');
-  S.t=30*60; selfRedeem('010');
-  S.t=32*60; enterRoom('8D',['001','002']); enterRoom('4S',['011','019']); enterRoom('8S',['009']);
-  S.t=33*60; checkIn('003','wuchang'); confirmIn('003','mengpo');
-  S.t=34*60; enterRoom('4C',['017']); finishRoom('4C',{'017':'lose'});
-  S.t=40*60; publish({kind:'鬼门开',gate:'g2',mins:10});
-  S.t=42*60; gateWin('019');
-  S.t=43*60; log('演示数据（游戏中段）：第二次鬼门开进行中（已有 1 人完成），♦8、♠4、♠8 进行中，♣4 重置中，鬼市 1 人，待接 1 人');
+  const M=(m,sec)=>m*60+(sec||0);   // 分:秒 → 游戏秒数
+  const fin=(rid,res,m,sec)=>{S.t=M(m,sec);finishRoom(rid,res);S.t+=60;resetDone(rid);};   // 结算后 1 分钟重置完成
+  S.t=M(1); enterRoom('4S',['001','009','017']); enterRoom('8S',['002','010']); enterRoom('4H',['003','011','019']);
+  S.t=M(1,30); enterRoom('4C',['005','013']);
+  fin('4H',{'003':'win','011':'win','019':'win'},6);
+  fin('4C',{'005':'win','013':'leave'},7);
+  fin('4S',{'001':'win','009':'win','017':'lose'},8);
+  S.t=M(9); pickup('017');
+  fin('8S',{'002':'win','010':'lose'},9,30);
+  S.t=M(10,30); checkIn('017','wuchang'); confirmIn('017','mengpo');
+  S.t=M(11,30); pickup('010'); checkIn('010','mengpo'); confirmIn('010','wuchang');
+  S.t=M(15); enterRoom('8H',['001','003']); enterRoom('4D',['002','009']); enterRoom('8C',['005']);
+  fin('4D',{'002':'win','009':'win'},19,30);
+  fin('8C',{'005':'win'},21);
+  fin('8H',{'001':'win','003':'lose'},22);
+  S.t=M(23,30); pickup('003');
+  S.t=M(24,30); checkIn('003','wuchang'); confirmIn('003','mengpo');
+  S.t=M(25); puzRedeem('011','1'); S.t+=20; puzRedeem('011','2'); S.t+=40; puzRedeem('019','1'); S.t+=30; puzRedeem('001','3');
+  S.t=M(26,30); publish({kind:'鬼门开',gate:'g1',mins:10});
+  S.t=M(28,30); gateWin('002'); gateReward('002','coin');
+  S.t=M(29); gateWin('011'); gateReward('011','save','017');
+  S.t=M(29,40); gateWin('005'); gateReward('005','suit','♥');
+  S.t=M(31); selfRedeem('010');
+  S.t=M(35); enterRoom('4C',['017']);
+  S.t=M(37); enterRoom('8D',['001','002']); enterRoom('4S',['011','019']); enterRoom('8S',['009']);
+  S.t=M(40); publish({kind:'鬼门开',gate:'g2',mins:10});
+  S.t=M(41); finishRoom('4C',{'017':'lose'});
+  S.t=M(42); gateWin('013');
+  S.t=M(43); log('演示数据（游戏中段）：第二次鬼门开进行中（已有 1 人完成），♦8、♠4、♠8 进行中，♣4 刚结算、重置中，鬼市 1 人，待接 1 人');
   demoLots();
 }
 function seedFinal(){
@@ -426,9 +435,9 @@ function seedFinal(){
   const play=(pid,rid,res)=>{if(whyNotEnter(pid,rid))return;enterRoom(rid,[pid]);finishRoom(rid,{[pid]:res});resetDone(rid);};
   const plans={'001':['8S','8H','8C','8D'],'002':['8S','8H','8C','4D','4S'],'003':['4S','8H','8C','8D'],'004':['8S','4H','8C','8D'],'005':['4S','4H','4C','4D','8S','8D'],
     '006':['8S','8H','4C','8D'],'007':['4S','8H','8C','4D'],'008':['8S','4H','4C','8D','4S']};
-  S.t=700;
-  for(const [pid,rs] of Object.entries(plans)){rs.forEach(r=>{S.t+=37;play(pid,r,'win');});}
-  S.players.slice(8,40).forEach(p=>{const n=1+Math.floor(rnd()*4);for(let i=0;i<n;i++){S.t+=23;play(p.id,ROOMS[Math.floor(rnd()*8)].id,rnd()<.7?'win':'lose');
+  S.t=60;
+  for(const [pid,rs] of Object.entries(plans)){rs.forEach(r=>{S.t+=60;play(pid,r,'win');});}
+  S.players.slice(8,40).forEach(p=>{const n=1+Math.floor(rnd()*4);for(let i=0;i<n;i++){S.t+=55;play(p.id,ROOMS[Math.floor(rnd()*8)].id,rnd()<.7?'win':'lose');
     if(p.st==='out'){pickup(p.id);checkIn(p.id,'wuchang');confirmIn(p.id,'mengpo');if(rnd()<.6){rnd();selfRedeem(p.id);}}}});
   ['009','015','022','030'].forEach((id,i)=>{puzRedeem(id,'1');puzRedeem(id,'2');});
   S.t=7300; lockFinal();
@@ -444,7 +453,7 @@ export function newGame(demo){init();if(demo)seed(demo);return S;}
 
 // Which roles may perform each action. 总控只做自己页面上的事（冥币、名单、发布、设置），不代替其他工作人员操作。
 const ROLE_OK={enter:['dealer'],finish:['dealer'],resetdone:['dealer'],kick:['dealer'],
-  setcap:['ctrl'],setcapon:['ctrl'],setdur:['ctrl'],setscore:['ctrl'],setstart:['ctrl'],setcards:['ctrl'],seton:['ctrl'],addplayers:['ctrl'],setbank:['ctrl'],lockfinal:['ctrl','judge'],unlockfinal:['ctrl'],final:['ctrl'],
+  setcap:['ctrl'],setcapon:['ctrl'],setdur:['ctrl'],setscore:['ctrl'],setcards:['ctrl'],seton:['ctrl'],addplayers:['ctrl'],setbank:['ctrl'],lockfinal:['ctrl','judge'],unlockfinal:['ctrl'],final:['ctrl'],
   publish:['ctrl','judge'],revoke:['ctrl','judge'],
   gatewin:['judge'],gateunwin:['judge'],gatereward:['judge'],gateend:['judge'],puz:['judge'],puzundo:['judge'],
   pickup:['wuchang'],checkin:['wuchang','mengpo'],confirm:['wuchang','mengpo'],
@@ -470,7 +479,6 @@ export function apply(state,me,a){
     case 'setcapon':return setCapOn(a.v);
     case 'setdur':return setDur(a.secs);
     case 'setscore':return setScore(a.pid,a.v,a.why);
-    case 'setstart':return setStart(a.pid,a.rid);
     case 'setcards':return setCards(a.pid,a.cards);
     case 'seton':return setOn(a.pid,a.on);
     case 'addplayers':return addPlayers(a.n);
@@ -526,4 +534,4 @@ export function viewFor(state,me){
 
 export {noticeStale,staffSees,puzCode,timeUp,marketShut,needsReset,whyNotEnter,eliminate,soup,puzInfo,finalMiss,qualifies,whyNotBid,bidOrder,lotLeft,lotState,
   ranking,suitsOf,stLabel,inMk,pl,nm,matches,targetLabel,room,fmt,esc,log,no,
-  OFF_KINDS,ROOMS,SUITS,GATES,FINAL_SCORE,CHIP_START,CHIP_GOAL,PUZ_PTS,PUZ_CAP,GATE_WIN,GATE_COIN,ROOM_CAP0,START_ONLY,DEMOS};
+  OFF_KINDS,ROOMS,SUITS,GATES,FINAL_SCORE,CHIP_START,CHIP_GOAL,PUZ_PTS,PUZ_CAP,GATE_WIN,GATE_COIN,ROOM_CAP0,DEMOS};

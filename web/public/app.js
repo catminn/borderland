@@ -2,7 +2,7 @@
 // The server owns the game state; this page signs in with a PIN, keeps a live WebSocket, renders the pages
 // for the signed-in role, and sends actions. Rule helpers come from rules.js (same file the server runs).
 import * as R from './rules.js';
-const {ROOMS,SUITS,FINAL_SCORE,GATES,PUZ_CAP,PUZ_PTS,GATE_WIN,GATE_COIN,CHIP_START,CHIP_GOAL,START_ONLY,puzCode,
+const {ROOMS,SUITS,FINAL_SCORE,GATES,PUZ_CAP,PUZ_PTS,GATE_WIN,GATE_COIN,CHIP_START,CHIP_GOAL,puzCode,
   room,fmt,esc,matches,targetLabel,whyNotEnter,no,timeUp,marketShut,staffSees,finalMiss,qualifies,ranking,suitsOf,stLabel,inMk,pl,nm,puzInfo,
   lotLeft,lotState,whyNotBid,bidOrder}=R;
 // 拍品（用本页的 S，不依赖 rules.js 里的模块变量）
@@ -104,7 +104,6 @@ function roomCard(r,me){
   else if(st==='reset')bt='<span class="rs rst">重置中</span>';
   else bt='<span class="idle">'+(timeUp()?'已关闭':'<i class="gd"></i>开放中')+'</span>';
   if(me&&me.cleared.includes(r.id))bt+='<span class="idle okk">✓ 你已成功</span>';
-  else if(me&&S.t<START_ONLY&&me.start===r.id)bt+='<span class="rtm ok">你的起始房间</span>';
   return '<div class="room s-'+(st==='open'&&timeUp()?'shut':st)+(mine?' mine':'')+'"><div class="top"><div class="cd">'+cardG(r)+'</div>'
     +'<div class="rr"><span class="pt">+'+r.n*100+'</span></div></div>'
     +'<div class="bt">'+bt+'</div></div>';
@@ -211,15 +210,13 @@ function viewDealer(){
     +'<div class="info"><div class="meta"><span class="typ">'+TYPE[r.suit]+'</span><span class="coins">+'+r.n*100+' <small>冥币</small></span></div>'
     +'<div class="name"><b>'+r.name+'</b>'+(ui.settled&&ui.settled.rid===r.id&&st==='reset'?'<span class="stamp">已结算</span>':'')+'</div>'
     +'<span class="status '+RST[st][1]+'">'+(RST[st][1]!=='rst'?'<i class="gd"></i>':'')+RST[st][0]+(x.ps.length?' · '+x.ps.length+(S.capOn?' / '+cap:'')+' 人':'')+(timer?'　'+timer:'')+'</span></div></div>';
-  // 入场：输入编号（可多人），或点起始房间名单里的人
+  // 入场：输入编号（可多人）
   let entry;
   if(timeUp())entry='<div class="empty">时间到，房间已关闭。房间里还有人的话，照常结算。</div>';
   else if(st==='reset')entry='<div class="empty">重置中。重置好后，到「结算」页点「重置完成」，房间才会重新开放</div>';
   else{
     const ids=parseIds(ui.ent),bad=ids.map(id=>[id,whyNotEnter(id,r.id)]).filter(([,w])=>w),okIds=ids.filter(id=>!whyNotEnter(id,r.id)),full=x.ps.length+ids.length>cap;
-    const early=S.t<START_ONLY?S.players.filter(p=>p.start===r.id&&p.st==='alive'&&!p.inRoom&&!p.cleared.includes(r.id)):[];
     entry='<label class="fld"><span>玩家编号（可一次输入多个，用空格隔开）</span><input class="in mono entin" id="entin" data-m="ent" value="'+esc(ui.ent)+'" inputmode="numeric" placeholder="例如 1 9 17" autocomplete="off"></label>'
-      +(early.length?'<span class="lbl">起始房间在这里的人（前 '+START_ONLY/60+' 分钟只能进起始房间）</span><div class="chips ids">'+early.map(p=>'<button class="cb id'+(ids.includes(p.id)?' on':'')+'" data-a="entadd" data-v="'+p.id+'" aria-pressed="'+ids.includes(p.id)+'"><span class="t">'+p.id+'<small>'+(p.nick?esc(p.nick):'&nbsp;')+'</small></span></button>').join('')+'</div>':'')
       +(ids.length?'<div class="entl">'+ids.map(id=>{const p=pl(id),w=whyNotEnter(id,r.id);return '<span class="ent'+(w?' bad':'')+'"><b class="mono">'+id+'</b>'+(p&&p.nick?' '+esc(p.nick):'')+(w?'<small>'+esc(w)+'</small>':'')+'</span>';}).join('')+'</div>':'')
       +'<button class="btn-main" data-a="enter"'+(okIds.length&&!bad.length&&!full?'':' disabled')+'>'+(!ids.length?'先输入编号':bad.length?'有 '+bad.length+' 人不能入场':full?'超过房间容量 '+cap+' 人':'放行 '+ids.length+' 人入场')+'</button>';
   }
@@ -417,7 +414,7 @@ function editPanel(){
   const hist=[...p.hist].reverse().slice(0,8).map(h=>{const r=room(h.rid);return '<div class="hrow"><span class="mono">'+fmt(h.t0)+'</span><b>'+cardG(r)+'</b><span class="hres '+(h.res==='win'?'w':h.res==='lose'?'l':'')+'">'+(h.res===null?'游戏中':h.res==='win'?'成功 +'+h.pts:h.res==='lose'?'失败':'离开')+'</span></div>';}).join('');
   const miss=finalMiss(p),inFin=!!(S.fin&&S.fin.includes(p.id));
   return '<div class="pn" style="gap:12px"><div class="shrow"><h3>'+who(p)+'</h3><span class="kb">'+stLabel(p)+'</span></div>'
-    +'<div class="kvs"><span>冥币 <b class="mono">'+p.score+'</b></span><span>花色 '+suits4(p)+'</span><span>起始 '+cardG(room(p.start))+'</span><span>解谜 '+puzInfo(p).used+'/'+PUZ_CAP+'</span>'+(p.won?'<span>拍得 '+esc((lot(p.won)||{}).name||'')+'</span>':'')+'</div>'
+    +'<div class="kvs"><span>冥币 <b class="mono">'+p.score+'</b></span><span>花色 '+suits4(p)+'</span><span>解谜 '+puzInfo(p).used+'/'+PUZ_CAP+'</span>'+(p.won?'<span>拍得 '+esc((lot(p.won)||{}).name||'')+'</span>':'')+'</div>'
     +'<div class="fld"><span>冥币增减（▲▼ 每次 100）</span><span class="coin-in"><input class="in mono" type="number" step="100" id="eda" data-m="ed.amt" value="'+esc(ui.ed.amt)+'" placeholder="0" aria-label="冥币增减">'
     +'<span class="cstep"><button type="button" data-a="edstep" data-v="100" aria-label="加 100">▲</button><button type="button" data-a="edstep" data-v="-100" aria-label="减 100">▼</button></span></span></div>'
     +'<label class="fld"><span>原因（写进日志）</span><input class="in" id="edw" data-m="ed.why" value="'+esc(ui.ed.why)+'" placeholder="例如：断网补录"></label>'
@@ -425,7 +422,6 @@ function editPanel(){
     +'<div class="fgrid"><label class="fld"><span>昵称</span><input class="in" id="edn" data-m="ed.nick" value="'+esc(ui.ed.nick)+'" placeholder="'+esc(p.nick||'未取名')+'"></label>'
     +'<div class="fld"><span>&nbsp;</span><button class="btn-line" data-a="ednick"'+(ui.ed.nick.trim()?'':' disabled')+'>改昵称</button></div></div>'
     +'<div class="fld"><span>花色（点一下加上 / 去掉，补录或纠错用）</span><div class="chips c4">'+SUITS.map(x=>'<button class="cb'+(p.cards.includes(x)?' on':'')+'" data-a="edsuit" data-v="'+x+'" aria-pressed="'+p.cards.includes(x)+'"><span class="t">'+suitG(x)+'</span></button>').join('')+'</div></div>'
-    +'<div class="fld"><span>起始房间</span><div class="chips c4">'+ROOMS.map(r=>'<button class="cb'+(p.start===r.id?' on':'')+'" data-a="edstart" data-v="'+r.id+'" aria-pressed="'+(p.start===r.id)+'"><span class="t">'+cardG(r)+'</span></button>').join('')+'</div></div>'
     +'<div class="btns"><button class="btn-line" data-a="edon" data-v="'+(p.on?0:1)+'">'+(p.on?'移出排行榜（这张卡没人用）':'加入排行榜')+'</button>'
     +(S.fin?'<button class="btn-line'+(inFin?'':' acc')+'" data-a="finone" data-v="'+(inFin?0:1)+'">'+(inFin?'移出晋级名单':'加入晋级名单'+(miss.length?'（条件未满足）':''))+'</button>':'')+'</div>'
     +(miss.length?'<span class="small">晋级还差：'+esc(miss.join('，'))+'</span>':'<span class="small acc">晋级条件已满足</span>')
@@ -614,7 +610,7 @@ function adminPanel(){
     +'<div class="pn"><div class="shrow"><h3>PIN</h3><span class="small">按数量增减工作人员 PIN（改小会删掉编号靠后的，用它们登录的人会被踢下线）</span></div>'
     +'<div class="cnts">'+num('dealer','Dealer')+num('judge','判官')+num('mengpo','孟婆')+num('wuchang','黑白无常')+num('ctrl','总控')+num('screen','大屏')+'</div>'
     +'<div class="btns"><button class="btn-line acc" data-a="adm-gen">生成 PIN</button><button class="btn-line" data-a="adm-pins">查看全部 PIN</button></div>'
-    +'<div class="setrow"><div class="swrow"><span>打印身份卡<small>每张卡印编号、起始房间、PIN 和登录网址（A4，每页 8 张）。卡上印的网址是 <b>'+esc(location.host)+'</b>，请在正式网址下打印。</small></span><button class="btn-line acc" data-a="cards">打印身份卡</button></div></div>'+pins+'</div>'
+    +'<div class="setrow"><div class="swrow"><span>打印身份卡<small>每张卡印编号、PIN 和登录网址（A4，每页 8 张）。卡上印的网址是 <b>'+esc(location.host)+'</b>，请在正式网址下打印。</small></span><button class="btn-line acc" data-a="cards">打印身份卡</button></div></div>'+pins+'</div>'
     +'<div class="danger"><h3>危险操作</h3><p>重置会清空所有冥币、花色、昵称、日志、鬼市和拍卖记录（PIN 不变，身份卡回到 56 张）。请在下方输入“重置”二字后再点按钮。</p>'
     +'<input class="in" id="rst" data-m="adm.resetTxt" value="'+esc(A.resetTxt)+'" placeholder="输入“重置”" style="border-color:#d9b3aa">'
     +'<button class="btn-line '+(rs?'fillred':'')+'" id="rstbtn" data-a="adm-reset" data-v="blank"'+(rs?'':' disabled')+' style="min-height:48px;font-weight:900">重置为空白游戏</button></div></div>';
@@ -629,7 +625,7 @@ function viewNick(me){
     +'<span class="muted">给自己取个昵称，大屏排行榜上会显示（最多 12 个字，不能和别人重复）。</span>'
     +'<input class="in" id="nickin" data-m="nick" value="'+esc(ui.nick)+'" maxlength="12" placeholder="昵称" autocomplete="nickname">'
     +'<button class="btn-main glow" data-a="setnick"'+(ui.nick.trim()?'':' disabled')+' style="min-height:56px">进入游戏</button>'
-    +'<span class="small">起始房间：<b>'+cardG(room(me.start))+' '+room(me.start).name+'</b>（开场前 '+START_ONLY/60+' 分钟只能进这间）</span></div></div>';
+    +'</div></div>';
 }
 const LT_LAYOUT=[[0.04085, 0.04501, 0.10376, 0.0325], [0.04453, 0.01726, 0.09763, 0.0994], [0.05433, 0.02586, 0.1107, 0.1669], [0.04575, 0.04517, 0.10866, 0.2261], [0.05392, 0.04743, 0.10825, 0.29], [0.0433, 0.03474, 0.10294, 0.3547], [0.05188, 0.0, 0.1058, 0.4161], [0.04616, 0.03108, 0.11111, 0.4675], [0.04739, 0.01337, 0.10825, 0.5317], [0.04779, 0.04768, 0.11111, 0.5783], [0.0531, 0.00107, 0.11234, 0.6397], [0.04698, 0.00998, 0.11193, 0.6925], [0.04616, 0.00241, 0.12377, 0.7378], [0.05392, 0.02337, 0.11356, 0.7769], [0.05106, 0.03881, 0.11111, 0.8264], [0.05229, 0.02952, 0.10539, 0.8708], [0.05433, 0.01043, 0.11193, 0.9228], [0.04943, 0.0266, 0.10539, 0.9686]]; // [宽, 顶(相对最高那盏), 高, 原图中心x]，单位 = 原图宽 2448 的比例；每盏灯笼单独一张图 img/lt/dNN.webp
 function lanternsHtml(){ // 18 盏全部输出，位置纯 CSS（--pitch 间距 + 以屏幕中线为中心），缩放窗口时连续变化、从两边裁掉，不依赖 JS 重算；样式必须每次渲染都一样（morph 看到 style 变了会重启动画）
@@ -671,7 +667,6 @@ function viewPlayer(){
     return '<div class="hrow"><span class="mono">'+fmt(h.t0)+'</span><b>'+cardG(r)+' '+r.name+'</b><span class="hres '+(h.res==='win'?'w':h.res==='lose'?'l':'')+'">'+res+'</span></div>';}).join('');
   const pz=puzInfo(me);
   const info='<div class="pn histp"><div class="shrow"><h3>我的记录</h3><span class="small">解谜题 <b class="mono">'+pz.used+' / '+PUZ_CAP+'</b></span></div>'
-    +(S.t<START_ONLY?'<div class="lot">开场前 '+START_ONLY/60+' 分钟只能进起始房间：<b>'+cardG(room(me.start))+' '+room(me.start).name+'</b></div>':'')
     +(hist||'<span class="muted small">还没有进过房间。</span>')+(me.puz.length?'<span class="lbl">解谜题</span>'+me.puz.map(r=>'<div class="hrow"><span class="mono">'+fmt(r.t)+'</span><b>'+esc(r.title)+'</b><span class="hres w">+'+r.pts+'</span></div>').join(''):'')+'</div>';
   // 通知
   const mine=S.notices.filter(n=>matches(n,me)),unread=mine.filter(n=>!n.acks[me.id]).length;
@@ -1096,7 +1091,6 @@ document.addEventListener('click',e=>{
   else if(a==='clockctl'){send({type:'admin.clock',op:CLOCK&&CLOCK.running?'pause':'start'});}
   // Dealer
   else if(a==='room'){ui.room=v;ui.ent='';ui.res={};ui.settled=null;ui.kickAsk=null;}
-  else if(a==='entadd'){const ids=parseIds(ui.ent);ui.ent=(ids.includes(v)?ids.filter(x=>x!==v):[...ids,v]).join(' ');}
   else if(a==='enter'){const pids=parseIds(ui.ent);send({type:'enter',rid:ui.room,pids},()=>{ui.ent='';ui.settled=null;});}
   else if(a==='res'){ui.res[b.dataset.t]=ui.res[b.dataset.t]===v?undefined:v;}
   else if(a==='resall'){const x=S.rooms.find(y=>y.id===ui.room);x.ps.forEach(id=>{ui.res[id]=v;});}
@@ -1156,7 +1150,6 @@ document.addEventListener('click',e=>{
   else if(a==='edscore'){const p=pl(ui.ed.pid),amt=parseInt(ui.ed.amt,10)||0;if(p&&amt)send({type:'setscore',pid:p.id,v:Math.max(0,p.score+amt),why:ui.ed.why},()=>{ui.ed.amt='';ui.ed.why='';});}
   else if(a==='ednick'){send({type:'nick',pid:ui.ed.pid,nick:ui.ed.nick},()=>{ui.ed.nick='';});}
   else if(a==='edsuit'){const p=pl(ui.ed.pid);if(p)send({type:'setcards',pid:p.id,cards:p.cards.includes(v)?p.cards.filter(x=>x!==v):[...p.cards,v]});}
-  else if(a==='edstart'){send({type:'setstart',pid:ui.ed.pid,rid:v});}
   else if(a==='edon'){send({type:'seton',pid:ui.ed.pid,on:v==='1'});}
   else if(a==='finone'){send({type:'final',pid:ui.ed.pid,on:v==='1'});}
   else if(a==='finadd'||a==='finrm'){send({type:'final',pid:v,on:a==='finadd'});}
@@ -1245,23 +1238,23 @@ function copyText(t){
   return new Promise((ok,bad)=>{const x=document.createElement('textarea');x.value=t;x.style.cssText='position:fixed;opacity:0';document.body.appendChild(x);x.select();
     try{document.execCommand('copy')?ok():bad();}catch(e){bad(e);}x.remove();});}
 function downloadPins(){
-  const rows=[['身份','编号/名称','昵称','起始房间','PIN','登录链接']].concat((ui.admin.pins||[]).map(p=>{const q=p.pid&&pl(p.pid);return [p.roleName,p.pid||p.label,q?q.nick:'',q?room(q.start).card:'',p.pin,location.origin+'/?pin='+p.pin];}));
+  const rows=[['身份','编号/名称','昵称','PIN','登录链接']].concat((ui.admin.pins||[]).map(p=>{const q=p.pid&&pl(p.pid);return [p.roleName,p.pid||p.label,q?q.nick:'',p.pin,location.origin+'/?pin='+p.pin];}));
   const csv='﻿'+rows.map(r=>r.map(x=>'"'+String(x).replace(/"/g,'""')+'"').join(',')).join('\r\n');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='borderland-pins.csv';a.click();
   setTimeout(()=>URL.revokeObjectURL(a.href),1000);
 }
 
-// 身份卡：每人一张，印编号、起始房间、PIN 和登录网址（不印二维码）。A4 纵向每页 8 张，在本机生成，风格同酆都通行证。
+// 身份卡：每人一张，印编号、PIN 和登录网址（不印二维码）。A4 纵向每页 8 张，在本机生成，风格同酆都通行证。
 function printCards(){
   const go=pins=>{
     const ps=pins.filter(p=>p.role==='player'&&pl(p.pid)).sort((a,b)=>a.pid.localeCompare(b.pid));
     if(!ps.length){say(no('还没有玩家 PIN，先点「生成 PIN」'));return;}
     const host=location.host;
-    const card=p=>{const q=pl(p.pid),r=room(q.start),red=isRed(r.suit);
+    const card=p=>{const q=pl(p.pid);
       return '<div class="c"><i class="fr"></i><i class="cn tl"></i><i class="cn tr"></i><i class="cn bl"></i><i class="cn br"></i>'
         +'<div class="hd"><b>酆都通行证</b><span>百鬼夜行 · 身份卡</span></div><div class="rule"></div>'
         +'<div class="bd"><div class="l"><span class="k">持证人编号</span><span class="id">'+q.id+'</span>'
-        +'<span class="k">起始房间</span><span class="rm"><span class="tile'+(red?' r':'')+'"><b>'+r.n+'</b><i>'+r.suit+'</i></span><span>'+esc(r.name)+'<small>开场前 '+START_ONLY/60+' 分钟只能进这间</small></span></span></div>'
+        +'</div>'
         +'<div class="seal"><span>准</span><span>入</span></div></div>'
         +'<div class="pinr"><span class="k">登录 PIN</span><span class="pin">'+p.pin.split('').join('</span><span class="pin">')+'</span></div>'
         +'<div class="ft">手机打开 <b>'+esc(host)+'</b>，输入 PIN 进入 · 换手机时用同一个 PIN · 请勿外借</div></div>';};
@@ -1273,9 +1266,7 @@ function printCards(){
       +'.hd{display:flex;justify-content:space-between;align-items:baseline}.hd b{font-family:"Ma Shan Zheng","Kaiti SC","STKaiti",serif;font-weight:400;font-size:19pt;letter-spacing:.12em;line-height:1}.hd span{font-size:7.5pt;color:#6a5d45;letter-spacing:.1em}'
       +'.rule{height:0;border-top:.6px solid #8c7d5c;margin:.5mm 0}'
       +'.bd{display:flex;gap:3mm;align-items:flex-start;flex:1;min-height:0}.l{flex:1;display:flex;flex-direction:column;gap:.4mm;min-width:0}.k{font-size:6.8pt;color:#7a6c50;letter-spacing:.12em}'
-      +'.id{font:800 27pt "JetBrains Mono",ui-monospace,Menlo,monospace;line-height:1;letter-spacing:.04em;margin-bottom:1mm}'
-      +'.rm{display:flex;align-items:center;gap:2mm;font-size:10.5pt;font-weight:700}.rm small{display:block;font-size:6.5pt;font-weight:400;color:#7a6c50}'
-      +'.tile{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;width:8.5mm;height:11mm;border:1.2px solid #1b1712;border-radius:1mm;background:#fffdf6;line-height:1}.tile b{font:800 11pt "JetBrains Mono",monospace}.tile i{font-style:normal;font-size:9pt}.tile.r{color:#b3332a;border-color:#b3332a}'
+      +'.id{font:800 36pt "JetBrains Mono",ui-monospace,Menlo,monospace;line-height:1;letter-spacing:.04em;margin-bottom:1mm}'
       +'.seal{flex:none;width:15mm;height:15mm;border:1.6px solid #b3332a;color:#b3332a;display:grid;grid-template-columns:1fr;place-items:center;font-family:"Ma Shan Zheng","Kaiti SC",serif;font-size:12pt;line-height:1;transform:rotate(-6deg);opacity:.85;padding:1mm 0}'
       +'.pinr{display:flex;align-items:center;gap:1.2mm;border-top:.6px dashed #8c7d5c;padding-top:1.6mm}.pinr .k{margin-right:1.5mm}'
       +'.pin{display:inline-grid;place-items:center;width:6.6mm;height:8mm;border:1px solid #1b1712;background:#fffdf6;font:800 13pt "JetBrains Mono",monospace}'
