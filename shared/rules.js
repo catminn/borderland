@@ -69,7 +69,7 @@ function matches(n,p){
   case 'market':return p.st==='market';case 'alive':return p.st==='alive';case 'final':return !!(S.fin&&S.fin.includes(p.id));}return false;}
 // 已经结束的鬼门开不再弹全屏
 const noticeStale=n=>n.sub==='gate'&&!(S.gp&&S.gp.nid===n.id);
-const staffSees=n=>n.target==='staff'||n.target==='everyone'||n.sub==='gate';
+const staffSees=n=>(n.target==='staff'||n.target==='everyone')&&n.sub!=='gate';   // 鬼门开不弹给工作人员
 function targetLabel(n){return n.target==='all'?'全体玩家':n.target==='player'?(n.ids.length<=4?n.ids.join('、'):n.ids.slice(0,3).join('、')+' 等 '+n.ids.length+' 人'):n.target==='market'?'鬼市中的人':n.target==='staff'?'工作人员':n.target==='everyone'?'所有人':n.target==='final'?'晋级资格者':'存活玩家';}
 function pushNotice(o){S.notices.unshift({id:S.nid++,sub:o.sub||null,tone:o.tone||'',t:S.t,kind:o.kind,title:o.title,body:o.body,target:o.target,ids:o.ids||[],due:o.mins?S.t+o.mins*60:null,acks:{}});}
 const tell=(pid,title,body,tone)=>pushNotice({kind:'通知',title,body,target:'player',ids:[pid],tone});

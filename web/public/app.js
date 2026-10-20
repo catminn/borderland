@@ -819,7 +819,8 @@ function setAmb(mode,tone){
 const THEME_KEY='borderland.theme';
 // 被淘汰、已被接到或在鬼市：整页红色提示，强制深色
 const inMarketNow=()=>{const p=ME&&ME.role==='player'&&S&&S.players.find(x=>x.id===ME.pid);return !!(p&&p.st!=='alive');};
-function themeFor(){if(ME&&ME.role==='player'&&ui.tab!=='board'&&inMarketNow())return 'dark';let v=null;try{v=localStorage.getItem(THEME_KEY);}catch{/* private mode */}
+function themeFor(){if(ME&&ME.role==='player'&&inMarketNow())return 'dark';   // 鬼市 / 待接的玩家：所有页都深色
+  let v=null;try{v=localStorage.getItem(THEME_KEY);}catch{/* private mode */}
   return v||'dark';}
 
 function render(){
@@ -863,7 +864,7 @@ function render(){
   $('#logout').hidden=false;$('#conn').hidden=false;
   const run=CLOCK&&CLOCK.running;
   const cc=$('#clockctl');cc.hidden=ME.role!=='ctrl';cc.textContent=run?'暂停计时':'开始计时';
-  const th=$('#theme');th.hidden=!!(ME&&ME.role==='player'&&ui.tab!=='board'&&inMarketNow());th.textContent=themeFor()==='dark'?'浅色':'深色';
+  const th=$('#theme');th.hidden=!!(ME&&ME.role==='player'&&inMarketNow());th.textContent=themeFor()==='dark'?'浅色':'深色';
   $('.clk').classList.toggle('paused',!run);$('#clkdot').className='gd'+(run?'':' off');
   if(!S){$('#view').innerHTML='<section class="pn muted">正在连接服务器…</section>';return;}
   R.use(S);S.t=nowT();S.now=Date.now()+OFFSET;$('#clk').textContent=fmt(S.t);

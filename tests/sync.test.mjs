@@ -37,10 +37,10 @@ const errs = [];
 async function page(pin, w = 1100) {
   const ctx = await b.newContext({ viewport: { width: w, height: 900 } }); const p = await ctx.newPage();
   p.on('pageerror', e => errs.push(e.message));
-  await p.goto(BASE + '/?pin=' + pin); await p.waitForSelector('#conn.free', { timeout: 8000 }); await sleep(3800); return p;
+  await p.goto(BASE + '/?pin=' + pin); await p.waitForSelector('#conn.free', { state: 'attached', timeout: 8000 }); await sleep(3800); return p;
 }
 const ack = async p => { for (let i = 0; i < 15 && await p.locator('[data-modal]').count(); i++) await p.locator('[data-modal]').first().click(); };
-const text = p => p.locator('#view').innerText();
+const text = p => p.locator('#view').textContent();
 
 const ctrl = await page(ADMIN), judge = await page(P.judge), dealer = await page(P.dealer), screen = await page(P.screen), mengpo = await page(P.mengpo);
 const player = await page(P.player, 390);
@@ -63,7 +63,7 @@ await judge.click('[data-a=dd][data-v="jg.gate"]'); await judge.click('[data-a=p
 await player.waitForSelector('#modal .dlg', { timeout: 4000 }).catch(() => {});
 T('player popup after gate publish', (await player.locator('#modal').innerText()).includes('阎王点名'));
 await ack(player);
-await sleep(300); T('dealer and ctrl also get the gate popup, screen does not', await dealer.locator('[data-modal]').count() > 0 && await ctrl.locator('[data-modal]').count() > 0 && await screen.locator('[data-modal]').count() === 0);
+await sleep(300); T('staff and screen get no gate popup', await dealer.locator('[data-modal]').count() === 0 && await ctrl.locator('[data-modal]').count() === 0 && await screen.locator('[data-modal]').count() === 0);
 await ack(ctrl); await ack(judge); await ack(dealer); await ack(mengpo);
 T('gate does not pause the rooms', (await (await D('4H')).act({ type: 'enter', rid: '4H', pids: ['006'] })).ok);
 // judge records the first 3 finishers and gives rewards

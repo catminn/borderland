@@ -715,11 +715,11 @@ body.lgerr .lg{border-color:#7a2a26}
 @keyframes geFlick{0%{opacity:1}50%{opacity:.82}}
 
 /* ---------- 2026-10-04 新规则：红色淘汰通知、鬼市提示、无常页、终极页、sidequest ---------- */
-.ovl[data-k="out"]{--overlay:#4a0b0b;--overlay-ink:#ffe8e4;--accent:#ff8d7b;--accent-ink:#2b0504;background:radial-gradient(120% 90% at 50% 0%,#7d1515 0%,#4a0b0b 55%,#260404 100%)}
+.ovl[data-k="out"]{--overlay:#4a0b0b;--overlay-ink:#ffe8e4;--accent:#ff8d7b;--accent-ink:#2b0504;background:radial-gradient(100% 70% at 50% 25%,#6e1313 0%,#4a0b0b 50%,#3a0909 100%)}
 .ovl[data-k="out"] .dlg h3{color:#ffb9ad}
 .ovl[data-k="out"] .dlg .new i{background:#ff6b57}
 /* 被淘汰 / 在鬼市：整页红边光晕 + 页面顶部红色提示条 */
-body.inmk::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:60;box-shadow:inset 0 0 0 3px rgba(214,58,42,.8),inset 0 0 110px rgba(190,30,30,.38)}
+
 /* 队里有人被淘汰：提示去做 sidequest */
 /* 入鬼市登记状态 */
 .chk{font-size:12px;font-weight:800;padding:2px 9px;border-radius:999px;border:1px solid var(--line2);color:var(--sub);white-space:nowrap}
@@ -831,7 +831,7 @@ body.login{overflow:hidden}
 .lg.sealing>:not(.okv){opacity:0;transition:opacity .25s}
 
 /* 时间到全屏通知 */
-:root[data-theme] .ovl[data-k="time"]{--overlay:#1a0d2b;--overlay-ink:#f3e9ff;--accent:#ffcf6b;--accent-ink:#2b1a00;background:radial-gradient(120% 90% at 50% 0%,#3b1c5e 0%,#1a0d2b 55%,#0b0614 100%)}
+:root[data-theme] .ovl[data-k="time"]{--overlay:#1a0d2b;--overlay-ink:#f3e9ff;--accent:#ffcf6b;--accent-ink:#2b1a00;background:radial-gradient(100% 70% at 50% 25%,#3b1c5e 0%,#1a0d2b 55%,#140a22 100%)}
 :root[data-theme] .ovl[data-k="time"] .dlg h3{color:#ffcf6b;font-size:clamp(64px,22vw,110px)}
 :root[data-theme] .ovl[data-k="time"] .dlg .new i{background:#ffcf6b}
 /* 手机上的大屏：排名只留队名 + 柱子 + 花色；房间卡字号与玩家页房间卡一致 */
@@ -1424,3 +1424,15 @@ body .swrow small{font-size:13px}
 .cb.id small{font:500 13px var(--sans,inherit);color:var(--sub)}
 /* 展示 PIN 只读：页头醒目的「只读模式」标 */
 header.top .devops.ro,header.top .devops.ro:disabled{opacity:1!important;border:1.5px solid var(--warn)!important;color:#1b1406!important;background:var(--warn)!important;background-image:none!important;font-weight:900;cursor:default}
+
+/* iPhone（iOS 26 Safari）上下两端：浮动地址栏后面会露出页面内容
+   1) 玩家底部菜单往下多铺一截底色，菜单下面不再露出房间卡
+   2) 全屏弹窗打开时，把页面本身藏起来、整页底色换成弹窗的颜色，状态栏和地址栏区域跟弹窗同色 */
+body[data-role="player"]:not(.login) #tabs::after{content:"";position:absolute;left:0;right:0;top:100%;height:160px;background:inherit;pointer-events:none}
+.ovl{background-color:var(--overlay)}
+.ovl[data-k="out"]{background-color:#3a0909}
+:root[data-theme] .ovl[data-k="time"]{background-color:#140a22}
+html:has(#modal .ovl),html:has(#modal .ovl) body{background:var(--overlay)!important}
+html:has(#modal .ovl[data-k="out"]),html:has(#modal .ovl[data-k="out"]) body{background:#3a0909!important}
+html:has(#modal .ovl[data-k="time"]),html:has(#modal .ovl[data-k="time"]) body{background:#140a22!important}
+body:has(#modal .ovl) :is(.wrap,#amb,#scene){visibility:hidden}
