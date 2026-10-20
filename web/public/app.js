@@ -865,10 +865,10 @@ function render(){
   morph($('#view'),offBar()+(aucP?viewAucPlayer():ui.tab==='board'?viewBoard():ui.tab==='dealer'?viewDealer():ui.tab==='ctrl'?viewCtrl():ui.tab==='npc'?viewNpc():ui.tab==='auc'?viewAuc():ui.tab==='market'?viewMarket():ui.tab==='wuchang'?viewWuchang():viewPlayer()));
   fitStage();confettiCheck();
   { // 灯笼 / 面具的绳子接到页头那条线：算出它们离页头底边的距离（有标签栏时不上提，免得盖住标签）
-    const root=document.documentElement,hb=$('#top').getBoundingClientRect().bottom;
-    root.style.setProperty('--lfy',Math.max(0,Math.round(hb+window.scrollY))+'px'); // 手机固定背景的上沿 = 页头分割线
+    const root=document.documentElement,hb0=$('#top').getBoundingClientRect().bottom,op=$('.offpage'),hb=op?op.getBoundingClientRect().bottom:hb0;   // 有离线记录时，灯笼 / 面具从它下沿开始
+    root.style.setProperty('--lfy',Math.max(0,Math.round(hb0+window.scrollY))+'px'); // 手机固定背景的上沿 = 页头分割线
     const lb=$('.lantern-band');if(lb){const cur=parseFloat(root.style.getPropertyValue('--lup'))||0,nat=lb.getBoundingClientRect().top+cur;
-      root.style.setProperty('--lup',(nav.hidden?Math.max(0,Math.round(nat-hb)):0)+'px');}
+      root.style.setProperty('--lup',(nav.hidden||op?Math.max(0,Math.round(nat-hb)):0)+'px');}
     const wm=$('.wc-in');if(wm){const top=wm.getBoundingClientRect().top;root.style.setProperty('--wup',Math.max(0,Math.round(top-hb))+'px');}
   }
   const had=!!$('#modal .dlg');morph($('#modal'),modalHtml());
