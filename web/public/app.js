@@ -130,13 +130,13 @@ function viewBoard(){
     +'<div class="rgrid">'+ROOMS.map(r=>roomCard(r,me)).join('')+'</div></div>'
     +'</div></div>';
 }
-// 鬼门开进行中：标题 + 三个名额（最先完成的 3 人），完成一个点亮一个
+// 鬼门开进行中：标题行（同排行标题样式）+ 三个名额，完成一个点亮一个
 function gateBox(){
   if(!S.gp)return '';
   const n=(S.notices||[]).find(x=>x.id===S.gp.nid),w=S.gp.wins;
-  return '<div class="gbox"><div class="gh"><b>鬼门开</b>'+(n&&n.title&&n.title!=='鬼门开'?'<span>'+esc(n.title)+'</span>':'')+'</div>'
-    +'<div class="gs">'+[0,1,2].slice(0,GATE_WIN).map(i=>{const x=w[i],p=x&&pl(x.pid);
-      return '<div class="sl'+(x?' on':'')+'"><i>'+['壹','贰','叁'][i]+'</i><span>'+(x?'<b class="mono">'+x.pid+'</b>'+(p&&p.nick?' '+esc(p.nick):''):'虚位以待')+'</span></div>';}).join('')+'</div></div>';
+  return '<div class="gbox"><div class="gh"><b>鬼门开</b>'+(n&&n.title&&n.title!=='鬼门开'?'<span>'+esc(n.title)+'</span>':'')+'<span class="gc mono">'+w.length+' / '+GATE_WIN+'</span></div>'
+    +'<div class="gs">'+Array.from({length:GATE_WIN},(_,i)=>{const x=w[i],p=x&&pl(x.pid);
+      return '<div class="sl'+(x?' on':'')+'"><span class="mono">'+(i+1)+'</span><b>'+(x?x.pid+(p&&p.nick?' '+esc(p.nick):''):'—')+'</b></div>';}).join('')+'</div></div>';
 }
 // 全场播报：放不下的整条藏起来（不截半条）
 function clipCast(){const c=$('.stage .cast');if(!c)return;const cb=c.getBoundingClientRect().bottom;

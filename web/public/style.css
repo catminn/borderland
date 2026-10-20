@@ -1502,26 +1502,24 @@ body:has(#modal .ovl) :is(.wrap,#amb,#scene){visibility:hidden}
 @media (max-width:719px){.mp-idx{gap:12px}.mp-li{grid-template-columns:40px 40px minmax(0,1fr) auto;gap:8px;font-size:15px}}
 @media (prefers-reduced-motion:reduce){.mp-room>rect{transition:none}}
 
-/* ===== 大屏：鬼门开板块（2026-10-20，替代燃香进度条和旧的 gatebar） ===== */
-.gbox{position:relative;z-index:1;display:flex;flex-direction:column;gap:14px;padding:18px 20px 20px;border:2px solid var(--red);border-radius:var(--r-m);
-  background:linear-gradient(180deg,var(--red-soft),transparent 140%);box-shadow:inset 0 0 0 4px var(--bg),inset 0 0 0 5px var(--red),var(--sh)}
-.gbox .gh{display:flex;align-items:baseline;gap:16px}
-.gbox .gh b{font-family:var(--disp);font-weight:400;font-size:44px;letter-spacing:.3em;color:var(--red);line-height:1}
-.gbox .gh span{font-family:var(--disp);font-size:44px;color:var(--ink);line-height:1}
+/* ===== 大屏：鬼门开板块（2026-10-20，替代燃香进度条和旧的 gatebar；跟排行、房间卡同一套描边 + 硬投影） ===== */
+.gbox{position:relative;z-index:1;display:flex;flex-direction:column;gap:14px;padding:18px 20px 20px;background:var(--panel);
+  border:var(--stroke) solid var(--red);border-radius:var(--r-m);box-shadow:var(--shx) var(--shx) 0 var(--red)}
+.gbox .gh{display:flex;align-items:baseline;gap:14px;font-size:32px;line-height:1.2}
+.gbox .gh b{color:var(--red);font-weight:900}
+.gbox .gh span{color:var(--sub);font-weight:700}
+.gbox .gh .gc{margin-left:auto;color:var(--ink)}
 .gbox .gs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
-.gbox .sl{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 6px;border:2px dashed var(--red);border-radius:var(--r-m);color:var(--sub);text-align:center;min-width:0}
-.gbox .sl i{font-style:normal;font-family:var(--disp);font-size:24px;color:var(--red)}
-.gbox .sl span{font-size:24px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
-.gbox .sl.on{border-style:solid;background:var(--red);color:#fff}
-.gbox .sl.on i{color:#fff}
+.gbox .sl{display:flex;flex-direction:column;gap:4px;padding:10px 12px;border:1.5px solid var(--line2);border-radius:var(--r-m);color:var(--mute);min-width:0;font-size:24px}
+.gbox .sl span{font-weight:700}
+.gbox .sl b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gbox .sl.on{background:var(--red);border-color:var(--stroke-c);color:#fff;box-shadow:var(--shs) var(--shs) 0 var(--sh-c)}
 @media (max-width:819px){
   .stage .gbox{order:3;padding:12px 14px 14px;gap:10px}
-  .gbox .gh b,.gbox .gh span{font-size:26px}
+  .gbox .gh{font-size:17px;gap:10px}
   .gbox .gs{gap:8px}
-  .gbox .sl{padding:8px 4px;gap:2px}
-  .gbox .sl i,.gbox .sl span{font-size:15px}
+  .gbox .sl{padding:8px 10px;gap:2px;font-size:15px}
 }
-
 /* 地图悬停：像原图一样加深底色（不加粗），地图和下面的列表互相联动；手机点一下也一样 */
 .mp-room:hover>rect,.mp-room.sel>rect,.mapp:has(.mp-li[data-v="4S"]:hover) .mp-room[data-v="4S"]>rect,.mapp:has(.mp-li[data-v="8S"]:hover) .mp-room[data-v="8S"]>rect,.mapp:has(.mp-li[data-v="4H"]:hover) .mp-room[data-v="4H"]>rect,.mapp:has(.mp-li[data-v="8H"]:hover) .mp-room[data-v="8H"]>rect,.mapp:has(.mp-li[data-v="4C"]:hover) .mp-room[data-v="4C"]>rect,.mapp:has(.mp-li[data-v="8C"]:hover) .mp-room[data-v="8C"]>rect,.mapp:has(.mp-li[data-v="4D"]:hover) .mp-room[data-v="4D"]>rect,.mapp:has(.mp-li[data-v="8D"]:hover) .mp-room[data-v="8D"]>rect{fill:color-mix(in srgb,var(--accent) 34%,transparent)}
 .mp-room.s-on:hover>rect,.mp-room.s-on.sel>rect{fill:color-mix(in srgb,var(--warn) 34%,transparent)}
