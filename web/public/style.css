@@ -1451,12 +1451,20 @@ body:has(#modal .ovl) :is(.wrap,#amb,#scene){visibility:hidden}
 .mp-head{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
 .mp-plan{overflow-x:auto;background:var(--panel);border:var(--stroke) solid var(--stroke-c);border-radius:var(--r-m);box-shadow:var(--sh)}
 .mp-plan svg{display:block;width:100%;height:auto}
-.mp-plan .mp-v{display:none;max-width:460px;margin:0 auto}
-@media (max-width:719px){.mp-plan .mp-h{display:none}.mp-plan .mp-v{display:block}}
-.mp-gn.mid,.mp-cd,.mp-st.sm{text-anchor:middle;dominant-baseline:central}
-.mp-cd{font-family:var(--mono)!important;font-weight:700;font-size:24px}.mp-cd.red{fill:var(--red)!important}
-.mp-st.sm{font-size:16px}
-@media (min-width:1300px){.page.mapp{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;align-items:start}.page.mapp>.mp-info,.page.mapp>.mp-idx,.page.mapp>.offpage{grid-column:1/-1}}
+.mp-only{display:none}
+/* 手机：同一张图等比缩小，只留房间号、区域名和颜色（游戏名和状态看下面的列表） */
+@media (max-width:719px){
+  .mp-plan{padding:4px}
+  .mp-room .mp-num:not(.mp-only),.mp-st,.mp-tag,.mp-gn,.mp-cap,.mp-cs,.mp-sl,.mp-cor{display:none}
+  .mp-only{display:inline}
+  .mp-plan .mp-num{font-size:46px}
+  .mp-plan .mp-ct{font-size:60px}
+  .mp-plan .mp-in text,.mp-plan .mp-ent{font-size:30px}
+  .mp-plan .mp-wall{stroke-width:6}
+  .mp-plan .mp-room>rect{stroke-width:5}
+  .mp-plan .mp-room.mine>rect{stroke-width:9}
+}
+@media (min-width:1300px){.page.mapp{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;align-items:start}.page.mapp>.mp-idx{grid-column:1/-1}}
 .mp-plan text{font-family:var(--sans);fill:var(--ink)}
 .mp-wall{fill:none;stroke:var(--ink);stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
 .mp-common{fill:var(--red-soft)}
@@ -1493,10 +1501,6 @@ body:has(#modal .ovl) :is(.wrap,#amb,#scene){visibility:hidden}
 .mp-tag rect{fill:var(--card);stroke:var(--stroke-c);stroke-width:1.5}
 .mp-tag text{font-family:var(--mono);font-weight:700;font-size:16px;text-anchor:middle;fill:var(--ink)}
 .mp-tag.red text{fill:var(--red)}
-.mp-info{gap:10px}
-.mp-ih{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.mp-ih b{font-size:22px}
-.mp-ih .btn-line{margin-left:auto;min-height:36px}
 .mp-card{display:inline-grid;place-items:center;min-width:40px;height:26px;padding:0 6px;border:1.5px solid var(--stroke-c);border-radius:4px;background:var(--card);font:700 15px var(--mono);color:var(--ink)}
 .mp-card.sr{color:var(--red)}
 .mp-s{font-weight:700;white-space:nowrap}
