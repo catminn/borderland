@@ -1282,3 +1282,33 @@ body .room.mine{opacity:1;border-color:var(--red);box-shadow:inset 0 0 0 1px var
 .confetti i:nth-child(3n){border-radius:50%;height:var(--w)}
 @keyframes cfall{0%{transform:translate(0,0) rotate(var(--r))}100%{transform:translate(var(--sw),110vh) rotate(calc(var(--r) + 720deg));opacity:.85}}
 .chips.c4 .cb{justify-content:center}.chips.c4 .cb .t{font-size:22px}
+
+/* ===== 手机端字号统一（放在最后，覆盖前面各处零散的手机字号）=====
+   12 小标签 · 13 辅助说明 · 15 正文 / 次要按钮 · 17 强调 / 主按钮 / 输入框 · 20 大输入框 · 22 版块标题 · 26 名称标题 · 48 倒计时 */
+@media (max-width:719px){
+  .sh{font-size:22px}
+  .in,.in.mono{font-size:17px}
+  .entin,.abid{font-size:20px!important;letter-spacing:.04em}
+  .abid{height:54px}
+  .nickc .in{font-size:20px}
+  .mrow .give .in{font-size:17px}
+  .btn-main[style*="font-size"],.abig{font-size:17px!important}
+  body[data-role="player"]:not(.login) #tabs button{font-size:16px}
+  /* 名称类标题 */
+  .hero .name b{font-size:26px}
+  .acard .aname{font-size:26px}
+  .ttitle b{font-size:18px}
+  .note .nt{font-size:17px}
+  .rt .hd b,.rt.rp .hd .who b{font-size:18px}.rt.rp .hd .who span{font-size:15px}
+  .wl button,.wl.w3 button{font-size:17px}
+  .rbtn .n{font-size:17px}
+  /* 倒计时 */
+  .atimer.sm .aclk{font-size:48px}.atimer.sm .acap{font-size:13px}
+  /* 拍卖大屏在手机上（之前桌面字号压过了手机字号：说明 30px 比拍品名还大） */
+  .stage .aidx{font-size:13px;letter-spacing:.2em}
+  .stage .aname{font-size:28px}
+  .stage .adesc{font-size:15px}
+  .stage .astartb b{font-size:32px}.stage .astartb .acap{font-size:12px}
+  .stage .aclk{font-size:48px}
+  .stage .await{font-size:20px}
+}
