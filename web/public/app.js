@@ -396,12 +396,12 @@ function viewWuchang(){
 const FLT=[['all','全部'],['alive','在场'],['down','不在场'],['fin','可晋级'],['off','未上榜']];
 function playerTable(){
   const q=ui.q.trim(),f=ui.flt;
-  let list=S.players.filter(p=>f==='off'?!p.on:p.on);
+  let list=S.players.filter(p=>f==='off'?!p.on:p.on);   // 默认只列上榜的人（登录取了昵称，或进过房间）；没用过的卡在「未上榜」
   if(f==='alive')list=list.filter(p=>p.st==='alive');else if(f==='down')list=list.filter(p=>p.st!=='alive');else if(f==='fin')list=list.filter(qualifies);
   if(q)list=list.filter(p=>p.id.includes(q)||(p.nick||'').includes(q));
   list=f==='off'?list:list.sort((a,b)=>b.score-a.score||a.id.localeCompare(b.id));
   const rows=list.map(p=>'<button class="ptr'+(ui.ed.pid===p.id?' on':'')+(p.st!=='alive'?' down':'')+'" data-a="edpick" data-v="'+p.id+'"><span class="mono b">'+p.id+'</span><span class="nk">'+esc(p.nick||'—')+'</span>'
-    +'<span class="stt'+(p.st==='alive'?'':' red')+'">'+stLabel(p)+(p.inRoom?' · '+room(p.inRoom).card:'')+'</span>'+suits4(p)+'<span class="mono sc">'+p.score+'</span>'
+    +'<span class="stt'+(p.st==='alive'?'':' red')+'">'+(p.on?stLabel(p):'未上榜')+(p.inRoom?' · '+room(p.inRoom).card:'')+'</span>'+suits4(p)+'<span class="mono sc">'+p.score+'</span>'
     +'<span class="small">'+(S.fin&&S.fin.includes(p.id)?'<b class="acc">资格</b>':qualifies(p)?'<span class="acc">可晋级</span>':'')+'</span></button>').join('');
   return '<div class="pn" style="gap:10px"><div class="btns"><input class="in" id="pq" data-m="q" value="'+esc(ui.q)+'" placeholder="搜编号或昵称" style="max-width:220px">'
     +FLT.map(([k,l])=>'<button class="btn-line'+(f===k?' fill':'')+'" data-a="flt" data-v="'+k+'">'+l+'</button>').join('')+'<span class="small">'+list.length+' 人</span></div>'
