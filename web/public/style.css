@@ -1711,3 +1711,24 @@ body .stage .ck.frz{color:var(--red)}
 .fin3 .ic.rm.lit{opacity:1;border:1px solid #d9cfb6;background:#f4eddc;color:#1c1a17;box-shadow:0 2px 0 #b9ad8f}
 .fin3 .ic.rm.lit.sr{color:#c03a25}
 .fin3 .tkt .fn{white-space:nowrap}
+
+/* 我的彩券：压成一块，首屏就能看全（彩券、花色、八间房） */
+.fin3,.fin3:is(*){gap:0;padding:10px 14px 12px;background-color:var(--panel);border:1px solid var(--stroke-c);border-radius:var(--r-m);box-shadow:none}
+.fin3 .fhd{padding:0;border:0;background:none;box-shadow:none;gap:4px}
+.fin3 .fcs{display:flex;flex-direction:column;gap:0;padding:0}
+.fin3 .fr,.fin3 .fr.ok{padding:8px 0 0;margin-top:8px;gap:6px;border:0;border-top:1px solid var(--line);border-radius:0;background:none;box-shadow:none}
+.fin3 .fr:has(.c4){flex-direction:row;align-items:center;justify-content:space-between}
+.fin3 .fr:has(.c4) .fk{display:none}
+.fin3 .ics.c4{display:flex;gap:16px;grid-template-columns:none}
+.fin3 .ic.su{height:auto;font-size:26px;line-height:1}
+.fin3 .ic.su.lit{transform:none}
+.fin3 .ics.c8{grid-template-columns:repeat(8,minmax(0,1fr));gap:4px}
+.fin3 .ic.rm{aspect-ratio:4/5;border-radius:5px}
+.fin3 .ic.rm .rk{top:3px;left:4px;font-size:10px}
+.fin3 .ic.rm .st{font-size:18px;margin-top:6px}
+.fin3 .ic.rm.lit{box-shadow:0 1px 0 #b9ad8f;transform:none}
+.fin3 .fn{font-size:22px}
+.fin3 .eq{margin-top:2px;gap:4px 8px;align-items:baseline}
+.fin3 .eq .q{flex-direction:row;align-items:baseline;gap:5px}
+.fin3 .fr .fk{padding:0 6px;font-size:12px}
+.fin3 .fr:has(.c8) .fh b{font-size:15px}
