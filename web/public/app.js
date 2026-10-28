@@ -249,7 +249,7 @@ function mapSvg(me){
     +t(140,345,'mp-cor','走 廊')
     +'<g class="mp-desk"><rect x="450" y="282" width="230" height="64" rx="5"/>'+t(565,315,"mp-dk","info desk")+'</g>';
   MAP_ROOMS.forEach(([id,x,y,w,hh])=>{const r=room(id),[sl,sc]=mapSt(r),mine=me&&me.inRoom===id,done=me&&me.cleared.includes(id),cx=x+w/2,cy=y+hh/2;
-    h+='<g class="mp-room s-'+sc+(mine?' mine':'')+(ui.msel===id?' sel':'')+'" data-a="msel" data-v="'+id+'" role="button" aria-label="'+r.card+' '+esc(r.name)+' '+sl+'">'
+    h+='<g class="mp-room s-'+sc+(mine?' mine':done?' done':'')+(ui.msel===id?' sel':'')+'" data-a="msel" data-v="'+id+'" role="button" aria-label="'+r.card+' '+esc(r.name)+' '+sl+'">'
       +'<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+hh+'" rx="3"/>'
       +'<g class="mp-tag'+(isRed(r.suit)?' red':'')+'" transform="translate('+(cx-22)+' '+(cy-62)+')"><rect width="44" height="26" rx="4"/>'+t(22,19,'',r.n+r.suit)+'</g>'
       +t(cx,cy+2,'mp-gn mid',esc(r.name))+t(cx,cy+40,'mp-st',mine?'你在这里':done?'✓ 已成功':sl)+t(cx,cy,'mp-num mp-only',r.n+r.suit)+'</g>';});

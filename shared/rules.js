@@ -167,7 +167,7 @@ const stLabel=p=>({alive:'在场',out:'待接',picked:'已接到',market:'鬼市
 function eliminate(p,why,where){
   if(p.inRoom){const r=S.rooms.find(x=>x.id===p.inRoom);r.ps=r.ps.filter(x=>x!==p.id);if(!r.ps.length&&r.st==='play')r.st='open';p.inRoom=null;}
   p.st='out';p.outAt=S.t;p.inAt=null;p.pickAt=null;p.chk=null;p.at=where||'';
-  log(nm(p)+' '+why+'，原地等黑白无常','hook',1);
+  log(nm(p)+' '+why+'，进入鬼市','hook',1);
   tell(p.id,'挑战失败','原因：'+why+'。请留在原地，等黑白无常来接你去鬼市。','out');}
 function pickup(pid){const p=pl(pid);
   if(!p)return no('没有这个编号');if(p.st!=='out')return no(p.id+(p.st==='picked'?' 已经接到了':' 现在不在待接状态'));

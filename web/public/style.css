@@ -1939,3 +1939,14 @@ body.bwr .ptr{border-radius:0}
 :root[data-theme="dark"] body.bwr .fin3 .ic.rm:not(.lit){opacity:1;border:1px dashed rgba(255,255,255,.55);background:#1f1f1f;color:#bdbdbd}
 :root[data-theme="dark"] body.bwr .fin3 .ic.rm:not(.lit) :is(.rk,.st){color:#bdbdbd;opacity:1}
 .stage .prow .sc{grid-column:4;text-align:right}
+
+/* 地图：已成功 = 白（浅色下墨色），游戏中 / 重置中 = 暗灰，开放 = 绿，全部实线；info desk / 签到台 = 白底黑字 */
+body.bwr .mp-room>rect,body.bwr .mp-room.s-on>rect,body.bwr .mp-room.s-rst>rect,body.bwr .mp-room.s-shut>rect{stroke-dasharray:none}
+body.bwr .mp-room.s-on>rect,body.bwr .mp-room.s-rst>rect,body.bwr .mp-room.s-shut>rect{stroke:var(--line);fill:var(--off-bg)}
+body.bwr .mp-room.done:not(.mine)>rect{stroke:var(--ink);fill:var(--off-bg);stroke-width:4}
+body.bwr .mp-room.done:not(.mine) .mp-st{fill:var(--ink)}
+body.bwr .mp-desk rect,body.bwr .mp-in rect{fill:var(--accent);stroke:none}
+body.bwr .mp-desk text,body.bwr .mp-in text{fill:var(--accent-ink)!important}
+body.bwr .mp-wall{stroke-dasharray:none}
+:root[data-theme="dark"] select{color-scheme:dark}
+:root[data-theme="dark"] select :is(option,optgroup){background:#1a1a1a;color:#f2f2f2}
