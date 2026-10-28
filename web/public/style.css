@@ -1872,3 +1872,13 @@ body.bwr .fin3 .slot b{color:var(--accent);background:linear-gradient(#fff,#e8e8
 :root[data-theme="dark"] body.bwr .fin3 .slot b{color:#ff4a3f;background:linear-gradient(#050505,#1a1a1a 50%,#050505)}
 /* 背景鬼火 / 眼睛在玩家页用黑白红：整体去色 */
 body.bwr #amb{filter:grayscale(1) contrast(1.1)}
+/* 黑白为主，红色只点缀：强调色（选中 / 按钮 / 时钟 / 开放）改成反白，红色留给印章、危险、小点 */
+body.bwr{--accent:#0a0a0a;--accent-ink:#fff;--accent-soft:rgba(0,0,0,.07);--glow:rgba(0,0,0,.12)}
+:root[data-theme="dark"] body.bwr{--accent:#f2f2f2;--accent-ink:#0a0a0a;--accent-soft:rgba(255,255,255,.09);--glow:rgba(255,255,255,.14);--bar:#bdbdbd}
+body.bwr .ovl{--accent:#f2f2f2;--accent-ink:#0a0a0a;--sh-c:#2a0a08;--hov:0 0 18px rgba(255,255,255,.25)}
+body.bwr .ovl[data-k="time"]{--accent:#f2f2f2;--accent-ink:#0a0a0a}
+body.bwr .stage .prow.me{border-left-color:var(--red)}
+body.bwr .fin3 .slot b,:root[data-theme="dark"] body.bwr .fin3 .slot b{color:var(--ink)}
+/* 玩家页标题：粗宋体，接近海报的高反差字形 */
+body.bwr{--disp:"BD Title","Noto Serif SC","Songti SC",serif}
+body.bwr :is(.sh,.rank .rh b,.cast .rh b,.gbox .gh b,.ck-l,.tn){font-weight:900}
