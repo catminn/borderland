@@ -1834,3 +1834,41 @@ body .stage .ck.frz{color:var(--red)}
   .mp-plan svg{max-height:34vh;width:auto;margin:0 auto}
   .page.mapp{gap:10px}
 }
+/* ===== 黑白红配色（先只给玩家 body.bwr，和海报统一；强调色 = 海报红，红色只当强调，不用于人名） ===== */
+body.bwr{
+  --bg:#f1f1ef; --panel:#fff; --panel2:#f6f6f4; --card:#fff; --input:#fff;
+  --line:#d6d6d3; --line2:#b4b4b0; --line3:#e6e6e3;
+  --ink:#0a0a0a; --ink2:#262626; --sub:#555; --mute:#8a8a86;
+  --accent:#c4130d; --accent-ink:#fff; --accent-soft:rgba(196,19,13,.09); --glow:rgba(196,19,13,.2);
+  --red:#c4130d; --red-ink:#8c0d09; --red-soft:rgba(196,19,13,.08); --warn:#8a6a00;
+  --track:#e2e2df; --bar:#9a9a96; --cb:#ececea; --cb-sub:#444; --got:#777;
+  --off-bg:#f0f0ee; --off-line:#dcdcd9; --off-fg:#9a9a96;
+  --overlay:#0a0a0a; --overlay-ink:#f2f2f2;
+  --tex:radial-gradient(ellipse 80% 40% at 50% 0%,rgba(0,0,0,.05),transparent 70%);
+  --wpaper:#fafaf8; --wline:#d6d6d3; --wframe:rgba(196,19,13,.45); --whair:#cfcfcb;
+}
+:root[data-theme="dark"] body.bwr{
+  --bg:#050505; --panel:#0e0e0e; --panel2:#0a0a0a; --card:#131313; --input:#0a0a0a;
+  --line:#272727; --line2:#383838; --line3:#1a1a1a;
+  --ink:#f2f2f2; --ink2:#d8d8d8; --sub:#a3a3a3; --mute:#686868;
+  --accent:#ff2a1f; --accent-ink:#fff; --accent-soft:rgba(255,42,31,.14); --glow:rgba(255,30,20,.35);
+  --red:#ff2a1f; --red-ink:#ffb3ad; --red-soft:rgba(255,42,31,.12); --warn:#e0b84a;
+  --track:#1c1c1c; --bar:#7a1410; --cb:#181818; --cb-sub:#bbb; --got:#8a8a8a;
+  --off-bg:#0a0a0a; --off-line:#1c1c1c; --off-fg:#5a5a5a;
+  --overlay:#0a0a0a; --overlay-ink:#f2f2f2;
+  --tex:radial-gradient(ellipse 80% 45% at 20% 0%,rgba(255,255,255,.06),transparent 70%),radial-gradient(ellipse 60% 40% at 90% 100%,rgba(255,30,20,.05),transparent 70%);
+  --wpaper:#101010; --wline:#272727; --wframe:rgba(255,42,31,.5); --whair:#333;
+}
+body.bwr .ovl{--accent:#ff2a1f;--accent-ink:#fff;--sh-c:color-mix(in oklab,#ff2a1f 35%,#000);--hov:0 0 18px rgba(255,42,31,.4)}
+body.bwr .ovl[data-k="out"]{--overlay:#1a0505;--overlay-ink:#ffe8e4}
+body.bwr .ovl[data-k="time"]{--overlay:#0a0a0a;--overlay-ink:#f2f2f2;--accent:#ff2a1f;--accent-ink:#fff;background:#0a0a0a}
+/* 本人那一行：白字 + 红底，不用红字 */
+body.bwr .stage .prow.me{background:var(--accent-soft);border-left-color:var(--accent)}
+body.bwr .stage .prow.me .who span,body.bwr .stage .prow.me .rk{color:var(--ink)}
+body.bwr .stage .prow.me .who span{font-weight:900}
+:root[data-theme="dark"] body.bwr{--sh-c:#3a0a08;--edge:rgba(255,42,31,.4);--sheet:#0a0a0a;--sheet2:#111;--sheet3:#161616;--base:#050505;--tex:radial-gradient(ellipse 80% 45% at 20% 0%,rgba(255,255,255,.06),transparent 70%),radial-gradient(ellipse 60% 40% at 90% 100%,rgba(255,30,20,.05),transparent 70%)}
+body.bwr{--edge:rgba(255,255,255,.9);--sheet:#d8d8d4;--sheet2:#e4e4e0;--sheet3:#eee}
+body.bwr .fin3 .slot b{color:var(--accent);background:linear-gradient(#fff,#e8e8e5 50%,#fff)}
+:root[data-theme="dark"] body.bwr .fin3 .slot b{color:#ff4a3f;background:linear-gradient(#050505,#1a1a1a 50%,#050505)}
+/* 背景鬼火 / 眼睛在玩家页用黑白红：整体去色 */
+body.bwr #amb{filter:grayscale(1) contrast(1.1)}

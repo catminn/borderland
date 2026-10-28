@@ -867,7 +867,7 @@ function render(){
     if(da.dataset.h!==h){da.innerHTML=h;da.dataset.h=h;}if(da.value!==ui.as)da.value=ui.as;}
   const login=!ME||entering;
   document.body.classList.toggle('login',login);if(login)document.body.classList.remove('inmk');document.body.classList.toggle('dev',!!DEVME&&!login);
-  document.body.classList.toggle('screen',!login&&ME.role==='screen');
+  document.body.classList.toggle('screen',!login&&ME.role==='screen');document.body.classList.toggle('bwr',!login&&ME.role==='player');
   document.body.dataset.role=login?'':ME.role;
   if(login){document.body.classList.remove('board','natscroll','fullamb','inmk','bt');document.documentElement.dataset.theme='dark';setAmb('login');renderLogin();return;}
   const nickGate=ME.role==='player'&&!DEVME&&S&&(p=>p&&!p.nick)(S.players.find(x=>x.id===ME.pid));   // 还没取昵称：只显示取名页
