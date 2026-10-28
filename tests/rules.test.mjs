@@ -185,7 +185,6 @@ A('dealer', { type: 'resetdone', rid: '8H' }); A('dealer', { type: 'enter', rid:
 T('♥8：带人通关各 +800', A('dealer', { type: 'finish', rid: '8H', results: { '004': 'win', '005': 'win' } }).ok && P('004').score === 800 && P('005').score === 800);
 T('其他房间不能选独自通关', A('dealer', { type: 'enter', rid: '4S', pids: ['006'] }).ok && !A('dealer', { type: 'finish', rid: '4S', results: { '006': 'solo' } }).ok);
 T('离线补录：♥8 独自通关 +1000', A('dealer', { type: 'offline', rows: [{ k: 'room', rid: '8H', pid: '007', res: 'solo' }] }).data[0].ok && P('007').score === 1000);
-T('房间号与地图一致', ['4S:173', '8S:B02', '4H:B51', '8H:B50', '4C:B75', '8C:150', '4D:151', '8D:B73'].every(x => { const [id, loc] = x.split(':'); return R.ROOMS.find(r => r.id === id).loc === loc; }));
 T('Dealer 改自己房间的规则', A('dealer', { type: 'setrule', rid: '4S', text: '新规则' }, { rooms: ['4S'] }).ok && R.roomRule('4S') === '新规则');
 T('Dealer 不能改别的房间规则', !A('dealer', { type: 'setrule', rid: '8S', text: 'x' }, { rooms: ['4S'] }).ok);
 T('玩家和大屏收不到改过的规则', !Object.keys(R.viewFor(S, { role: 'player', pid: '001' }).rules).length && !Object.keys(R.viewFor(S, { role: 'screen' }).rules).length);

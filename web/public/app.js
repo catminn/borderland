@@ -106,7 +106,7 @@ function roomCard(r,me){
   // 人数放在最后一行的右边（放不下就自己换到下一行，仍靠右）
   if(st==='play')L[L.length-1]='<div class="bln">'+L[L.length-1]+'<span class="np">'+x.ps.length+' 人</span></div>';
   return '<div class="room s-'+(st==='open'&&timeUp()?'shut':st)+(mine?' mine':'')+'"><div class="top"><div class="cd">'+cardG(r)+'</div>'
-    +'<div class="rr"><span class="pt lc">'+r.loc+'</span><span class="pt">+'+r.n*100+'</span></div></div>'
+    +'<div class="rr"><span class="pt">+'+r.n*100+'</span></div></div>'
     +'<div class="bt">'+L.join('')+'</div></div>';
 }
 // 房间已玩时间（游戏秒）：m:ss，每秒由 tickClocks 更新
@@ -201,52 +201,33 @@ function confetti(big){
   box.innerHTML=h;document.body.appendChild(box);setTimeout(()=>box.remove(),(big?8000:6500));
 }
 
-// ---------- 地图（场地两层平面图，房间显示实时状态） ----------
-// 坐标沿用场地图（1040×460），手机和电脑同一张图、同一比例；手机上只保留房间号和大字，游戏名看下面的列表。
-// rooms：[房间 id, x, y, w, h, 牌签位置 'up'/'down']；房间号、楼层在 rules.js 的 ROOMS 里。walls：折线点。
-const MAP={
-  '1':{name:'一层',note:'规则讲解、抽奖、鬼市',walls:[[[340,95],[340,150],[548,150]],[[592,150],[768,150]],[[812,150],[830,150]],[[30,300],[575,300],[575,440],[830,440],[830,300],[900,300]]],
-    common:[575,300,255,140],cap:'淘汰区域',ctitle:'鬼市',csub:'',
-    rooms:[['4S',30,214,130,86,'down'],['8C',400,88,100,62,'up'],['4D',365,300,155,82,'down']],
-    fixed:[[30,72,130,130,'175','规则讲解','最终抽奖']],tables:true},
-  'B':{name:'B 层',note:'入口、签到、鬼门开',walls:[[[340,95],[340,150],[548,150]],[[592,150],[768,150]],[[812,150],[1010,150]],[[30,300],[575,300],[575,445],[830,445],[830,325]],[[885,300],[925,300]],[[1000,300],[1010,300]]],
-    common:[575,300,255,145],ctitle:'鬼门开',csub:'info desk',
-    rooms:[['4C',30,72,130,130,'up'],['8D',30,214,130,86,'down'],['8H',400,92,100,58,'up'],['8S',872,92,118,58,'up'],['4H',365,300,155,82,'down']],
-    empty:[618,78,122,72],entry:true}};
+// ---------- 地图（单房间平面图，房间显示实时状态） ----------
+// 坐标沿用场地图（1 米 = 50），手机和电脑同一张图；手机上只保留牌和颜色，游戏名看下面的列表。玩家不看尺寸、排队线等布置细节。
+const MAP_ROOMS=[['8H',40,40,200,200],['8D',240,40,200,200],['4D',690,40,200,200],['8C',890,40,200,200],['4S',40,440,325,200],['4H',365,440,200,200],['4C',565,440,200,200],['8S',765,440,325,200]];
 function mapSt(r){const x=S.rooms.find(y=>y.id===r.id);
   return x.st==='play'?['游戏中 '+x.ps.length+' 人','on']:x.st==='reset'?['重置中','rst']:timeUp()?['已关闭','shut']:['开放','idle'];}
-function mapSvg(fk,me){
-  const F=MAP[fk],t=(x,y,c,txt)=>'<text x="'+x+'" y="'+y+'" class="'+c+'">'+txt+'</text>';
-  const line=pts=>pts.map((q,i)=>(i?'L':'M')+q[0]+' '+q[1]).join('');
-  const stairs=x=>'<g class="mp-stair"><rect x="'+x+'" y="112" width="44" height="38"/>'+[121,130,139].map(y=>'<path d="'+line([[x,y],[x+44,y]])+'"/>').join('')+t(x+22,102,'mp-sl','楼梯')+'</g>';
-  const c=F.common;
-  let h='<svg viewBox="0 0 1040 460" role="img" aria-label="'+F.name+'平面图">'
-    +'<defs><pattern id="mph'+fk+'" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="8" class="mp-hl"/></pattern></defs>'
-    +'<rect class="mp-common" x="'+c[0]+'" y="'+c[1]+'" width="'+c[2]+'" height="'+c[3]+'"/><path class="mp-wall" d="'+F.walls.map(line).join('')+'"/>'
-    +t(190,232,'mp-cor','走 廊')+stairs(548)+stairs(768)
-    +t(600,c[1]+30,'mp-cap',F.cap||'公共区域')+t(600,c[1]+72,'mp-ct',F.ctitle)+(F.csub?t(600,c[1]+100,'mp-cs',F.csub):'');
-  if(F.tables)h+=[620,670,720,770].map(x=>'<g class="mp-tb" transform="translate('+x+' 416)"><circle class="t" r="9"/>'+[[0,-14],[0,14],[-14,0],[14,0]].map(([q,w])=>'<circle class="c" cx="'+q+'" cy="'+w+'" r="2.5"/>').join('')+'</g>').join('');
-  if(F.empty)h+='<rect class="mp-empty" x="'+F.empty[0]+'" y="'+F.empty[1]+'" width="'+F.empty[2]+'" height="'+F.empty[3]+'" fill="url(#mph'+fk+')"/>';
-  (F.fixed||[]).forEach(([x,y,w,hh,n,a,b])=>{h+='<g class="mp-fix"><rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+hh+'"/>'+t(x+w/2,y+hh/2,'mp-num',n)+'</g>'+t(x,y-40,'mp-gn plain',a)+t(x,y-12,'mp-gn plain',b);});
-  F.rooms.forEach(([id,x,y,w,hh,pos])=>{const r=room(id),[sl,sc]=mapSt(r),mine=me&&me.inRoom===id,done=me&&me.cleared.includes(id),cx=x+w/2,cy=y+hh/2,small=hh<70,ty=pos==='up'?y-36:y+hh+14;
-    h+='<g class="mp-room s-'+sc+(mine?' mine':'')+(ui.msel===id?' sel':'')+'" data-a="msel" data-v="'+id+'" role="button" aria-label="'+r.loc+' '+r.card+' '+esc(r.name)+' '+sl+'">'
+function mapSvg(me){
+  const t=(x,y,c,txt)=>'<text x="'+x+'" y="'+y+'" class="'+c+'">'+txt+'</text>';
+  let h='<svg viewBox="20 20 1160 640" role="img" aria-label="场地平面图">'
+    +'<rect class="mp-common" x="440" y="40" width="250" height="200"/>'
+    +t(565,86,'mp-cap','公共区域')+t(565,128,'mp-ct','鬼市')+t(565,164,'mp-cs','淘汰点')+t(565,190,'mp-cs','最终抽奖集合点')
+    +t(140,345,'mp-cor','走 廊')
+    +'<g class="mp-desk"><rect x="490" y="290" width="150" height="48" rx="4"/>'+t(565,314,'','info desk')+'</g>';
+  MAP_ROOMS.forEach(([id,x,y,w,hh])=>{const r=room(id),[sl,sc]=mapSt(r),mine=me&&me.inRoom===id,done=me&&me.cleared.includes(id),cx=x+w/2,cy=y+hh/2;
+    h+='<g class="mp-room s-'+sc+(mine?' mine':'')+(ui.msel===id?' sel':'')+'" data-a="msel" data-v="'+id+'" role="button" aria-label="'+r.card+' '+esc(r.name)+' '+sl+'">'
       +'<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+hh+'" rx="3"/>'
-      +t(cx,cy-(small?8:14),'mp-num',r.loc)+t(cx,cy+(small?16:20),'mp-st',mine?'你在这里':done?'✓ 已成功':sl)+t(cx,cy,'mp-num mp-only',r.loc)
-      +'<g class="mp-tag'+(isRed(r.suit)?' red':'')+'" transform="translate('+x+' '+ty+')"><rect width="44" height="26" rx="4"/>'+t(22,19,'',r.n+r.suit)+'</g>'
-      +t(x+54,ty+20,'mp-gn',esc(r.name))+'</g>';});
-  if(F.entry)h+='<g class="mp-in"><rect x="802" y="276" width="84" height="48" rx="4"/>'+t(844,307,'','签到')+'</g>'
-    +'<path class="mp-door" d="'+line([[925,300],[917,322]])+line([[1000,300],[1008,322]])+'"/>'
-    +'<path class="mp-arrow" d="'+line([[962,382],[962,316]])+line([[954,326],[962,316],[970,326]])+'"/>'+t(962,410,'mp-ent','入口');
+      +'<g class="mp-tag'+(isRed(r.suit)?' red':'')+'" transform="translate('+(cx-22)+' '+(cy-62)+')"><rect width="44" height="26" rx="4"/>'+t(22,19,'',r.n+r.suit)+'</g>'
+      +t(cx,cy+2,'mp-gn mid',esc(r.name))+t(cx,cy+40,'mp-st',mine?'你在这里':done?'✓ 已成功':sl)+t(cx,cy,'mp-num mp-only',r.n+r.suit)+'</g>';});
+  h+='<path class="mp-wall" d="M1090 300 V40 H40 V640 H1090 V380"/>'
+    +'<g class="mp-in"><rect x="940" y="304" width="146" height="72" rx="4"/>'+t(1013,340,'','签到台')+'</g>'
+    +'<path class="mp-arrow" d="M1170 340 H1100 M1110 332 L1100 340 L1110 348"/>'+t(1135,320,'mp-ent','入口');
   return h+'</svg>';
 }
 function viewMap(){
   const me=ME&&ME.role==='player'?pl(ME.pid):null;
-  if(!ui.mapInit){ui.mapInit=1;if(me&&me.inRoom)ui.sub.map=room(me.inRoom).fl;}
-  const floor=fk=>{const F=MAP[fk];return sec('map',fk,'<div class="mp-head"><h2 class="sh">'+F.name+'</h2><span class="hint">'+F.note+'</span></div><div class="mp-plan">'+mapSvg(fk,me)+'</div>');};
-  const list=fk=>'<div class="mp-list"><h3>'+MAP[fk].name+'</h3>'+ROOMS.filter(r=>r.fl===fk).map(r=>{const [sl,sc]=mapSt(r);
-    return '<button class="mp-li'+(ui.msel===r.id?' on':'')+'" data-a="msel" data-v="'+r.id+'"><span class="mono">'+r.loc+'</span><span class="mp-card'+(isRed(r.suit)?' sr':'')+'">'+r.n+r.suit+'</span><span class="nm">'+esc(r.name)+'</span><span class="mp-s '+sc+'">'+(me&&me.inRoom===r.id?'你在这里':me&&me.cleared.includes(r.id)?'✓ 已成功':sl)+'</span></button>';}).join('')+'</div>';
-  return '<div class="page tabbed mapp">'+sub('map',[['1','一层'],['B','B 层']],'top')+floor('1')+floor('B')
-    +'<div class="pn mp-idx">'+list('1')+list('B')+'</div></div>';
+  const list='<div class="mp-list">'+ROOMS.map(r=>{const [sl,sc]=mapSt(r);
+    return '<button class="mp-li'+(ui.msel===r.id?' on':'')+'" data-a="msel" data-v="'+r.id+'"><span class="mp-card'+(isRed(r.suit)?' sr':'')+'">'+r.n+r.suit+'</span><span class="nm">'+esc(r.name)+'</span><span class="mp-s '+sc+'">'+(me&&me.inRoom===r.id?'你在这里':me&&me.cleared.includes(r.id)?'✓ 已成功':sl)+'</span></button>';}).join('')+'</div>';
+  return '<div class="page mapp"><div class="mp-plan">'+mapSvg(me)+'</div><div class="pn mp-idx">'+list+'</div></div>';
 }
 
 // ---------- Dealer ----------
@@ -261,7 +242,7 @@ function viewDealer(){
       +'<span class="st '+kc+'">'+(kc!=='rst'?'<i class="gd"></i>':'')+RST[q.st][0]+(q.ps.length?' '+q.ps.length+' 人':'')+'</span></button>';}).join('')+'</div></div>';
   const timer=st!=='open'?'已 '+mmss(Math.max(0,S.t-x.at)):'';
   const hero='<div class="hero"><div class="tile"><span class="tn">'+r.n+'</span><span class="ts '+(isRed(r.suit)?'sr':'')+'">'+r.suit+'</span></div>'
-    +'<div class="info"><div class="meta"><span class="typ">'+r.loc+'</span><span class="typ">'+TYPE[r.suit]+'</span><span class="coins">+'+r.n*100+' <small>金币</small></span></div>'
+    +'<div class="info"><div class="meta"><span class="typ">'+TYPE[r.suit]+'</span><span class="coins">+'+r.n*100+' <small>金币</small></span></div>'
     +'<div class="name"><b>'+r.name+'</b>'+(ui.settled&&ui.settled.rid===r.id&&st==='reset'?'<span class="stamp">已结算</span>':'')+'</div>'
     +'<span class="status '+RST[st][1]+'">'+(RST[st][1]!=='rst'?'<i class="gd"></i>':'')+RST[st][0]+(x.ps.length?' '+x.ps.length+(S.capOn?' / '+cap:'')+' 人':'')+(timer?'　'+timer:'')+'</span></div></div>';
   // 入场：输入编号（可多人）
