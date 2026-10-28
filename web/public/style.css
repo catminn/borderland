@@ -1996,3 +1996,15 @@ body .stage .plist.pod .prow .who b{font-size:18px}
 body .stage .cast .bc{display:flex;flex-direction:column;gap:2px;-webkit-line-clamp:unset}
 body .stage .cast .bc .t{display:block;margin:0;font-size:18px}
 body .stage .cast .bc .x{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;font-size:26px}
+/* 手机大屏：播报字号与排行统一，排行领奖台缩小 */
+@media (max-width:819px){
+  body .stage .cast .bc{padding:10px 0;gap:2px}
+  body .stage .cast .bc .t{font-size:13px}
+  body .stage .cast .bc .x{font-size:15px;font-weight:500;line-height:1.35}
+  .stage .podium{height:132px;gap:8px;padding:0 6px;margin-bottom:8px}
+  .stage .pd .nm{font-size:16px}.stage .pd.p1 .nm{font-size:20px}
+  .stage .pd .id{font-size:12px}
+  .stage .pd .sc{font-size:15px;margin-bottom:4px}.stage .pd.p1 .sc{font-size:17px}
+  .stage .pd .base b{font-size:22px}.stage .pd.p1 .base b{font-size:28px}
+  .stage .pd.p1 .base{height:52px}.stage .pd.p2 .base{height:38px}.stage .pd.p3 .base{height:28px}
+}
