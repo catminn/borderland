@@ -1968,3 +1968,9 @@ body.bwr .room .rst{color:var(--mute)}
 .ctlbar{flex-direction:row!important;align-items:center;flex-wrap:wrap;gap:10px 14px;padding:10px 16px;margin-bottom:12px}
 .ctlbar .cb-l{font-size:13px;color:var(--sub);font-weight:700}
 .ctlbar .seg2{display:flex;gap:8px}
+
+/* 胶囊开关 */
+.tgl{flex:none;position:relative;width:52px;height:30px;padding:0;border:1px solid var(--stroke-c);border-radius:999px;background:var(--panel2);box-shadow:none;cursor:pointer}
+.tgl i{position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:var(--mute);transition:transform .18s,background .18s}
+.tgl.on{background:var(--accent);border-color:var(--accent)}
+.tgl.on i{transform:translateX(22px);background:var(--accent-ink)}

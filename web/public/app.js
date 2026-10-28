@@ -128,7 +128,7 @@ function ctlBar(jd){const on=drawOn(),lk=!!S.draw.lock;
     +'<button class="sbtn'+(!on?' on':'')+'" data-a="scrask" data-v="0" aria-pressed="'+(!on)+'">游戏大屏</button>'
     +'<button class="sbtn'+(on?' on':'')+'" data-a="scrask" data-v="1" aria-pressed="'+on+'">抽奖大屏</button></div>'
     +'<span class="cb-l">排名</span><button class="sbtn'+(lk?' on':'')+'" data-a="lockask" data-v="'+(lk?'0':'1')+'" aria-pressed="'+lk+'">'+(lk?'已锁定，点此解除':R.frozen()?'已自动封榜，点此锁定':'锁定排名')+'</button>'
-    +(jd?'':'<span class="cb-l">判官也能操作</span><button class="sbtn'+(S.judgeScr?' on':'')+'" data-a="jscr" data-v="'+(S.judgeScr?'0':'1')+'" aria-pressed="'+!!S.judgeScr+'">'+(S.judgeScr?'已开启':'已关闭')+'</button>')+'</div>';}
+    +'</div>';}
 function viewBoard(){
   if(drawOn())return viewDrawBoard();
   const me=ME&&ME.role==='player'?pl(ME.pid):null;
@@ -656,6 +656,8 @@ function adminPanel(){
     +'<div class="setrow"><div class="swrow"><span>房间人数上限<small>'+(S.capOn?'每间房同时最多 <b class="mono" style="color:var(--ink)">'+(S.cap||R.ROOM_CAP0)+'</b> 人':'现在不限人数')+'</small></span>'
     +'<button class="cb'+(S.capOn?' on':'')+'" data-a="capon" data-v="'+(S.capOn?'0':'1')+'" aria-pressed="'+!!S.capOn+'"><span class="t">'+(S.capOn?'已开启':'已关闭')+'</span></button></div>'
     +(S.capOn?'<div class="btns" style="flex-wrap:nowrap;margin-top:8px"><input class="in mono" id="capn" data-m="capN" value="'+esc(A.cap)+'" inputmode="numeric" placeholder="人数" style="max-width:110px"><button class="btn-line acc" data-a="setcap">设置</button></div>':'')+'</div>'
+    +'<div class="setrow"><div class="swrow"><span>判官也能切换大屏和锁定排名<small>'+(S.judgeScr?'判官抽奖页有这两个按钮':'现在只有总控能操作')+'</small></span>'
+    +'<button class="tgl'+(S.judgeScr?' on':'')+'" role="switch" data-a="jscr" data-v="'+(S.judgeScr?'0':'1')+'" aria-checked="'+!!S.judgeScr+'" aria-label="判官也能切换大屏和锁定排名"><i></i></button></div></div>'
     +'<div class="setrow"><div class="swrow"><span>身份卡<small>现在共 <b class="mono" style="color:var(--ink)">'+S.players.length+'</b> 张（'+S.players[0].id+'–'+S.players[S.players.length-1].id+'），上榜 '+S.players.filter(p=>p.on).length+' 人</small></span>'
     +'<div class="btns" style="flex-wrap:nowrap"><input class="in mono" id="addn" data-m="addN" value="'+esc(ui.addN)+'" inputmode="numeric" style="max-width:80px"><button class="btn-line" data-a="addplayers">新增</button></div></div></div></div>'
     +bankPanel()
@@ -762,8 +764,8 @@ function tuDlg(){
 const fzKey=()=>'borderland.fz.'+((S&&S.dur)||7200);
 const fzSeen=()=>{try{return sessionStorage.getItem(fzKey())==='1';}catch{return !!ui.fzAck;}};
 const fzDlg=()=>'<div class="ovl"><div class="dlg" data-n="fz" role="dialog" aria-modal="true" aria-labelledby="dt"><div class="new"><i></i>总控提醒</div>'
-  +'<h3 id="dt">该封榜了</h3><div class="body">离结束还有 15 分钟。</div>'
-  +'<button data-a="fzlock" data-modal="1">锁定排名</button><button class="btn-line" data-a="fzack" data-modal="1" style="margin-top:8px">知道了</button></div></div>';
+  +'<h3 id="dt">已封榜</h3><div class="body">离结束还有 15 分钟，排行榜已封。</div>'
+  +'<button data-a="fzack" data-modal="1">知道了</button></div></div>';
 const TUT=[['我的','看你的通行证、金币、彩券和每一间房的记录。'],['大屏','看剩余时间、金币排行和全场播报。'],['地图','看八间房现在能不能进。有问题就去 info desk。']];
 const tutSeen=()=>{try{return localStorage.getItem('borderland.tut')==='1';}catch{return !!ui.tutDone;}};
 const tutDlg=()=>{const i=ui.tut||0,t=TUT[i];
@@ -771,7 +773,7 @@ const tutDlg=()=>{const i=ui.tut||0,t=TUT[i];
   +'<h3 id="dt">'+t[0]+'</h3><div class="body">'+t[1]+'</div>'
   +'<button data-a="tutnext" data-modal="1">'+(i+1<TUT.length?'下一步':'开始')+'</button></div></div>';};
 function modalHtml(){
-  if(ME&&S&&!entering&&ME.role==='ctrl'&&S.t>=(S.dur||7200)-900&&S.t<(S.dur||7200)&&!S.draw.lock&&!fzSeen())return fzDlg();
+  if(ME&&S&&!entering&&ME.role==='ctrl'&&S.t>=(S.dur||7200)-900&&S.t<(S.dur||7200)&&!fzSeen())return fzDlg();
   if(ME&&S&&!entering&&ME.role==='player'&&!DEVME&&meP()&&meP().nick&&!tutSeen())return tutDlg();
   if(ME&&S&&!entering&&R.timeUp()&&!tuSeen()&&!S.draw.pz.some(x=>x.st!=='wait'))return tuDlg();
   if(ME&&ME.role!=='player'&&S&&S.notices){ // 工作人员：发给「工作人员 / 所有人」的公告，已读只记在本机
@@ -1227,7 +1229,7 @@ document.addEventListener('click',e=>{
   else if(a==='hist'){ui.histOpen=!ui.histOpen;}
   else if(a==='sack'){const id=b.dataset.n;(ui.sa=ui.sa||{})[id]=true;try{sessionStorage.setItem('borderland.sa.'+id,'1');}catch{/* ignore */}}
   else if(a==='jscr')send({type:'draw.jscr',on:v==='1'});
-  else if(a==='fzack'||a==='fzlock'){ui.fzAck=true;try{sessionStorage.setItem(fzKey(),'1');}catch{/* ignore */}if(a==='fzlock')send({type:'draw.lock',on:true});}
+  else if(a==='fzack'){ui.fzAck=true;try{sessionStorage.setItem(fzKey(),'1');}catch{/* ignore */}}
   else if(a==='tutnext'){ui.tut=(ui.tut||0)+1;if(ui.tut>=TUT.length){ui.tutDone=true;ui.tut=0;try{localStorage.setItem('borderland.tut','1');}catch{/* ignore */}}}
   else if(a==='tuack'){ui.tuAck=true;try{sessionStorage.setItem(tuKey(),'1');}catch{/* ignore */}}
   else if(a==='ack'&&DEVME&&!ui.devOps){ui.devAck.add(b.dataset.n+':'+ME.pid);}
