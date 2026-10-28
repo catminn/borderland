@@ -162,31 +162,37 @@ function setCap(v){v=Math.round(+v);if(!(v>=1&&v<=30))return no('房间容量要
 function setCapOn(v){v=!!v;if(v===S.capOn)return no('没有变化');S.capOn=v;log('总控'+(v?'开启':'关闭')+'房间人数上限');return ok(v?'已开启人数上限':'已关闭人数上限（房间不限人数）');}
 
 // ---------- 淘汰 → 鬼市 ----------
-// 状态：alive 在场 · out 刚失败，原地等黑白无常 · picked 已被黑白无常接到 · market 在鬼市（钱包冻结，玩筹码）
-const stLabel=p=>({alive:'在场',out:'待接',picked:'已接到',market:'鬼市'})[p.st]||p.st;
+// 状态：alive 在场 · out 刚失败，原地等黑白无常 · picked 已被黑白无常抓到 · market 在鬼市（钱包冻结，玩筹码）
+const stLabel=p=>({alive:'在场',out:'待抓',picked:'已抓到',market:'鬼市'})[p.st]||p.st;
 function eliminate(p,why,where){
   if(p.inRoom){const r=S.rooms.find(x=>x.id===p.inRoom);r.ps=r.ps.filter(x=>x!==p.id);if(!r.ps.length&&r.st==='play')r.st='open';p.inRoom=null;}
   p.st='out';p.outAt=S.t;p.inAt=null;p.pickAt=null;p.chk=null;p.at=where||'';
   log(nm(p)+' '+why+'，进入鬼市','hook',1);
-  tell(p.id,'挑战失败','原因：'+why+'。请留在原地，等黑白无常来接你去鬼市。','out');}
+  tell(p.id,'挑战失败','原因：'+why+'。请留在原地，等黑白无常来抓你去鬼市。','out');}
 function pickup(pid){const p=pl(pid);
-  if(!p)return no('没有这个编号');if(p.st!=='out')return no(p.id+(p.st==='picked'?' 已经接到了':' 现在不在待接状态'));
-  p.st='picked';p.pickAt=S.t;log('黑白无常接到 '+nm(p)+(p.at?'（'+p.at+'）':''));return ok('已接到 '+p.id);}
-// 两方交接：黑白无常「送入鬼市」→ 孟婆确认；孟婆「登记」→ 黑白无常确认。
-function checkIn(pid,role){const p=pl(pid);
-  if(!p)return no('没有这个编号');if(p.chk&&!p.chk.ok)return no('已登记，等待另一方确认');
-  if(p.st!=='out'&&p.st!=='picked')return no('不在待入鬼市状态');
-  if(role==='wuchang'&&p.st==='out'){p.st='picked';p.pickAt=S.t;}
-  p.chk={by:role,ok:false};log(nm(p)+' 入鬼市登记，等待'+(role==='wuchang'?'孟婆':'黑白无常')+'确认');
-  return ok('已登记，等待另一方确认');}
-function confirmIn(pid,role){const p=pl(pid);
-  if(!p||!['out','picked'].includes(p.st)||!p.chk)return no('没有待确认的登记');if(p.chk.ok)return no('已经确认过了');
-  const expected=p.chk.by==='mengpo'?'wuchang':p.chk.by==='wuchang'?'mengpo':null;
-  if(!expected||role!==expected)return no('要由另一方确认，不能自己确认自己的登记');
-  if(p.pickAt==null)p.pickAt=S.t;
-  p.st='market';p.inAt=S.t;p.chk.ok=true;p.chk.by2=role;
+  if(!p)return no('没有这个编号');if(p.st!=='out')return no(p.id+(p.st==='picked'?' 已经抓到了':' 现在不在待抓状态'));
+  p.st='picked';p.pickAt=S.t;log('黑白无常抓到 '+nm(p)+(p.at?'（'+p.at+'）':''));return ok('已抓到 '+p.id);}
+// 入鬼市以孟婆为准：孟婆「登记」（输入编号，在场、待抓、已抓到的人都行，自己走进鬼市的也行）直接入鬼市；
+// 黑白无常「送入」要孟婆确认。
+function enterMarket(p,by){
+  if(p.inRoom){const r=S.rooms.find(x=>x.id===p.inRoom);r.ps=r.ps.filter(x=>x!==p.id);if(!r.ps.length&&r.st==='play')r.st='open';p.inRoom=null;}
+  if(p.st==='alive')p.outAt=S.t;if(p.pickAt==null)p.pickAt=S.t;
+  p.st='market';p.inAt=S.t;p.on=true;p.chk={by,ok:true};
   log(nm(p)+' 进入鬼市，金币冻结','back');
-  tell(p.id,'你已进入鬼市','金币已冻结。用实体筹码赢到 '+CHIP_GOAL+' 就能自赎；输光可以喝孟婆汤复活，但会随机忘掉一个花色。');
+  tell(p.id,'你已进入鬼市','金币已冻结。用实体筹码赢到 '+CHIP_GOAL+' 就能自赎；输光可以喝孟婆汤复活，但会随机忘掉一个花色。');}
+function checkIn(pid,role){const p=pl(pid);
+  if(!p)return no('没有这个编号');
+  if(role==='mengpo'){if(p.st==='market'&&!(p.chk&&!p.chk.ok))return no(p.id+' 已经在鬼市');
+    enterMarket(p,'mengpo');return ok('已登记 '+p.id+' 入鬼市');}
+  if(p.chk&&!p.chk.ok)return no('已送入，等孟婆确认');
+  if(p.st!=='out'&&p.st!=='picked')return no('不在待入鬼市状态');
+  if(p.st==='out'){p.st='picked';p.pickAt=S.t;}
+  p.chk={by:'wuchang',ok:false};log(nm(p)+' 已送入鬼市，等待孟婆确认');
+  return ok('已送入，等孟婆确认');}
+function confirmIn(pid,role){const p=pl(pid);
+  if(!p||!['out','picked'].includes(p.st)||!p.chk||p.chk.ok)return no('没有待确认的送入');
+  if(role!=='mengpo')return no('要由孟婆确认');
+  enterMarket(p,'wuchang');p.chk.by2='mengpo';
   return ok('已确认 '+p.id+' 入鬼市');}
 function backAlive(p){p.st='alive';p.outAt=null;p.inAt=null;p.pickAt=null;p.chk=null;p.at='';}
 const inMk=p=>p&&p.st==='market'&&!(p.chk&&!p.chk.ok);
@@ -356,8 +362,8 @@ function offRow(me,x,rnd){
       log(nm(p)+' 赢下 '+r.card+'，+'+h.pts+' 金币'+tag,'back',1);return ok(p.id+' 赢 '+r.card+' +'+h.pts);}
     if(x.res==='lose'){if(p.st!=='alive'){log(nm(p)+' 挑战 '+r.card+' 失败'+tag);return ok(p.id+' 输 '+r.card+'（本来就不在场）');}
       eliminate(p,'挑战 '+r.card+' 失败'+tag,r.card+' '+r.name);return ok(p.id+' 输 '+r.card);}}
-  if(x.k==='pickup'){if(p.st==='market'||p.st==='picked')return ok(p.id+' 已经接到了');
-    if(p.st==='alive')p.outAt=S.t;p.st='picked';p.pickAt=S.t;p.on=true;log('黑白无常接到 '+nm(p)+tag);return ok('接到 '+p.id);}
+  if(x.k==='pickup'){if(p.st==='market'||p.st==='picked')return ok(p.id+' 已经抓到了');
+    if(p.st==='alive')p.outAt=S.t;p.st='picked';p.pickAt=S.t;p.on=true;log('黑白无常抓到 '+nm(p)+tag);return ok('抓到 '+p.id);}
   if(x.k==='market'){if(p.st==='market')return ok(p.id+' 已经在鬼市');toMarket(p);log(nm(p)+' 进入鬼市，金币冻结'+tag,'back');return ok(p.id+' 入鬼市');}
   if(x.k==='redeem'){if(p.st==='alive')return ok(p.id+' 已经在场');backAlive(p);log(nm(p)+' 自赎回到人间'+tag,'back',1);return ok(p.id+' 自赎');}
   if(x.k==='ransom'){if(p.st==='alive')return ok(p.id+' 已经在场');const by=pl(String(x.by||''));if(!by)return no('没有出钱人编号 '+(x.by||'？'));if(by.id===p.id)return no('出钱人不能是自己');
@@ -408,7 +414,7 @@ function seedMid(){
   S.t=M(9); pickup('017');
   fin('8S',{'002':'win','010':'lose'},9,30);
   S.t=M(10,30); checkIn('017','wuchang'); confirmIn('017','mengpo');
-  S.t=M(11,30); pickup('010'); checkIn('010','mengpo'); confirmIn('010','wuchang');
+  S.t=M(11,30); pickup('010'); checkIn('010','mengpo');
   S.t=M(15); enterRoom('8H',['001','003']); enterRoom('4D',['002','009']); enterRoom('8C',['005']);
   fin('4D',{'002':'win','009':'win'},19,30);
   fin('8C',{'005':'win'},21);
@@ -456,7 +462,7 @@ const ROLE_OK={setrule:['dealer','ctrl'],enter:['dealer'],finish:['dealer'],rese
   setcap:['ctrl'],setcapon:['ctrl'],setdur:['ctrl'],setscore:['ctrl'],setcards:['ctrl'],seton:['ctrl'],addplayers:['ctrl'],setbank:['ctrl'],
   publish:['ctrl','judge'],revoke:['ctrl','judge'],
   gatewin:['judge'],gateunwin:['judge'],gatereward:['judge'],gateend:['judge'],puz:['judge'],puzundo:['judge'],
-  pickup:['wuchang'],checkin:['wuchang','mengpo'],confirm:['wuchang','mengpo'],
+  pickup:['wuchang'],checkin:['wuchang','mengpo'],confirm:['mengpo'],
   redeem:['mengpo'],ransom:['mengpo'],soup:['mengpo'],
   'draw.add':['judge'],'draw.edit':['judge'],'draw.del':['judge'],'draw.move':['judge'],'draw.run':['judge'],'draw.confirm':['judge'],
   'draw.redo':['judge'],'draw.undo':['judge'],'draw.screen':['ctrl','judge'],'draw.lock':['ctrl','judge'],'draw.jscr':['ctrl'],'draw.show':['judge'],

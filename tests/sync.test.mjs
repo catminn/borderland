@@ -145,7 +145,7 @@ const dealerOf = room => client(pinOf(p => p.role === 'dealer' && p.rooms[0] ===
   { const bd = await mp.act({ type: 'pickup', pid: v }), gd = await wc.act({ type: 'pickup', pid: v }); await sleep(250);
     T('only wuchang picks up', !bd.ok && gd.ok && P_(v).st === 'picked'); }
   { const r = await wc.act({ type: 'checkin', pid: v }); await sleep(250); T('check-in alone keeps the player pending', r.ok && P_(v).st === 'picked' && !P_(v).chk.ok); }
-  T('cannot confirm your own check-in', !(await wc.act({ type: 'confirm', pid: v })).ok);
+  T('wuchang can never confirm', !(await wc.act({ type: 'confirm', pid: v })).ok);
   { const r = await mp.act({ type: 'confirm', pid: v }); await sleep(250); T('the other side confirms: market (wallet frozen)', r.ok && P_(v).st === 'market'); }
   T('chips are physical: mengpo cannot record chips', !(await mp.act({ type: 'chips', pid: v, v: 580 })).ok);
   { const sc = P_(v).score, r = await mp.act({ type: 'redeem', pid: v }); await sleep(200); T('self-redeem just unfreezes (no carry-out)', r.ok && P_(v).st === 'alive' && P_(v).score === sc); }

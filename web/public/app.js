@@ -38,7 +38,7 @@ let ui={ddOpen:null,tab:null,room:'4S',as:(()=>{try{return localStorage.getItem(
   ent:'',res:{},settled:null,kickAsk:null,                       // Dealer
   gw:'',gr:{},jg:{gate:'',title:'',body:'',mins:10},gateEndAsk:false,pz:{pid:'',code:''},      // 判官
   nw:{name:'',desc:'',kind:'small'},pe:{name:'',desc:'',kind:'small'},pzEdit:null,aucAsk:null,showTk:false,   // 抽奖
-  ransomBy:{},mkAsk:null,                              // 孟婆
+  ransomBy:{},mkAsk:null,mkReg:'',                              // 孟婆
   q:'',flt:'all',revokeAsk:null,ed:{pid:'',amt:'',why:'',nick:''},addN:'8',     // 生死簿
   nick:'',histOpen:false,off:{ids:'',k:'',res:'',code:'',rw:'',arg:'',by:''},offOn:false,
   sub:{dealer:'info',npc:'gate',ctrl:'status',player:'me',map:'1'},msel:null,
@@ -442,16 +442,19 @@ function pzForm(k){const f=ui[k];
     +'<div class="fld"><span>类型</span><div class="chips c3">'+['tycoon','big','small'].map(v=>'<button class="cb'+(f.kind===v?' on':'')+'" data-a="pzkind" data-k="'+k+'" data-v="'+v+'" aria-pressed="'+(f.kind===v)+'"><span class="t">'+KIND_NAME[v]+'</span></button>').join('')+'</div></div>';}
 
 // ---------- 鬼市 ----------
-// 入鬼市登记：黑白无常或孟婆谁点都行，另一方确认。
-const canConfirm=p=>!!p.chk&&!p.chk.ok&&(p.chk.by==='mengpo'?ME.role==='wuchang':p.chk.by==='wuchang'&&ME.role==='mengpo');
-const chkBit=p=>!p.chk?'':p.chk.ok?'<span class="chk ok">登记已确认</span>':canConfirm(p)?'<button class="btn-line fill chkbtn" data-a="confirmin" data-p="'+p.id+'">确认入鬼市</button>':'<span class="chk wait">待'+(p.chk.by==='mengpo'?'黑白无常':'孟婆')+'确认</span>';
+// 入鬼市以孟婆为准：孟婆登记直接入；黑白无常「送入」要孟婆确认。
+const canConfirm=p=>!!p.chk&&!p.chk.ok&&p.chk.by==='wuchang'&&ME.role==='mengpo';
+const chkBit=p=>!p.chk?'':p.chk.ok?'<span class="chk ok">登记已确认</span>':canConfirm(p)?'<button class="btn-line fill chkbtn" data-a="confirmin" data-p="'+p.id+'">确认入鬼市</button>':'<span class="chk wait">待孟婆确认</span>';
 function inboundPanel(){
   const wait=S.players.filter(p=>p.st==='out'||p.st==='picked'||(p.st==='market'&&p.chk&&!p.chk.ok)).sort((a,b)=>a.outAt-b.outAt);
   const rows=wait.map(p=>'<div class="mrow'+(p.st==='picked'?' ok':'')+'"><div class="l1">'+who(p)
-    +'<span class="stay">'+(p.chk&&!p.chk.ok?(p.chk.by==='mengpo'?'<b>孟婆已登记，等黑白无常确认</b>':'<b>黑白无常已送来，等孟婆确认</b>'):p.st==='picked'?'<b>已被黑白无常接到</b>':'等黑白无常来接')+'</span></div>'
+    +'<span class="stay">'+(p.chk&&!p.chk.ok?'<b>黑白无常已送来，等孟婆确认</b>':p.st==='picked'?'<b>已被黑白无常抓到</b>':'等黑白无常来抓')+'</span></div>'
     +'<div class="l1"><span class="stay">位置：<b>'+esc(p.at||'未记录')+'</b>　已等 <b class="mono">'+mm(S.t-(p.outAt||S.t))+'</b></span></div>'
     +(p.chk&&!p.chk.ok?chkBit(p):'<button class="btn-main'+(p.st==='picked'?' glow':'')+'" data-a="checkin" data-p="'+p.id+'">登记入鬼市</button>')+'</div>').join('');
-  return '<section class="mcol"><div class="shrow"><h2 class="sh">待入鬼市</h2><span class="hint">双方确认后金币冻结，发 '+CHIP_START+' 筹码</span></div>'
+  const rid=ui.mkReg||'',rp=findP(rid),rw=!rid?'':!rp?'没有这个编号':rp.st==='market'&&!(rp.chk&&!rp.chk.ok)?rp.id+' 已在鬼市':'';
+  const reg='<div class="mrow"><div class="give"><input class="in mono" data-m="mkReg" value="'+esc(rid)+'" inputmode="numeric" placeholder="玩家编号" aria-label="玩家编号">'
+    +'<button data-a="mkreg"'+(rp&&!rw?'':' disabled')+'>'+(rw||'登记入鬼市')+'</button></div></div>';
+  return '<section class="mcol"><div class="shrow"><h2 class="sh">待入鬼市</h2><span class="hint">孟婆登记后金币冻结，发 '+CHIP_START+' 筹码</span></div>'+reg
     +(rows?'<div class="mlist">'+rows+'</div>':'<div class="empty">现在没有等着入鬼市的人。</div>')+'</section>';
 }
 function viewMarket(){
@@ -476,10 +479,10 @@ function viewWuchang(){
   const meta=p=>'<div class="l1">'+who(p)+'<span class="stay">位置：<b>'+esc(p.at||'未记录')+'</b></span><span class="stay">已等 <b class="mono">'+mm(S.t-(p.outAt||S.t))+'</b></span></div>';
   const wait=S.players.filter(p=>p.st==='out'&&!p.chk).sort((a,b)=>a.outAt-b.outAt);
   const go=S.players.filter(p=>p.st==='picked'||(p.chk&&!p.chk.ok&&p.st!=='alive')).sort((a,b)=>(a.outAt||0)-(b.outAt||0));
-  const left='<section class="mcol"><div class="shrow"><h2 class="sh">待接的人</h2><span class="hint">谁在哪里失败了；接到后点「接到了」</span></div>'
-    +(wait.length?'<div class="mlist">'+wait.map(p=>'<div class="mrow">'+meta(p)+'<button class="btn-main glow" data-a="pickup" data-p="'+p.id+'">接到了</button></div>').join('')+'</div>':'<div class="empty">现在没有人需要接。</div>')+'</section>';
-  const right='<section class="mcol"><div class="shrow"><h2 class="sh">送入鬼市 / 确认</h2><span class="hint">已接到的人送去鬼市；孟婆已登记的人在这里确认</span></div>'
-    +(go.length?'<div class="mlist">'+go.map(p=>'<div class="mrow ok">'+meta(p)+(p.chk&&!p.chk.ok?chkBit(p):'<button class="btn-main glow" data-a="checkin" data-p="'+p.id+'">送入鬼市</button>')+'</div>').join('')+'</div>':'<div class="empty">没有需要送入或确认的人。</div>')+'</section>';
+  const left='<section class="mcol"><div class="shrow"><h2 class="sh">待抓的人</h2><span class="hint">谁在哪里失败了；抓到后点「抓到了」</span></div>'
+    +(wait.length?'<div class="mlist">'+wait.map(p=>'<div class="mrow">'+meta(p)+'<button class="btn-main glow" data-a="pickup" data-p="'+p.id+'">抓到了</button></div>').join('')+'</div>':'<div class="empty">现在没有人需要抓。</div>')+'</section>';
+  const right='<section class="mcol"><div class="shrow"><h2 class="sh">送入鬼市</h2><span class="hint">已抓到的人送去鬼市，由孟婆确认</span></div>'
+    +(go.length?'<div class="mlist">'+go.map(p=>'<div class="mrow ok">'+meta(p)+(p.chk&&!p.chk.ok?'<span class="chk wait">待孟婆确认</span>':'<button class="btn-main glow" data-a="checkin" data-p="'+p.id+'">送入鬼市</button>')+'</div>').join('')+'</div>':'<div class="empty">没有需要送入的人。</div>')+'</section>';
   return '<div class="page mkt eq wuchang-layout">'+left+'<div class="wc-mask" aria-hidden="true"><div class="wc-in"><img src="img/mask-tongue.webp" alt=""></div></div>'+right+'</div>';
 }
 
@@ -713,8 +716,8 @@ function viewPlayer(){
   if(!me.nick&&!DEVME)return viewNick(me);
   const inMkt=me.st==='market',out=me.st==='out'||me.st==='picked';
   // 酆都通行证: a clearance document, stamped with the current state
-  const wst=inMkt||out?'market':'alive',wseal=out?'待接':inMkt?'鬼市':me.won?'中奖':'在场';
-  const wnote=out?'<span class="w-hint">挑战失败</span><span class="w-lab">'+(me.st==='picked'?'黑白无常已接到你，正在送你去鬼市':'留在原地，等黑白无常来接你')+'</span>'
+  const wst=inMkt||out?'market':'alive',wseal=out?'待抓':inMkt?'鬼市':me.won?'中奖':'在场';
+  const wnote=out?'<span class="w-hint">挑战失败</span><span class="w-lab">'+(me.st==='picked'?'黑白无常已抓到你，正在送你去鬼市':'留在原地，等黑白无常来抓你')+'</span>'
     :inMkt?'<span class="w-hint">你在鬼市</span><span class="w-lab">实体筹码赢到 '+CHIP_GOAL+' 可自赎</span><span class="w-lab">金币已冻结</span>'
     :me.won?'<span class="w-hint">你中奖了</span><span class="w-lab">「'+esc((prize(me.won)||{}).name||'')+'」，请到台前领取</span>'
     :'<span class="w-hint">金币 <b class="mono">'+me.score+'</b></span><span class="w-lab">'+(myRank(me)?'排第 '+myRank(me)+' 名':'')+'</span>';
@@ -835,7 +838,7 @@ const online=()=>connected&&!ui.simOff;   // 模拟离线时当作断网
 const offRid=()=>Array.isArray(ME.rooms)&&ME.rooms.length?ME.rooms[0]:ui.room;
 const OFF_MK=[['market','入鬼市'],['redeem','自赎'],['ransom','被别人赎'],['soup','孟婆汤']];
 function offDesc(x){const r=x.rid&&room(x.rid);
-  return x.k==='room'?x.pid+' '+({win:'赢',solo:'独自通关',lose:'输'})[x.res]+' '+(r?r.card:''):x.k==='pickup'?'接到 '+x.pid:x.k==='market'?x.pid+' 入鬼市'
+  return x.k==='room'?x.pid+' '+({win:'赢',solo:'独自通关',lose:'输'})[x.res]+' '+(r?r.card:''):x.k==='pickup'?'抓到 '+x.pid:x.k==='market'?x.pid+' 入鬼市'
     :x.k==='redeem'?x.pid+' 自赎':x.k==='ransom'?x.pid+' 被 '+x.by+' 赎出':x.k==='soup'?x.pid+' 喝孟婆汤'
     :x.k==='puz'?x.pid+' 解出 #'+x.code:x.k==='gate'?x.pid+' 鬼门开奖励：'+(x.rw==='coin'?'+'+GATE_COIN+' 金币':x.rw==='save'?'救 '+x.arg:'拿 '+x.arg):'';}
 // 表单填好了吗：返回 null = 可以记；否则是按钮上显示的提示
@@ -854,7 +857,7 @@ function offBar(){
   const f=ui.off,k=ME.role==='dealer'?'room':f.k,seg=(key,opts)=>'<div class="seg'+opts.length+'">'+opts.map(([v,l])=>'<button class="sbtn'+(getp(key)===v?' on':'')+'" data-a="pick" data-k="'+key+'" data-v="'+v+'" aria-pressed="'+(getp(key)===v)+'">'+l+'</button>').join('')+'</div>';
   let what='';
   if(ME.role==='dealer'){const dr=room(offRid());what=seg('off.res',dr&&dr.solo?[['solo','独自通关'],['win','带人通关'],['lose','输']]:[['win','赢'],['lose','输']]);}
-  else if(ME.role==='wuchang')what=seg('off.k',[['pickup','接到了'],['market','送入鬼市']]);
+  else if(ME.role==='wuchang')what=seg('off.k',[['pickup','抓到了'],['market','送入鬼市']]);
   else if(ME.role==='mengpo')what=seg('off.k',OFF_MK)+(k==='ransom'?'<input class="in mono" data-m="off.by" id="offby" value="'+esc(f.by||'')+'" inputmode="numeric" placeholder="出钱人编号">':'');
   else what=seg('off.k',[['puz','解谜题'],['gate','鬼门开奖励']])
     +(k==='puz'?'<input class="in mono" data-m="off.code" id="offcode" value="'+esc(f.code)+'" inputmode="numeric" placeholder="谜题编码">':'')
@@ -909,7 +912,7 @@ function setAmb(mode,tone){
   const g=$('#amb ghost-ambience');if(g&&tone&&g.dataset.tone!==tone)g.dataset.tone=tone;}
 // 深浅色：每台设备只记一份，大屏、玩家页、工作人员页互通；第一次打开默认深色。
 const THEME_KEY='borderland.theme';
-// 被淘汰、已被接到或在鬼市：整页红色提示，强制深色
+// 被淘汰、已被抓到或在鬼市：整页红色提示，强制深色
 const inMarketNow=()=>{const p=ME&&ME.role==='player'&&S&&S.players.find(x=>x.id===ME.pid);return !!(p&&p.st!=='alive');};
 function themeFor(){if(ME&&ME.role==='player'&&inMarketNow())return 'dark';   // 鬼市 / 待接的玩家：所有页都深色
   let v=null;try{v=localStorage.getItem(THEME_KEY);}catch{/* private mode */}
@@ -1234,6 +1237,7 @@ document.addEventListener('click',e=>{
   else if(a==='pzmove'){send({type:'draw.move',id:v,d:+b.dataset.d},null,true);}
   // 鬼市 / 黑白无常
   else if(a==='checkin'){send({type:'checkin',pid:b.dataset.p});}
+  else if(a==='mkreg'){const t=findP(ui.mkReg);if(t)send({type:'checkin',pid:t.id},()=>{ui.mkReg='';});}
   else if(a==='pickup'){send({type:'pickup',pid:b.dataset.p});}
   else if(a==='confirmin'){send({type:'confirm',pid:b.dataset.p});}
   else if(a==='mkask'){ui.mkAsk={pid:b.dataset.p,k:v};}
@@ -1312,7 +1316,7 @@ document.addEventListener('change',e=>{
   const m=e.target.dataset.m;if(!m)return;
 });
 // 输入时只更新数据和少数按钮（不整页重绘，免得打断输入）；失焦后再整页重绘
-const LIVE={ent:1,gw:1,'pz.pid':1,'pz.code':1,nick:1,'ed.amt':1,'ed.nick':1,q:1,'pub.players':1,'off.code':1,'admin.bankTxt':1,'off.ids':1,'off.arg':1,'off.by':1,ransomBy:1};
+const LIVE={ent:1,gw:1,'pz.pid':1,'pz.code':1,nick:1,'ed.amt':1,'ed.nick':1,q:1,'pub.players':1,'off.code':1,'admin.bankTxt':1,'off.ids':1,'off.arg':1,'off.by':1,ransomBy:1,mkReg:1};
 document.addEventListener('input',e=>{
   if(e.target.id==='pin'){const el=e.target;el.value=el.value.replace(/\D/g,'').slice(0,6);if($('#lgmsg').classList.contains('err'))loginMsg('');syncBoxes();return;}
   const m=e.target.dataset.m,v=e.target.value;if(!m)return;
@@ -1323,6 +1327,7 @@ document.addEventListener('input',e=>{
   else if(m==='capN'){ui.admin.cap=v.replace(/\D/g,'');return;}
   else if(m==='addN'){ui.addN=v.replace(/\D/g,'');return;}
   else if(m.startsWith('adm.')){ui.admin.counts[m.slice(4)]=+v;try{localStorage.setItem('borderland.pincounts',JSON.stringify(ui.admin.counts));}catch(e){}if(!LOCAL)send({type:'setpincounts',counts:ui.admin.counts},null,true);return;}
+  else if(m==='mkReg'){ui.mkReg=v;}
   else if(m==='ransomBy'){ui.ransomBy[e.target.dataset.p]=v;}
   else if(e.target.type!=='checkbox')setp(m,v);
   if(LIVE[m])liveRender();
