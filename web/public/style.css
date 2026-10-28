@@ -1950,3 +1950,8 @@ body.bwr .mp-desk text,body.bwr .mp-in text{fill:var(--accent-ink)!important}
 body.bwr .mp-wall{stroke-dasharray:none}
 :root[data-theme="dark"] select{color-scheme:dark}
 :root[data-theme="dark"] select :is(option,optgroup){background:#1a1a1a;color:#f2f2f2}
+
+/* 所有选中的按钮 = 白底（浅色下黑底）高亮，硬投影照旧；鬼门开标签 = 红底 */
+body.bwr :is(.cb.on:not(.redsel),.sbtn.on:not(.secret),.rbtn.on,.dd.open .dd-btn,.mtabs button[aria-selected="true"],.wl button[aria-pressed="true"]:not(.l)){background:var(--accent);color:var(--accent-ink);border-color:var(--accent);box-shadow:inset 0 0 0 calc(var(--stroke) - var(--bw)) var(--accent),var(--sh)}
+body.bwr :is(.cb.on:not(.redsel),.sbtn.on:not(.secret),.rbtn.on,.dd.open .dd-btn,.mtabs button[aria-selected="true"]) :is(span,b,i,small,em){color:inherit}
+body.bwr .kb.task{background:var(--red);border-color:var(--red);color:#fff}

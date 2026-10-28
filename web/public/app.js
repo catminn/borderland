@@ -905,8 +905,9 @@ function render(){
   $('.clk').classList.toggle('paused',!run);$('#clkdot').className='gd'+(run?'':' off');
   if(!S){$('#view').innerHTML='<section class="pn muted">正在连接服务器…</section>';return;}
   R.use(S);S.t=nowT();$('#clk').textContent=fmt(S.t);
+  confettiCheck();
   morph($('#view'),offBar()+(ui.tab==='board'?viewBoard():ui.tab==='map'?viewMap():ui.tab==='dealer'?viewDealer():ui.tab==='ctrl'?viewCtrl():ui.tab==='npc'?viewNpc():ui.tab==='draw'?viewDraw():ui.tab==='market'?viewMarket():ui.tab==='wuchang'?viewWuchang():viewPlayer())+cfmDlg());
-  fitStage();confettiCheck();
+  fitStage();
   { // 灯笼 / 面具的绳子接到页头那条线：算出它们离页头底边的距离（有标签栏时不上提，免得盖住标签）
     const root=document.documentElement,hb=$('#top').getBoundingClientRect().bottom;
     root.style.setProperty('--lfy',Math.max(0,Math.round(hb+window.scrollY))+'px'); // 手机固定背景的上沿 = 页头分割线
