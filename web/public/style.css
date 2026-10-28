@@ -1816,3 +1816,11 @@ body .stage .ck.frz{color:var(--red)}
   .stage .rpg button{min-width:40px;height:30px;padding:0;font-size:18px;line-height:1;font-weight:700;background:transparent;color:var(--accent);border:1.5px solid var(--accent);border-radius:999px;box-shadow:none}
   .stage .rpg button:disabled{opacity:.25}
 }
+/* 我的彩券花色：没集到的和排行榜一样保留本色、淡显 */
+.fin3 .ic.su{color:var(--ink);opacity:.22}
+.fin3 .ic.su.sr{color:var(--red)}
+.fin3 .ic.su.lit{opacity:1}
+/* 排行榜本人行：色条放在行外侧，不挤名次 */
+.stage .prow.me{box-shadow:none;border-left:4px solid var(--accent);padding-left:8px}
+.stage .prow{border-left:4px solid transparent;padding-left:8px}
+.stage .prow.me{border-left-color:var(--accent)}
