@@ -583,7 +583,6 @@ body.fullamb #amb{position:fixed;inset:0;height:auto}
 .mrow .id{font:800 22px var(--mono);line-height:1}
 .mrow .stay{font-size:14px;color:var(--sub)}
 .mrow .stay b{color:var(--ink);font-size:15px}
-.mrow .l2{display:grid;grid-template-columns:minmax(130px,1.3fr) minmax(70px,.7fr) minmax(100px,.9fr) minmax(130px,1fr);gap:12px;align-items:end}
 .mrow .kv{display:flex;flex-direction:column;gap:4px;min-width:0}
 .mrow .kv .k{font-size:12px;font-weight:700;color:var(--sub)}
 .mrow .kv .v{min-height:44px;display:flex;align-items:center;font:800 18px var(--mono);white-space:nowrap}
@@ -597,9 +596,6 @@ body.fullamb #amb{position:fixed;inset:0;height:auto}
 .sheet-card h3{margin:0;font-size:18px}
 .sheet-card textarea{resize:vertical}
 @media (max-width:959px){.mkt{grid-template-columns:minmax(0,1fr)}}
-@media (max-width:560px){
-  .mrow .l2{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
-}
 /* ---------- 玩家页 (2026-10-03 relayout) ---------- */
 .pcol{display:contents}
 .histbtn{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:44px;padding:0 16px;border:1px dashed var(--line2);background:var(--panel2);color:var(--sub);border-radius:12px;font-size:14px;font-weight:700;cursor:pointer}
@@ -739,12 +735,10 @@ body.lgerr .lg{border-color:#7a2a26}
 /* ---- 2026-10-04 规则调整：房间状态 / 预约 / 鬼门开 / 队长 / Scavenger / 终极确认 ---- */
 .room .rs{font-size:20px;font-weight:900;color:var(--warn)}
 .room .rs.rst{color:var(--sub)}
-.room .rtm{font-size:13px;font-weight:700;color:var(--sub);font-variant-numeric:tabular-nums}
-.room .rtm.ok{color:var(--accent)}
 .room.s-rsv{border-color:var(--warn);border-style:dashed}
 .room.s-reset{opacity:.78;border-style:dotted}
 .room.paused{opacity:.6}
-.stage .room .rs{font-size:22px}.stage .room .rtm{font-size:18px}
+.stage .room .rs{font-size:22px}
 .stage .gatebar,.gatebar{display:flex;flex-direction:column;gap:2px;padding:10px 14px;border:2px solid var(--red);border-radius:10px;background:var(--red-soft);color:var(--red-ink)}
 .gatebar b{font-size:20px;letter-spacing:.2em}.gatebar span{font-size:14px;font-weight:600}
 .stage .gatebar b{font-size:30px}.stage .gatebar span{font-size:20px}
@@ -826,7 +820,6 @@ body.login{overflow:hidden}
 /* 手机上的大屏：排名只留队名 + 柱子 + 花色；房间卡字号与玩家页房间卡一致 */
 @media (max-width:819px){
   .stage .room .rs,.stage .room .idle{font-size:13px}
-  .stage .room .rtm{font-size:12px}
   .stage .room .on{font-size:13px}
 }
 
@@ -976,8 +969,6 @@ body .setrow .swrow>span{max-width:34em}
   box-shadow:inset 0 0 0 calc(var(--stroke) - 1px) var(--stroke-c),var(--sh)}
 .fin3 .ft{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
 .fin3 .ft .cap{font-size:14px;font-weight:700;color:var(--sub);letter-spacing:.1em}
-.fin3 .fn{font:800 34px var(--mono);line-height:1;color:var(--accent)}
-.fin3 .fn i{font-style:normal;font-size:20px;color:var(--sub)}
 .fin3 .fs{font-size:15px;font-weight:700;color:var(--ink2);text-wrap:pretty}
 .fin3 .fcs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
 .fin3 .fc{display:flex;flex-direction:column;gap:10px;min-width:0;padding:14px 16px;background-color:var(--panel);border:1px solid var(--stroke-c);border-radius:var(--r-m);
@@ -992,7 +983,6 @@ body .setrow .swrow>span{max-width:34em}
 .fin3 .s4{justify-content:flex-start;padding:6px 10px;gap:6px;min-width:0}
 .fin3 .s4 .g{font-size:18px;width:20px;text-align:center}
 .fin3 .s4 .l{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.fin3 .fscore{font-size:26px;font-weight:800;line-height:1}
 .fin3 .fx{font-size:13px;color:var(--sub)}
 .fin3 .fx,.fin3 .bar{margin-top:auto}
 @media (max-width:959px){.fin3 .fcs{grid-template-columns:minmax(0,1fr)}}
@@ -1023,7 +1013,7 @@ body .lg::before,body .lg::after{content:none}
   .stage .room .cd{font-size:30px}
   .stage .room .rr{gap:3px}
   .stage .room .bt{gap:4px}
-  .stage .room .rs{font-size:13px}.stage .room .rtm{font-size:12px}
+  .stage .room .rs{font-size:13px}
 }
 
 /* ---------- 玩家手机：一级（底部）与二级分页 ---------- */
@@ -1046,7 +1036,6 @@ body .lg::before,body .lg::after{content:none}
   /* 终极任务：手机精简为一张卡，三条件各一行（标题 · 进度 · 状态） */
   .fin3{gap:0;border:1px solid var(--stroke-c);border-radius:var(--r-m);background:var(--panel);box-shadow:inset 0 0 0 calc(var(--stroke) - 1px) var(--stroke-c),var(--sh)}
   .fin3 .fhd{border:0;box-shadow:none;background:transparent;padding:12px 14px 8px;gap:4px}
-  .fin3 .fn{font-size:24px}.fin3 .fn i{font-size:15px}
   .fin3 .fs{font-size:13px}
   .fin3 .fcs{grid-template-columns:minmax(0,1fr);gap:0;padding:0 14px 6px}
   .fin3 .fc,.fin3 .fc.ok{flex-direction:row;align-items:center;gap:10px;padding:9px 0;border:0;border-top:1px solid var(--line);border-radius:0;box-shadow:none;background:transparent}
@@ -1138,13 +1127,6 @@ html{scrollbar-gutter:stable}
 .stage .aidx{font-size:28px;color:var(--sub);letter-spacing:.2em}
 .stage .aname{font-family:var(--disp);font-size:120px;line-height:1.05}
 .stage .adesc{font-size:34px;color:var(--ink2)}
-.atimer{display:flex;flex-direction:column;align-items:center;gap:4px}
-.aclk{font-weight:800;color:var(--accent);line-height:1}
-.stage .aclk{font-size:180px}
-.aclk.hot{color:var(--red);animation:aucPulse 1s ease-in-out infinite}
-.aclk.paused{color:var(--warn)}.aclk.over{color:var(--mute)}
-.stage .acap{font-size:30px;color:var(--sub);letter-spacing:.3em}
-.stage .anb{font-size:34px;color:var(--ink2)}.stage .anb b{font-size:44px;color:var(--ink)}
 @keyframes aucPulse{50%{opacity:.55}}
 .adeal{display:flex;flex-direction:column;align-items:center;gap:10px;position:relative}
 .aseal{display:inline-grid;place-items:center;border:4px double var(--red);color:var(--red);border-radius:8px;font-family:var(--brush);line-height:1;padding:6px 12px;font-size:30px;transform:rotate(-8deg);animation:stampIn .5s ease both}
@@ -1157,18 +1139,13 @@ html{scrollbar-gutter:stable}
   .stage.auc .alots{order:5}
   .amain{padding:20px 14px;gap:10px;border-width:2px}
   .stage .aname{font-size:40px}.stage .adesc{font-size:16px}.stage .aidx{font-size:13px}
-  .stage .aclk{font-size:64px}.stage .acap{font-size:13px}.stage .anb{font-size:15px}.stage .anb b{font-size:20px}
   .stage .alot{font-size:15px;padding:8px 10px}
   .adeal.big .aseal{font-size:46px;padding:6px 16px;border-width:5px}.adeal.big .awin .who span{font-size:28px}.adeal.big .awin .who b{font-size:18px}.adeal.big .aprice{font-size:18px}
 }
 /* 判官拍卖台：单手大按钮 */
 .acur{gap:12px}
 .acur.grand{border-color:var(--warn)}
-.atimer.sm .aclk{font-size:64px}.atimer.sm .acap{font-size:14px;color:var(--sub);letter-spacing:.2em}
 .abig{min-height:60px!important;font-size:19px!important;font-weight:900}
-.abtns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.abtns .btn-line{width:100%}
-.qsec .btn-line{min-height:44px}
 .secin{display:inline-flex;align-items:center;gap:6px}.secin .in{width:96px}
 .alist{display:flex;flex-direction:column;gap:8px}
 .alrow{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card);flex-wrap:wrap}
@@ -1179,8 +1156,6 @@ html{scrollbar-gutter:stable}
 .addlot{display:flex;flex-direction:column;gap:10px;margin-top:6px}
 .addlot summary{cursor:pointer;font-weight:900;color:var(--accent);padding:8px 0}
 .addlot[open]{gap:10px}.addlot[open]>*:not(summary){margin-top:10px}
-.ckl{display:flex;align-items:center;gap:8px;font-weight:700}
-.ckl input{width:20px;height:20px;accent-color:var(--accent)}
 /* Dealer：输入编号放人；每人一行赢 / 输 / 离开 */
 .entin{font-size:24px!important;letter-spacing:.08em}
 .entl{display:flex;flex-wrap:wrap;gap:8px}
@@ -1222,19 +1197,10 @@ html{scrollbar-gutter:stable}
 .nickc{max-width:440px;width:100%;gap:14px;text-align:center}
 .nickc h2{margin:0;font-size:26px}.nickc h2 b{font-size:34px;color:var(--accent)}
 .nickc .in{height:56px;font-size:22px;text-align:center}
-.aucp{max-width:560px;margin:0 auto;width:100%}
-.acard{align-items:center;text-align:center;gap:8px}
-.acard .aname{font-family:var(--disp);font-size:40px;line-height:1.1}
-.acard .adesc{font-size:16px;color:var(--ink2)}.acard .aidx{font-size:13px;color:var(--sub);letter-spacing:.15em}
-.acard.grand{border-color:var(--warn)}
-.abox{gap:12px}.abox.ok{border-color:var(--accent)}
-.abid{height:64px;font-size:30px!important;text-align:center}
-.amy{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:16px}.amy b{font-size:32px;color:var(--accent)}
 @media (max-width:959px){.cols-ed{grid-template-columns:minmax(0,1fr)}.ptbl{max-height:none}}
 @media (max-width:719px){
   .ptr{grid-template-columns:44px minmax(0,1fr) 76px 52px;font-size:14px}
   .ptr>:nth-child(4),.ptr>:nth-child(6){display:none}
-  .abtns{grid-template-columns:1fr}
 }
 .chips.c4 .cb .t{display:inline;white-space:nowrap;font:800 18px var(--mono)}
 
@@ -1262,20 +1228,11 @@ body .room.mine{opacity:1;border-color:var(--red);box-shadow:inset 0 0 0 1px var
 .stage .aidx{font-size:24px;letter-spacing:.3em}
 .stage .aname{font-size:128px}
 .stage .adesc{font-size:30px;color:var(--sub)}
-.akey{display:flex;align-items:center;justify-content:center;gap:72px;margin-top:10px}
-.akey .atimer{flex-direction:column-reverse}
-.astartb{display:flex;flex-direction:column;align-items:center;gap:6px;padding:18px 34px;border:3px solid var(--warn);border-radius:18px}
-.stage .astartb b{font-size:110px;line-height:1;color:var(--warn)}
-.stage .astartb .acap{font-size:28px;letter-spacing:.4em;color:var(--warn)}
-.stage .aclk{font-size:200px}
 .stage .await{font-size:56px;color:var(--sub);letter-spacing:.2em}
-.stage .anb{font-size:28px;color:var(--sub)}.stage .anb b{font-size:36px;color:var(--ink2)}
 .amain.grand .aidx{color:var(--warn);font-weight:900}
 @media (max-width:819px){
   .stage.auc .ttl{font-size:28px}.stage.auc .en{font-size:12px}
-  .akey{gap:16px;flex-wrap:wrap}.astartb{padding:8px 14px;border-width:2px}
-  .stage .astartb b{font-size:40px}.stage .astartb .acap{font-size:12px}
-  .stage .aname{font-size:40px}.stage .aclk{font-size:64px}.stage .await{font-size:22px}
+  .stage .aname{font-size:40px}.stage .await{font-size:22px}
   .stage .amain{padding:18px 14px}.stage .alot{font-size:15px}.stage .alot .ast{font-size:13px}
   .stage .room.s-open .idle{font-size:15px}
 }
@@ -1290,28 +1247,23 @@ body .room.mine{opacity:1;border-color:var(--red);box-shadow:inset 0 0 0 1px var
 @media (max-width:719px){
   .sh{font-size:22px}
   .in,.in.mono{font-size:17px}
-  .entin,.abid{font-size:20px!important;letter-spacing:.04em}
-  .abid{height:54px}
+  .entin{font-size:20px!important;letter-spacing:.04em}
   .nickc .in{font-size:20px}
   .mrow .give .in{font-size:17px}
   .btn-main[style*="font-size"],.abig{font-size:17px!important}
   body.bt #tabs button{font-size:16px}
   /* 名称类标题 */
   .hero .name b{font-size:26px}
-  .acard .aname{font-size:26px}
   .ttitle b{font-size:18px}
   .note .nt{font-size:17px}
   .rt .hd b,.rt.rp .hd .who b{font-size:18px}.rt.rp .hd .who span{font-size:15px}
   .wl button,.wl.w3 button{font-size:17px}
   .rbtn .n{font-size:17px}
   /* 倒计时 */
-  .atimer.sm .aclk{font-size:48px}.atimer.sm .acap{font-size:13px}
   /* 拍卖大屏在手机上（之前桌面字号压过了手机字号：说明 30px 比拍品名还大） */
   .stage .aidx{font-size:13px;letter-spacing:.2em}
   .stage .aname{font-size:28px}
   .stage .adesc{font-size:15px}
-  .stage .astartb b{font-size:32px}.stage .astartb .acap{font-size:12px}
-  .stage .aclk{font-size:48px}
   .stage .await{font-size:20px}
 }
 
@@ -1350,11 +1302,8 @@ body .room.mine{opacity:1;border-color:var(--red);box-shadow:inset 0 0 0 1px var
   body .stage .aidx{font-size:28px}
   body .stage .aname{font-size:96px}
   body .stage .adesc{font-size:32px}
-  body .stage .astartb b{font-size:120px}
   body .stage :is(.astartb .acap,.atimer .acap){font-size:24px}
-  body .stage .aclk{font-size:160px}
   body .stage .await{font-size:48px}
-  body .stage .anb,body .stage .anb b{font-size:32px}
   body .stage .adeal.big .awin .who{display:flex;gap:20px;align-items:baseline}
   body .stage .adeal.big .awin .who :is(b,span){font-size:64px}
   body .stage .adeal.big .aprice,body .stage .adeal.big .aprice .mono{font-size:40px}
@@ -1378,10 +1327,8 @@ body .room.mine{opacity:1;border-color:var(--red);box-shadow:inset 0 0 0 1px var
   body .stage .aidx{font-size:13px}
   body .stage .aname{font-size:26px}
   body .stage .adesc{font-size:15px}
-  body .stage .astartb b,body .stage .aclk{font-size:44px}
   body .stage :is(.astartb .acap,.atimer .acap){font-size:13px}
   body .stage .await{font-size:17px}
-  body .stage .anb,body .stage .anb b{font-size:15px}
   body .stage .adeal.big .awin .who{display:flex;gap:8px;align-items:baseline;justify-content:center}
   body .stage .adeal.big .awin .who :is(b,span){font-size:26px}
   body .stage .adeal.big .aprice,body .stage .adeal.big .aprice .mono{font-size:17px}
@@ -1473,7 +1420,6 @@ body:has(#modal .ovl) :is(.wrap,#amb,#scene){visibility:hidden}
 .mp-num{font-family:var(--mono)!important;font-weight:700;font-size:26px;text-anchor:middle;dominant-baseline:central}
 .mp-st{font-size:17px;font-weight:700;text-anchor:middle;dominant-baseline:central}
 .mp-gn{font-size:20px;font-weight:700}
-.mp-gn.plain{fill:var(--warn)!important}
 .mp-tb .t{fill:none;stroke:var(--sub);stroke-width:1.5}.mp-tb .c{fill:var(--sub)}
 .mp-in rect{fill:var(--red)}.mp-in text{fill:#fff!important;font-weight:900;font-size:17px;text-anchor:middle;letter-spacing:.2em}
 .mp-door{stroke:var(--red);stroke-width:3;stroke-linecap:round}
@@ -1689,7 +1635,6 @@ body .stage .ck.frz{color:var(--red)}
 .wen .w-title span,.wen .w-k,.wen .w-lab,.wen .w-lab *{font-size:12px}
 .wen .w-team,.wen .w-hint,.wen .w-hint *{font-size:15px}
 .fin3 .ft .cap,.fin3 .fr .fh b,.fin3 .fr .fh b i,.fin3 .fr .fk,.histp h3,.histp .shrow .small,.histp .shrow .small b{font-size:15px}
-.fin3 .fn i{font-size:15px}
 .fin3 .fs,.hrow,.hrow *,.histp .lbl{font-size:13px}
 .fin3 .eq{display:flex;flex-wrap:wrap;align-items:flex-end;gap:6px 10px;margin-top:6px}
 .fin3 .eq .q{display:flex;flex-direction:column;gap:3px}
@@ -1712,7 +1657,6 @@ body .stage .ck.frz{color:var(--red)}
 .fin3 .ic.rm .st{font-size:34px;font-weight:400;line-height:1;margin-top:8px}
 .fin3 .ic.rm.lit{opacity:1;border:1px solid #d9cfb6;background:#f4eddc;color:#1c1a17;box-shadow:0 2px 0 #b9ad8f}
 .fin3 .ic.rm.lit.sr{color:#c03a25}
-.fin3 .tkt .fn{white-space:nowrap}
 
 /* 我的彩券：压成一块，首屏就能看全（彩券、花色、八间房） */
 .fin3,.fin3:is(*){gap:0;padding:10px 14px 12px;background-color:var(--panel);border:1px solid var(--stroke-c);border-radius:var(--r-m);box-shadow:none}
@@ -1729,7 +1673,6 @@ body .stage .ck.frz{color:var(--red)}
 .fin3 .ic.rm .rk{top:3px;left:4px;font-size:10px}
 .fin3 .ic.rm .st{font-size:18px;margin-top:6px}
 .fin3 .ic.rm.lit{box-shadow:0 1px 0 #b9ad8f;transform:none}
-.fin3 .fn{font-size:22px}
 .fin3 .eq{margin-top:2px;gap:4px 8px;align-items:baseline}
 .fin3 .eq .q{flex-direction:row;align-items:baseline;gap:5px}
 .fin3 .fr .fk{padding:0 6px;font-size:12px}
@@ -1768,7 +1711,6 @@ body .stage .ck.frz{color:var(--red)}
 .fin3 .ic.rm .st{font-size:34px;font-weight:400;line-height:1;margin-top:8px}
 .fin3 .ic.rm.lit{opacity:1;border:1px solid #d9cfb6;background:#f4eddc;color:#1c1a17;box-shadow:0 2px 0 #b9ad8f}
 .fin3 .ic.rm.lit.sr{color:#c03a25}
-.fin3 .tkt .fn{white-space:nowrap}
 
 /* 我的彩券：压成一块，首屏就能看全（彩券、花色、八间房） */
 .fin3,.fin3:is(*){gap:0;padding:10px 14px 12px;background-color:var(--panel);border:1px solid var(--stroke-c);border-radius:var(--r-m);box-shadow:none}
@@ -1785,7 +1727,6 @@ body .stage .ck.frz{color:var(--red)}
 .fin3 .ic.rm .rk{top:3px;left:4px;font-size:10px}
 .fin3 .ic.rm .st{font-size:18px;margin-top:6px}
 .fin3 .ic.rm.lit{box-shadow:0 1px 0 #b9ad8f;transform:none}
-.fin3 .fn{font-size:22px}
 .fin3 .eq{margin-top:2px;gap:4px 8px;align-items:baseline}
 .fin3 .eq .q{flex-direction:row;align-items:baseline;gap:5px}
 .fin3 .fr .fk{padding:0 6px;font-size:12px}
