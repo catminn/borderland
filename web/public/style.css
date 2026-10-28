@@ -621,7 +621,7 @@ body.fullamb #amb{position:fixed;inset:0;height:auto}
 
 /* 生死簿: lantern glows fluorescent cyan in dark */
 :root[data-theme="dark"] .logo .scroll{background:#9ffcf0;border-color:#5ff0dc;box-shadow:0 0 14px 4px rgba(80,240,220,.65),inset 0 0 6px rgba(255,255,255,.7)}
-/* 修改冥币: same coin box as the market */
+/* 修改金币: same coin box as the market */
 .coin-in .in{padding-right:34px}
 .coin-in input[type=number]{-moz-appearance:textfield;appearance:textfield}
 .coin-in input[type=number]::-webkit-inner-spin-button,.coin-in input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
@@ -1582,7 +1582,7 @@ body .room.mine :is(.cd,.pt){color:var(--ink)}
   body .stage .cast .bc{padding:16px 0;font-size:26px;line-height:1.45}
   body .stage .cast .bc .t{font:500 20px var(--mono);color:var(--mute);margin-right:.7em}
   body .stage .cast .bc .x{font-size:26px;font-weight:500}
-  /* 冥币排行 */
+  /* 金币排行 */
   body .stage .plist{height:400px;grid-template-rows:repeat(5,80px);gap:0 56px}
   body .stage .prow{padding:0 4px;align-items:center;grid-template-columns:44px minmax(0,1fr) auto 120px;gap:20px}
   body .stage .prow :is(.rk,.who span,.su4,.sc){font-size:32px}

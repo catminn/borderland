@@ -3,9 +3,9 @@
 // To change a rule, change it here only.
 export let S;
 export function use(state){S=state;}
-// 4 种花色各有 简单(4) / 困难(8) 两间房，共 8 间。成功得 n×100 冥币和该花色；每人每间房最多成功一次。
+// 4 种花色各有 简单(4) / 困难(8) 两间房，共 8 间。成功得 n×100 金币和该花色；每人每间房最多成功一次。
 // loc = 房间号，fl = 楼层（'1' 一层 / 'B' B 层），以场地地图为准（2026-10-20）。游戏规则不写在代码里：仓库公开、rules.js 会下载到玩家手机上，玩家任何情况下都不能提前知道规则。
-// solo：♥8 孟婆的交易，拿到「生」的人可以独自通关（得 solo 冥币），或带一人通关（两人各得 n×100）。
+// solo：♥8 孟婆的交易，拿到「生」的人可以独自通关（得 solo 金币），或带一人通关（两人各得 n×100）。
 // 房间规则（rule）只显示在 Dealer 页（2026-10-20 用户定：工作人员要看，玩家页面都不显示）
 const ROOMS=[
   {id:'4S',card:'♠4',suit:'♠',n:4,loc:'173',fl:'1',name:'一二三纸扎人',
@@ -15,7 +15,7 @@ const ROOMS=[
   {id:'4H',card:'♥4',suit:'♥',n:4,loc:'B51',fl:'B',name:'少数派',
    rule:"1. 每轮开始前，玩家有 30 秒讨论时间（？）讨论结束后，每人秘密选择红牌或黑牌，并同时亮牌。投票提交后不能更改。\n2. 统计红、黑两边的人数。人数较少的一方是「少数派」，该方每位玩家得 1 分；人数较多的一方不得分。\n3. 如果红黑人数相同，或所有人都选了同一种颜色，本轮没有少数派，所有人都不得分。\n4. 每 3 轮投票为一个阶段。阶段结束后，累计分数最低的玩家淘汰；如果最低分并列，则并列玩家一起淘汰。\n5. 被淘汰的玩家离开游戏区，不再参与后续投票。游戏持续到只剩一位玩家，或达到预定时间。\n6. 玩家可以在讨论时间里谈判、误导或结盟，但投票必须保密；投票期间不能交谈、传递暗号或查看他人的选择。"},
   {id:'8H',card:'♥8',suit:'♥',n:8,loc:'B50',fl:'B',name:'孟婆的交易',solo:1000,
-   rule:"6 人一组，每人随机获得一个信封，其中 1 个「生」、5 个「死」。玩家可私下查看自己的信封，但不得展示，可以自由撒谎、结盟、谈判或作出承诺，承诺无需兑现。\n1) 自由讨论：玩家可自由交流并制定投票策略。讨论时间随人数递减：6 人 3 分钟、5 人 2 分钟、4 人 90 秒、3 人 60 秒。\n2) 投票：讨论结束后，所有玩家匿名投票，每人投给一名其他玩家（不可投自己），得票最多者公开信封。\n- 「死」：该玩家淘汰，剩余玩家重新随机分配信封，进入下一轮。\n- 「生」：该玩家立即获胜，并在揭晓后选择：独自通关获得 1000 冥币，或带任何一名玩家共同通关，两人各获得 800 冥币。其余玩家淘汰，游戏结束。\n3) 平票：平票玩家各有 20 秒进行陈述，随后重新投票（仅限平票玩家，不可投自己）。若再次平票，则随机抽取一名平票玩家揭晓信封。\n4) 如果只剩 2 人：主持人准备 1「生」1「死」两个信封。随机指定一人先抽取并秘密查看，可选择说谎或说真话；另一人决定抢走对方信封或选择剩余信封。最终持有「生」者获胜，并同样可选择独自通关（1000 冥币）或携另外一名玩家共同通关（各 800 冥币）。"},
+   rule:"6 人一组，每人随机获得一个信封，其中 1 个「生」、5 个「死」。玩家可私下查看自己的信封，但不得展示，可以自由撒谎、结盟、谈判或作出承诺，承诺无需兑现。\n1) 自由讨论：玩家可自由交流并制定投票策略。讨论时间随人数递减：6 人 3 分钟、5 人 2 分钟、4 人 90 秒、3 人 60 秒。\n2) 投票：讨论结束后，所有玩家匿名投票，每人投给一名其他玩家（不可投自己），得票最多者公开信封。\n- 「死」：该玩家淘汰，剩余玩家重新随机分配信封，进入下一轮。\n- 「生」：该玩家立即获胜，并在揭晓后选择：独自通关获得 1000 金币，或带任何一名玩家共同通关，两人各获得 800 金币。其余玩家淘汰，游戏结束。\n3) 平票：平票玩家各有 20 秒进行陈述，随后重新投票（仅限平票玩家，不可投自己）。若再次平票，则随机抽取一名平票玩家揭晓信封。\n4) 如果只剩 2 人：主持人准备 1「生」1「死」两个信封。随机指定一人先抽取并秘密查看，可选择说谎或说真话；另一人决定抢走对方信封或选择剩余信封。最终持有「生」者获胜，并同样可选择独自通关（1000 金币）或携另外一名玩家共同通关（各 800 金币）。"},
   {id:'4C',card:'♣4',suit:'♣',n:4,loc:'B75',fl:'B',name:'冥界传话',
    rule:"游戏开始后，第一位玩家根据主持人提供的题目进行绘画，限时 20 秒；第二位玩家根据画作用文字描述，限时 20 秒；第三位玩家根据文字描述重新绘画，第四位玩家再根据画作进行文字描述，依次交替传递。最后一位玩家根据前一位玩家的画猜测原始题目。不得交流或查看其他玩家的内容。最终猜对原始题目则挑战成功，猜错或超时则挑战失败。"},
   {id:'8C',card:'♣8',suit:'♣',n:8,loc:'150',fl:'1',name:'心有灵犀',
@@ -23,7 +23,7 @@ const ROOMS=[
   {id:'4D',card:'♦4',suit:'♦',n:4,loc:'151',fl:'1',name:'生死簿',
    rule:"计划 A：30 秒看桌上物品（准备打印一些万圣节图案和准备一些物品），盖布后答题。\n计划 B：打算用 AI 创一个像 super mario game 的 suit yourselves 类似的游戏。用 AI 把卡牌换成万圣节或者中式恐怖元素。游戏规则也是 30 秒记住大屏幕上面的卡牌物品，盖布后答题。一共 4 轮。答对 4 题积 400 分，3 题积 300 分，2 题积 200 分，一题或者以下等于失败。\nhttps://mingdeng-memory-game.dearbun513.chatgpt.site"},
   {id:'8D',card:'♦8',suit:'♦',n:8,loc:'B73',fl:'B',name:'符咒密码',
-   rule:"房间内有 8 张符咒，其中 4 张是真符、4 张是假符。真符上的话一定为真，假符上的话一定为假。玩家需在 5 分钟内根据符咒之间的逻辑关系找出 4 张真符，并按照符咒编号从小到大读取真符上的数字，组成 4 位密码打开密码箱。最多尝试 3 次密码；成功获得 ♦ + 800 冥币，超时或 3 次输入错误则挑战失败进入鬼市。现场随机使用 A/B 两套题目；如发现玩家通过泄题直接输入正确密码，可直接判定失败。"}];
+   rule:"房间内有 8 张符咒，其中 4 张是真符、4 张是假符。真符上的话一定为真，假符上的话一定为假。玩家需在 5 分钟内根据符咒之间的逻辑关系找出 4 张真符，并按照符咒编号从小到大读取真符上的数字，组成 4 位密码打开密码箱。最多尝试 3 次密码；成功获得 ♦ + 800 金币，超时或 3 次输入错误则挑战失败进入鬼市。现场随机使用 A/B 两套题目；如发现玩家通过泄题直接输入正确密码，可直接判定失败。"}];
 const winPts=(r,res)=>res==='solo'&&r.solo?r.solo:r.n*100;
 const SUITS=['♠','♦','♣','♥'];
 // 身份卡：编号 001 起，默认 56 张。没有起始房间（2026-10-19 删掉了，现场见机行事）。
@@ -38,10 +38,10 @@ const GATES=[
   {id:'g2',title:'生死一线',body:'鬼门再开！想参加的请按判官指示集合。',
    rule:'每轮先给一条提示（如「阴阳颠倒，少者为生」），玩家 10 秒内选生门或死门，选错的出局观战，直到剩 3 人；最后超过 3 人就用一道抢答题决出。'}];
 const FINAL_MSG='你已获得晋级资格！请到大房间集合，参加鬼市大拍卖。';
-const FINAL_SCORE=2000;           // 时间截止时攒够 2000 冥币
-const CHIP_START=200, CHIP_GOAL=500, RANSOM=500;   // 鬼市用实体筹码（网站不记）：领 200，赢到 500 自赎，输光喝孟婆汤；在场的人花 500 冥币可以赎人
+const FINAL_SCORE=2000;           // 时间截止时攒够 2000 金币
+const CHIP_START=200, CHIP_GOAL=500, RANSOM=500;   // 鬼市用实体筹码（网站不记）：领 200，赢到 500 自赎，输光喝孟婆汤；在场的人花 500 金币可以赎人
 const PUZ_PTS=100, PUZ_CAP=400;   // 解谜题 100 / 题，每人最多 400
-const GATE_WIN=3, GATE_COIN=300;  // 鬼门开：最先完成的 3 人，每人选 300 冥币 / 救一个人 / 拿一个花色
+const GATE_WIN=3, GATE_COIN=300;  // 鬼门开：最先完成的 3 人，每人选 300 金币 / 救一个人 / 拿一个花色
 const ROOM_CAP0=6, DUR0=7200, MARKET_GRACE=900;  // 房间默认容量；主游戏 2 小时；鬼市复活名额在时间截止后再留 15 分钟
 const KINDS=['公告','鬼门开'];
 
@@ -72,7 +72,7 @@ const timeUp=()=>S.t>=(S.dur||DUR0);
 const marketShut=()=>S.t>=(S.dur||DUR0)+MARKET_GRACE;   // 截止 15 分钟后：停止发放复活名额
 const active=()=>S.players.filter(p=>p.on);
 const suitsOf=p=>SUITS.filter(x=>p.cards.includes(x));
-// 排名：冥币多的在前；同分花色多的在前；再按编号
+// 排名：金币多的在前；同分花色多的在前；再按编号
 const ranking=()=>active().slice().sort((a,b)=>b.score-a.score||suitsOf(b).length-suitsOf(a).length||a.id.localeCompare(b.id));
 
 // ---------- 通知 ----------
@@ -143,7 +143,7 @@ function finishRoom(rid,results){
   for(const id of st.ps){const p=pl(id),res=results[id];p.inRoom=null;
     const h=p.hist.filter(x=>x.rid===rid&&x.res===null).pop()||(p.hist[p.hist.length]={rid,t0:st.at,res:null,pts:0});h.t1=S.t;h.res=res;
     if(res!=='lose'){const pts=winPts(r,res);h.res='win';p.score+=pts;h.pts=pts;if(!p.cleared.includes(rid))p.cleared.push(rid);if(!p.cards.includes(r.suit))p.cards.push(r.suit);
-      log(nm(p)+' 赢下 '+r.card+'，+'+pts+' 冥币'+(res==='solo'?'（独自通关）':''),'back',1);notes.push(p.id+' 赢');}
+      log(nm(p)+' 赢下 '+r.card+'，+'+pts+' 金币'+(res==='solo'?'（独自通关）':''),'back',1);notes.push(p.id+' 赢');}
     else{eliminate(p,'挑战 '+r.card+' 失败',r.card+' '+r.name);notes.push(p.id+' 输');}}
   st.ps=[];st.st='reset';st.at=S.t;
   return ok(r.card+' 结算完成：'+notes.join('，'));}
@@ -180,28 +180,28 @@ function confirmIn(pid,role){const p=pl(pid);
   if(!expected||role!==expected)return no('要由另一方确认，不能自己确认自己的登记');
   if(p.pickAt==null)p.pickAt=S.t;
   p.st='market';p.inAt=S.t;p.chk.ok=true;p.chk.by2=role;
-  log(nm(p)+' 进入鬼市，冥币冻结','back');
-  tell(p.id,'你已进入鬼市','冥币已冻结。用实体筹码赢到 '+CHIP_GOAL+' 就能自赎；输光可以喝孟婆汤复活，但会随机忘掉一个花色。');
+  log(nm(p)+' 进入鬼市，金币冻结','back');
+  tell(p.id,'你已进入鬼市','金币已冻结。用实体筹码赢到 '+CHIP_GOAL+' 就能自赎；输光可以喝孟婆汤复活，但会随机忘掉一个花色。');
   return ok('已确认 '+p.id+' 入鬼市');}
 function backAlive(p){p.st='alive';p.outAt=null;p.inAt=null;p.pickAt=null;p.chk=null;p.at='';}
 const inMk=p=>p&&p.st==='market'&&!(p.chk&&!p.chk.ok);
-// 自赎：玩家用实体筹码赢到 500，孟婆确认后点。不带出任何冥币，只是解冻。
+// 自赎：玩家用实体筹码赢到 500，孟婆确认后点。不带出任何金币，只是解冻。
 function selfRedeem(pid){const p=pl(pid);if(!inMk(p))return no('该玩家不在鬼市');
   if(marketShut())return no('已停止发放复活名额');
   backAlive(p);log(nm(p)+' 在鬼市赢够筹码，自赎回到人间','back',1);
-  tell(p.id,'自赎成功','你回到了人间，冥币已解冻。');
+  tell(p.id,'自赎成功','你回到了人间，金币已解冻。');
   return ok(p.id+' 已自赎');}
-// 赎人：任何在场的人花 500 冥币把鬼市里的人赎出来
+// 赎人：任何在场的人花 500 金币把鬼市里的人赎出来
 function ransom(pid,byId){const p=pl(pid),by=pl(byId);if(!inMk(p))return no('该玩家不在鬼市');
   if(marketShut())return no('已停止复活');
   if(!by)return no('先输入出钱人的编号');if(by.id===p.id)return no('不能自己赎自己');
   if(by.st!=='alive')return no(by.id+' 不在场，不能出钱');
-  if(by.score<RANSOM)return no(by.id+' 只有 '+by.score+' 冥币，不够 '+RANSOM);
+  if(by.score<RANSOM)return no(by.id+' 只有 '+by.score+' 金币，不够 '+RANSOM);
   by.score-=RANSOM;backAlive(p);
-  log(nm(by)+' 花 '+RANSOM+' 冥币把 '+nm(p)+' 从鬼市赎了出来','back',1);
-  tell(p.id,'有人赎你','你被 '+nm(by)+' 花 '+RANSOM+' 冥币赎了出来，冥币已解冻。');
-  tell(by.id,'赎人成功','你花 '+RANSOM+' 冥币赎出了 '+nm(p)+'。');
-  return ok(by.id+' 赎出 '+p.id+'，扣 '+RANSOM+' 冥币');}
+  log(nm(by)+' 花 '+RANSOM+' 金币把 '+nm(p)+' 从鬼市赎了出来','back',1);
+  tell(p.id,'有人赎你','你被 '+nm(by)+' 花 '+RANSOM+' 金币赎了出来，金币已解冻。');
+  tell(by.id,'赎人成功','你花 '+RANSOM+' 金币赎出了 '+nm(p)+'。');
+  return ok(by.id+' 赎出 '+p.id+'，扣 '+RANSOM+' 金币');}
 // 孟婆汤：实体筹码输光 → 免费复活，但随机忘掉一个花色（rnd 只给测试用）
 function soup(pid,rnd){const p=pl(pid);if(!inMk(p))return no('该玩家不在鬼市');
   if(marketShut())return no('已停止发放复活名额');
@@ -209,7 +209,7 @@ function soup(pid,rnd){const p=pl(pid);if(!inMk(p))return no('该玩家不在鬼
     p.cleared=p.cleared.filter(id=>room(id).suit!==lost);}   // 忘掉的花色可以再去同花色的房间赢回来
   backAlive(p);
   log(nm(p)+' 喝下孟婆汤复活'+(lost?'，忘掉了 '+lost:''),'back',1);
-  tell(p.id,'喝下孟婆汤','你复活了'+(lost?'，但忘掉了花色 '+lost+'（同花色的房间可以再挑战）':'')+'。冥币已解冻。');
+  tell(p.id,'喝下孟婆汤','你复活了'+(lost?'，但忘掉了花色 '+lost+'（同花色的房间可以再挑战）':'')+'。金币已解冻。');
   return ok(p.id+' 已复活'+(lost?'，忘掉 '+lost:''));}
 
 // ---------- 解谜题 ----------
@@ -227,8 +227,8 @@ function puzRedeem(pid,code){const p=pl(pid);if(!p)return no('没有这个编号
   if(p.puz.some(r=>r.k===key))return no(p.id+' 已经兑换过 #'+code);
   const i=puzInfo(p);if(i.left<=0)return no(p.id+' 解谜题已达上限 '+PUZ_CAP);
   const pts=Math.min(PUZ_PTS,i.left);p.puz.push({k:key,title:t,t:S.t,pts});p.score+=pts;p.on=true;
-  log('判官记录 '+nm(p)+' 解出 '+t+'，+'+pts+' 冥币','back');
-  return ok(p.id+' +'+pts+' 冥币（解谜题累计 '+(i.used+pts)+' / '+PUZ_CAP+'）');}
+  log('判官记录 '+nm(p)+' 解出 '+t+'，+'+pts+' 金币','back');
+  return ok(p.id+' +'+pts+' 金币（解谜题累计 '+(i.used+pts)+' / '+PUZ_CAP+'）');}
 // 总控导入题库：rows = [[编码,问,答],…]；整份替换
 function setBank(rows){if(!Array.isArray(rows))return no('题库格式不对');const b={};
   for(const r of rows){const c=puzCode(r&&r[0]);if(!c)continue;b[c]={q:String(r[1]||'').trim().slice(0,400),a:String(r[2]||'').trim().slice(0,200)};}
@@ -243,13 +243,13 @@ function gateWin(pid){const g=S.gp;if(!g)return no('现在没有进行中的鬼�
   if(p.st!=='alive')return no(p.id+' 不在场');
   g.wins.push({pid,t:S.t,rw:null});p.on=true;const n=S.notices.find(x=>x.id===g.nid);
   log(nm(p)+' 第 '+g.wins.length+' 个完成鬼门开「'+(n?n.title:'')+'」','back',1);
-  tell(p.id,'鬼门开：你是第 '+g.wins.length+' 名','找判官选奖励：'+GATE_COIN+' 冥币 / 救一个人 / 拿一个花色。');
+  tell(p.id,'鬼门开：你是第 '+g.wins.length+' 名','找判官选奖励：'+GATE_COIN+' 金币 / 救一个人 / 拿一个花色。');
   return ok(p.id+' 记为第 '+g.wins.length+' 名，请选奖励');}
 function gateUnwin(pid){const g=S.gp;if(!g)return no('现在没有进行中的鬼门开');const i=g.wins.findIndex(w=>w.pid===pid);if(i<0)return no('没有这条记录');
   if(g.wins[i].rw)return no('已经发过奖励，不能撤销');g.wins.splice(i,1);log('判官撤销 '+nameOf(pid)+' 的鬼门开名次');return ok('已撤销');}
 function gateReward(pid,kind,arg){const g=S.gp;if(!g)return no('现在没有进行中的鬼门开');const w=g.wins.find(x=>x.pid===pid);if(!w)return no('这个人不在完成名单里');
   if(w.rw)return no('已经领过奖励');const p=pl(pid);
-  if(kind==='coin'){p.score+=GATE_COIN;w.rw={k:'coin'};log(nm(p)+' 鬼门开奖励：+'+GATE_COIN+' 冥币','back',1);}
+  if(kind==='coin'){p.score+=GATE_COIN;w.rw={k:'coin'};log(nm(p)+' 鬼门开奖励：+'+GATE_COIN+' 金币','back',1);}
   else if(kind==='save'){const q=pl(arg);if(!q)return no('先选要救的人');if(q.st==='alive')return no(q.id+' 本来就在场');
     if(marketShut())return no('已停止发放复活名额');
     backAlive(q);w.rw={k:'save',pid:q.id};
@@ -266,7 +266,7 @@ function gateEnd(auto){if(!S.gp)return no('现在没有进行中的鬼门开');g
 function finalMiss(p){const m=[],miss=SUITS.filter(x=>!p.cards.includes(x));
   if(p.st!=='alive')m.push('不在场（'+stLabel(p)+'）');
   if(miss.length)m.push('缺花色 '+miss.join(''));
-  if(p.score<FINAL_SCORE)m.push('冥币 '+p.score+' / '+FINAL_SCORE);
+  if(p.score<FINAL_SCORE)m.push('金币 '+p.score+' / '+FINAL_SCORE);
   return m;}
 const qualifies=p=>!finalMiss(p).length;
 // 晋级名单（2026-10-20 起没有「锁定」）：S.fin 一直是数组。总控在生死簿里一键晋级所有符合条件的人，
@@ -322,7 +322,7 @@ function whyNotBid(pid,l){const p=pl(pid);
   return null;}
 function bid(pid,id,v){const l=lot(id),why=whyNotBid(pid,l);if(why)return no(why);const p=pl(pid);
   v=Number(v);if(!Number.isInteger(v)||v<0)return no('出价要是整数');
-  if(v<l.start)return no('起拍价是 '+l.start);if(v>p.score)return no('你只有 '+p.score+' 冥币');
+  if(v<l.start)return no('起拍价是 '+l.start);if(v>p.score)return no('你只有 '+p.score+' 金币');
   l.bids[pid]={v,t:now()};return ok('已出价 '+v+'（截止前可以改，以最后一次为准）');}
 // 排序：价高者先；同价先出价者先；剔除被作废的人、已不在晋级名单的人、拍到过别的拍品的人、钱不够的人
 function bidOrder(l){return Object.entries(l.bids).map(([pid,b])=>({pid,...b}))
@@ -331,7 +331,7 @@ function bidOrder(l){return Object.entries(l.bids).map(([pid,b])=>({pid,...b}))
 function settle(l){const top=bidOrder(l)[0];
   if(!top){l.st='pass';l.win=null;l.price=0;log('「'+l.name+'」流拍','',1);return '流拍';}
   const p=pl(top.pid);p.score-=top.v;p.won=l.id;l.win=p.id;l.price=top.v;l.st='done';
-  log(nm(p)+' 以 '+top.v+' 冥币拍得「'+l.name+'」','back',1);tell(p.id,'你拍到了「'+l.name+'」','成交价 '+top.v+' 冥币，已从你的冥币里扣除。请到台前领取。','final');
+  log(nm(p)+' 以 '+top.v+' 金币拍得「'+l.name+'」','back',1);tell(p.id,'你拍到了「'+l.name+'」','成交价 '+top.v+' 金币，已从你的金币里扣除。请到台前领取。','final');
   return nm(p)+' '+top.v;}
 function refund(l){if(l.win){const p=pl(l.win);if(p){p.score+=l.price;if(p.won===l.id)p.won=null;}}l.win=null;l.price=0;}
 function aucReveal(id){const l=lot(id)||curLot();if(!l)return no('没有这件拍品');
@@ -350,8 +350,8 @@ function aucShow(id){const l=lot(id);if(!l)return no('没有这件拍品');const
   S.auc.cur=l.id;return ok('大屏显示「'+l.name+'」');}
 
 // ---------- 其他 ----------
-function setScore(pid,v,why){const p=pl(pid);if(!p)return no('没有这个编号');v=Math.round(+v);if(!Number.isFinite(v)||v<0)return no('冥币数要是不小于 0 的整数');
-  const old=p.score;if(v===old)return no('冥币数没有变化');p.score=v;log('总控修改 '+nm(p)+' 冥币：'+old+' → '+v+(why?'（'+String(why).slice(0,40)+'）':''));return ok(p.id+' 冥币已改为 '+v);}
+function setScore(pid,v,why){const p=pl(pid);if(!p)return no('没有这个编号');v=Math.round(+v);if(!Number.isFinite(v)||v<0)return no('金币数要是不小于 0 的整数');
+  const old=p.score;if(v===old)return no('金币数没有变化');p.score=v;log('总控修改 '+nm(p)+' 金币：'+old+' → '+v+(why?'（'+String(why).slice(0,40)+'）':''));return ok(p.id+' 金币已改为 '+v);}
 function setNick(pid,nick){const p=pl(pid);if(!p)return no('没有这个编号');nick=String(nick||'').replace(/\s+/g,' ').trim().slice(0,12);
   if(!nick)return no('昵称不能为空');if(S.players.some(x=>x!==p&&x.nick===nick))return no('这个昵称已经有人用了');
   const old=p.nick;p.nick=nick;p.on=true;if(old!==nick)log(p.id+(old?' 改名 '+old+' → ':' 取名 ')+nick);return ok('昵称已设为 '+nick);}
@@ -381,23 +381,23 @@ function offRow(me,x,rnd){
     p.on=true;const h={rid:r.id,t0:S.t,t1:S.t,res:x.res,pts:0};p.hist.push(h);
     if(x.res!=='lose'){h.res='win';if(p.cleared.includes(r.id)){if(!p.cards.includes(r.suit))p.cards.push(r.suit);return ok(p.id+' 已成功过 '+r.card+'，没有再加分');}
       h.pts=winPts(r,x.res);p.score+=h.pts;p.cleared.push(r.id);if(!p.cards.includes(r.suit))p.cards.push(r.suit);
-      log(nm(p)+' 赢下 '+r.card+'，+'+h.pts+' 冥币'+tag,'back',1);return ok(p.id+' 赢 '+r.card+' +'+h.pts);}
+      log(nm(p)+' 赢下 '+r.card+'，+'+h.pts+' 金币'+tag,'back',1);return ok(p.id+' 赢 '+r.card+' +'+h.pts);}
     if(x.res==='lose'){if(p.st!=='alive'){log(nm(p)+' 挑战 '+r.card+' 失败'+tag);return ok(p.id+' 输 '+r.card+'（本来就不在场）');}
       eliminate(p,'挑战 '+r.card+' 失败'+tag,r.card+' '+r.name);return ok(p.id+' 输 '+r.card);}}
   if(x.k==='pickup'){if(p.st==='market'||p.st==='picked')return ok(p.id+' 已经接到了');
     if(p.st==='alive')p.outAt=S.t;p.st='picked';p.pickAt=S.t;p.on=true;log('黑白无常接到 '+nm(p)+tag);return ok('接到 '+p.id);}
-  if(x.k==='market'){if(p.st==='market')return ok(p.id+' 已经在鬼市');toMarket(p);log(nm(p)+' 进入鬼市，冥币冻结'+tag,'back');return ok(p.id+' 入鬼市');}
+  if(x.k==='market'){if(p.st==='market')return ok(p.id+' 已经在鬼市');toMarket(p);log(nm(p)+' 进入鬼市，金币冻结'+tag,'back');return ok(p.id+' 入鬼市');}
   if(x.k==='redeem'){if(p.st==='alive')return ok(p.id+' 已经在场');backAlive(p);log(nm(p)+' 自赎回到人间'+tag,'back',1);return ok(p.id+' 自赎');}
   if(x.k==='ransom'){if(p.st==='alive')return ok(p.id+' 已经在场');const by=pl(String(x.by||''));if(!by)return no('没有出钱人编号 '+(x.by||'？'));if(by.id===p.id)return no('出钱人不能是自己');
-    const paid=Math.min(RANSOM,by.score);by.score-=paid;backAlive(p);log(nm(by)+' 花 '+paid+' 冥币把 '+nm(p)+' 从鬼市赎了出来'+tag,'back',1);return ok(by.id+' 赎出 '+p.id+(paid<RANSOM?'（只有 '+paid+'）':''));}
+    const paid=Math.min(RANSOM,by.score);by.score-=paid;backAlive(p);log(nm(by)+' 花 '+paid+' 金币把 '+nm(p)+' 从鬼市赎了出来'+tag,'back',1);return ok(by.id+' 赎出 '+p.id+(paid<RANSOM?'（只有 '+paid+'）':''));}
   if(x.k==='soup'){if(p.st==='alive')return ok(p.id+' 已经在场');let lost=null;
     if(p.cards.length){const i=Math.floor((rnd==null?Math.random():rnd)*p.cards.length)%p.cards.length;lost=p.cards.splice(i,1)[0];p.cleared=p.cleared.filter(id=>room(id).suit!==lost);}
     backAlive(p);log(nm(p)+' 喝下孟婆汤复活'+(lost?'，忘掉了 '+lost:'')+tag,'back',1);return ok(p.id+' 孟婆汤'+(lost?'，忘掉 '+lost:''));}
   if(x.k==='puz'){const code=puzCode(x.code),key='z'+code,t=code&&puzTitle(code);if(!code)return no('谜题编码不对');if(p.puz.some(r=>r.k===key))return ok(p.id+' 已经兑换过 #'+code);
     const i=puzInfo(p);if(i.left<=0)return ok(p.id+' 解谜题已达上限');const pts=Math.min(PUZ_PTS,i.left);p.puz.push({k:key,title:t,t:S.t,pts});p.score+=pts;p.on=true;
-    log('判官记录 '+nm(p)+' 解出 '+t+'，+'+pts+' 冥币'+tag,'back');return ok(p.id+' 解谜 #'+code+' +'+pts);}
+    log('判官记录 '+nm(p)+' 解出 '+t+'，+'+pts+' 金币'+tag,'back');return ok(p.id+' 解谜 #'+code+' +'+pts);}
   if(x.k==='gate'){p.on=true;
-    if(x.rw==='coin'){p.score+=GATE_COIN;log(nm(p)+' 鬼门开奖励：+'+GATE_COIN+' 冥币'+tag,'back',1);return ok(p.id+' +'+GATE_COIN);}
+    if(x.rw==='coin'){p.score+=GATE_COIN;log(nm(p)+' 鬼门开奖励：+'+GATE_COIN+' 金币'+tag,'back',1);return ok(p.id+' +'+GATE_COIN);}
     if(x.rw==='save'){const q=pl(String(x.arg||''));if(!q)return no('没有要救的编号 '+(x.arg||'？'));if(q.st!=='alive')backAlive(q);log(nm(p)+' 用鬼门开奖励救出了 '+nm(q)+tag,'back',1);return ok(p.id+' 救了 '+q.id);}
     if(x.rw==='suit'){if(!SUITS.includes(x.arg))return no('花色不对');if(!p.cards.includes(x.arg))p.cards.push(x.arg);log(nm(p)+' 鬼门开奖励：拿到花色 '+x.arg+tag,'back',1);return ok(p.id+' 拿到 '+x.arg);}
     return no('奖励不对');}
@@ -459,7 +459,7 @@ function seedMid(){
   S.t=M(43); log('演示数据（游戏中段）：第二次鬼门开进行中（已有 1 人完成），♦8、♠4、♠8 进行中，♣4 刚结算、重置中，鬼市 1 人，待接 1 人');
   demoLots();
 }
-// 时间截止后：一批人四花色 + 2000 冥币。pre = 还没人晋级、拍卖没开始；final = 已晋级，拍卖第 1 件已成交，第 2 件选中待开拍
+// 时间截止后：一批人四花色 + 2000 金币。pre = 还没人晋级、拍卖没开始；final = 已晋级，拍卖第 1 件已成交，第 2 件选中待开拍
 function seedFinal(pre){
   demoBase(40);
   let k=7;const rnd=()=>(k=(k*1103515245+12345)%2147483648)/2147483648;
@@ -483,7 +483,7 @@ function seedFinal(pre){
 const seed=w=>w==='start'?seedStart():w==='final'?seedFinal():w==='pre'?seedFinal(true):seedMid();
 export function newGame(demo){init();if(demo)seed(demo);return S;}
 
-// Which roles may perform each action. 总控只做自己页面上的事（冥币、名单、发布、设置），不代替其他工作人员操作。
+// Which roles may perform each action. 总控只做自己页面上的事（金币、名单、发布、设置），不代替其他工作人员操作。
 const ROLE_OK={setrule:['dealer','ctrl'],enter:['dealer'],finish:['dealer'],resetdone:['dealer'],kick:['dealer'],
   setcap:['ctrl'],setcapon:['ctrl'],setdur:['ctrl'],setscore:['ctrl'],setcards:['ctrl'],seton:['ctrl'],addplayers:['ctrl'],setbank:['ctrl'],finalall:['ctrl'],final:['ctrl'],
   publish:['ctrl','judge'],revoke:['ctrl','judge'],

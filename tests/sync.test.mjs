@@ -47,7 +47,7 @@ const player = await page(P.player, 390);
 T('roles see only their tabs', (await text(judge)).includes('鬼门开') && (await text(judge)).includes('解谜题') && (await text(mengpo)).includes('孟婆'));
 T('player tabs: mine, big screen, map', (await player.locator('#tabs button').allTextContents()).join('/') === '我的/大屏/地图');
 await ack(player); await player.click('#tabs button[data-v="board"]'); await sleep(300);
-T('player big screen tab shows the ranking', (await text(player)).includes('全场播报') && (await text(player)).includes('冥币排行'));
+T('player big screen tab shows the ranking', (await text(player)).includes('全场播报') && (await text(player)).includes('金币排行'));
 await ack(player);
 await player.click('[data-a=tab][data-v=player]');
 { const tx = await text(player); T('player sees own page (mine tab)', tx.includes('011') && tx.includes('黑猫') && tx.includes('晋级资格进度')); }
@@ -183,7 +183,7 @@ const dealerOf = room => client(pinOf(p => p.role === 'dealer' && p.rooms[0] ===
   T('big screen shows the deal', (await text(sp)).includes('成交'));
   T('void the absent winner → next bidder', (await jd.act({ type: 'auc.void' })).ok && (await sleep(200), admin.S.auc.lots[0].win === '002' && P_('003').score === 2000));
   T('redo resets the lot and refunds', (await jd.act({ type: 'auc.redo' })).ok && (await sleep(200), admin.S.auc.lots[0].st === 'wait' && P_('002').score === 2800));
-  T('judge switches the screen back', (await jd.act({ type: 'auc.screen', on: false })).ok && (await sleep(400), (await text(sp)).includes('冥币排行')));
+  T('judge switches the screen back', (await jd.act({ type: 'auc.screen', on: false })).ok && (await sleep(400), (await text(sp)).includes('金币排行')));
   await pp.context().close(); await sp.context().close(); c2.close(); }
 function R_q(id) { const p = P_(id); return p.cards.length === 4 && p.score >= 2000 && p.st === 'alive'; }
 T('duration can be set', (await admin.act({ type: 'setdur', secs: 5400 })).ok && (await sleep(200), admin.S.dur === 5400));
