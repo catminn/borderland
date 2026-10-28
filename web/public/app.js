@@ -236,7 +236,7 @@ function mapSvg(me){
       +'<g class="mp-tag'+(isRed(r.suit)?' red':'')+'" transform="translate('+(cx-22)+' '+(cy-62)+')"><rect width="44" height="26" rx="4"/>'+t(22,19,'',r.n+r.suit)+'</g>'
       +t(cx,cy+2,'mp-gn mid',esc(r.name))+t(cx,cy+40,'mp-st',mine?'你在这里':done?'✓ 已成功':sl)+t(cx,cy,'mp-num mp-only',r.n+r.suit)+'</g>';});
   h+='<path class="mp-wall" d="M1090 300 V40 H40 V640 H1090 V380"/>'
-    +'<g class="mp-in"><rect x="940" y="304" width="146" height="72" rx="4"/>'+t(1013,340,'','签到台')+'</g>'
+    +'<g class="mp-in"><rect x="978" y="312" width="108" height="56" rx="4"/>'+t(1032,340,'','签到台')+'</g>'
     +'<path class="mp-arrow" d="M1170 340 H1100 M1110 332 L1100 340 L1110 348"/>'+t(1135,320,'mp-ent','入口');
   return h+'</svg>';
 }
