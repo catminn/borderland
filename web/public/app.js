@@ -161,6 +161,7 @@ function fitStage(){
     if(g.dataset.top!==top)g.dataset.top=top;}
 }
 addEventListener('resize',fitStage);
+addEventListener('hashchange',()=>{if(ME&&S&&location.hash.slice(1)!==ui.tab){ui.tab=location.hash.slice(1);say(null);render();}});
 
 // ---------- 抽奖大屏 ----------
 const PST={wait:'待抽',reveal:'揭晓中',drawn:'待确认',done:'已颁发'},PCLS={wait:'wait',reveal:'closed',drawn:'closed',done:'done'};
@@ -860,7 +861,9 @@ function render(){
   const nickGate=ME.role==='player'&&!DEVME&&S&&(p=>p&&!p.nick)(S.players.find(x=>x.id===ME.pid));   // 还没取昵称：只显示取名页
   // 总控不显示标签栏：开发者用右上角下拉换视角；真总控用同一个下拉换页面
   const tabs=nickGate?['player']:(ROLE_TABS[ME.role]||[]);
-  if(!tabs.includes(ui.tab))ui.tab=tabs[0];
+  // 网址 # 记住当前标签页（#map、#board…）：刷新后回到原来那页
+  if(!tabs.includes(ui.tab)){const h=location.hash.slice(1);ui.tab=tabs.includes(h)?h:tabs[0];}
+  if(location.hash!=='#'+ui.tab){try{history.replaceState(null,'','#'+ui.tab);}catch{/* ignore */}}
   document.body.classList.toggle('bt',tabs.length>1);
   document.documentElement.dataset.theme=themeFor();
   document.body.classList.toggle('board',ui.tab==='board');
@@ -972,7 +975,7 @@ async function login(pin){
   setTimeout(()=>{entering=false;$('#view').innerHTML='';render();say(null);},reduce?1200:3600);
 }
 function logout(msg){
-  SESSION=null;store.set(null);STALE=null;ui.as='ctrl';ui.simOff=false;ui.tab=null;try{localStorage.removeItem(LASTK);}catch{/* ignore */}setMe(null);S=null;CLOCK=null;connected=false;entering=false;
+  SESSION=null;store.set(null);STALE=null;ui.as='ctrl';ui.simOff=false;ui.tab=null;try{history.replaceState(null,'',location.pathname+location.search);}catch{/* ignore */}try{localStorage.removeItem(LASTK);}catch{/* ignore */}setMe(null);S=null;CLOCK=null;connected=false;entering=false;
   if(ws){const w=ws;ws=null;try{w.close();}catch{/* ignore */}}
   clearTimeout(timer);$('#view').innerHTML='';render();say(null);if(msg)loginError(msg);
 }
@@ -1229,7 +1232,7 @@ document.addEventListener('keydown',e=>{
   const btn=document.querySelector('[data-a="'+go+'"]');if(btn&&!btn.disabled){e.preventDefault();e.target.blur();btn.click();}
 });
 document.addEventListener('change',e=>{
-  if(e.target.id==='devas'){ui.as=e.target.value;ui.tab=null;ui.ddOpen=null;say(null);render();return;}
+  if(e.target.id==='devas'){ui.as=e.target.value;ui.tab=null;try{history.replaceState(null,'',location.pathname+location.search);}catch{/* ignore */}ui.ddOpen=null;say(null);render();return;}
   const m=e.target.dataset.m;if(!m)return;
 });
 // 输入时只更新数据和少数按钮（不整页重绘，免得打断输入）；失焦后再整页重绘
