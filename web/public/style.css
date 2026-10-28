@@ -1920,3 +1920,8 @@ body.login .bx{background:#080808}
 body .lg{background:#0e0e0e!important}
 /* 深色可读性：保留黑描边 + 暗红投影，只把按钮 / 卡片的填充提亮一档，并加一圈细白内描边 */
 :root[data-theme="dark"] body.bwr{--card:#1e1e1e;--input:#161616;--hair-c:rgba(255,255,255,.32)}
+
+/* 分页高亮 = 填充（和筛选按钮一致）；深色下表边/分割线改白 */
+body.bwr :is(nav.pages button,.subtabs.top button)[aria-selected="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+:root[data-theme="dark"] body.bwr{--line:rgba(255,255,255,.85);--line2:rgba(255,255,255,.85);--line3:rgba(255,255,255,.5);--hair-c:rgba(255,255,255,.85)}
+body.bwr .ptr{border-radius:0}
