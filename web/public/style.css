@@ -1882,3 +1882,28 @@ body.bwr .fin3 .slot b,:root[data-theme="dark"] body.bwr .fin3 .slot b{color:var
 /* 玩家页标题：粗宋体，接近海报的高反差字形 */
 body.bwr{--disp:"BD Title","Noto Serif SC","Songti SC",serif}
 body.bwr :is(.sh,.rank .rh b,.cast .rh b,.gbox .gh b,.ck-l,.tn){font-weight:900}
+/* ===== 状态色：开放 = 绿，游戏中 / 重置中 = 灰（进不去），你在这里 = 红，已成功 = 同一种墨色 ===== */
+body.bwr{--ok:#0b7658;--ok-soft:rgba(11,118,88,.12)}
+:root[data-theme="dark"] body.bwr{--ok:#4fd8a5;--ok-soft:rgba(79,216,165,.13)}
+body.bwr :is(.rbtn .st.idle,.hero .status.idle,.mp-s.idle,.room .idle,body .room.s-open .idle){color:var(--ok)}
+body.bwr .gd{background:var(--ok);color:var(--ok)}
+body.bwr :is(.rbtn .st.on,.hero .status.on,.mp-s.on){color:var(--mute)}
+body.bwr :is(.rbtn .st.on .gd,.hero .status.on .gd,body .room.s-play .on .gd){background:var(--mute);color:var(--mute)}
+body.bwr body .room.s-play .on,body.bwr .room.s-play .on{color:var(--sub)}
+body.bwr .room.s-open{border-color:var(--ok);background:linear-gradient(180deg,var(--ok-soft),transparent 70%),var(--panel);box-shadow:inset 0 0 0 1px var(--ok),var(--shx,4px) var(--shx,4px) 0 var(--ok),0 0 26px var(--ok-soft)}
+body.bwr .room.mine .on .gd{background:var(--red);color:var(--red)}
+body.bwr .room .idle.okk{color:var(--ink)}
+body.bwr .mp-s.done{color:var(--ink)}
+body.bwr .mp-s.here{color:var(--red)}
+body.bwr .mp-li.here{background:var(--red-soft)}
+/* 地图：开放 = 绿边，游戏中 / 重置中 = 灰虚线 */
+body.bwr .mp-room.s-idle>rect{fill:var(--ok-soft);stroke:var(--ok)}
+body.bwr .mp-room.s-idle .mp-st{fill:var(--ok)}
+body.bwr .mp-room.s-on>rect{fill:var(--off-bg);stroke:var(--line2);stroke-dasharray:6 5}
+body.bwr .mp-room.s-on .mp-st,body.bwr .mp-room.s-on .mp-num{fill:var(--mute)}
+body.bwr .mp-room.s-on:hover>rect,body.bwr .mp-room.s-on.sel>rect{fill:color-mix(in srgb,var(--mute) 25%,transparent)}
+body.bwr .mp-room.mine>rect{stroke:var(--red);fill:var(--red-soft);stroke-dasharray:none}
+/* info desk 放大 */
+.mp-desk text,.mp-dk{font-size:30px!important;font-weight:700;text-anchor:middle;letter-spacing:.08em;dominant-baseline:central}
+body.bwr{--sh-c:#000;--sh:var(--shx) var(--shx) 0 var(--sh-c)}
+:root[data-theme="dark"] body.bwr{--sh:var(--shx) var(--shx) 0 var(--sh-c)}

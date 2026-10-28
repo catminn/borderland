@@ -247,7 +247,7 @@ function mapSvg(me){
     +'<rect class="mp-common" x="440" y="40" width="250" height="200"/>'
     +t(565,86,'mp-cap','公共区域')+t(565,128,'mp-ct','鬼市')+t(565,164,'mp-cs','淘汰点')+t(565,190,'mp-cs','最终抽奖集合点')
     +t(140,345,'mp-cor','走 廊')
-    +'<g class="mp-desk"><rect x="490" y="290" width="150" height="48" rx="4"/>'+t(565,314,'','info desk')+'</g>';
+    +'<g class="mp-desk"><rect x="450" y="282" width="230" height="64" rx="5"/>'+t(565,315,"mp-dk","info desk")+'</g>';
   MAP_ROOMS.forEach(([id,x,y,w,hh])=>{const r=room(id),[sl,sc]=mapSt(r),mine=me&&me.inRoom===id,done=me&&me.cleared.includes(id),cx=x+w/2,cy=y+hh/2;
     h+='<g class="mp-room s-'+sc+(mine?' mine':'')+(ui.msel===id?' sel':'')+'" data-a="msel" data-v="'+id+'" role="button" aria-label="'+r.card+' '+esc(r.name)+' '+sl+'">'
       +'<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+hh+'" rx="3"/>'
@@ -261,7 +261,8 @@ function mapSvg(me){
 function viewMap(){
   const me=ME&&ME.role==='player'?pl(ME.pid):null;
   const list='<div class="mp-list">'+ROOMS.map(r=>{const [sl,sc]=mapSt(r);
-    return '<button class="mp-li'+(ui.msel===r.id?' on':'')+'" data-a="msel" data-v="'+r.id+'"><span class="mp-card'+(isRed(r.suit)?' sr':'')+'">'+r.n+r.suit+'</span><span class="nm">'+esc(r.name)+'</span><span class="mp-pt mono">+'+r.n*100+'</span><span class="mp-s '+sc+'">'+(me&&me.inRoom===r.id?'你在这里':me&&me.cleared.includes(r.id)?'✓ 已成功':sl)+'</span></button>';}).join('')+'</div>';
+    const here=!!(me&&me.inRoom===r.id),done=!!(me&&me.cleared.includes(r.id));
+    return '<button class="mp-li'+(ui.msel===r.id?' on':'')+(here?' here':'')+'" data-a="msel" data-v="'+r.id+'"><span class="mp-card'+(isRed(r.suit)?' sr':'')+'">'+r.n+r.suit+'</span><span class="nm">'+esc(r.name)+'</span><span class="mp-pt mono">+'+r.n*100+'</span><span class="mp-s '+(here?'here':done?'done':sc)+'">'+(here?'你在这里':done?'✓ 已成功':sl)+'</span></button>';}).join('')+'</div>';
   return '<div class="page mapp"><div class="mp-plan">'+mapSvg(me)+'</div><div class="pn mp-idx">'+list+'</div></div>';
 }
 
@@ -867,7 +868,7 @@ function render(){
     if(da.dataset.h!==h){da.innerHTML=h;da.dataset.h=h;}if(da.value!==ui.as)da.value=ui.as;}
   const login=!ME||entering;
   document.body.classList.toggle('login',login);if(login)document.body.classList.remove('inmk');document.body.classList.toggle('dev',!!DEVME&&!login);
-  document.body.classList.toggle('screen',!login&&ME.role==='screen');document.body.classList.toggle('bwr',!login&&ME.role==='player');
+  document.body.classList.toggle('screen',!login&&ME.role==='screen');document.body.classList.add('bwr');
   document.body.dataset.role=login?'':ME.role;
   if(login){document.body.classList.remove('board','natscroll','fullamb','inmk','bt');document.documentElement.dataset.theme='dark';setAmb('login');renderLogin();return;}
   const nickGate=ME.role==='player'&&!DEVME&&S&&(p=>p&&!p.nick)(S.players.find(x=>x.id===ME.pid));   // 还没取昵称：只显示取名页
