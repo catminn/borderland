@@ -1647,3 +1647,7 @@ body .stage .amain .aname{font-size:176px}
 .stage .reel .ptr.l{left:6px;border-left:26px solid #f2c14e;border-right:0}
 .stage .reel .ptr.r{right:6px;border-right:26px solid #f2c14e;border-left:0}
 @media(max-width:820px){.stage .reel{font-size:24px}.stage .reel .rg{padding:12px 26px;border-width:3px;border-radius:14px}.stage .reel .bulbs i{width:7px;height:7px}.stage .reel .bulbs.t{margin-bottom:8px}.stage .reel .bulbs.b{margin-top:8px}.stage .reel .ptr{margin-top:-10px;border-width:10px}.stage .reel .ptr.l{border-left-width:14px}.stage .reel .ptr.r{border-right-width:14px}}
+body .stage .amain.won .aname{font-size:72px}
+body .stage .amain.won .adeal.big .awin .who{gap:28px}
+body .stage .amain.won .adeal.big .awin .who :is(b,span){font-size:150px;line-height:1.1}
+@media(max-width:820px){body .stage .amain.won .aname{font-size:22px}body .stage .amain.won .adeal.big .awin .who{gap:10px}body .stage .amain.won .adeal.big .awin .who :is(b,span){font-size:44px}}

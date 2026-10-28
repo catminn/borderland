@@ -201,7 +201,7 @@ function viewDrawBoard(){
   const strip=P.map((y,j)=>{const w=y.st==='done'&&pl(y.win);
     return '<div class="alot s-'+PCLS[y.st]+(y===x?' cur':'')+'"><span class="ai mono">'+(j+1)+'</span><b>'+esc(y.name)+'</b><span class="ast">'+(w?esc(w.nick||w.id):PST[y.st])+'</span></div>';}).join('');
   const main=!x?'<div class="amain"><div class="aname">压轴抽奖</div><div class="adesc">即将开始</div></div>'
-    :'<div class="amain'+(x.kind!=='small'?' grand':'')+'"><div class="aname">'+esc(x.name)+'</div>'
+    :'<div class="amain'+(x.kind!=='small'?' grand':'')+((x.st==='drawn'||x.st==='done')&&!(ROLL&&ROLL.id===x.id)?' won':'')+'"><div class="aname">'+esc(x.name)+'</div>'
       +(x.st==='wait'?'':ROLL&&ROLL.id===x.id&&x.st==='drawn'?'<div class="reel" data-reel>'+reelHtml(ROLL,Date.now())+'</div>':drawResult(x,true))+'</div>';
   return '<div class="stage-wrap"><div class="stage auc">'
     +'<div class="left"><div class="hd"><div class="ttl">压轴抽奖</div><div class="en">每人限得一件</div></div>'
