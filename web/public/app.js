@@ -775,23 +775,35 @@ const fzSeen=()=>{try{return sessionStorage.getItem(fzKey())==='1';}catch{return
 const fzDlg=()=>'<div class="ovl"><div class="dlg" data-n="fz" role="dialog" aria-modal="true" aria-labelledby="dt"><div class="new"><i></i>总控提醒</div>'
   +'<h3 id="dt">已封榜</h3><div class="body">离结束还有 15 分钟，排行榜已封。</div>'
   +'<div class="foot"></div><button data-a="fzack" data-modal="1">知道了</button></div></div>';
-const TUT=[['我的','看你的通行证、金币、彩券和每一间房的记录。'],['大屏','看剩余时间、金币排行和全场播报。'],['地图','看八间房现在能不能进。有问题就去 info desk。']];
+const TUT=[['我的','看你的通行证、金币、彩券和每一间房的记录。','tab','player'],['大屏','看剩余时间、金币排行和全场播报。','tab'],['地图','看所有房间的位置和状态。有问题就去 info desk。','tab'],
+  ['我的彩券','每 100 金币兑换 1 张彩券，集齐花色和房间还有额外彩券奖励。\n彩券越多，最终压轴抽奖越容易中奖。金币第一名会获得金币大亨奖。','.fin3','player']];
 const tutSeen=()=>{try{return localStorage.getItem('borderland.tut')==='1';}catch{return !!ui.tutDone;}};
 const coachOn=()=>!!(ME&&S&&!entering&&ME.role==='player'&&!DEVME&&meP()&&meP().nick&&!tutSeen());
-let coachEl=null,coachStep=-1;
-function coachRender(){
-  const on=coachOn()&&!$('#modal .dlg')&&!$('#tabs').hidden;
-  if(!on){if(coachEl){coachEl.remove();coachEl=null;coachStep=-1;}return;}
-  const i=ui.tut||0,t=TUT[i],tb=[...$('#tabs').children].find(b=>b.textContent.trim()===t[0]);if(!tb)return;
-  if(!coachEl){coachEl=document.createElement('div');coachEl.className='coach';document.body.appendChild(coachEl);coachStep=-1;}
-  if(coachStep!==i){coachStep=i;
-    coachEl.innerHTML='<div class="sp"></div><div class="tip" role="dialog" aria-live="polite"><i class="ar"></i><div class="ct">'+(i+1)+' / '+TUT.length+'</div><b>'+t[0]+'</b><p>'+t[1]+'</p><button data-a="tutnext" data-modal="1">'+(i+1<TUT.length?'下一步':'知道了')+'</button></div>';}
-  const r=tb.getBoundingClientRect(),sp=coachEl.firstChild,tip=coachEl.lastChild,W=innerWidth,H=innerHeight,pad=4;
+let coachEl=null,coachStep=-1,coachRaf=0;
+function coachPos(){
+  if(!coachEl)return;
+  const i=ui.tut||0,t=TUT[i],tg=t[2]==='tab'?[...$('#tabs').children].find(b=>b.textContent.trim()===t[0]):$(t[2]);if(!tg)return;
+  const r=tg.getBoundingClientRect(),sp=coachEl.firstChild,tip=coachEl.lastChild,de=document.documentElement,W=de.clientWidth,H=de.clientHeight,pad=4;
   sp.style.cssText='left:'+(r.left-pad)+'px;top:'+(r.top-pad)+'px;width:'+(r.width+pad*2)+'px;height:'+(r.height+pad*2)+'px';
-  const w=Math.min(300,W-32),cx=r.left+r.width/2,left=Math.max(16,Math.min(cx-w/2,W-16-w)),up=r.top>H/2;
+  const w=Math.min(300,W-32),cx=r.left+r.width/2,left=Math.max(16,Math.min(cx-w/2,W-16-w));tip.style.width=w+'px';const th=tip.offsetHeight,fitDn=r.bottom+pad+14+th<=H-12,fitUp=r.top-pad-14-th>=12,up=fitDn?(!fitUp?false:r.top>H/2):fitUp;
   tip.className='tip '+(up?'up':'dn');
   tip.style.cssText='width:'+w+'px;left:'+left+'px;'+(up?'bottom:'+(H-r.top+pad+14)+'px':'top:'+(r.bottom+pad+14)+'px');
   tip.firstChild.style.left=Math.max(18,Math.min(cx-left,w-18))+'px';
+}
+const coachSoon=()=>{cancelAnimationFrame(coachRaf);coachRaf=requestAnimationFrame(coachPos);};
+['scroll','resize','orientationchange'].forEach(e=>addEventListener(e,coachSoon,{passive:true}));
+if(window.visualViewport){visualViewport.addEventListener('resize',coachSoon);visualViewport.addEventListener('scroll',coachSoon);}
+function coachRender(){
+  const on=coachOn()&&!$('#modal .dlg')&&!$('#tabs').hidden;
+  if(!on){if(coachEl){coachEl.remove();coachEl=null;coachStep=-1;document.documentElement.classList.remove('coaching');}return;}
+  const i=ui.tut||0,t=TUT[i];
+  if(t[3]&&ui.tab!==t[3]){ui.tab=t[3];setTimeout(render,0);return;}   // 这一步要在「我的」页
+  if(!coachEl){coachEl=document.createElement('div');coachEl.className='coach';document.body.appendChild(coachEl);coachStep=-1;
+    coachEl.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});coachEl.addEventListener('wheel',e=>e.preventDefault(),{passive:false});}
+  document.documentElement.classList.add('coaching');
+  if(coachStep!==i){coachStep=i;scrollTo(0,0);
+    coachEl.innerHTML='<div class="sp"></div><div class="tip" role="dialog" aria-live="polite"><i class="ar"></i><div class="ct">'+(i+1)+' / '+TUT.length+'</div><b>'+t[0]+'</b><p>'+esc(t[1]).replace(/\n/g,'<br>')+'</p><button data-a="tutnext" data-modal="1">'+(i+1<TUT.length?'下一步':'知道了')+'</button></div>';}
+  coachPos();
 }
 function modalHtml(){
   if(ME&&S&&!entering&&ME.role==='ctrl'&&S.t>=(S.dur||7200)-900&&S.t<(S.dur||7200)&&!fzSeen())return fzDlg();

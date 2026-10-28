@@ -2033,3 +2033,5 @@ body .stage .cast .bc .x{display:-webkit-box;-webkit-box-orient:vertical;-webkit
 .coach .tip::after{content:"";display:block;clear:both}
 .coach .tip .ar{position:absolute;width:14px;height:14px;background:var(--accent);transform:translateX(-50%) rotate(45deg)}
 .coach .tip.dn .ar{top:-7px}.coach .tip.up .ar{bottom:-7px}
+html.coaching,html.coaching body{overflow:hidden!important;overscroll-behavior:none}
+.coach{touch-action:none}
