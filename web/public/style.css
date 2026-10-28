@@ -1651,3 +1651,6 @@ body .stage .amain.won .aname{font-size:72px}
 body .stage .amain.won .adeal.big .awin .who{gap:28px}
 body .stage .amain.won .adeal.big .awin .who :is(b,span){font-size:150px;line-height:1.1}
 @media(max-width:820px){body .stage .amain.won .aname{font-size:22px}body .stage .amain.won .adeal.big .awin .who{gap:10px}body .stage .amain.won .adeal.big .awin .who :is(b,span){font-size:44px}}
+
+/* 封榜最后 15 分钟：大屏倒计时变红 */
+body .stage .ck.frz{color:var(--red)}

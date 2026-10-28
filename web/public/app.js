@@ -34,7 +34,7 @@ function buzz(p){
 function shakeEl(el,cls){if(!el)return;el.classList.remove(cls);void el.offsetWidth;el.classList.add(cls);}
 function loadCounts(){const c={dealer:8,judge:1,mengpo:1,wuchang:1,ctrl:1,screen:1};
   try{const o=JSON.parse(localStorage.getItem('borderland.pincounts')||'{}');for(const k in c){const v=Math.round(+o[k]);if(k!=='dealer'&&v>=0&&v<=30)c[k]=v;}}catch(e){}return c;}
-let ui={ddOpen:null,tab:null,room:'4S',as:'ctrl',devOps:true,demoRows:null,devAck:new Set(),
+let ui={ddOpen:null,tab:null,room:'4S',as:(()=>{try{return localStorage.getItem('borderland.as')||'ctrl';}catch{return 'ctrl';}})(),devOps:true,demoRows:null,devAck:new Set(),
   ent:'',res:{},settled:null,kickAsk:null,                       // Dealer
   gw:'',gr:{},jg:{gate:'',title:'',body:'',mins:10},gateEndAsk:false,pz:{pid:'',code:''},      // 判官
   nw:{name:'',desc:'',kind:'small'},pe:{name:'',desc:'',kind:'small'},pzEdit:null,aucAsk:null,showTk:false,   // 抽奖
@@ -63,6 +63,7 @@ const p2=v=>String(v).padStart(2,'0');
 const mm=x=>Math.floor(x/60)+':'+p2(x%60);
 const mmss=x=>p2(Math.floor(x/60))+':'+p2(x%60);
 // 总时长倒计时（只显示，倒数到 0 后房间关闭）
+const isFrz=t=>{const d=(S&&S.dur)||7200;return t>=d-900&&t<d;};
 const remStr=t=>{const r=Math.max(0,((S&&S.dur)||7200)-t);return Math.floor(r/3600)+':'+p2(Math.floor(r%3600/60))+':'+p2(r%60);};
 const sub=(page,list,cls)=>'<nav class="subtabs '+(cls||'')+'" style="--n:'+list.length+'" aria-label="分页">'+list.map(([k,l],i)=>
   '<button data-a="sub" data-p="'+page+'" data-v="'+k+'" aria-selected="'+(ui.sub[page]===k)+'"><span class="n">'+p2(i+1)+'</span>'+l+'</button>').join('')+'</nav>';
@@ -127,7 +128,7 @@ function viewBoard(){
   const bc=broadcast(8),run=CLOCK&&CLOCK.running;
   return '<div class="stage-wrap"><div class="stage">'
     +'<div class="left"><div class="hd"><div class="ttl">百鬼夜行</div><div class="en">CORNELL CSSA 万圣夜</div></div>'
-    +'<div class="clock"><span class="cap">'+(run?'剩余时间':'已暂停')+'</span><span class="ck mono'+(run?'':' paused')+'" id="sclk">'+remStr(S.t)+'</span>'
+    +'<div class="clock"><span class="cap">'+(run?'剩余时间':'已暂停')+'</span><span class="ck mono'+(run?'':' paused')+(isFrz(S.t)?' frz':'')+'" id="sclk">'+remStr(S.t)+'</span>'
     +'</div>'+gateBox()
     +'<div class="cast"><span class="cap" style="padding-bottom:8px">全场播报</span>'
     +(bc.length?bc.map(b=>'<div class="bc '+b.c+'"><span class="t">'+fmt(b.t)+'</span><span class="x">'+esc(b.x)+'</span></div>').join(''):'<div class="bc"><span class="x muted">暂无播报</span></div>')+'</div></div>'
@@ -831,7 +832,7 @@ let dirty=false,ambMode=null,lastModal=null;
 const isTyping=()=>{const a=document.activeElement;return !!a&&/^(INPUT|TEXTAREA)$/.test(a.tagName)&&!!a.closest('#view');};
 function requestRender(){if(isTyping()){dirty=true;tickClocks();}else render();}
 document.addEventListener('focusout',()=>setTimeout(()=>{if(dirty&&!isTyping()){dirty=false;render();}},0));
-function tickClocks(){const n=nowT(),t=fmt(n);$('#clk').textContent=t;const a=document.getElementById('sclk');if(a)a.textContent=remStr(n);const b=document.getElementById('tclk');if(b)b.textContent=t;
+function tickClocks(){const n=nowT(),t=fmt(n);$('#clk').textContent=t;const a=document.getElementById('sclk');if(a){a.textContent=remStr(n);a.classList.toggle('frz',isFrz(n));}const b=document.getElementById('tclk');if(b)b.textContent=t;
   document.querySelectorAll('[data-rt]').forEach(e=>{e.textContent=rtStr(+e.dataset.rt);});}
 function setAmb(mode,tone){
   if(ambMode!==mode){ambMode=mode;
@@ -975,7 +976,7 @@ async function login(pin){
   setTimeout(()=>{entering=false;$('#view').innerHTML='';render();say(null);},reduce?1200:3600);
 }
 function logout(msg){
-  SESSION=null;store.set(null);STALE=null;ui.as='ctrl';ui.simOff=false;ui.tab=null;try{history.replaceState(null,'',location.pathname+location.search);}catch{/* ignore */}try{localStorage.removeItem(LASTK);}catch{/* ignore */}setMe(null);S=null;CLOCK=null;connected=false;entering=false;
+  SESSION=null;store.set(null);STALE=null;ui.as='ctrl';try{localStorage.removeItem('borderland.as');}catch{/* ignore */}ui.simOff=false;ui.tab=null;try{history.replaceState(null,'',location.pathname+location.search);}catch{/* ignore */}try{localStorage.removeItem(LASTK);}catch{/* ignore */}setMe(null);S=null;CLOCK=null;connected=false;entering=false;
   if(ws){const w=ws;ws=null;try{w.close();}catch{/* ignore */}}
   clearTimeout(timer);$('#view').innerHTML='';render();say(null);if(msg)loginError(msg);
 }
@@ -1232,7 +1233,7 @@ document.addEventListener('keydown',e=>{
   const btn=document.querySelector('[data-a="'+go+'"]');if(btn&&!btn.disabled){e.preventDefault();e.target.blur();btn.click();}
 });
 document.addEventListener('change',e=>{
-  if(e.target.id==='devas'){ui.as=e.target.value;ui.tab=null;try{history.replaceState(null,'',location.pathname+location.search);}catch{/* ignore */}ui.ddOpen=null;say(null);render();return;}
+  if(e.target.id==='devas'){ui.as=e.target.value;try{localStorage.setItem('borderland.as',ui.as);}catch{/* ignore */}ui.tab=null;try{history.replaceState(null,'',location.pathname+location.search);}catch{/* ignore */}ui.ddOpen=null;say(null);render();return;}
   const m=e.target.dataset.m;if(!m)return;
 });
 // 输入时只更新数据和少数按钮（不整页重绘，免得打断输入）；失焦后再整页重绘
