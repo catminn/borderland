@@ -161,7 +161,9 @@ const dealerOf = room => client(pinOf(p => p.role === 'dealer' && p.rooms[0] ===
   const pp = await page(pinOf(p => p.pid === '003'), 390), sp = await page(P.screen, 1100); await ack(pp);
   { const tx = await text(pp); T('player pass shows tickets', tx.includes('我的彩券') && !tx.includes('晋级')); }
   T('player cannot draw', !(await (await client(pinOf(p => p.pid === '003'))).act({ type: 'draw.run', id: 'P1' })).ok);
-  T('judge draws the tycoon prize; big screen switches', (await jd.act({ type: 'draw.run', id: 'P1' })).ok && (await sleep(300), admin.S.draw.screen === 'draw' && admin.S.draw.pz[0].st === 'drawn'));
+  T('judge starts revealing the tycoon prize; big screen switches', (await jd.act({ type: 'draw.run', id: 'P1' })).ok && (await sleep(300), admin.S.draw.screen === 'draw' && admin.S.draw.pz[0].st === 'reveal'));
+  for (let i = 0; i < 2 && admin.S.draw.pz[0].st === 'reveal'; i++) await jd.act({ type: 'draw.run', id: 'P1' });
+  await sleep(300); T('reveal ends with the first place waiting for confirmation', admin.S.draw.pz[0].st === 'drawn');
   T('big screen shows the draw', (await text(sp)).includes('压轴抽奖') && (await text(sp)).includes('金币大亨奖'));
   await pp.click('#tabs button[data-v="board"]'); await sleep(400);
   T('player big screen tab shows the draw too', (await text(pp)).includes('压轴抽奖'));

@@ -42,6 +42,7 @@ const CHIP_START=200, CHIP_GOAL=500, RANSOM=500;   // 鬼市用实体筹码（�
 const PUZ_PTS=100, PUZ_CAP=400;   // 解谜题 100 / 题，每人最多 400
 const GATE_WIN=3, GATE_COIN=300;  // 鬼门开：最先完成的 3 人，每人选 300 金币 / 救一个人 / 拿一个花色
 const ROOM_CAP0=6, DUR0=7200, MARKET_GRACE=900;  // 房间默认容量；主游戏 2 小时；鬼市复活名额在时间截止后再留 15 分钟
+const FREEZE_SEC=900;   // 封榜：时间截止前最后 15 分钟，玩家和大屏看不到排行榜（判官揭晓金币大亨奖后恢复）
 const KINDS=['公告','鬼门开'];
 
 const room=id=>ROOMS.find(r=>r.id===id);
@@ -57,12 +58,12 @@ const isBcast=l=>!!l.b;
 
 function mkPlayer(i){return {id:pidOf(i),nick:'',on:false,st:'alive',score:0,cards:[],cleared:[],inRoom:null,hist:[],puz:[],
   outAt:null,inAt:null,pickAt:null,at:'',chk:null,won:null};}
-// 压轴抽奖奖品：tycoon 金币大亨奖（金币最多者直接得）· big 大奖 · small 小奖；st：wait 待抽 · drawn 已抽出待确认 · done 已确认
-function defaultDraw(){return {pz:[{id:'P1',name:'金币大亨奖',desc:'',kind:'tycoon',st:'wait',win:null,skip:[],tie:0,tk:0,all:0},
-  {id:'P2',name:'大奖',desc:'',kind:'big',st:'wait',win:null,skip:[],tie:0,tk:0,all:0},
-  {id:'P3',name:'小奖一',desc:'',kind:'small',st:'wait',win:null,skip:[],tie:0,tk:0,all:0},
-  {id:'P4',name:'小奖二',desc:'',kind:'small',st:'wait',win:null,skip:[],tie:0,tk:0,all:0},
-  {id:'P5',name:'小奖三',desc:'',kind:'small',st:'wait',win:null,skip:[],tie:0,tk:0,all:0}],cur:null,screen:'game',pid:6};}
+// 压轴抽奖奖品：tycoon 金币大亨奖（金币最多者，判官从第 3 名到第 1 名逐个揭晓，不是抽）· big 大奖 · small 小奖；st：wait 待抽 · reveal 大亨奖揭晓中 · drawn 已抽出待确认 · done 已确认
+function defaultDraw(){return {pz:[{id:'P1',name:'金币大亨奖',desc:'',kind:'tycoon',st:'wait',win:null,skip:[],tie:0,tk:0,all:0,top:[],ts:[],rv:0,n:0},
+  {id:'P2',name:'大奖',desc:'',kind:'big',st:'wait',win:null,skip:[],tie:0,tk:0,all:0,top:[],ts:[],rv:0,n:0},
+  {id:'P3',name:'小奖一',desc:'',kind:'small',st:'wait',win:null,skip:[],tie:0,tk:0,all:0,top:[],ts:[],rv:0,n:0},
+  {id:'P4',name:'小奖二',desc:'',kind:'small',st:'wait',win:null,skip:[],tie:0,tk:0,all:0,top:[],ts:[],rv:0,n:0},
+  {id:'P5',name:'小奖三',desc:'',kind:'small',st:'wait',win:null,skip:[],tie:0,tk:0,all:0,top:[],ts:[],rv:0,n:0}],cur:null,screen:'game',pid:6};}
 function init(){
   S={v:3,t:0,now:0,bank:{},rules:{},dur:DUR0,cap:ROOM_CAP0,capOn:false,gp:null,log:[],notices:[],nid:1,
      rooms:ROOMS.map(r=>({id:r.id,st:'open',at:0,ps:[]})),players:[],
@@ -73,6 +74,7 @@ function init(){
 // 旧版本的存档（队伍制）不能继续用，需要重置。
 const needsReset=st=>!st||st.v!==3||!Array.isArray(st.rooms)||st.rooms.length!==ROOMS.length||st.rooms.some((r,i)=>r.id!==ROOMS[i].id);
 const timeUp=()=>S.t>=(S.dur||DUR0);
+const frozen=()=>S.t>=(S.dur||DUR0)-FREEZE_SEC&&S.draw.pz.some(x=>x.kind==='tycoon')&&!S.draw.pz.some(x=>x.kind==='tycoon'&&x.st==='done');
 const marketShut=()=>S.t>=(S.dur||DUR0)+MARKET_GRACE;   // 截止 15 分钟后：停止发放复活名额
 const active=()=>S.players.filter(p=>p.on);
 const suitsOf=p=>SUITS.filter(x=>p.cards.includes(x));
@@ -275,7 +277,7 @@ const curPrize=()=>S.draw.cur?prize(S.draw.cur):null;
 const KIND_NAME={tycoon:'金币大亨奖',big:'大奖',small:'小奖'};
 function drawAdd(f){f=f||{};const name=String(f.name||'').trim().slice(0,40);if(!name)return no('先写奖品名称');
   const kind=KIND_NAME[f.kind]?f.kind:'small';
-  S.draw.pz.push({id:'P'+(S.draw.pid++),name,desc:String(f.desc||'').trim().slice(0,200),kind,st:'wait',win:null,skip:[],tie:0,tk:0,all:0});
+  S.draw.pz.push({id:'P'+(S.draw.pid++),name,desc:String(f.desc||'').trim().slice(0,200),kind,st:'wait',win:null,skip:[],tie:0,tk:0,all:0,top:[],ts:[],rv:0,n:0});
   return ok('已添加「'+name+'」');}
 function drawEdit(id,f){const x=prize(id);if(!x)return no('没有这个奖品');if(x.st!=='wait')return no('只能改待抽的奖品');
   const name=String((f&&f.name)||'').trim().slice(0,40);if(!name)return no('先写奖品名称');
@@ -283,19 +285,23 @@ function drawEdit(id,f){const x=prize(id);if(!x)return no('没有这个奖品');
 function drawDel(id){const x=prize(id);if(!x)return no('没有这个奖品');if(x.st!=='wait')return no('只能删待抽的奖品');
   S.draw.pz=S.draw.pz.filter(y=>y!==x);if(S.draw.cur===id)S.draw.cur=null;return ok('已删除「'+x.name+'」');}
 function drawMove(id,d){const a=S.draw.pz,i=a.findIndex(x=>x.id===id),j=i+(d<0?-1:1);if(i<0||j<0||j>=a.length)return no('不能再移了');[a[i],a[j]]=[a[j],a[i]];return ok('');}
-// 抽一位：rnd 是 0–1 的随机数（测试时可传入固定值）
-function drawRun(id,rnd){const x=prize(id)||curPrize();if(!x)return no('先选一个奖品');
+// 抽一位 / 揭晓：rnd 是 0–1 的随机数（测试可传固定值）。金币大亨奖：第一次点出第 3 名（人少则更少），再点一次出一名，直到第 1 名；fast = 直接出第 1 名（重抽用）
+function drawRun(id,rnd,fast){const x=prize(id)||curPrize();if(!x)return no('先选一个奖品');
   if(x.st==='done')return no('这个奖品已经抽过了（要重来请先撤销）');
-  const c=S.draw.pz.find(y=>y.st==='drawn');if(c&&c!==x)return no('「'+c.name+'」抽出的人还没确认');
-  const pool=drawPool(x),r=rnd==null?Math.random():rnd;let pick,tie=0,tk=0;
-  if(x.kind==='tycoon'){const top=Math.max(0,...pool.map(p=>p.score));if(!(top>0))return no('没有可以抽的人');
-    const ts=pool.filter(p=>p.score===top);tie=ts.length;pick=ts[Math.min(ts.length-1,Math.floor(r*ts.length))];tk=top;}
-  else{const w=pool.map(p=>ticketsOf(p)),sum=w.reduce((a,b)=>a+b,0);if(!(sum>0))return no('没有可以抽的人');
-    let t=r*sum;let i=0;while(i<w.length-1&&t>=w[i]){t-=w[i];i++;}
-    while(w[i]===0&&i>0)i--;pick=pool[i];tk=w[i];x.all=sum;}
-  x.st='drawn';x.win=pick.id;x.tie=tie;x.tk=tk;S.draw.cur=x.id;S.draw.screen='draw';
-  log('抽「'+x.name+'」：'+nm(pick)+(x.kind==='tycoon'?'（金币 '+tk+(tie>1?'，并列 '+tie+' 人中抽出':'')+'）':'（彩券 '+tk+' / 共 '+x.all+' 张）'));
-  return ok('抽到 '+nm(pick));}
+  const c=S.draw.pz.find(y=>y.st==='drawn'||y.st==='reveal');if(c&&c!==x)return no('「'+c.name+'」还没结束');
+  const fin=pick=>{x.st='drawn';x.win=pick.id;x.skip=x.skip||[];S.draw.cur=x.id;S.draw.screen='draw';
+    log((x.kind==='tycoon'?'揭晓「':'抽「')+x.name+'」：'+nm(pick)+(x.kind==='tycoon'?'（金币 '+x.tk+(x.tie>1?'，并列 '+x.tie+' 人中抽出':'')+'）':'（彩券 '+x.tk+' / 共 '+x.all+' 张）'));return ok((x.kind==='tycoon'?'第一名 ':'抽到 ')+nm(pick));};
+  if(x.st==='reveal'){x.rv++;if(x.rv>=x.top.length)return fin(pl(x.top[0]));return ok('第 '+(x.top.length-x.rv+1)+' 名 '+nm(pl(x.top[x.top.length-x.rv])));}
+  const pool=drawPool(x),r=rnd==null?Math.random():rnd;
+  if(x.kind==='tycoon'){const top=Math.max(0,...pool.map(p=>p.score));if(!(top>0))return no('没有可以揭晓的人');
+    const ts=pool.filter(p=>p.score===top),w=ts[Math.min(ts.length-1,Math.floor(r*ts.length))];
+    const rest=pool.filter(p=>p!==w&&p.score>0).sort((a,b)=>b.score-a.score||a.id.localeCompare(b.id));
+    const tp=[w,...rest].slice(0,3);x.top=tp.map(p=>p.id);x.ts=tp.map(p=>p.score);x.n=x.top.length;x.tie=ts.length;x.tk=top;x.rv=1;S.draw.cur=x.id;S.draw.screen='draw';
+    if(fast||x.top.length<2)return fin(w);
+    x.st='reveal';x.win=null;log('「'+x.name+'」开始揭晓','',0);return ok('第 '+x.n+' 名 '+nm(pl(x.top[x.n-1])));}
+  const w=pool.map(p=>ticketsOf(p)),sum=w.reduce((a,b)=>a+b,0);if(!(sum>0))return no('没有可以抽的人');
+  let t=r*sum,i=0;while(i<w.length-1&&t>=w[i]){t-=w[i];i++;}
+  while(w[i]===0&&i>0)i--;x.tie=0;x.tk=w[i];x.all=sum;return fin(pool[i]);}
 function drawConfirm(id){const x=prize(id)||curPrize();if(!x||x.st!=='drawn')return no('没有等待确认的得主');
   const p=pl(x.win);p.won=x.id;x.st='done';log(nm(p)+' 获得「'+x.name+'」','back',1);
   tell(p.id,'你中奖了',(x.kind==='tycoon'?'恭喜获得「'+x.name+'」！':'恭喜中奖：「'+x.name+'」！')+'请到台前领取。','final');
@@ -303,13 +309,13 @@ function drawConfirm(id){const x=prize(id)||curPrize();if(!x||x.st!=='drawn')ret
 // 得主不在场：这位不再参与这个奖品，马上重抽
 function drawRedo(id,rnd){const x=prize(id)||curPrize();if(!x||x.st!=='drawn')return no('没有等待确认的得主');
   const old=x.win;x.skip.push(old);x.st='wait';x.win=null;log(nameOf(old)+' 不在场，「'+x.name+'」重抽');
-  const r=drawRun(x.id,rnd);if(!r.ok){return ok('没有可以再抽的人了');}return r;}
+  const r=drawRun(x.id,rnd,true);if(!r.ok){return ok('没有可以再抽的人了');}return r;}
 // 撤销已确认的得主：回到待抽，这位重新参与
-function drawUndo(id){const x=prize(id)||curPrize();if(!x||(x.st!=='done'&&x.st!=='drawn'))return no('这个奖品还没抽');
-  const p=pl(x.win);if(p&&p.won===x.id)p.won=null;log('「'+x.name+'」撤销得主 '+nameOf(x.win));x.st='wait';x.win=null;x.skip=[];x.tie=0;x.tk=0;x.all=0;return ok('已撤销，可以重新抽');}
+function drawUndo(id){const x=prize(id)||curPrize();if(!x||x.st==='wait')return no('这个奖品还没抽');
+  const p=pl(x.win);if(p&&p.won===x.id)p.won=null;log('「'+x.name+'」撤销得主 '+nameOf(x.win));x.st='wait';x.win=null;x.skip=[];x.tie=0;x.tk=0;x.all=0;x.top=[];x.ts=[];x.rv=0;x.n=0;return ok('已撤销，可以重新来');}
 function drawScreen(on){S.draw.screen=on?'draw':'game';return ok(on?'大屏切到抽奖':'大屏切回游戏');}
-function drawShow(id){const x=prize(id);if(!x)return no('没有这个奖品');const c=S.draw.pz.find(y=>y.st==='drawn');
-  if(c&&c!==x)return no('「'+c.name+'」抽出的人还没确认');
+function drawShow(id){const x=prize(id);if(!x)return no('没有这个奖品');const c=S.draw.pz.find(y=>y.st==='drawn'||y.st==='reveal');
+  if(c&&c!==x)return no('「'+c.name+'」还没结束');
   S.draw.cur=x.id;return ok('大屏显示「'+x.name+'」');}
 
 // ---------- 其他 ----------
@@ -433,7 +439,7 @@ function seedFinal(pre){
   ['009','015','022','030'].forEach((id,i)=>{puzRedeem(id,'1');puzRedeem(id,'2');});
   S.t=7300;
   if(pre){S.t=7320;log('演示数据（抽奖前）：时间已截止，'+drawPool().filter(p=>ticketsOf(p)>0).length+' 人有彩券，还没开始抽');return;}
-  drawRun('P1',0);drawConfirm('P1');
+  drawRun('P1',0,true);drawConfirm('P1');
   drawRun('P2',0.37);S.draw.cur='P2';S.draw.screen='draw';
   S.t=7500; log('演示数据（抽奖进行中）：大亨奖已颁发，「大奖」抽出了 '+nameOf(S.draw.pz[1].win)+'，等判官确认');
 }
@@ -503,18 +509,23 @@ export function apply(state,me,a){
 }
 
 // What one person is allowed to see. A player sees only their own notices and the broadcast lines of the log.
+// 玩家和大屏：揭晓中的金币大亨奖只发已揭晓的名次；封榜期间不发别人（大屏：所有人）的金币
+function hideDraw(state,pid){const fz=frozen();
+  const out={draw:{...state.draw,pz:state.draw.pz.map(y=>y.st==='reveal'?{...y,top:y.top.slice(y.top.length-y.rv),ts:y.ts.slice(y.top.length-y.rv),tk:0,tie:0}:y)}};
+  if(fz)out.players=state.players.map(x=>x.id===pid?x:{...x,score:0,...(pid==null?{}:{hist:[],puz:[]})});
+  return out;}
 const STAFF_LOG=300;   // 工作人员页最多看 300 行日志（全场日志页也只显示 300 行）；完整日志留在服务器
 export function viewFor(state,me){
   use(state);
   const lg=state.log.length>STAFF_LOG?state.log.slice(0,STAFF_LOG):state.log;
-  if(me.role==='screen')return {...state,log:lg,bank:{},rules:{}};
+  if(me.role==='screen')return {...state,log:lg,bank:{},rules:{},...hideDraw(state,null)};
   if(['ctrl','judge','dev'].includes(me.role))return lg===state.log?state:{...state,log:lg};
   if(me.role!=='player')return {...state,log:lg,bank:{}};   // 题库（含答案）只给判官和总控
   const p=state.players.find(x=>x.id===me.pid);
   return {...state,bank:{},rules:{},log:state.log.filter(isBcast).slice(0,30),notices:state.notices.filter(n=>p&&matches(n,p)),
-    players:state.players.map(x=>x.id===me.pid?x:{...x,hist:[],puz:[]})};
+    players:state.players.map(x=>x.id===me.pid?x:{...x,hist:[],puz:[]}),...hideDraw(state,me.pid)};
 }
 
-export {roomRule,noticeStale,staffSees,puzCode,timeUp,marketShut,needsReset,whyNotEnter,eliminate,soup,puzInfo,ticketsOf,drawPool,KIND_NAME,
+export {roomRule,noticeStale,staffSees,puzCode,timeUp,marketShut,needsReset,whyNotEnter,eliminate,soup,puzInfo,ticketsOf,drawPool,KIND_NAME,frozen,FREEZE_SEC,
   ranking,suitsOf,stLabel,inMk,pl,nm,matches,targetLabel,room,fmt,esc,log,no,
   OFF_KINDS,ROOMS,SUITS,GATES,TK_COIN,TK_SUITS,TK_ALL,CHIP_START,CHIP_GOAL,RANSOM,PUZ_PTS,PUZ_CAP,GATE_WIN,GATE_COIN,ROOM_CAP0,DEMOS};

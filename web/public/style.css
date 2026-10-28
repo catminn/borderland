@@ -1610,3 +1610,10 @@ body .room.mine :is(.cd,.pt){color:var(--ink)}
   body .stage .prow .who b{font-size:13px}
 }
 .rulein{width:100%;min-height:260px;resize:vertical;font:inherit;font-size:16px;line-height:1.6;padding:12px 14px}
+.stage .prow.frz{display:block;text-align:center;font-weight:900;color:var(--red);padding-top:96px}
+.stage .amain .rvl{width:min(100%,960px);display:grid;gap:22px;margin-top:28px}
+.stage .amain .rvl .li{display:flex;justify-content:space-between;align-items:baseline;gap:24px;border:0;border-top:2px solid var(--line);padding:18px 0 0;font-size:56px;font-weight:900}
+.stage .amain .rvl .li .x,.stage .amain .rvl .li .x *{font-size:inherit}
+.stage .amain .rvl .li .who{display:inline-flex;gap:16px;align-items:baseline}
+.stage .amain .rvl .li b{font-size:inherit;white-space:nowrap}
+@media(max-width:820px){.stage .amain .rvl{gap:12px;margin-top:16px}.stage .amain .rvl .li{font-size:20px;padding-top:10px}}
