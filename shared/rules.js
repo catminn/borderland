@@ -74,7 +74,7 @@ function init(){
 // 旧版本的存档（队伍制）不能继续用，需要重置。
 const needsReset=st=>!st||st.v!==3||!Array.isArray(st.rooms)||st.rooms.length!==ROOMS.length||st.rooms.some((r,i)=>r.id!==ROOMS[i].id);
 const timeUp=()=>S.t>=(S.dur||DUR0);
-const frozen=()=>!!S.draw.lock||S.t>=(S.dur||DUR0)-FREEZE_SEC&&S.draw.pz.some(x=>x.kind==='tycoon')&&!S.draw.pz.some(x=>x.kind==='tycoon'&&x.st==='done');
+const frozen=()=>!S.draw.pz.some(x=>x.kind==='tycoon'&&x.st==='done')&&(S.draw.lock===true||(S.draw.lock!==false&&S.t>=(S.dur||DUR0)-FREEZE_SEC&&S.draw.pz.some(x=>x.kind==='tycoon')));
 const marketShut=()=>S.t>=(S.dur||DUR0)+MARKET_GRACE;   // 截止 15 分钟后：停止发放复活名额
 const active=()=>S.players.filter(p=>p.on);
 const suitsOf=p=>SUITS.filter(x=>p.cards.includes(x));

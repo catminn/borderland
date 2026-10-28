@@ -114,16 +114,24 @@ function roomCard(r,me){
 const rtStr=at=>{const s=Math.max(0,nowT()-(at||0));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');};
 // 封榜：玩家和大屏看不到排行（判官 / 总控照常）
 const hideRank=()=>R.frozen()&&ME&&(ME.role==='player'||ME.role==='screen');
-function rankRows(n,page){
+function podiumHtml(){
+  const list=ranking();let rk=0,prev=null;
+  const rows=list.map((p,i)=>{if(p.score!==prev){rk=i+1;prev=p.score;}return [p,rk];});
+  const one=i=>{const r=rows[i];if(!r)return '<div class="pd p'+(i+1)+'"><div class="base"><b>'+(i+1)+'</b></div></div>';
+    const [p,k]=r,mine=ME&&ME.role==='player'&&p.id===ME.pid;
+    return '<div class="pd p'+(i+1)+(mine?' me':'')+'"><span class="nm">'+(p.nick?esc(p.nick):p.id)+'</span><span class="id mono">'+p.id+(p.st!=='alive'?'（在鬼市）':'')+'</span><span class="sc mono">'+p.score+'</span><div class="base"><b>'+k+'</b></div></div>';};
+  return '<div class="podium">'+one(1)+one(0)+one(2)+'</div>';
+}
+function rankRows(n,page,from){
   if(hideRank())return '<div class="prow empty frz">榜单已封，最后冲刺</div>';
   const list=ranking();let rk=0,prev=null;
   const rows=list.map((p,i)=>{if(p.score!==prev){rk=i+1;prev=p.score;}return [p,rk];});
-  return (page==null?rows.slice(0,n):rows.slice(page*n,page*n+n)).map(([p,rk])=>{
+  return (page==null?rows.slice(from||0,n):rows.slice(page*n,page*n+n)).map(([p,rk])=>{
     const mine=ME&&ME.role==='player'&&p.id===ME.pid;
     return '<div class="prow'+(p.st!=='alive'?' down':'')+(mine?' me':'')+'"><span class="rk mono">'+rk+'</span>'+who(p,p.st!=='alive')+'<span class="sc mono">'+p.score+'</span></div>';}).join('')
-    ||'<div class="prow empty"><span class="muted">还没有人上榜</span></div>';
+    ||(from?'':'<div class="prow empty"><span class="muted">还没有人上榜</span></div>');
 }
-function ctlBar(jd){const on=drawOn(),lk=!!S.draw.lock;
+function ctlBar(jd){const on=drawOn(),lk=S.draw.lock===true;
   return '<div class="pn ctlbar"><span class="cb-l">大屏显示</span><div class="seg2">'
     +'<button class="sbtn'+(!on?' on':'')+'" data-a="scrask" data-v="0" aria-pressed="'+(!on)+'">游戏大屏</button>'
     +'<button class="sbtn'+(on?' on':'')+'" data-a="scrask" data-v="1" aria-pressed="'+on+'">抽奖大屏</button></div>'
@@ -137,13 +145,14 @@ function viewBoard(){
   // 玩家手机：排行一页 5 名，翻页看全部；8 间房只在「地图」页看
   const isP=!!ME&&ME.role==='player',paged=isP&&innerWidth<820&&!hideRank(),RP=5,np=Math.max(1,Math.ceil(act.length/RP));
   ui.rkp=Math.min(Math.max(0,ui.rkp||0),np-1);
+  const pod=!paged&&!hideRank()&&innerWidth>=820;
   return '<div class="stage-wrap"'+(isP?' data-pl="1"':'')+'><div class="stage">'
     +'<div class="left"><div class="hd"><div class="ttl">百鬼夜行</div><div class="en">CORNELL CSSA 万圣夜</div></div>'
     +'<div class="clock"><span class="cap">'+(run?'剩余时间':'已暂停')+'</span><span class="ck mono'+(run?'':' paused')+(isFrz(S.t)?' frz':'')+'" id="sclk">'+remStr(S.t)+'</span>'
     +'</div>'+gateBox()
     +'<div class="cast"><span class="cap" style="padding-bottom:8px">全场播报</span>'
     +(bc.length?bc.map(b=>'<div class="bc '+b.c+'"><span class="t">'+fmt(b.t)+'</span><span class="x">'+esc(b.x)+'</span></div>').join(''):'<div class="bc"><span class="x muted">暂无播报</span></div>')+'</div></div>'
-    +'<div class="right"><div class="rank"><div class="rh"><b>金币排行</b><span>在场 '+(act.length-mk)+' 人'+(mk?'　鬼市 '+mk+' 人':'')+'</span></div><div class="plist">'+(paged?rankRows(RP,ui.rkp):rankRows(10))+'</div>'
+    +'<div class="right"><div class="rank"><div class="rh"><b>金币排行</b><span>在场 '+(act.length-mk)+' 人'+(mk?'　鬼市 '+mk+' 人':'')+'</span></div>'+(pod?podiumHtml()+'<div class="plist pod">'+rankRows(10,null,3)+'</div>':'<div class="plist">'+(paged?rankRows(RP,ui.rkp):rankRows(10))+'</div>')
       +(paged&&np>1?'<div class="rpg"><button data-a="rkpg" data-v="-1"'+(ui.rkp<=0?' disabled':'')+'>‹</button><span class="mono">'+(ui.rkp+1)+' / '+np+'</span><button data-a="rkpg" data-v="1"'+(ui.rkp>=np-1?' disabled':'')+'>›</button></div>':'')+'</div>'
     +'<div class="rgrid">'+ROOMS.map(r=>roomCard(r,me)).join('')+'</div></div>'
     +'</div></div>';
@@ -654,7 +663,7 @@ function adminPanel(){
     +'<div class="setrow"><div class="swrow"><span>总时长<small>当前 <b class="mono" style="color:var(--ink)">'+Math.round((S.dur||7200)/60)+'</b> 分钟</small></span>'
     +'<div class="btns" style="flex-wrap:nowrap"><input class="in mono" id="durm" data-m="durMin" value="'+esc(A.dur)+'" inputmode="numeric" placeholder="分钟，如 120" style="max-width:150px"><button class="btn-line acc" data-a="setdur">设置</button></div></div></div>'
     +'<div class="setrow"><div class="swrow"><span>房间人数上限<small>'+(S.capOn?'每间房同时最多 <b class="mono" style="color:var(--ink)">'+(S.cap||R.ROOM_CAP0)+'</b> 人':'现在不限人数')+'</small></span>'
-    +'<button class="cb'+(S.capOn?' on':'')+'" data-a="capon" data-v="'+(S.capOn?'0':'1')+'" aria-pressed="'+!!S.capOn+'"><span class="t">'+(S.capOn?'已开启':'已关闭')+'</span></button></div>'
+    +'<button class="tgl'+(S.capOn?' on':'')+'" role="switch" data-a="capon" data-v="'+(S.capOn?'0':'1')+'" aria-checked="'+!!S.capOn+'" aria-label="房间人数上限"><i></i></button></div>'
     +(S.capOn?'<div class="btns" style="flex-wrap:nowrap;margin-top:8px"><input class="in mono" id="capn" data-m="capN" value="'+esc(A.cap)+'" inputmode="numeric" placeholder="人数" style="max-width:110px"><button class="btn-line acc" data-a="setcap">设置</button></div>':'')+'</div>'
     +'<div class="setrow"><div class="swrow"><span>判官也能切换大屏和锁定排名<small>'+(S.judgeScr?'判官抽奖页有这两个按钮':'现在只有总控能操作')+'</small></span>'
     +'<button class="tgl'+(S.judgeScr?' on':'')+'" role="switch" data-a="jscr" data-v="'+(S.judgeScr?'0':'1')+'" aria-checked="'+!!S.judgeScr+'" aria-label="判官也能切换大屏和锁定排名"><i></i></button></div></div>'
@@ -1182,7 +1191,7 @@ document.addEventListener('click',e=>{
   else if(a==='askno'){ui.aucAsk=null;}
   else if(a==='scrask'){const on=v==='1';if(on!==drawOn())ui.cfm={title:on?'大屏切到抽奖？':'大屏切回游戏？',lines:['所有大屏和玩家手机的第一页会马上切换。'],ok:'切换',a:'drawscreen',v};}
   else if(a==='cfm-no'){ui.cfm=null;}
-  else if(a==='lockask'){const on=v==='1';ui.cfm={title:on?'锁定排名？':'解除锁定？',lines:[on?'大屏和玩家手机马上看不到排行和名次。':'大屏和玩家手机马上恢复显示排行。'],ok:on?'锁定':'解除',a:'ranklock',v};}
+  else if(a==='lockask'){const on=v==='1';ui.cfm={title:on?'锁定排名？':'解锁排名？',lines:[on?'大屏和玩家手机马上看不到排行和名次。':'大屏和玩家手机马上恢复显示排行。'],ok:on?'锁定':'解锁',a:'ranklock',v};}
   else if(a==='cfm-ok'){const c=ui.cfm;ui.cfm=null;if(c&&c.a==='drawscreen')send({type:'draw.screen',on:c.v==='1'});else if(c&&c.a==='ranklock')send({type:'draw.lock',on:c.v==='1'});}
   else if(a==='drawrun'){if(x)send({type:'draw.run',id:x.id});}
   else if(a==='drawok'){if(x)send({type:'draw.confirm',id:x.id});}
