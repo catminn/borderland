@@ -702,10 +702,10 @@ function viewPlayer(){
   // 彩券：金币、花色、八间房各一张卡
   const got=suitsOf(me).length,okS=got===SUITS.length,nC=me.cleared.length,okR=nC===ROOMS.length,tk=ticketsOf(me);
   const suits=SUITS.map(x=>'<span class="ic su'+(me.cards.includes(x)?' lit':'')+(isRed(x)?' sr':'')+'" title="'+TYPE[x]+'">'+x+'</span>').join('');
-  const rms=ROOMS.map(r=>'<span class="ic rm'+(me.cleared.includes(r.id)?' lit':'')+'" title="'+r.name+'">'+r.n+suitG(r.suit)+'</span>').join('');
+  const rms=ROOMS.map(r=>'<span class="ic rm'+(me.cleared.includes(r.id)?' lit':'')+(isRed(r.suit)?' sr':'')+'" title="'+r.name+'"><i class="rk">'+r.n+'</i><b class="st">'+r.suit+'</b></span>').join('');
   const rw=(ttl,pts,done,tot,ok,icons,cls)=>'<div class="fr'+(ok?' ok':'')+'"><div class="fh"><b>'+ttl+'<i class="mono">　+'+pts+'</i></b><span class="fk mono">'+done+' / '+tot+'</span></div><div class="ics '+cls+'">'+icons+'</div></div>';
-  const finSec='<div class="fin3"><div class="fhd"><div class="ft"><span class="cap">我的彩券</span><b class="fn">'+tk+'<i> 张</i></b></div>'
-    +'<div class="fs">'+(me.won?'你已中奖，不再参与后面的抽取':'每 '+TK_COIN+' 金币 1 张，时间截止后参加压轴抽奖')+'</div></div><div class="fcs">'
+  const finSec='<div class="fin3"><div class="fhd tkt"><div class="tkm"><span class="cap">我的彩券</span><span class="fs">'+(me.won?'你已中奖，不再参与后面的抽取':'每 '+TK_COIN+' 金币 1 张，时间截止后参加压轴抽奖')+'</span></div>'
+    +'<div class="tks"><span class="no mono">NO.'+me.id+'</span><b class="fn">'+tk+'<i> 张</i></b></div></div><div class="fcs">'
     +rw('集齐四种花色',TK_SUITS,got,SUITS.length,okS,suits,'c4')
     +rw('八间房全部成功',TK_ALL,nC,ROOMS.length,okR,rms,'c8')+'</div></div>';
   const hist=[...me.hist].reverse().map(h=>{const r=room(h.rid),res=h.res===null?'游戏中':h.res==='win'?'成功　+'+h.pts:h.res==='lose'?'失败':'中途离开';
