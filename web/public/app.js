@@ -694,7 +694,7 @@ function adminPanel(){
 const meP=()=>S&&ME&&ME.role==='player'?pl(ME.pid):null;
 // 第一次登录：先取昵称（大屏排行显示）
 function viewNick(me){
-  return '<div class="page nickp"><div class="pn nickc"><span class="cap">欢迎来到百鬼夜行</span><h2>你的编号 <b class="mono">'+me.id+'</b></h2>'
+  return '<div class="page nickp"><div class="pn nickc"><span class="cap">欢迎来到CSSA万圣夜</span><h2>你的编号 <b class="mono">'+me.id+'</b></h2>'
     +'<span class="muted">取个昵称，显示在大屏排行榜上（最多 12 字）。</span>'
     +'<input class="in" id="nickin" data-m="nick" value="'+esc(ui.nick)+'" maxlength="12" placeholder="昵称" autocomplete="nickname">'
     +'<button class="btn-main glow" data-a="setnick"'+(ui.nick.trim()?'':' disabled')+' style="min-height:56px">进入游戏</button>'
