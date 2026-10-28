@@ -1824,3 +1824,13 @@ body .stage .ck.frz{color:var(--red)}
 .stage .prow.me{box-shadow:none;border-left:4px solid var(--accent);padding-left:8px}
 .stage .prow{border-left:4px solid transparent;padding-left:8px}
 .stage .prow.me{border-left-color:var(--accent)}
+/* 地图列表：分值 */
+.mp-li{grid-template-columns:44px minmax(0,1fr) auto auto}
+.mp-li .mp-pt{font-size:13px;font-weight:700;color:var(--sub)}
+@media (max-width:719px){
+  .mp-li{grid-template-columns:40px minmax(0,1fr) auto auto;padding:6px 6px;gap:6px;font-size:14px}
+  .mp-li .mp-pt{font-size:12px}
+  .mp-plan{padding:2px}
+  .mp-plan svg{max-height:34vh;width:auto;margin:0 auto}
+  .page.mapp{gap:10px}
+}

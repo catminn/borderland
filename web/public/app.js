@@ -261,7 +261,7 @@ function mapSvg(me){
 function viewMap(){
   const me=ME&&ME.role==='player'?pl(ME.pid):null;
   const list='<div class="mp-list">'+ROOMS.map(r=>{const [sl,sc]=mapSt(r);
-    return '<button class="mp-li'+(ui.msel===r.id?' on':'')+'" data-a="msel" data-v="'+r.id+'"><span class="mp-card'+(isRed(r.suit)?' sr':'')+'">'+r.n+r.suit+'</span><span class="nm">'+esc(r.name)+'</span><span class="mp-s '+sc+'">'+(me&&me.inRoom===r.id?'你在这里':me&&me.cleared.includes(r.id)?'✓ 已成功':sl)+'</span></button>';}).join('')+'</div>';
+    return '<button class="mp-li'+(ui.msel===r.id?' on':'')+'" data-a="msel" data-v="'+r.id+'"><span class="mp-card'+(isRed(r.suit)?' sr':'')+'">'+r.n+r.suit+'</span><span class="nm">'+esc(r.name)+'</span><span class="mp-pt mono">+'+(r.solo?r.solo+'/'+r.n*100:r.n*100)+'</span><span class="mp-s '+sc+'">'+(me&&me.inRoom===r.id?'你在这里':me&&me.cleared.includes(r.id)?'✓ 已成功':sl)+'</span></button>';}).join('')+'</div>';
   return '<div class="page mapp"><div class="mp-plan">'+mapSvg(me)+'</div><div class="pn mp-idx">'+list+'</div></div>';
 }
 
