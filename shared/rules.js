@@ -291,7 +291,8 @@ function drawRun(id,rnd){const x=prize(id)||curPrize();if(!x)return no('先选�
   if(x.st==='drawn')return no('得主还没确认');
   const c=S.draw.pz.find(y=>y.st==='drawn'||y.st==='reveal');if(c&&c!==x)return no('「'+c.name+'」还没结束');
   const fin=pick=>{x.st='drawn';x.win=pick.id;x.skip=x.skip||[];S.draw.cur=x.id;S.draw.screen='draw';
-    log((x.kind==='tycoon'?'揭晓「':'抽「')+x.name+'」：'+nm(pick)+(x.kind==='tycoon'?'（金币 '+x.tk+(x.tie>1?'，并列 '+x.tie+' 人中抽出':'')+'）':'（彩券 '+x.tk+' / 共 '+x.all+' 张）'));return ok((x.kind==='tycoon'?'第一名 ':'抽到 ')+nm(pick));};
+    log((x.kind==='tycoon'?'揭晓「':'抽「')+x.name+'」：'+nm(pick)+(x.kind==='tycoon'?'（金币 '+x.tk+(x.tie>1?'，并列 '+x.tie+' 人中抽出':'')+'）':'（彩券 '+x.tk+' / 共 '+x.all+' 张）'));if(x.kind==='tycoon'&&!S.draw.rkSent){S.draw.rkSent=1;{const l=ranking();l.forEach(p=>tell(p.id,'最终名次','你的最终名次：第 '+(1+l.filter(q=>q.score>p.score).length)+' 名（金币 '+p.score+'）','final'));}}
+    return ok((x.kind==='tycoon'?'第一名 ':'抽到 ')+nm(pick));};
   const r=rnd==null?Math.random():rnd;
   if(x.st==='reveal'){const ts=x.top.map(pl).filter(Boolean);return fin(ts[Math.min(ts.length-1,Math.floor(r*ts.length))]);}
   const pool=drawPool(x);

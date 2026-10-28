@@ -162,7 +162,9 @@ function fitStage(){
     if(g.dataset.top!==top)g.dataset.top=top;}
 }
 addEventListener('resize',fitStage);
-addEventListener('hashchange',()=>{if(ME&&S&&location.hash.slice(1)!==ui.tab){ui.tab=location.hash.slice(1);say(null);render();}});
+const SUBS={ctrl:['status','pub','log','tools']};
+const hashOf=()=>ui.tab+(SUBS[ui.tab]?'/'+ui.sub[ui.tab]:'');
+addEventListener('hashchange',()=>{if(ME&&S&&location.hash.slice(1)!==hashOf()){const [t,u]=location.hash.slice(1).split('/');ui.tab=t;if(SUBS[t]&&SUBS[t].includes(u))ui.sub[t]=u;say(null);render();}});
 
 // ---------- 抽奖大屏 ----------
 const PST={wait:'待抽',reveal:'揭晓中',drawn:'待确认',done:'已颁发'},PCLS={wait:'wait',reveal:'closed',drawn:'closed',done:'done'};
@@ -863,8 +865,8 @@ function render(){
   // 总控不显示标签栏：开发者用右上角下拉换视角；真总控用同一个下拉换页面
   const tabs=nickGate?['player']:(ROLE_TABS[ME.role]||[]);
   // 网址 # 记住当前标签页（#map、#board…）：刷新后回到原来那页
-  if(!tabs.includes(ui.tab)){const h=location.hash.slice(1);ui.tab=tabs.includes(h)?h:tabs[0];}
-  if(location.hash!=='#'+ui.tab){try{history.replaceState(null,'','#'+ui.tab);}catch{/* ignore */}}
+  if(!tabs.includes(ui.tab)){const [h,u]=location.hash.slice(1).split('/');ui.tab=tabs.includes(h)?h:tabs[0];if(ui.tab===h&&SUBS[h]&&SUBS[h].includes(u))ui.sub[h]=u;}
+  if(location.hash!=='#'+hashOf()){try{history.replaceState(null,'','#'+hashOf());}catch{/* ignore */}}
   document.body.classList.toggle('bt',tabs.length>1);
   document.documentElement.dataset.theme=themeFor();
   document.body.classList.toggle('board',ui.tab==='board');

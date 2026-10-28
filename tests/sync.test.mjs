@@ -165,6 +165,7 @@ const dealerOf = room => client(pinOf(p => p.role === 'dealer' && p.rooms[0] ===
   if (admin.S.draw.pz[0].st === 'reveal') await jd.act({ type: 'draw.run', id: 'P1' });
   await sleep(300); T('tycoon ends with the winner waiting for confirmation', admin.S.draw.pz[0].st === 'drawn');
   T('big screen shows the draw', (await text(sp)).includes('压轴抽奖') && (await text(sp)).includes('金币大亨奖'));
+  { const tx = await text(pp); T('player gets the final-rank popup when first place is revealed', tx.includes('最终名次') && tx.includes('你的最终名次：第')); } await ack(pp);
   await pp.click('#tabs button[data-v="board"]'); await sleep(400);
   T('player big screen tab shows the draw too', (await text(pp)).includes('压轴抽奖'));
   const w0 = admin.S.draw.pz[0].win;
