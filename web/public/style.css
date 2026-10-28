@@ -2036,3 +2036,10 @@ body .stage .cast .bc .x{display:-webkit-box;-webkit-box-orient:vertical;-webkit
 html.coaching,html.coaching body{overflow:hidden!important;overscroll-behavior:none}
 .coach{touch-action:none}
 .coach .tip p{text-wrap:pretty}
+.ctlbar .cbg{display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap}
+.ctlbar .cb-l{min-width:64px}
+/* 本人在前三名：对应的台子整根变红 */
+.stage .pd.me .base,.stage .pd.me.p1 .base,.stage .pd.me.p2 .base,.stage .pd.me.p3 .base{background:var(--red);border-color:var(--red);box-shadow:none}
+.stage .pd.me .base b,.stage .pd.me.p1 .base b,.stage .pd.me.p2 .base b,.stage .pd.me.p3 .base b{color:#fff}
+/* 地图：点上面的房间，上面的房间也变灰（和点下面列表一致；原先只有「游戏中」状态的房间会变） */
+body.bwr .mapp .mp-plan .mp-room.sel:not(.mine)>rect{fill:color-mix(in srgb,var(--mute) 35%,transparent)}

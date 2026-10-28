@@ -131,11 +131,11 @@ function rankRows(n,page,from){
     return '<div class="prow'+(p.st!=='alive'?' down':'')+(mine?' me':'')+'"><span class="rk mono">'+rk+'</span>'+who(p,p.st!=='alive')+'<span class="sc mono">'+p.score+'</span></div>';}).join('')
     ||(from?'':'<div class="prow empty"><span class="muted">还没有人上榜</span></div>');
 }
-function ctlBar(jd){const on=drawOn(),lk=S.draw.lock===true;
-  return '<div class="pn ctlbar"><span class="cb-l">大屏显示</span><div class="seg2">'
+function ctlBar(jd){const on=drawOn(),fz=R.frozen(),manual=S.draw.lock===true;
+  return '<div class="pn ctlbar"><div class="cbg"><span class="cb-l">大屏显示</span><div class="seg2">'
     +'<button class="sbtn'+(!on?' on':'')+'" data-a="scrask" data-v="0" aria-pressed="'+(!on)+'">游戏大屏</button>'
-    +'<button class="sbtn'+(on?' on':'')+'" data-a="scrask" data-v="1" aria-pressed="'+on+'">抽奖大屏</button></div>'
-    +'<span class="cb-l">排名</span><button class="sbtn'+(lk?' on':'')+'" data-a="lockask" data-v="'+(lk?'0':'1')+'" aria-pressed="'+lk+'">'+(lk?'已锁定，点此解除':R.frozen()?'已自动封榜，点此锁定':'锁定排名')+'</button>'
+    +'<button class="sbtn'+(on?' on':'')+'" data-a="scrask" data-v="1" aria-pressed="'+on+'">抽奖大屏</button></div></div>'
+    +'<div class="cbg"><span class="cb-l">排名</span><button class="sbtn'+(fz?' on':'')+'" data-a="lockask" data-v="'+(fz?'0':'1')+'" aria-pressed="'+fz+'">'+(fz?(manual?'已锁定，点此解锁':'已自动封榜，点此解锁'):'锁定排名')+'</button></div>'
     +'</div>';}
 function viewBoard(){
   if(drawOn())return viewDrawBoard();
