@@ -119,7 +119,7 @@ function podiumHtml(){
   const rows=list.map((p,i)=>{if(p.score!==prev){rk=i+1;prev=p.score;}return [p,rk];});
   const one=i=>{const r=rows[i];if(!r)return '<div class="pd p'+(i+1)+'"><div class="base"><b>'+(i+1)+'</b></div></div>';
     const [p,k]=r,mine=ME&&ME.role==='player'&&p.id===ME.pid;
-    return '<div class="pd p'+(i+1)+(mine?' me':'')+'"><span class="nm">'+(p.nick?esc(p.nick):p.id)+'</span><span class="id mono">'+p.id+(p.st!=='alive'?'（在鬼市）':'')+'</span><span class="sc mono">'+p.score+'</span><div class="base"><b>'+k+'</b></div></div>';};
+    return '<div class="pd p'+(i+1)+(mine?' me':'')+'"><span class="id mono">'+p.id+(p.st!=='alive'?'（在鬼市）':'')+'</span><span class="nm">'+(p.nick?esc(p.nick):p.id)+'</span><span class="sc mono">'+p.score+'</span><div class="base"><b>'+k+'</b></div></div>';};
   return '<div class="podium">'+one(1)+one(0)+one(2)+'</div>';
 }
 function rankRows(n,page,from){
