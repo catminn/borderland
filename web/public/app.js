@@ -179,7 +179,7 @@ function viewDrawBoard(){
     return '<div class="alot s-'+PCLS[y.st]+(y===x?' cur':'')+'"><span class="ai mono">'+(j+1)+'</span><b>'+esc(y.name)+'</b><span class="ast">'+(w?esc(w.nick||w.id):PST[y.st])+'</span></div>';}).join('');
   const main=!x?'<div class="amain"><div class="aname">压轴抽奖</div><div class="adesc">即将开始</div></div>'
     :'<div class="amain'+(x.kind!=='small'?' grand':'')+'"><div class="aname">'+esc(x.name)+'</div>'
-      +(x.st==='wait'?'<div class="akey"><div class="await">即将开奖</div></div>':drawResult(x,true))+'</div>';
+      +(x.st==='wait'?'':drawResult(x,true))+'</div>';
   return '<div class="stage-wrap"><div class="stage auc">'
     +'<div class="left"><div class="hd"><div class="ttl">压轴抽奖</div><div class="en">每人限得一件</div></div>'
     +'<div class="alots">'+strip+'</div></div>'
