@@ -1925,3 +1925,10 @@ body .lg{background:#0e0e0e!important}
 body.bwr :is(nav.pages button,.subtabs.top button)[aria-selected="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 :root[data-theme="dark"] body.bwr{--line:rgba(255,255,255,.85);--line2:rgba(255,255,255,.85);--line3:rgba(255,255,255,.5);--hair-c:rgba(255,255,255,.85)}
 body.bwr .ptr{border-radius:0}
+
+/* 深色：阴影统一成红（更明显），行线调淡，鬼市后缀不被截断，电脑端八间房小牌 */
+:root[data-theme="dark"] body.bwr,:root[data-theme="dark"] body.bwr .ovl{--sh-c:#8a1712}
+:root[data-theme="dark"] body.bwr{--line:rgba(255,255,255,.28);--line2:rgba(255,255,255,.5);--line3:rgba(255,255,255,.16)}
+:root[data-theme="dark"] body.bwr :is(.pc.ok,.note.new,.room.busy,.mrow.ok){box-shadow:inset 0 0 0 calc(var(--stroke) - var(--bw)) var(--accent),var(--shx) var(--shx) 0 var(--sh-c)}
+.who .mkn{flex:none;white-space:nowrap}
+@media (min-width:600px){body.bwr .fin3 .ics.c8{grid-template-columns:repeat(8,62px);gap:10px;justify-content:start}}

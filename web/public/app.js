@@ -58,7 +58,7 @@ const isRed=s=>s==='♥'||s==='♦';
 const suitG=s=>'<span class="'+(isRed(s)?'sr':'')+'">'+s+'</span>';
 const cardG=r=>r.n+suitG(r.suit);
 const suits4=p=>'<span class="su4">'+SUITS.map(s=>'<span class="'+(p.cards.includes(s)?'got ':'')+(isRed(s)?'sr':'')+'">'+s+'</span>').join('')+'</span>';
-const who=(p,mk)=>'<span class="who"><b class="mono">'+p.id+'</b>'+(p.nick?'<span>'+esc(p.nick)+(mk?'<i class="mkn">（在鬼市）</i>':'')+'</span>':'')+'</span>';
+const who=(p,mk)=>'<span class="who"><b class="mono">'+p.id+'</b>'+(p.nick?'<span>'+esc(p.nick)+'</span>'+(mk?'<i class="mkn">（在鬼市）</i>':''):'')+'</span>';
 const p2=v=>String(v).padStart(2,'0');
 const mm=x=>Math.floor(x/60)+':'+p2(x%60);
 const mmss=x=>p2(Math.floor(x/60))+':'+p2(x%60);
