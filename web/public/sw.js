@@ -1,7 +1,7 @@
 // 离线重开用的缓存（不缓存 /api/）。
 // 页面文件：网络优先（3 秒超时），失败、超时或服务器返回错误页时用上次缓存的版本；平时每次联网都会刷新缓存，所以改了代码不会被旧缓存挡住。
 // 字体和图片：缓存优先。游戏状态不在这里，由 app.js 存在 localStorage。
-const V='bd-v3';
+const V='bd-v4';
 const CORE=['/','/index.html','/fonts.css','/style.css','/paper.css','/app.js','/rules.js','/ghost-ambience.js'];
 
 self.addEventListener('install',e=>{
@@ -24,7 +24,7 @@ self.addEventListener('fetch',e=>{
     if(heavy&&hit)return hit;
     try{
       // 有缓存才设超时（慢网下尽快回退）；没有缓存就老实等网络，别把大字体文件掐断。
-      const res=hit?await Promise.race([fetch(r),new Promise((_,no)=>setTimeout(no,3000))]):await fetch(r);
+      const res=hit?await Promise.race([fetch(r,{cache:'no-cache'}),new Promise((_,no)=>setTimeout(no,3000))]):await fetch(r,{cache:'no-cache'});
       if(res.ok)return await store(u,res);
       if(hit)return hit;
       return res;
