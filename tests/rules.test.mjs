@@ -146,11 +146,11 @@ T('演示数据可以生成', (() => { const g = R.newGame(true); return g.playe
 fresh();
 T('总控改花色', A('ctrl', { type: 'setcards', pid: '001', cards: ['♥', '♠', 'x'] }).ok && P('001').cards.join('') === '♠♥' && S.log[0].text.includes('花色'));
 T('判官不能改花色', !A('judge', { type: 'setcards', pid: '001', cards: [] }).ok);
-{ for (const d of ['start', 'mid', 'pre', 'final']) { const g = R.newGame(d), t = g.log.map(l => l.t).reverse(); T('演示数据时间顺序正确：' + d, t.every((x, i) => !i || x >= t[i - 1])); }
+{ for (const d of ['start', 'mid', 'pre', 'freeze']) { const g = R.newGame(d), t = g.log.map(l => l.t).reverse(); T('演示数据时间顺序正确：' + d, t.every((x, i) => !i || x >= t[i - 1])); }
   const g = R.newGame('start'); T('演示·开局：前 10 分钟、房间里有人、抽奖没开始', g.t < 600 && g.rooms.some(r => r.ps.length) && g.draw.pz.every(x => x.st === 'wait')); }
 { const g = R.newGame('mid'); T('演示·中段：鬼门开进行中、鬼市有人', !!g.gp && g.gp.wins.length === 1 && g.players.some(p => p.st === 'market')); }
 { const g = R.newGame('pre'); R.use(g); T('演示·抽奖前：时间已到、抽奖还没开始、有人有彩券', R.timeUp() && g.draw.pz.every(x => x.st === 'wait') && g.draw.screen === 'game' && g.players.some(p => p.on && R.ticketsOf(p) > 0)); }
-{ const g = R.newGame('final'); R.use(g); T('演示·抽奖进行中：大亨奖已颁发、大奖待确认、大屏在抽奖', R.timeUp() && g.draw.pz[0].st === 'done' && g.draw.pz[1].st === 'drawn' && g.draw.cur === 'P2' && g.draw.screen === 'draw' && g.players.find(p => p.id === g.draw.pz[0].win).won === 'P1'); }
+{ const g = R.newGame('freeze'); R.use(g); T('演示·封榜：离结束 15 分钟、刚封榜、时间没到、抽奖没开始', R.frozen() && !R.timeUp() && g.t === g.dur - R.FREEZE_SEC && g.draw.pz.every(x => x.st === 'wait') && g.players.some(p => p.on && p.score > 0)); }
 T('newGame(true) = 中段', !!R.newGame(true).gp);
 // ---------- 离线补录 ----------
 fresh(); S.t = 1000;

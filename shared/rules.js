@@ -382,7 +382,7 @@ const ROLE_LABEL={dealer:'Dealer',judge:'判官',mengpo:'孟婆',wuchang:'黑白
 const DEMO_NICK=['阿鬼','小白','无常','纸扎','孟孟','判判','铜钱','灯笼','彼岸','骨花','黑猫','红绸','书生','狐狸','小倩','钟馗','小青','白蛇','花脸','长舌',
   '阿飘','画皮','聂聂','宁采','燕赤','山魈','魍魉','魑魅','夜叉','罗刹','鬼火','冥灯','奈何','忘川','孟汤','黄泉'];
 // 三套演示数据（总控工具里「载入演示数据」可选）：start 开局 · mid 游戏中段 · pre 抽奖前 · final 抽奖进行中
-const DEMOS={start:'开局（T+5 分钟）',mid:'游戏中段（鬼门开进行中）',pre:'抽奖前（时间截止，还没开始抽）',final:'抽奖进行中（时间截止后）'};
+const DEMOS={start:'开局（T+5 分钟）',mid:'游戏中段（鬼门开进行中）',pre:'抽奖前（时间截止，还没开始抽）',freeze:'封榜（离结束还有 15 分钟）'};
 function demoBase(n){init();S.players.slice(0,n).forEach((p,i)=>{p.nick=DEMO_NICK[i]||('玩家'+p.id);p.on=true;});}
 function seedStart(){
   demoBase(30);
@@ -425,25 +425,22 @@ function seedMid(){
   S.t=M(42); gateWin('013');
   S.t=M(43); log('演示数据（游戏中段）：第二次鬼门开进行中（已有 1 人完成），♦8、♠4、♠8 进行中，♣4 刚结算、重置中，鬼市 1 人，待接 1 人');
 }
-// 时间截止后：一批人集齐花色、攒了不少金币。pre = 抽奖还没开始；final = 大亨奖已颁发，大奖已抽出待确认
-function seedFinal(pre){
+// 一批人集齐花色、攒了不少金币。pre = 时间截止、抽奖还没开始；freeze = 离结束还有 15 分钟（刚封榜）
+function seedFinal(mode){const fz=mode==='freeze';
   demoBase(40);
   let k=7;const rnd=()=>(k=(k*1103515245+12345)%2147483648)/2147483648;
   const play=(pid,rid,res)=>{if(whyNotEnter(pid,rid))return;enterRoom(rid,[pid]);finishRoom(rid,{[pid]:res});resetDone(rid);};
   const plans={'001':['8S','8H','8C','8D'],'002':['8S','8H','8C','4D','4S'],'003':['4S','8H','8C','8D'],'004':['8S','4H','8C','8D'],'005':['4S','4H','4C','4D','8S','8D'],
     '006':['8S','8H','4C','8D'],'007':['4S','8H','8C','4D'],'008':['8S','4H','4C','8D','4S']};
   S.t=60;
-  for(const [pid,rs] of Object.entries(plans)){rs.forEach(r=>{S.t+=60;play(pid,r,'win');});}
-  S.players.slice(8,40).forEach(p=>{const n=1+Math.floor(rnd()*4);for(let i=0;i<n;i++){S.t+=55;play(p.id,ROOMS[Math.floor(rnd()*8)].id,rnd()<.7?'win':'lose');
+  for(const [pid,rs] of Object.entries(plans)){rs.forEach(r=>{S.t+=fz?50:60;play(pid,r,'win');});}
+  S.players.slice(8,40).forEach(p=>{const n=1+Math.floor(rnd()*4);for(let i=0;i<n;i++){S.t+=fz?30:55;play(p.id,ROOMS[Math.floor(rnd()*8)].id,rnd()<.7?'win':'lose');
     if(p.st==='out'){pickup(p.id);checkIn(p.id,'wuchang');confirmIn(p.id,'mengpo');if(rnd()<.6){rnd();selfRedeem(p.id);}}}});
   ['009','015','022','030'].forEach((id,i)=>{puzRedeem(id,'1');puzRedeem(id,'2');});
-  S.t=7300;
-  if(pre){S.t=7320;log('演示数据（抽奖前）：时间已截止，'+drawPool().filter(p=>ticketsOf(p)>0).length+' 人有彩券，还没开始抽');return;}
-  drawRun('P1',0);if(S.draw.pz[0].st==='reveal')drawRun('P1',0);drawConfirm('P1');
-  drawRun('P2',0.37);S.draw.cur='P2';S.draw.screen='draw';
-  S.t=7500; log('演示数据（抽奖进行中）：大亨奖已颁发，「大奖」抽出了 '+nameOf(S.draw.pz[1].win)+'，等判官确认');
+  if(fz){S.t=(S.dur||DUR0)-FREEZE_SEC;log('演示数据（封榜）：离结束还有 15 分钟，排行榜已封，玩家和大屏看不到名次');return;}
+  S.t=7320;log('演示数据（抽奖前）：时间已截止，'+drawPool().filter(p=>ticketsOf(p)>0).length+' 人有彩券，还没开始抽');
 }
-const seed=w=>w==='start'?seedStart():w==='final'?seedFinal():w==='pre'?seedFinal(true):seedMid();
+const seed=w=>w==='start'?seedStart():w==='freeze'?seedFinal('freeze'):w==='pre'?seedFinal():seedMid();
 export function newGame(demo){init();if(demo)seed(demo);return S;}
 
 // Which roles may perform each action. 总控只做自己页面上的事（金币、名单、发布、设置），不代替其他工作人员操作。
