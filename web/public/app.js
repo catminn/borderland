@@ -704,7 +704,7 @@ function viewPlayer(){
   const suits=SUITS.map(x=>'<span class="ic su'+(me.cards.includes(x)?' lit':'')+(isRed(x)?' sr':'')+'" title="'+TYPE[x]+'">'+x+'</span>').join('');
   const rms=ROOMS.map(r=>'<span class="ic rm'+(me.cleared.includes(r.id)?' lit':'')+(isRed(r.suit)?' sr':'')+'" title="'+r.name+'"><i class="rk">'+r.n+'</i><b class="st">'+r.suit+'</b></span>').join('');
   const rw=(ttl,pts,done,tot,ok,icons,cls)=>'<div class="fr'+(ok?' ok':'')+'"><div class="fh"><b>'+ttl+'<i class="mono">　+'+pts+'</i></b><span class="fk mono">'+done+' / '+tot+'</span></div><div class="ics '+cls+'">'+icons+'</div></div>';
-  const chip=(k,v,on,lab)=>'<span class="chp'+(on?' on':'')+'"><span class="cp '+k+'"><b>'+v+'</b></span><i>'+lab+'</i></span>';
+  const chip=(k,v,on,lab)=>'<span class="chp'+(on?' on':'')+'"><i>'+lab+'</i><b>'+v+'</b></span>';
   const finSec='<div class="fin3"><div class="fhd"><div class="ft"><span class="cap">我的彩券</span><span class="slot">'+String(tk).split('').map(d=>'<b>'+d+'</b>').join('')+'<i>张</i></span></div>'
     +'<div class="fs">'+(me.won?'你已中奖，不再参与后面的抽取':'彩券越多，最终抽奖越容易中奖')+'</div>'
     +'<div class="eq">'+chip('c1',tkC,tkC>0,'金币÷'+TK_COIN)+'<span class="op">+</span>'+chip('c2',okS?TK_SUITS:0,okS,'花色')+'<span class="op">+</span>'+chip('c3',okR?TK_ALL:0,okR,'八间房')+'</div></div>'

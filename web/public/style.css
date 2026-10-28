@@ -1734,20 +1734,20 @@ body .stage .ck.frz{color:var(--red)}
 .fin3 .fr:has(.c8) .fh b{font-size:15px}
 .fin3 .fs{font-weight:500;color:var(--sub)}
 
-/* 我的彩券：赌场感（跑马灯边、老虎机数字窗、筹码） */
+/* 我的彩券：跑马灯边、老虎机数字窗、券形标签 */
 .fin3{position:relative;overflow:hidden;padding-top:16px}
 .fin3::before{content:"";position:absolute;left:0;right:0;top:0;height:8px;background:radial-gradient(circle at 50% 50%,var(--accent) 0 1.6px,transparent 2.4px) 0 0/14px 8px repeat-x,var(--accent-soft)}
 .fin3 .ft{align-items:center}
+.fin3 .ft .cap{font-size:15px;font-weight:900;letter-spacing:normal;color:var(--ink)}
+.fin3 .fs{color:var(--ink);font-weight:600}
 .fin3 .slot{display:inline-flex;align-items:center;gap:3px;font-size:15px}
-.fin3 .slot b{min-width:22px;height:32px;display:inline-flex;align-items:center;justify-content:center;font:800 22px var(--mono);color:#7df0c4;background:linear-gradient(#050909,#16262a 50%,#050909);border:1px solid var(--accent);border-radius:5px;box-shadow:inset 0 0 8px rgba(0,0,0,.8)}
+.fin3 .slot b{min-width:22px;height:32px;display:inline-flex;align-items:center;justify-content:center;font:800 22px var(--mono);color:var(--accent);background:linear-gradient(#ffffff,#e3ece6 50%,#ffffff);border:1px solid var(--accent);border-radius:5px;box-shadow:inset 0 0 6px rgba(0,0,0,.12)}
+:root[data-theme="dark"] .fin3 .slot b{color:#7df0c4;background:linear-gradient(#050909,#16262a 50%,#050909);box-shadow:inset 0 0 8px rgba(0,0,0,.8)}
 .fin3 .slot i{font-style:normal;font-weight:700;font-size:15px;color:var(--sub);margin-left:4px}
-.fin3 .eq{display:flex;align-items:center;gap:6px 8px;margin-top:6px}
-.fin3 .chp{display:inline-flex;align-items:center;gap:5px;opacity:.38;filter:grayscale(.8)}
-.fin3 .chp.on{opacity:1;filter:none}
+.fin3 .eq{display:flex;align-items:center;gap:6px;margin-top:6px;flex-wrap:nowrap}
+.fin3 .chp{display:inline-flex;align-items:baseline;gap:6px;padding:3px 9px;border:1px dashed var(--stroke-c);border-radius:6px;opacity:.4;white-space:nowrap}
+.fin3 .chp.on{opacity:1;border:1px solid var(--accent);background:var(--accent-soft)}
 .fin3 .chp i{font-style:normal;font-size:12px;color:var(--sub)}
-.fin3 .cp{--c:#1f8f6a;position:relative;width:34px;height:34px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:repeating-conic-gradient(#f4eddc 0 15deg,var(--c) 15deg 30deg)}
-.fin3 .cp.c2{--c:#c03a25}.fin3 .cp.c3{--c:#b8892b}
-.fin3 .cp::before{content:"";position:absolute;inset:5px;border-radius:50%;background:var(--c);border:1px dashed rgba(255,255,255,.75)}
-.fin3 .cp b{position:relative;font:800 14px var(--mono);color:#fff}
+.fin3 .chp.on i{color:var(--ink)}
+.fin3 .chp b{font:800 15px var(--mono);color:var(--accent)}
 .fin3 .eq .op{font:700 15px var(--mono);color:var(--sub)}
-.fin3 .eq{gap:4px 6px;flex-wrap:nowrap}.fin3 .cp{width:30px;height:30px}.fin3 .cp::before{inset:4px}.fin3 .cp b{font-size:13px}.fin3 .chp{gap:4px}.fin3 .chp i{white-space:nowrap}
