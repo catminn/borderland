@@ -102,7 +102,7 @@ function roomCard(r,me){
   const x=S.rooms.find(y=>y.id===r.id),st=x.st,mine=!!me&&me.inRoom===r.id,L=[];
   if(st==='play')L.push('<span class="on"><i class="gd"></i><span class="tx">'+(mine?'你在这里':'游戏中')+'（<span data-rt="'+(x.at||0)+'">'+rtStr(x.at)+'</span>）</span></span>');
   else if(st==='reset')L.push('<span class="rs rst">重置中</span>');
-  else L.push('<span class="idle">'+(timeUp()?'已关闭':'<i class="gd"></i>开放中')+'</span>');
+  else L.push('<span class="'+(timeUp()?'rst':'idle')+'">'+(timeUp()?'已关闭':'<i class="gd"></i>开放中')+'</span>');
   if(me&&me.cleared.includes(r.id))L.push('<span class="idle okk">✓ 你已成功</span>');
   // 人数放在最后一行的右边（放不下就自己换到下一行，仍靠右）
   if(st==='play')L[L.length-1]='<div class="bln">'+L[L.length-1]+'<span class="np">'+x.ps.length+' 人</span></div>';
@@ -123,6 +123,12 @@ function rankRows(n,page){
     return '<div class="prow'+(p.st!=='alive'?' down':'')+(mine?' me':'')+'"><span class="rk mono">'+rk+'</span>'+who(p,p.st!=='alive')+'<span class="sc mono">'+p.score+'</span></div>';}).join('')
     ||'<div class="prow empty"><span class="muted">还没有人上榜</span></div>';
 }
+function ctlBar(jd){const on=drawOn(),lk=!!S.draw.lock;
+  return '<div class="pn ctlbar"><span class="cb-l">大屏显示</span><div class="seg2">'
+    +'<button class="sbtn'+(!on?' on':'')+'" data-a="scrask" data-v="0" aria-pressed="'+(!on)+'">游戏大屏</button>'
+    +'<button class="sbtn'+(on?' on':'')+'" data-a="scrask" data-v="1" aria-pressed="'+on+'">抽奖大屏</button></div>'
+    +'<span class="cb-l">排名</span><button class="sbtn'+(lk?' on':'')+'" data-a="lockask" data-v="'+(lk?'0':'1')+'" aria-pressed="'+lk+'">'+(lk?'已锁定，点此解除':R.frozen()?'已自动封榜，点此锁定':'锁定排名')+'</button>'
+    +(jd?'':'<span class="cb-l">判官也能操作</span><button class="sbtn'+(S.judgeScr?' on':'')+'" data-a="jscr" data-v="'+(S.judgeScr?'0':'1')+'" aria-pressed="'+!!S.judgeScr+'">'+(S.judgeScr?'已开启':'已关闭')+'</button>')+'</div>';}
 function viewBoard(){
   if(drawOn())return viewDrawBoard();
   const me=ME&&ME.role==='player'?pl(ME.pid):null;
@@ -158,7 +164,7 @@ function fitStage(){
   requestAnimationFrame(clipCast);
   const g=$('#amb ghost-ambience');
   if(innerWidth<820){st.style.removeProperty('--k');w.style.height='';w.style.width='';if(g)g.removeAttribute('data-keep');return;}
-  const v=$('#view'),k=ME&&ME.role==='screen'?Math.min(innerWidth/1920,innerHeight/1080):Math.min(w.parentElement.clientWidth/1920,(v.clientHeight-24)/1080);
+  const v=$('#view'),k=ME&&ME.role==='screen'?Math.min(innerWidth/1920,innerHeight/1080):Math.min(w.parentElement.clientWidth/1920,(v.clientHeight-24-(($('.ctlbar')||{}).offsetHeight||0))/1080);
   st.style.setProperty('--k',k.toFixed(4));w.style.height=Math.round(1080*k)+'px';
   w.style.width=Math.round(1920*k)+'px';w.style.margin='0 auto';
   // keep the ghost fire off the text and cards: everything inside the stage's padding
@@ -226,6 +232,13 @@ function confettiCheck(){
   for(const x of S.draw.pz){const prev=prizeSeen[x.id],key=x.st+':'+(x.win||'')+':'+(x.top||[]).join();prizeSeen[x.id]=key;
     if(!prev||prev===key||!view)continue;
     if(x.st==='drawn'&&x.win)startRoll(x);else if(!pl_&&x.st==='reveal')confetti(false);else if(!pl_&&x.st==='done')confetti(x.kind!=='small');}
+}
+const rankConf=new Set();
+function rankConfetti(){ // 玩家看到「最终名次」弹窗的那一刻放一次彩带
+  if(!S||!ME||ME.role!=='player')return;
+  const d=document.querySelector('.dlg[data-n]');if(!d)return;
+  const n=S.notices.find(x=>String(x.id)===d.dataset.n);
+  if(n&&n.sub==='final'&&!rankConf.has(n.id)){rankConf.add(n.id);confetti(true);}
 }
 function confetti(big){
   if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
@@ -385,10 +398,7 @@ function viewNpc(){
 
 // ---------- 压轴抽奖（判官主持） ----------
 function viewDraw(){
-  const D=S.draw,P=D.pz,x=curPrize(),on=drawOn();
-  const scr='<div class="pn ascr"><div class="shrow"><h3>大屏显示</h3></div><div class="seg2">'
-    +'<button class="sbtn'+(!on?' on':'')+'" data-a="scrask" data-v="0" aria-pressed="'+(!on)+'">游戏大屏</button>'
-    +'<button class="sbtn'+(on?' on':'')+'" data-a="scrask" data-v="1" aria-pressed="'+on+'">抽奖大屏</button></div></div>';
+  const D=S.draw,P=D.pz,x=curPrize();
   const pool=R.drawPool(x).map(p=>({p,tk:ticketsOf(p)})).sort((a,b)=>(x&&x.kind==='tycoon'?b.p.score-a.p.score:b.tk-a.tk)||b.p.score-a.p.score||a.p.id.localeCompare(b.p.id));
   const sum=pool.reduce((a,b)=>a+b.tk,0),tyc=x&&x.kind==='tycoon';
   const tl=ui.showTk?'<div class="alist">'+(pool.length?pool.map(({p,tk})=>'<div class="li"><div class="grow"><span class="x">'+who(p)+'</span></div><b class="mono">'+p.score+' 金币 / '+tk+' 彩券'+'</b></div>').join(''):'<div class="li small">没有可以抽的人</div>')+'</div>':'';
@@ -415,7 +425,7 @@ function viewDraw(){
   const add='<div class="pn"><h3>奖品列表</h3><div class="alist">'+(list||'<div class="li small">还没有奖品</div>')+'</div>'
     +(ui.addPz||!P.length?'<div class="addlot"><div class="shrow"><b>添加奖品</b>'+(P.length?'<button class="btn-line" data-a="addpz" data-v="0">收起</button>':'')+'</div>'+pzForm('nw')+'<button class="btn-line acc" data-a="pzadd">添加</button></div>'
       :'<button class="btn-line acc" data-a="addpz" data-v="1" style="align-self:flex-start">＋ 添加奖品</button>')+'</div>';
-  return '<div class="page"><div class="cols2 aucg"><div class="stack">'+scr+cur+tkp+'</div><div class="stack">'+add+'</div></div></div>';
+  return '<div class="page"><div class="cols2 aucg"><div class="stack">'+(S.judgeScr?ctlBar(true):'')+cur+tkp+'</div><div class="stack">'+add+'</div></div></div>';
 }
 function pzForm(k){const f=ui[k];
   return '<label class="fld"><span>名称</span><input class="in" data-m="'+k+'.name" value="'+esc(f.name)+'" placeholder="例如：拍立得"></label>'
@@ -749,7 +759,20 @@ function tuDlg(){
     +'<div class="foot"><span class="cap">剩余时间</span><span class="cd over">0:00:00</span></div>'
     +'<button data-a="tuack" data-modal="1">知道了</button></div></div>';
 }
+const fzKey=()=>'borderland.fz.'+((S&&S.dur)||7200);
+const fzSeen=()=>{try{return sessionStorage.getItem(fzKey())==='1';}catch{return !!ui.fzAck;}};
+const fzDlg=()=>'<div class="ovl" data-k="time"><div class="dlg" data-n="fz" data-k="time" role="dialog" aria-modal="true" aria-labelledby="dt"><div class="new"><i></i>总控提醒</div>'
+  +'<h3 id="dt">该封榜了</h3><div class="body">离结束还有 15 分钟。</div>'
+  +'<button data-a="fzlock" data-modal="1">锁定排名</button><button class="btn-line" data-a="fzack" data-modal="1" style="margin-top:8px">知道了</button></div></div>';
+const TUT=[['我的','看你的通行证、金币、彩券和每一间房的记录。'],['大屏','看剩余时间、金币排行和全场播报。'],['地图','看八间房现在能不能进。有问题就去 info desk。']];
+const tutSeen=()=>{try{return localStorage.getItem('borderland.tut')==='1';}catch{return !!ui.tutDone;}};
+const tutDlg=()=>{const i=ui.tut||0,t=TUT[i];
+  return '<div class="ovl"><div class="dlg" data-n="tut" role="dialog" aria-modal="true" aria-labelledby="dt"><div class="new"><i></i>欢迎 '+(i+1)+' / '+TUT.length+'</div>'
+  +'<h3 id="dt">'+t[0]+'</h3><div class="body">'+t[1]+'</div>'
+  +'<button data-a="tutnext" data-modal="1">'+(i+1<TUT.length?'下一步':'开始')+'</button></div></div>';};
 function modalHtml(){
+  if(ME&&S&&!entering&&ME.role==='ctrl'&&S.t>=(S.dur||7200)-900&&S.t<(S.dur||7200)&&!S.draw.lock&&!fzSeen())return fzDlg();
+  if(ME&&S&&!entering&&ME.role==='player'&&!DEVME&&meP()&&meP().nick&&!tutSeen())return tutDlg();
   if(ME&&S&&!entering&&R.timeUp()&&!tuSeen()&&!S.draw.pz.some(x=>x.st!=='wait'))return tuDlg();
   if(ME&&ME.role!=='player'&&S&&S.notices){ // 工作人员：发给「工作人员 / 所有人」的公告，已读只记在本机
     const n=S.notices.find(x=>staffSees(x)&&!R.noticeStale(x)&&!staffAcked(x.id)&&!(x.sub==='gate'&&ME.role==='screen'));if(!n)return '';
@@ -906,8 +929,8 @@ function render(){
   if(!S){$('#view').innerHTML='<section class="pn muted">正在连接服务器…</section>';return;}
   R.use(S);S.t=nowT();$('#clk').textContent=fmt(S.t);
   confettiCheck();
-  morph($('#view'),offBar()+(ui.tab==='board'?viewBoard():ui.tab==='map'?viewMap():ui.tab==='dealer'?viewDealer():ui.tab==='ctrl'?viewCtrl():ui.tab==='npc'?viewNpc():ui.tab==='draw'?viewDraw():ui.tab==='market'?viewMarket():ui.tab==='wuchang'?viewWuchang():viewPlayer())+cfmDlg());
-  fitStage();
+  morph($('#view'),offBar()+(ui.tab==='board'&&ME&&ME.role==='ctrl'?ctlBar():'')+(ui.tab==='board'?viewBoard():ui.tab==='map'?viewMap():ui.tab==='dealer'?viewDealer():ui.tab==='ctrl'?viewCtrl():ui.tab==='npc'?viewNpc():ui.tab==='draw'?viewDraw():ui.tab==='market'?viewMarket():ui.tab==='wuchang'?viewWuchang():viewPlayer())+cfmDlg());
+  fitStage();rankConfetti();
   { // 灯笼 / 面具的绳子接到页头那条线：算出它们离页头底边的距离（有标签栏时不上提，免得盖住标签）
     const root=document.documentElement,hb=$('#top').getBoundingClientRect().bottom;
     root.style.setProperty('--lfy',Math.max(0,Math.round(hb+window.scrollY))+'px'); // 手机固定背景的上沿 = 页头分割线
@@ -1157,7 +1180,8 @@ document.addEventListener('click',e=>{
   else if(a==='askno'){ui.aucAsk=null;}
   else if(a==='scrask'){const on=v==='1';if(on!==drawOn())ui.cfm={title:on?'大屏切到抽奖？':'大屏切回游戏？',lines:['所有大屏和玩家手机的第一页会马上切换。'],ok:'切换',a:'drawscreen',v};}
   else if(a==='cfm-no'){ui.cfm=null;}
-  else if(a==='cfm-ok'){const c=ui.cfm;ui.cfm=null;if(c&&c.a==='drawscreen')send({type:'draw.screen',on:c.v==='1'});}
+  else if(a==='lockask'){const on=v==='1';ui.cfm={title:on?'锁定排名？':'解除锁定？',lines:[on?'大屏和玩家手机马上看不到排行和名次。':'大屏和玩家手机马上恢复显示排行。'],ok:on?'锁定':'解除',a:'ranklock',v};}
+  else if(a==='cfm-ok'){const c=ui.cfm;ui.cfm=null;if(c&&c.a==='drawscreen')send({type:'draw.screen',on:c.v==='1'});else if(c&&c.a==='ranklock')send({type:'draw.lock',on:c.v==='1'});}
   else if(a==='drawrun'){if(x)send({type:'draw.run',id:x.id});}
   else if(a==='drawok'){if(x)send({type:'draw.confirm',id:x.id});}
   else if(a==='drawredo'){ui.aucAsk=null;if(x)send({type:'draw.redo',id:x.id});}
@@ -1202,6 +1226,9 @@ document.addEventListener('click',e=>{
   else if(a==='setnick'){send({type:'nick',nick:ui.nick},()=>{ui.nick='';});}
   else if(a==='hist'){ui.histOpen=!ui.histOpen;}
   else if(a==='sack'){const id=b.dataset.n;(ui.sa=ui.sa||{})[id]=true;try{sessionStorage.setItem('borderland.sa.'+id,'1');}catch{/* ignore */}}
+  else if(a==='jscr')send({type:'draw.jscr',on:v==='1'});
+  else if(a==='fzack'||a==='fzlock'){ui.fzAck=true;try{sessionStorage.setItem(fzKey(),'1');}catch{/* ignore */}if(a==='fzlock')send({type:'draw.lock',on:true});}
+  else if(a==='tutnext'){ui.tut=(ui.tut||0)+1;if(ui.tut>=TUT.length){ui.tutDone=true;ui.tut=0;try{localStorage.setItem('borderland.tut','1');}catch{/* ignore */}}}
   else if(a==='tuack'){ui.tuAck=true;try{sessionStorage.setItem(tuKey(),'1');}catch{/* ignore */}}
   else if(a==='ack'&&DEVME&&!ui.devOps){ui.devAck.add(b.dataset.n+':'+ME.pid);}
   else if(a==='ack'){const nid=+b.dataset.n,n=S&&S.notices.find(x=>x.id===nid);

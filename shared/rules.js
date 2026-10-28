@@ -74,7 +74,7 @@ function init(){
 // 旧版本的存档（队伍制）不能继续用，需要重置。
 const needsReset=st=>!st||st.v!==3||!Array.isArray(st.rooms)||st.rooms.length!==ROOMS.length||st.rooms.some((r,i)=>r.id!==ROOMS[i].id);
 const timeUp=()=>S.t>=(S.dur||DUR0);
-const frozen=()=>S.t>=(S.dur||DUR0)-FREEZE_SEC&&S.draw.pz.some(x=>x.kind==='tycoon')&&!S.draw.pz.some(x=>x.kind==='tycoon'&&x.st==='done');
+const frozen=()=>!!S.draw.lock||S.t>=(S.dur||DUR0)-FREEZE_SEC&&S.draw.pz.some(x=>x.kind==='tycoon')&&!S.draw.pz.some(x=>x.kind==='tycoon'&&x.st==='done');
 const marketShut=()=>S.t>=(S.dur||DUR0)+MARKET_GRACE;   // 截止 15 分钟后：停止发放复活名额
 const active=()=>S.players.filter(p=>p.on);
 const suitsOf=p=>SUITS.filter(x=>p.cards.includes(x));
@@ -314,6 +314,8 @@ function drawRedo(id,rnd){const x=prize(id)||curPrize();if(!x||x.st!=='drawn')re
 // 撤销已确认的得主：回到待抽，这位重新参与
 function drawUndo(id){const x=prize(id)||curPrize();if(!x||x.st==='wait')return no('这个奖品还没抽');
   const p=pl(x.win);if(p&&p.won===x.id)p.won=null;log('「'+x.name+'」撤销得主 '+nameOf(x.win));x.st='wait';x.win=null;x.skip=[];x.tie=0;x.tk=0;x.all=0;x.top=[];return ok('已撤销，可以重新来');}
+function drawJscr(on){S.judgeScr=!!on;log('总控'+(on?'允许':'不再允许')+'判官切换大屏和锁定排名');return ok(on?'判官也可以切换大屏、锁定排名':'只有总控能切换大屏、锁定排名');}
+function drawLock(on){S.draw.lock=!!on;log(on?'总控锁定排名：大屏和玩家看不到排行榜':'总控解除锁定排名','sys');return ok(on?'排名已锁定':'排名已解除锁定');}
 function drawScreen(on){S.draw.screen=on?'draw':'game';return ok(on?'大屏切到抽奖':'大屏切回游戏');}
 function drawShow(id){const x=prize(id);if(!x)return no('没有这个奖品');const c=S.draw.pz.find(y=>y.st==='drawn'||y.st==='reveal');
   if(c&&c!==x)return no('「'+c.name+'」还没结束');
@@ -452,7 +454,7 @@ const ROLE_OK={setrule:['dealer','ctrl'],enter:['dealer'],finish:['dealer'],rese
   pickup:['wuchang'],checkin:['wuchang','mengpo'],confirm:['wuchang','mengpo'],
   redeem:['mengpo'],ransom:['mengpo'],soup:['mengpo'],
   'draw.add':['judge'],'draw.edit':['judge'],'draw.del':['judge'],'draw.move':['judge'],'draw.run':['judge'],'draw.confirm':['judge'],
-  'draw.redo':['judge'],'draw.undo':['judge'],'draw.screen':['judge'],'draw.show':['judge'],
+  'draw.redo':['judge'],'draw.undo':['judge'],'draw.screen':['ctrl','judge'],'draw.lock':['ctrl','judge'],'draw.jscr':['ctrl'],'draw.show':['judge'],
   ack:['player'],nick:['player','ctrl'],offline:['dealer','judge','mengpo','wuchang']};
 
 // Apply one action from one signed-in person. Returns {ok,msg}.
@@ -461,6 +463,7 @@ export function apply(state,me,a){
   const roles=a&&ROLE_OK[a.type];
   if(!roles)return no('未知操作');
   if(!roles.includes(me.role))return no('你的身份不能做这个操作');
+  if(me.role==='judge'&&(a.type==='draw.screen'||a.type==='draw.lock')&&!S.judgeScr)return no('总控没有把切换大屏 / 锁定排名交给判官');
   if(me.role==='dealer'&&Array.isArray(me.rooms)&&['enter','finish','resetdone','kick','setrule'].includes(a.type)&&!me.rooms.includes(a.rid))return no('这个房间不归你管，只能操作：'+me.rooms.map(r=>room(r).card).join(' '));
   switch(a.type){
     case 'enter':return enterRoom(a.rid,a.pids||a.pid);
@@ -499,6 +502,8 @@ export function apply(state,me,a){
     case 'draw.redo':return drawRedo(a.id);
     case 'draw.undo':return drawUndo(a.id);
     case 'draw.screen':return drawScreen(!!a.on);
+    case 'draw.lock':return drawLock(a.on);
+    case 'draw.jscr':return drawJscr(a.on);
     case 'draw.show':return drawShow(a.id);
     case 'ack':if(!me.pid)return no('只有玩家需要确认通知');ack(+a.nid,me.pid);return ok('');
     case 'nick':return setNick(me.role==='player'?me.pid:a.pid,a.nick);

@@ -129,7 +129,9 @@ T('撤销得主：这位重新参与', (() => { const x = S.draw.pz[0], w = x.wi
 T('没有可抽的人时不能抽', (() => { const g = R.newGame(false); R.use(g); const r = R.apply(g, { role: 'judge' }, { type: 'draw.run', id: 'P2' }); R.use(S); return !r.ok; })());
 T('奖品可以增删改排序（待抽的才行）', A('judge', { type: 'draw.add', f: { name: '拍立得', kind: 'small' } }).ok && S.draw.pz.length === 6 && A('judge', { type: 'draw.edit', id: 'P6', f: { name: '音箱', desc: 'x', kind: 'big' } }).ok && S.draw.pz[5].kind === 'big'
   && A('judge', { type: 'draw.move', id: 'P6', d: -1 }).ok && A('judge', { type: 'draw.del', id: 'P6' }).ok && S.draw.pz.length === 5);
-T('大屏可以切回游戏', A('judge', { type: 'draw.screen', on: false }).ok && S.draw.screen === 'game');
+T('大屏可以切回游戏', A('ctrl', { type: 'draw.screen', on: false }).ok && S.draw.screen === 'game' && !A('judge', { type: 'draw.screen', on: true }).ok);
+T('总控可把切屏 / 锁榜交给判官', A('ctrl', { type: 'draw.jscr', on: true }).ok && A('judge', { type: 'draw.screen', on: true }).ok && A('judge', { type: 'draw.lock', on: true }).ok && A('ctrl', { type: 'draw.jscr', on: false }).ok && !A('judge', { type: 'draw.lock', on: false }).ok && A('ctrl', { type: 'draw.lock', on: false }).ok && A('ctrl', { type: 'draw.screen', on: false }).ok);
+T('总控可锁定 / 解除排名，判官不行', !A('judge', { type: 'draw.lock', on: true }).ok && A('ctrl', { type: 'draw.lock', on: true }).ok && R.frozen() && A('ctrl', { type: 'draw.lock', on: false }).ok && !S.draw.lock);
 T('旧存档（auc / fin）自动换成抽奖', (() => { const g = R.newGame(false); delete g.draw; g.auc = { lots: [] }; g.fin = ['001']; R.use(g); const ok = g.draw.pz.length === 5 && !g.auc && !g.fin; R.use(S); return ok; })());
 
 // ---------- 权限与视图 ----------

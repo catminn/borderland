@@ -176,7 +176,7 @@ const dealerOf = room => client(pinOf(p => p.role === 'dealer' && p.rooms[0] ===
   { const c1 = await client(pinOf(p => p.pid === w1)); T('winner state: draw has no bid data and no fin list', !('auc' in c1.S) && !('fin' in c1.S)); c1.close(); }
   T('staff state carries at most 300 log lines', admin.S.log.length <= 300);
   T('undo returns the prize and the winner to the pool', (await jd.act({ type: 'draw.undo', id: 'P1' })).ok && (await sleep(200), !P_(w1).won && admin.S.draw.pz[0].st === 'wait'));
-  T('judge switches the screen back', (await jd.act({ type: 'draw.screen', on: false })).ok && (await sleep(400), (await text(sp)).includes('金币排行')));
+  T('judge switches the screen back', (await admin.act({ type: 'draw.screen', on: false })).ok && (await sleep(400), (await text(sp)).includes('金币排行')));
   await pp.context().close(); await sp.context().close(); }
 function R_q(id) { const p = P_(id); return p.cards.length === 4 && p.score >= 2000 && p.st === 'alive'; }
 T('duration can be set', (await admin.act({ type: 'setdur', secs: 5400 })).ok && (await sleep(200), admin.S.dur === 5400));
