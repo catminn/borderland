@@ -1938,3 +1938,4 @@ body.bwr .ptr{border-radius:0}
 :root[data-theme="dark"] body.bwr #amb{opacity:.35}
 :root[data-theme="dark"] body.bwr .fin3 .ic.rm:not(.lit){opacity:1;border:1px dashed rgba(255,255,255,.55);background:#1f1f1f;color:#bdbdbd}
 :root[data-theme="dark"] body.bwr .fin3 .ic.rm:not(.lit) :is(.rk,.st){color:#bdbdbd;opacity:1}
+.stage .prow .sc{grid-column:4;text-align:right}

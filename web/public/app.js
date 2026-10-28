@@ -120,7 +120,7 @@ function rankRows(n,page){
   const rows=list.map((p,i)=>{if(p.score!==prev){rk=i+1;prev=p.score;}return [p,rk];});
   return (page==null?rows.slice(0,n):rows.slice(page*n,page*n+n)).map(([p,rk])=>{
     const mine=ME&&ME.role==='player'&&p.id===ME.pid;
-    return '<div class="prow'+(p.st!=='alive'?' down':'')+(mine?' me':'')+'"><span class="rk mono">'+rk+'</span>'+who(p,p.st!=='alive')+suits4(p)+'<span class="sc mono">'+p.score+'</span></div>';}).join('')
+    return '<div class="prow'+(p.st!=='alive'?' down':'')+(mine?' me':'')+'"><span class="rk mono">'+rk+'</span>'+who(p,p.st!=='alive')+'<span class="sc mono">'+p.score+'</span></div>';}).join('')
     ||'<div class="prow empty"><span class="muted">还没有人上榜</span></div>';
 }
 function viewBoard(){
