@@ -2035,3 +2035,4 @@ body .stage .cast .bc .x{display:-webkit-box;-webkit-box-orient:vertical;-webkit
 .coach .tip.dn .ar{top:-7px}.coach .tip.up .ar{bottom:-7px}
 html.coaching,html.coaching body{overflow:hidden!important;overscroll-behavior:none}
 .coach{touch-action:none}
+.coach .tip p{text-wrap:pretty}
