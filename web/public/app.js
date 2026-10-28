@@ -58,7 +58,7 @@ const isRed=s=>s==='♥'||s==='♦';
 const suitG=s=>'<span class="'+(isRed(s)?'sr':'')+'">'+s+'</span>';
 const cardG=r=>r.n+suitG(r.suit);
 const suits4=p=>'<span class="su4">'+SUITS.map(s=>'<span class="'+(p.cards.includes(s)?'got ':'')+(isRed(s)?'sr':'')+'">'+s+'</span>').join('')+'</span>';
-const who=p=>'<span class="who"><b class="mono">'+p.id+'</b>'+(p.nick?'<span>'+esc(p.nick)+'</span>':'')+'</span>';
+const who=(p,mk)=>'<span class="who"><b class="mono">'+p.id+'</b>'+(p.nick?'<span>'+esc(p.nick)+(mk?'<i class="mkn">（在鬼市）</i>':'')+'</span>':'')+'</span>';
 const p2=v=>String(v).padStart(2,'0');
 const mm=x=>Math.floor(x/60)+':'+p2(x%60);
 const mmss=x=>p2(Math.floor(x/60))+':'+p2(x%60);
@@ -119,7 +119,8 @@ function rankRows(n,page){
   const list=ranking();let rk=0,prev=null;
   const rows=list.map((p,i)=>{if(p.score!==prev){rk=i+1;prev=p.score;}return [p,rk];});
   return (page==null?rows.slice(0,n):rows.slice(page*n,page*n+n)).map(([p,rk])=>{
-    return '<div class="prow'+(p.st!=='alive'?' down':'')+'"><span class="rk mono">'+rk+'</span>'+who(p)+suits4(p)+'<span class="sc mono">'+p.score+'</span></div>';}).join('')
+    const mine=ME&&ME.role==='player'&&p.id===ME.pid;
+    return '<div class="prow'+(p.st!=='alive'?' down':'')+(mine?' me':'')+'"><span class="rk mono">'+rk+'</span>'+who(p,p.st!=='alive')+suits4(p)+'<span class="sc mono">'+p.score+'</span></div>';}).join('')
     ||'<div class="prow empty"><span class="muted">还没有人上榜</span></div>';
 }
 function viewBoard(){
