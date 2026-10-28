@@ -1907,3 +1907,21 @@ body.bwr .mp-room.mine>rect{stroke:var(--red);fill:var(--red-soft);stroke-dashar
 .mp-desk text,.mp-dk{font-size:30px!important;font-weight:700;text-anchor:middle;letter-spacing:.08em;dominant-baseline:central}
 body.bwr{--sh-c:#000;--sh:var(--shx) var(--shx) 0 var(--sh-c)}
 :root[data-theme="dark"] body.bwr{--sh:var(--shx) var(--shx) 0 var(--sh-c)}
+/* 登录页：黑白红 */
+body.login{background:radial-gradient(ellipse 60% 55% at 50% 42%,#141414 0%,#080808 55%,#000 100%) fixed #000}
+body.login #scene :is(.fogb,.fogf) img,body.login #scene .doll img,body.login #scene .ge{filter:grayscale(1) brightness(.7)}
+.lg{background:#0e0e0e;border-color:#2a2a2a}
+.lg .s,.lg .h{color:#a3a3a3}
+.boxes .bx.act,.boxes:focus-within .bx.act{border-color:#f2f2f2;box-shadow:0 0 14px rgba(255,255,255,.25)}
+.lg .go{background:#f2f2f2;color:#0a0a0a;box-shadow:inset 0 0 0 var(--stroke) #000,var(--shx) var(--shx) 0 #3a0a08,0 0 22px rgba(255,255,255,.12)}
+.lg .h.err{color:#ff4a3f}
+body .lg{--pb:#0e0e0e;--pe:#2a2a2a;--edge:rgba(255,255,255,.18)}
+body.login .bx{background:#080808}
+body .lg{background:#0e0e0e!important}
+/* 深色可读性：按钮 / 卡片用灰面 + 浅灰描边 + 灰色硬投影，不再黑底融在背景里 */
+:root[data-theme="dark"] body.bwr{
+  --panel:#151515; --panel2:#1b1b1b; --card:#262626; --input:#1d1d1d;
+  --line:#383838; --line2:#555; --line3:#2a2a2a;
+  --stroke-c:#7a7a7a; --sh-c:#4a4a4a; --sh:var(--shx) var(--shx) 0 var(--sh-c);
+  --cb:#2a2a2a; --off-bg:#161616; --off-line:#2a2a2a;
+}

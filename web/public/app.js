@@ -662,7 +662,7 @@ function adminPanel(){
     +'<div class="pn"><div class="shrow"><h3>PIN</h3><span class="small">改小会删掉编号靠后的 PIN</span></div>'
     +'<div class="cnts">'+num('dealer','Dealer')+num('judge','判官')+num('mengpo','孟婆')+num('wuchang','黑白无常')+num('ctrl','总控')+num('screen','大屏')+'</div>'
     +'<div class="btns"><button class="btn-line acc" data-a="adm-gen">生成 PIN</button><button class="btn-line" data-a="adm-pins">查看全部 PIN</button></div>'
-    +'<div class="setrow"><div class="swrow"><span>打印身份卡<small>每张卡印编号、PIN 和登录网址（A4，每页 8 张）。卡上印的网址是 <b>'+esc(location.host)+'</b>，请在正式网址下打印。</small></span><button class="btn-line acc" data-a="cards">打印身份卡</button></div></div>'+pins+'</div>'
+    +pins+'</div>'
     +'<div class="danger"><h3>危险操作</h3><p>清空所有游戏数据（PIN 和题库保留）。输入“重置”后点按钮。</p>'
     +'<input class="in" id="rst" data-m="adm.resetTxt" value="'+esc(A.resetTxt)+'" placeholder="输入“重置”" style="border-color:#d9b3aa">'
     +'<button class="btn-line '+(rs?'fillred':'')+'" id="rstbtn" data-a="adm-reset" data-v="blank"'+(rs?'':' disabled')+' style="min-height:48px;font-weight:900">重置为空白游戏</button></div></div>';
@@ -1197,7 +1197,6 @@ document.addEventListener('click',e=>{
   else if(a==='capon'){send({type:'setcapon',v:v==='1'});}
   else if(a==='addplayers'){send({type:'addplayers',n:+ui.addN});}
   else if(a==='setdur'){send({type:'setdur',secs:Math.round((+A.dur||0)*60)},()=>{A.dur='';});}
-  else if(a==='cards'){printCards();}
   // 玩家
   else if(a==='setnick'){send({type:'nick',nick:ui.nick},()=>{ui.nick='';});}
   else if(a==='hist'){ui.histOpen=!ui.histOpen;}
@@ -1280,43 +1279,6 @@ function downloadPins(){
   setTimeout(()=>URL.revokeObjectURL(a.href),1000);
 }
 
-// 身份卡：每人一张，印编号、PIN 和登录网址（不印二维码）。A4 纵向每页 8 张，在本机生成，风格同酆都通行证。
-function printCards(){
-  const go=pins=>{
-    const ps=pins.filter(p=>p.role==='player'&&pl(p.pid)).sort((a,b)=>a.pid.localeCompare(b.pid));
-    if(!ps.length){say(no('还没有玩家 PIN，先点「生成 PIN」'));return;}
-    const host=location.host;
-    const card=p=>{const q=pl(p.pid);
-      return '<div class="c"><i class="fr"></i><i class="cn tl"></i><i class="cn tr"></i><i class="cn bl"></i><i class="cn br"></i>'
-        +'<div class="hd"><b>酆都通行证</b><span>百鬼夜行身份卡</span></div><div class="rule"></div>'
-        +'<div class="bd"><div class="l"><span class="k">持证人编号</span><span class="id">'+q.id+'</span>'
-        +'</div>'
-        +'<div class="seal"><span>准</span><span>入</span></div></div>'
-        +'<div class="pinr"><span class="k">登录 PIN</span><span class="pin">'+p.pin.split('').join('</span><span class="pin">')+'</span></div>'
-        +'<div class="ft">手机打开 <b>'+esc(host)+'</b>，输入 PIN 进入。请勿外借</div></div>';};
-    const css='@page{size:A4;margin:9mm}*{box-sizing:border-box}body{margin:0;font-family:"Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif;color:#1b1712;-webkit-print-color-adjust:exact;print-color-adjust:exact}'
-      +'.pg{display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:67mm;gap:3.5mm;page-break-after:always}.pg:last-child{page-break-after:auto}'
-      +'.c{position:relative;background:#f4efe3;border:1px solid #b9ab8c;padding:5mm 6mm 4mm;display:flex;flex-direction:column;gap:1.6mm;overflow:hidden}'
-      +'.fr{position:absolute;inset:2mm;border:.5px solid #8c7d5c;pointer-events:none}.cn{position:absolute;width:4mm;height:4mm;border:1.4px solid #0b7658}'
-      +'.cn.tl{left:1.2mm;top:1.2mm;border-right:0;border-bottom:0}.cn.tr{right:1.2mm;top:1.2mm;border-left:0;border-bottom:0}.cn.bl{left:1.2mm;bottom:1.2mm;border-right:0;border-top:0}.cn.br{right:1.2mm;bottom:1.2mm;border-left:0;border-top:0}'
-      +'.hd{display:flex;justify-content:space-between;align-items:baseline}.hd b{font-family:"Ma Shan Zheng","Kaiti SC","STKaiti",serif;font-weight:400;font-size:19pt;letter-spacing:.12em;line-height:1}.hd span{font-size:7.5pt;color:#6a5d45;letter-spacing:.1em}'
-      +'.rule{height:0;border-top:.6px solid #8c7d5c;margin:.5mm 0}'
-      +'.bd{display:flex;gap:3mm;align-items:flex-start;flex:1;min-height:0}.l{flex:1;display:flex;flex-direction:column;gap:.4mm;min-width:0}.k{font-size:6.8pt;color:#7a6c50;letter-spacing:.12em}'
-      +'.id{font:800 36pt "JetBrains Mono",ui-monospace,Menlo,monospace;line-height:1;letter-spacing:.04em;margin-bottom:1mm}'
-      +'.seal{flex:none;width:15mm;height:15mm;border:1.6px solid #b3332a;color:#b3332a;display:grid;grid-template-columns:1fr;place-items:center;font-family:"Ma Shan Zheng","Kaiti SC",serif;font-size:12pt;line-height:1;transform:rotate(-6deg);opacity:.85;padding:1mm 0}'
-      +'.pinr{display:flex;align-items:center;gap:1.2mm;border-top:.6px dashed #8c7d5c;padding-top:1.6mm}.pinr .k{margin-right:1.5mm}'
-      +'.pin{display:inline-grid;place-items:center;width:6.6mm;height:8mm;border:1px solid #1b1712;background:#fffdf6;font:800 13pt "JetBrains Mono",monospace}'
-      +'.ft{font-size:6.6pt;color:#6a5d45;line-height:1.35}.ft b{color:#1b1712}'
-      +'.np{padding:12px;font-size:14px}@media print{.np{display:none}}';
-    let pages='';for(let i=0;i<ps.length;i+=8)pages+='<div class="pg">'+ps.slice(i,i+8).map(card).join('')+'</div>';
-    const html='<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><base href="'+esc(location.origin)+'/"><link rel="stylesheet" href="fonts.css"><title>百鬼夜行 身份卡</title><style>'+css+'</style></head><body>'
-      +'<div class="np">共 '+ps.length+' 张，每页 8 张。打印时勾选「背景图形」可印出纸色。<button onclick="print()">打印</button></div>'+pages+'</body></html>';
-    const w=window.open('','_blank');
-    if(w){w.document.open();w.document.write(html);w.document.close();}
-    else{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([html],{type:'text/html'}));a.download='borderland-cards.html';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
-  };
-  if(ui.admin.pins)go(ui.admin.pins);else send({type:'admin.pins'},m=>{ui.admin.pins=m.data;go(m.data);},true);
-}
 
 // The clock runs on the server; the page redraws on each server-time second, so every screen flips together.
 (function tick(){
