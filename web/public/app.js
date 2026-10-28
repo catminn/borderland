@@ -705,7 +705,7 @@ function viewPlayer(){
   const rms=ROOMS.map(r=>'<span class="ic rm'+(me.cleared.includes(r.id)?' lit':'')+(isRed(r.suit)?' sr':'')+'" title="'+r.name+'"><i class="rk">'+r.n+'</i><b class="st">'+r.suit+'</b></span>').join('');
   const rw=(ttl,pts,done,tot,ok,icons,cls)=>'<div class="fr'+(ok?' ok':'')+'"><div class="fh"><b>'+ttl+'<i class="mono">　+'+pts+'</i></b><span class="fk mono">'+done+' / '+tot+'</span></div><div class="ics '+cls+'">'+icons+'</div></div>';
   const finSec='<div class="fin3"><div class="fhd"><div class="ft"><span class="cap">我的彩券</span><b class="fn">'+tk+'<i> 张</i></b></div>'
-    +(me.won?'<div class="fs">你已中奖，不再参与后面的抽取</div>':'')
+    +'<div class="fs">'+(me.won?'你已中奖，不再参与后面的抽取':'每 '+TK_COIN+' 金币兑换 1 张，彩券越多越容易中奖')+'</div>'
     +'<div class="eq"><span class="q"><i>金币 '+me.score+' ÷ '+TK_COIN+'</i><b>'+tkC+'</b></span>'
     +'<span class="op">+</span><span class="q'+(okS?'':' z')+'"><i>集齐花色</i><b>'+(okS?TK_SUITS:0)+'</b></span>'
     +'<span class="op">+</span><span class="q'+(okR?'':' z')+'"><i>八间房</i><b>'+(okR?TK_ALL:0)+'</b></span></div></div>'

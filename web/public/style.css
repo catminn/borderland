@@ -1732,3 +1732,4 @@ body .stage .ck.frz{color:var(--red)}
 .fin3 .eq .q{flex-direction:row;align-items:baseline;gap:5px}
 .fin3 .fr .fk{padding:0 6px;font-size:12px}
 .fin3 .fr:has(.c8) .fh b{font-size:15px}
+.fin3 .fs{font-weight:500;color:var(--sub)}
