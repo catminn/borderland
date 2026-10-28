@@ -114,10 +114,11 @@ function roomCard(r,me){
 const rtStr=at=>{const s=Math.max(0,nowT()-(at||0));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');};
 // 封榜：玩家和大屏看不到排行（判官 / 总控照常）
 const hideRank=()=>R.frozen()&&ME&&(ME.role==='player'||ME.role==='screen');
-function rankRows(n){
+function rankRows(n,page){
   if(hideRank())return '<div class="prow empty frz">榜单已封，最后冲刺</div>';
   const list=ranking();let rk=0,prev=null;
-  return list.slice(0,n).map((p,i)=>{if(p.score!==prev){rk=i+1;prev=p.score;}
+  const rows=list.map((p,i)=>{if(p.score!==prev){rk=i+1;prev=p.score;}return [p,rk];});
+  return (page==null?rows.slice(0,n):rows.slice(page*n,page*n+n)).map(([p,rk])=>{
     return '<div class="prow'+(p.st!=='alive'?' down':'')+'"><span class="rk mono">'+rk+'</span>'+who(p)+suits4(p)+'<span class="sc mono">'+p.score+'</span></div>';}).join('')
     ||'<div class="prow empty"><span class="muted">还没有人上榜</span></div>';
 }
@@ -126,13 +127,17 @@ function viewBoard(){
   const me=ME&&ME.role==='player'?pl(ME.pid):null;
   const act=S.players.filter(p=>p.on),mk=act.filter(p=>p.st!=='alive').length;
   const bc=broadcast(8),run=CLOCK&&CLOCK.running;
-  return '<div class="stage-wrap"><div class="stage">'
+  // 玩家手机：排行一页 5 名，翻页看全部；8 间房只在「地图」页看
+  const isP=!!ME&&ME.role==='player',paged=isP&&innerWidth<820&&!hideRank(),RP=5,np=Math.max(1,Math.ceil(act.length/RP));
+  ui.rkp=Math.min(Math.max(0,ui.rkp||0),np-1);
+  return '<div class="stage-wrap"'+(isP?' data-pl="1"':'')+'><div class="stage">'
     +'<div class="left"><div class="hd"><div class="ttl">百鬼夜行</div><div class="en">CORNELL CSSA 万圣夜</div></div>'
     +'<div class="clock"><span class="cap">'+(run?'剩余时间':'已暂停')+'</span><span class="ck mono'+(run?'':' paused')+(isFrz(S.t)?' frz':'')+'" id="sclk">'+remStr(S.t)+'</span>'
     +'</div>'+gateBox()
     +'<div class="cast"><span class="cap" style="padding-bottom:8px">全场播报</span>'
     +(bc.length?bc.map(b=>'<div class="bc '+b.c+'"><span class="t">'+fmt(b.t)+'</span><span class="x">'+esc(b.x)+'</span></div>').join(''):'<div class="bc"><span class="x muted">暂无播报</span></div>')+'</div></div>'
-    +'<div class="right"><div class="rank"><div class="rh"><b>金币排行</b><span>在场 '+(act.length-mk)+' 人'+(mk?'　鬼市 '+mk+' 人':'')+'</span></div><div class="plist">'+rankRows(10)+'</div></div>'
+    +'<div class="right"><div class="rank"><div class="rh"><b>金币排行</b><span>在场 '+(act.length-mk)+' 人'+(mk?'　鬼市 '+mk+' 人':'')+'</span></div><div class="plist">'+(paged?rankRows(RP,ui.rkp):rankRows(10))+'</div>'
+      +(paged&&np>1?'<div class="rpg"><button data-a="rkpg" data-v="-1"'+(ui.rkp<=0?' disabled':'')+'>‹</button><span class="mono">'+(ui.rkp+1)+' / '+np+'</span><button data-a="rkpg" data-v="1"'+(ui.rkp>=np-1?' disabled':'')+'>›</button></div>':'')+'</div>'
     +'<div class="rgrid">'+ROOMS.map(r=>roomCard(r,me)).join('')+'</div></div>'
     +'</div></div>';
 }
@@ -1105,6 +1110,7 @@ document.addEventListener('click',e=>{
   const a=b.dataset.a,v=b.dataset.v,A=ui.admin,x=curPrize();
   if(a==='tab'){ui.tab=v;say(null);}
   else if(a==='msel'){ui.msel=ui.msel===v?null:v;}
+  else if(a==='rkpg'){ui.rkp=(ui.rkp||0)+(+v);render();}
   else if(a==='sub'){ui.sub[b.dataset.p]=v;scrollTo({top:0});$('#view').scrollTop=0;}
   else if(a==='dd'){ui.ddOpen=ui.ddOpen===v?null:v;}
   else if(a==='pick'){ui.ddOpen=null;const k=b.dataset.k;setp(k,b.dataset.t&&getp(k)===v?'':v);

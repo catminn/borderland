@@ -1802,3 +1802,15 @@ body .stage .ck.frz{color:var(--red)}
 .fin3 .slot i{font-style:normal;font-weight:700;font-size:15px;color:var(--sub);margin-left:4px}
 .fin3 .eq{display:flex;align-items:center;gap:6px;margin-top:6px;flex-wrap:nowrap}
 .fin3 .eq .op{font:700 15px var(--mono);color:var(--sub)}
+
+/* 手机上的大屏页：鬼门开放在排行上面；玩家不显示房间卡（看地图页）；排行分页；榜单已封字号放大 */
+@media (max-width:819px){
+  body .stage .clock{order:-2}
+  body .stage .gbox{order:-1}
+  .stage-wrap[data-pl] .rgrid{display:none}
+  body .stage .prow.frz{font-size:22px;padding:30px 12px;letter-spacing:.08em;border:2px dashed var(--red);border-radius:var(--r-m);text-align:center}
+  .stage .rpg{display:flex;align-items:center;justify-content:center;gap:18px;padding-top:10px}
+  .stage .rpg span{font-size:15px;color:var(--sub)}
+  .stage .rpg button{min-width:44px;height:36px;font-size:20px;font-weight:900}
+  .stage .rpg button:disabled{opacity:.3}
+}
