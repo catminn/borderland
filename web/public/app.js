@@ -165,9 +165,24 @@ addEventListener('resize',fitStage);
 // ---------- 抽奖大屏 ----------
 const PST={wait:'待抽',reveal:'揭晓中',drawn:'待确认',done:'已颁发'},PCLS={wait:'wait',reveal:'closed',drawn:'closed',done:'done'};
 const tkTxt=x=>x.kind==='tycoon'?'金币 <span class="mono">'+x.tk+'</span>'+(x.tie>1?'　并列 '+x.tie+' 人中抽出':''):'彩券 <span class="mono">'+x.tk+'</span> 张';
-// 金币大亨奖揭晓中：已揭晓的名次
-function revealList(x){const n=x.n||x.top.length,o=Math.max(0,x.top.length-x.rv),t=x.top.slice(o);
-  return '<div class="alist rvl">'+t.map((id,j)=>{const p=pl(id),k=n-(t.length-1-j);return '<div class="li"><div class="grow"><span class="x">第 '+k+' 名　'+(p?who(p):esc(id))+'</span></div><b class="mono">'+x.ts[o+j]+' 金币</b></div>';}).join('')+'</div>';}
+// 金币大亨奖并列第一：一起揭晓
+function revealList(x){return '<div class="aidx">并列第一</div><div class="alist rvl">'+x.top.map(id=>{const p=pl(id);return '<div class="li"><div class="grow"><span class="x">'+(p?who(p):esc(id))+'</span></div><b class="mono">'+x.tk+' 金币</b></div>';}).join('')+'</div>';}
+// 抽奖动画：老虎机式滚动名单，慢慢停在得主上（本页看到「待抽 / 并列 → 抽出」的那一刻才放，刷新不重放）
+let ROLL=null;const ROLL_MS=4800;
+function rollInner(R_,t){const N=R_.seq.length,k=Math.min(1,(t-R_.start)/R_.dur),e=1-Math.pow(1-k,3.2),pos=e*(N-1),i=Math.floor(pos),f=pos-i;
+  const row=j=>'<div class="rw">'+(R_.seq[Math.max(0,Math.min(N-1,j))])+'</div>';
+  return '<div class="rin" style="transform:translateY(calc('+(-f).toFixed(4)+' * var(--rh)))">'+row(i-1)+row(i)+row(i+1)+row(i+2)+'</div>';}
+function startRoll(x){
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  const w=pl(x.win);if(!w)return;
+  const ids=x.kind==='tycoon'&&x.tie>1?x.top:R.drawPool(x).map(p=>p.id);
+  const C=ids.map(pl).filter(Boolean),N=40,seq=[];let last=null;
+  for(let k=0;k<N-1;k++){let c=C[Math.floor(Math.random()*C.length)];if(C.length>1&&c===last)c=C[(C.indexOf(c)+1)%C.length];seq.push(who(c));last=c;}
+  seq.push(who(w));ROLL={id:x.id,start:Date.now(),dur:ROLL_MS,seq};requestAnimationFrame(rollTick);
+}
+function rollTick(){if(!ROLL)return;const t=Date.now(),el=document.querySelector('[data-reel]');
+  if(t-ROLL.start>=ROLL.dur){const x=prize(ROLL.id);ROLL=null;render();if(x&&ME&&ME.role!=='player')confetti(x.kind!=='small');return;}
+  if(el)el.innerHTML=rollInner(ROLL,t);requestAnimationFrame(rollTick);}
 function drawResult(x,big){
   if(x.st==='reveal')return revealList(x);
   if(x.st==='wait'||!x.win)return '';
@@ -179,7 +194,7 @@ function viewDrawBoard(){
     return '<div class="alot s-'+PCLS[y.st]+(y===x?' cur':'')+'"><span class="ai mono">'+(j+1)+'</span><b>'+esc(y.name)+'</b><span class="ast">'+(w?esc(w.nick||w.id):PST[y.st])+'</span></div>';}).join('');
   const main=!x?'<div class="amain"><div class="aname">压轴抽奖</div><div class="adesc">即将开始</div></div>'
     :'<div class="amain'+(x.kind!=='small'?' grand':'')+'"><div class="aname">'+esc(x.name)+'</div>'
-      +(x.st==='wait'?'':drawResult(x,true))+'</div>';
+      +(x.st==='wait'?'':ROLL&&ROLL.id===x.id&&x.st==='drawn'?'<div class="reel" data-reel>'+rollInner(ROLL,Date.now())+'</div>':drawResult(x,true))+'</div>';
   return '<div class="stage-wrap"><div class="stage auc">'
     +'<div class="left"><div class="hd"><div class="ttl">压轴抽奖</div><div class="en">每人限得一件</div></div>'
     +'<div class="alots">'+strip+'</div></div>'
@@ -188,9 +203,11 @@ function viewDrawBoard(){
 // 颁发时大屏喷彩带：只在本页看到「待确认 → 已颁发」的那一刻放一次（刷新页面不会重放）
 const prizeSeen={};
 function confettiCheck(){
-  if(!S||!S.draw||ui.tab!=='board'||ME.role==='player')return;
-  for(const x of S.draw.pz){const prev=prizeSeen[x.id];prizeSeen[x.id]=x.st+':'+(x.win||'')+':'+(x.top?x.top.length:0);
-    if(prev&&prev!==prizeSeen[x.id]&&(x.st==='done'||x.st==='reveal'||x.kind==='tycoon'&&x.st==='drawn'))confetti(x.st==='done'||x.st==='drawn');}
+  if(!S||!S.draw)return;
+  const view=ui.tab==='board',pl_=ME&&ME.role==='player';
+  for(const x of S.draw.pz){const prev=prizeSeen[x.id],key=x.st+':'+(x.win||'')+':'+(x.top||[]).join();prizeSeen[x.id]=key;
+    if(!prev||prev===key||!view)continue;
+    if(x.st==='drawn'&&x.win)startRoll(x);else if(!pl_&&x.st==='reveal')confetti(false);else if(!pl_&&x.st==='done')confetti(x.kind!=='small');}
 }
 function confetti(big){
   if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
@@ -353,9 +370,9 @@ function viewDraw(){
   const scr='<div class="pn ascr"><div class="shrow"><h3>大屏显示</h3></div><div class="seg2">'
     +'<button class="sbtn'+(!on?' on':'')+'" data-a="scrask" data-v="0" aria-pressed="'+(!on)+'">游戏大屏</button>'
     +'<button class="sbtn'+(on?' on':'')+'" data-a="scrask" data-v="1" aria-pressed="'+on+'">抽奖大屏</button></div></div>';
-  const pool=R.drawPool(x).map(p=>({p,tk:ticketsOf(p)})).sort((a,b)=>b.tk-a.tk||b.p.score-a.p.score||a.p.id.localeCompare(b.p.id));
+  const pool=R.drawPool(x).map(p=>({p,tk:ticketsOf(p)})).sort((a,b)=>(x&&x.kind==='tycoon'?b.p.score-a.p.score:b.tk-a.tk)||b.p.score-a.p.score||a.p.id.localeCompare(b.p.id));
   const sum=pool.reduce((a,b)=>a+b.tk,0),tyc=x&&x.kind==='tycoon';
-  const tl=ui.showTk?'<div class="alist">'+(pool.length?pool.map(({p,tk})=>'<div class="li"><div class="grow"><span class="x">'+who(p)+'</span></div><b class="mono">'+(tyc?p.score+' 金币':tk+' 张')+'</b></div>').join(''):'<div class="li small">没有可以抽的人</div>')+'</div>':'';
+  const tl=ui.showTk?'<div class="alist">'+(pool.length?pool.map(({p,tk})=>'<div class="li"><div class="grow"><span class="x">'+who(p)+'</span></div><b class="mono">'+p.score+' 金币 / '+tk+' 彩券'+'</b></div>').join(''):'<div class="li small">没有可以抽的人</div>')+'</div>':'';
   const tkp='<div class="pn finl"><div class="shrow"><h3>参与抽奖</h3><span class="small"><b class="mono">'+pool.length+'</b> 人　彩券共 <b class="mono">'+sum+'</b> 张</span></div>'
     +'<span class="small">上榜且没中过奖的人，鬼市里的人也算。</span>'
     +'<div class="shrow"><span></span><button class="btn-line" data-a="showtk">'+(ui.showTk?'收起名单':'查看名单')+'</button></div>'+tl+'</div>';
@@ -363,12 +380,12 @@ function viewDraw(){
   if(!x)cur='<div class="pn acur"><h3>当前奖品</h3><span class="muted">在奖品列表里「选中」一个。</span></div>';
   else{
     let ctl='';
-    if(x.st==='wait')ctl='<button class="btn-main glow abig" data-a="drawrun"'+(pool.length&&(tyc?pool.some(r=>r.p.score>0):sum>0)?'':' disabled')+'>'+(tyc?'开始揭晓':'抽一位')+'</button>';
-    else if(x.st==='reveal'){const k=x.n-x.rv,nx=pl(x.top[k-1]);ctl='<button class="btn-main glow abig" data-a="drawrun">揭晓第 '+(k<=1?'一':k)+' 名</button>'+(nx?'<span class="small">下一位 '+nx.id+' '+esc(nx.nick||'')+'　金币 '+x.ts[k-1]+'</span>':'')+ask2('undo','撤销，重新来','drawundo','','');}
+    if(x.st==='wait')ctl='<button class="btn-main glow abig" data-a="drawrun"'+(pool.length&&(tyc?pool.some(r=>r.p.score>0):sum>0)?'':' disabled')+'>'+(tyc?'揭晓第一名':'抽一位')+'</button>';
+    else if(x.st==='reveal')ctl='<button class="btn-main glow abig" data-a="drawrun">在并列的人里抽一位</button>'+ask2('undo','撤销，重新来','drawundo','','');
     else if(x.st==='drawn')ctl='<button class="btn-main glow abig" data-a="drawok">确认得主</button>'+ask2('redo','不在场，重抽','drawredo','','abig');
     else ctl=ask2('undo','撤销得主，重新抽','drawundo','','')+(P.some(y=>y.st==='wait')?'<button class="btn-main abig" data-a="drawnext">下一个</button>':'');
     cur='<div class="pn acur'+(x.kind!=='small'?' grand':'')+'"><div class="shrow"><h3>'+esc(x.name)+'</h3><span class="kb '+(x.st==='drawn'||x.st==='reveal'?'task':'')+'">'+PST[x.st]+'</span></div>'
-      +(x.kind==='tycoon'||x.desc?'<span class="small">'+(x.kind==='tycoon'?'金币最多的人得，从第 3 名到第 1 名逐个揭晓，并列第一则在并列的人里抽':'')+(x.desc?(x.kind==='tycoon'?'　':'')+esc(x.desc):'')+'</span>':'')
+      +(x.kind==='tycoon'||x.desc?'<span class="small">'+(x.kind==='tycoon'?'金币最多的人得，并列一起揭晓，再在并列的人里抽':'')+(x.desc?(x.kind==='tycoon'?'　':'')+esc(x.desc):'')+'</span>':'')
       +drawResult(x)+ctl+'</div>';
   }
   const list=P.map((y,i)=>{const w=y.st==='done'&&pl(y.win),ed=ui.pzEdit===y.id;

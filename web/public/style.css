@@ -1626,3 +1626,8 @@ body .stage .amain .aname{font-size:176px}
 @media (min-width:1300px){.page.mapp{display:flex;flex-direction:column}}
 .page.mapp>.mp-plan{width:100%}
 .mp-in text{dominant-baseline:central}
+.stage .reel{--rh:1.3em;font-size:64px;font-weight:900;height:calc(var(--rh) * 3);overflow:hidden;width:min(100%,900px);margin-top:12px;-webkit-mask-image:linear-gradient(transparent,#000 32%,#000 68%,transparent);mask-image:linear-gradient(transparent,#000 32%,#000 68%,transparent)}
+.stage .reel .rw{height:var(--rh);display:flex;justify-content:center;align-items:center;white-space:nowrap}
+.stage .reel .who{display:inline-flex;gap:16px;align-items:baseline}.stage .reel .who :is(b,span){font-size:inherit}
+.stage .reel .rin{will-change:transform}
+@media(max-width:820px){.stage .reel{font-size:26px}}

@@ -58,12 +58,12 @@ const isBcast=l=>!!l.b;
 
 function mkPlayer(i){return {id:pidOf(i),nick:'',on:false,st:'alive',score:0,cards:[],cleared:[],inRoom:null,hist:[],puz:[],
   outAt:null,inAt:null,pickAt:null,at:'',chk:null,won:null};}
-// 压轴抽奖奖品：tycoon 金币大亨奖（金币最多者，判官从第 3 名到第 1 名逐个揭晓，不是抽）· big 大奖 · small 小奖；st：wait 待抽 · reveal 大亨奖揭晓中 · drawn 已抽出待确认 · done 已确认
-function defaultDraw(){return {pz:[{id:'P1',name:'金币大亨奖',desc:'',kind:'tycoon',st:'wait',win:null,skip:[],tie:0,tk:0,all:0,top:[],ts:[],rv:0,n:0},
-  {id:'P2',name:'大奖',desc:'',kind:'big',st:'wait',win:null,skip:[],tie:0,tk:0,all:0,top:[],ts:[],rv:0,n:0},
-  {id:'P3',name:'小奖一',desc:'',kind:'small',st:'wait',win:null,skip:[],tie:0,tk:0,all:0,top:[],ts:[],rv:0,n:0},
-  {id:'P4',name:'小奖二',desc:'',kind:'small',st:'wait',win:null,skip:[],tie:0,tk:0,all:0,top:[],ts:[],rv:0,n:0},
-  {id:'P5',name:'小奖三',desc:'',kind:'small',st:'wait',win:null,skip:[],tie:0,tk:0,all:0,top:[],ts:[],rv:0,n:0}],cur:null,screen:'game',pid:6};}
+// 压轴抽奖奖品：tycoon 金币大亨奖（金币最多者：判官先揭晓，并列则一起揭晓，再在并列的人里抽）· big 大奖 · small 小奖；st：wait 待抽 · reveal 大亨奖并列第一已揭晓、待抽 · drawn 已抽出待确认 · done 已确认
+function defaultDraw(){return {pz:[{id:'P1',name:'金币大亨奖',desc:'',kind:'tycoon',st:'wait',win:null,skip:[],tie:0,tk:0,all:0,top:[]},
+  {id:'P2',name:'大奖',desc:'',kind:'big',st:'wait',win:null,skip:[],tie:0,tk:0,all:0,top:[]},
+  {id:'P3',name:'小奖一',desc:'',kind:'small',st:'wait',win:null,skip:[],tie:0,tk:0,all:0,top:[]},
+  {id:'P4',name:'小奖二',desc:'',kind:'small',st:'wait',win:null,skip:[],tie:0,tk:0,all:0,top:[]},
+  {id:'P5',name:'小奖三',desc:'',kind:'small',st:'wait',win:null,skip:[],tie:0,tk:0,all:0,top:[]}],cur:null,screen:'game',pid:6};}
 function init(){
   S={v:3,t:0,now:0,bank:{},rules:{},dur:DUR0,cap:ROOM_CAP0,capOn:false,gp:null,log:[],notices:[],nid:1,
      rooms:ROOMS.map(r=>({id:r.id,st:'open',at:0,ps:[]})),players:[],
@@ -277,7 +277,7 @@ const curPrize=()=>S.draw.cur?prize(S.draw.cur):null;
 const KIND_NAME={tycoon:'金币大亨奖',big:'大奖',small:'小奖'};
 function drawAdd(f){f=f||{};const name=String(f.name||'').trim().slice(0,40);if(!name)return no('先写奖品名称');
   const kind=KIND_NAME[f.kind]?f.kind:'small';
-  S.draw.pz.push({id:'P'+(S.draw.pid++),name,desc:String(f.desc||'').trim().slice(0,200),kind,st:'wait',win:null,skip:[],tie:0,tk:0,all:0,top:[],ts:[],rv:0,n:0});
+  S.draw.pz.push({id:'P'+(S.draw.pid++),name,desc:String(f.desc||'').trim().slice(0,200),kind,st:'wait',win:null,skip:[],tie:0,tk:0,all:0,top:[]});
   return ok('已添加「'+name+'」');}
 function drawEdit(id,f){const x=prize(id);if(!x)return no('没有这个奖品');if(x.st!=='wait')return no('只能改待抽的奖品');
   const name=String((f&&f.name)||'').trim().slice(0,40);if(!name)return no('先写奖品名称');
@@ -285,20 +285,20 @@ function drawEdit(id,f){const x=prize(id);if(!x)return no('没有这个奖品');
 function drawDel(id){const x=prize(id);if(!x)return no('没有这个奖品');if(x.st!=='wait')return no('只能删待抽的奖品');
   S.draw.pz=S.draw.pz.filter(y=>y!==x);if(S.draw.cur===id)S.draw.cur=null;return ok('已删除「'+x.name+'」');}
 function drawMove(id,d){const a=S.draw.pz,i=a.findIndex(x=>x.id===id),j=i+(d<0?-1:1);if(i<0||j<0||j>=a.length)return no('不能再移了');[a[i],a[j]]=[a[j],a[i]];return ok('');}
-// 抽一位 / 揭晓：rnd 是 0–1 的随机数（测试可传固定值）。金币大亨奖：第一次点出第 3 名（人少则更少），再点一次出一名，直到第 1 名；fast = 直接出第 1 名（重抽用）
-function drawRun(id,rnd,fast){const x=prize(id)||curPrize();if(!x)return no('先选一个奖品');
+// 抽一位 / 揭晓：rnd 是 0–1 的随机数（测试可传固定值）。金币大亨奖：第一步揭晓金币最多的人，并列就一起揭晓（st:'reveal'），第二步才在并列的人里抽
+function drawRun(id,rnd){const x=prize(id)||curPrize();if(!x)return no('先选一个奖品');
   if(x.st==='done')return no('这个奖品已经抽过了（要重来请先撤销）');
+  if(x.st==='drawn')return no('得主还没确认');
   const c=S.draw.pz.find(y=>y.st==='drawn'||y.st==='reveal');if(c&&c!==x)return no('「'+c.name+'」还没结束');
   const fin=pick=>{x.st='drawn';x.win=pick.id;x.skip=x.skip||[];S.draw.cur=x.id;S.draw.screen='draw';
     log((x.kind==='tycoon'?'揭晓「':'抽「')+x.name+'」：'+nm(pick)+(x.kind==='tycoon'?'（金币 '+x.tk+(x.tie>1?'，并列 '+x.tie+' 人中抽出':'')+'）':'（彩券 '+x.tk+' / 共 '+x.all+' 张）'));return ok((x.kind==='tycoon'?'第一名 ':'抽到 ')+nm(pick));};
-  if(x.st==='reveal'){x.rv++;if(x.rv>=x.top.length)return fin(pl(x.top[0]));return ok('第 '+(x.top.length-x.rv+1)+' 名 '+nm(pl(x.top[x.top.length-x.rv])));}
-  const pool=drawPool(x),r=rnd==null?Math.random():rnd;
+  const r=rnd==null?Math.random():rnd;
+  if(x.st==='reveal'){const ts=x.top.map(pl).filter(Boolean);return fin(ts[Math.min(ts.length-1,Math.floor(r*ts.length))]);}
+  const pool=drawPool(x);
   if(x.kind==='tycoon'){const top=Math.max(0,...pool.map(p=>p.score));if(!(top>0))return no('没有可以揭晓的人');
-    const ts=pool.filter(p=>p.score===top),w=ts[Math.min(ts.length-1,Math.floor(r*ts.length))];
-    const rest=pool.filter(p=>p!==w&&p.score>0).sort((a,b)=>b.score-a.score||a.id.localeCompare(b.id));
-    const tp=[w,...rest].slice(0,3);x.top=tp.map(p=>p.id);x.ts=tp.map(p=>p.score);x.n=x.top.length;x.tie=ts.length;x.tk=top;x.rv=1;S.draw.cur=x.id;S.draw.screen='draw';
-    if(fast||x.top.length<2)return fin(w);
-    x.st='reveal';x.win=null;log('「'+x.name+'」开始揭晓','',0);return ok('第 '+x.n+' 名 '+nm(pl(x.top[x.n-1])));}
+    const ts=pool.filter(p=>p.score===top);x.top=ts.map(p=>p.id);x.tie=ts.length;x.tk=top;x.win=null;S.draw.cur=x.id;S.draw.screen='draw';
+    if(ts.length===1)return fin(ts[0]);
+    x.st='reveal';log('「'+x.name+'」并列第一：'+ts.map(nm).join('、')+'（金币 '+top+'）');return ok('并列 '+ts.length+' 人');}
   const w=pool.map(p=>ticketsOf(p)),sum=w.reduce((a,b)=>a+b,0);if(!(sum>0))return no('没有可以抽的人');
   let t=r*sum,i=0;while(i<w.length-1&&t>=w[i]){t-=w[i];i++;}
   while(w[i]===0&&i>0)i--;x.tie=0;x.tk=w[i];x.all=sum;return fin(pool[i]);}
@@ -309,10 +309,10 @@ function drawConfirm(id){const x=prize(id)||curPrize();if(!x||x.st!=='drawn')ret
 // 得主不在场：这位不再参与这个奖品，马上重抽
 function drawRedo(id,rnd){const x=prize(id)||curPrize();if(!x||x.st!=='drawn')return no('没有等待确认的得主');
   const old=x.win;x.skip.push(old);x.st='wait';x.win=null;log(nameOf(old)+' 不在场，「'+x.name+'」重抽');
-  const r=drawRun(x.id,rnd,true);if(!r.ok){return ok('没有可以再抽的人了');}return r;}
+  const r=drawRun(x.id,rnd);if(!r.ok){return ok('没有可以再抽的人了');}return r;}
 // 撤销已确认的得主：回到待抽，这位重新参与
 function drawUndo(id){const x=prize(id)||curPrize();if(!x||x.st==='wait')return no('这个奖品还没抽');
-  const p=pl(x.win);if(p&&p.won===x.id)p.won=null;log('「'+x.name+'」撤销得主 '+nameOf(x.win));x.st='wait';x.win=null;x.skip=[];x.tie=0;x.tk=0;x.all=0;x.top=[];x.ts=[];x.rv=0;x.n=0;return ok('已撤销，可以重新来');}
+  const p=pl(x.win);if(p&&p.won===x.id)p.won=null;log('「'+x.name+'」撤销得主 '+nameOf(x.win));x.st='wait';x.win=null;x.skip=[];x.tie=0;x.tk=0;x.all=0;x.top=[];return ok('已撤销，可以重新来');}
 function drawScreen(on){S.draw.screen=on?'draw':'game';return ok(on?'大屏切到抽奖':'大屏切回游戏');}
 function drawShow(id){const x=prize(id);if(!x)return no('没有这个奖品');const c=S.draw.pz.find(y=>y.st==='drawn'||y.st==='reveal');
   if(c&&c!==x)return no('「'+c.name+'」还没结束');
@@ -439,7 +439,7 @@ function seedFinal(pre){
   ['009','015','022','030'].forEach((id,i)=>{puzRedeem(id,'1');puzRedeem(id,'2');});
   S.t=7300;
   if(pre){S.t=7320;log('演示数据（抽奖前）：时间已截止，'+drawPool().filter(p=>ticketsOf(p)>0).length+' 人有彩券，还没开始抽');return;}
-  drawRun('P1',0,true);drawConfirm('P1');
+  drawRun('P1',0);if(S.draw.pz[0].st==='reveal')drawRun('P1',0);drawConfirm('P1');
   drawRun('P2',0.37);S.draw.cur='P2';S.draw.screen='draw';
   S.t=7500; log('演示数据（抽奖进行中）：大亨奖已颁发，「大奖」抽出了 '+nameOf(S.draw.pz[1].win)+'，等判官确认');
 }
@@ -511,7 +511,7 @@ export function apply(state,me,a){
 // What one person is allowed to see. A player sees only their own notices and the broadcast lines of the log.
 // 玩家和大屏：揭晓中的金币大亨奖只发已揭晓的名次；封榜期间不发别人（大屏：所有人）的金币
 function hideDraw(state,pid){const fz=frozen();
-  const out={draw:{...state.draw,pz:state.draw.pz.map(y=>y.st==='reveal'?{...y,top:y.top.slice(y.top.length-y.rv),ts:y.ts.slice(y.top.length-y.rv),tk:0,tie:0}:y)}};
+  const out={};
   if(fz)out.players=state.players.map(x=>x.id===pid?x:{...x,score:0,...(pid==null?{}:{hist:[],puz:[]})});
   return out;}
 const STAFF_LOG=300;   // 工作人员页最多看 300 行日志（全场日志页也只显示 300 行）；完整日志留在服务器
