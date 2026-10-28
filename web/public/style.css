@@ -1745,9 +1745,60 @@ body .stage .ck.frz{color:var(--red)}
 :root[data-theme="dark"] .fin3 .slot b{color:#7df0c4;background:linear-gradient(#050909,#16262a 50%,#050909);box-shadow:inset 0 0 8px rgba(0,0,0,.8)}
 .fin3 .slot i{font-style:normal;font-weight:700;font-size:15px;color:var(--sub);margin-left:4px}
 .fin3 .eq{display:flex;align-items:center;gap:6px;margin-top:6px;flex-wrap:nowrap}
-.fin3 .chp{display:inline-flex;align-items:baseline;gap:6px;padding:3px 9px;border:1px dashed var(--stroke-c);border-radius:6px;opacity:.4;white-space:nowrap}
-.fin3 .chp.on{opacity:1;border:1px solid var(--accent);background:var(--accent-soft)}
-.fin3 .chp i{font-style:normal;font-size:12px;color:var(--sub)}
-.fin3 .chp.on i{color:var(--ink)}
-.fin3 .chp b{font:800 15px var(--mono);color:var(--accent)}
+.fin3 .chp{display:inline-flex;align-items:stretch;height:28px;white-space:nowrap;border-radius:4px;background:var(--line);color:var(--sub);opacity:.75;
+  -webkit-mask:radial-gradient(circle 5px at 0 50%,#0000 98%,#000) ,radial-gradient(circle 5px at 100% 50%,#0000 98%,#000);-webkit-mask-composite:source-in;mask:radial-gradient(circle 5px at 0 50%,#0000 98%,#000),radial-gradient(circle 5px at 100% 50%,#0000 98%,#000);mask-composite:intersect}
+.fin3 .chp.on{opacity:1;background:var(--accent);color:var(--accent-ink)}
+.fin3 .chp i{display:flex;align-items:center;padding:0 6px 0 10px;font-style:normal;font-size:12px;font-weight:700;color:inherit}
+.fin3 .chp b{display:flex;align-items:center;padding:0 9px 0 7px;border-left:2px dashed currentColor;font:800 15px var(--mono);color:inherit}
+.fin3 .eq .op{font:700 15px var(--mono);color:var(--sub);padding-bottom:1px}
+.fin3 .eq .q.tot b{color:var(--accent)}
+
+/* 我的彩券：花色直接亮起，房间做成小扑克牌（不发光：没集齐淡色，集齐实色） */
+.fin3 .ics.c4{grid-template-columns:repeat(4,minmax(0,1fr));align-items:center}
+.fin3 .ic.su{height:56px;border:0;background:none;font-size:46px;color:var(--sub);opacity:.18;filter:none;transition:all .25s}
+.fin3 .ic.su.lit{opacity:1;color:var(--ink)}
+.fin3 .ic.su.lit.sr{color:var(--red)}
+/* 房间：小扑克牌 */
+.fin3 .ics.c8{grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+@media (min-width:960px){.fin3 .ics.c8{grid-template-columns:repeat(8,minmax(0,1fr))}}
+.fin3 .ic.rm{position:relative;height:auto;aspect-ratio:5/6;flex-direction:column;justify-content:center;border-radius:7px;border:1px dashed var(--stroke-c);background:none;opacity:.32;filter:none;color:var(--sub);transition:all .25s}
+.fin3 .ic.rm .rk{position:absolute;top:5px;left:7px;font:900 15px/1 var(--mono);font-style:normal}
+.fin3 .ic.rm .st{font-size:34px;font-weight:400;line-height:1;margin-top:8px}
+.fin3 .ic.rm.lit{opacity:1;border:1px solid #d9cfb6;background:#f4eddc;color:#1c1a17;box-shadow:0 2px 0 #b9ad8f}
+.fin3 .ic.rm.lit.sr{color:#c03a25}
+.fin3 .tkt .fn{white-space:nowrap}
+
+/* 我的彩券：压成一块，首屏就能看全（彩券、花色、八间房） */
+.fin3,.fin3:is(*){gap:0;padding:10px 14px 12px;background-color:var(--panel);border:1px solid var(--stroke-c);border-radius:var(--r-m);box-shadow:none}
+.fin3 .fhd{padding:0;border:0;background:none;box-shadow:none;gap:4px}
+.fin3 .fcs{display:flex;flex-direction:column;gap:0;padding:0}
+.fin3 .fr,.fin3 .fr.ok{padding:8px 0 0;margin-top:8px;gap:6px;border:0;border-top:1px solid var(--line);border-radius:0;background:none;box-shadow:none}
+.fin3 .fr:has(.c4){flex-direction:row;align-items:center;justify-content:space-between}
+.fin3 .fr:has(.c4) .fk{display:none}
+.fin3 .ics.c4{display:flex;gap:16px;grid-template-columns:none}
+.fin3 .ic.su{height:auto;font-size:26px;line-height:1}
+.fin3 .ic.su.lit{transform:none}
+.fin3 .ics.c8{grid-template-columns:repeat(8,minmax(0,1fr));gap:4px}
+.fin3 .ic.rm{aspect-ratio:4/5;border-radius:5px}
+.fin3 .ic.rm .rk{top:3px;left:4px;font-size:10px}
+.fin3 .ic.rm .st{font-size:18px;margin-top:6px}
+.fin3 .ic.rm.lit{box-shadow:0 1px 0 #b9ad8f;transform:none}
+.fin3 .fn{font-size:22px}
+.fin3 .eq{margin-top:2px;gap:4px 8px;align-items:baseline}
+.fin3 .eq .q{flex-direction:row;align-items:baseline;gap:5px}
+.fin3 .fr .fk{padding:0 6px;font-size:12px}
+.fin3 .fr:has(.c8) .fh b{font-size:15px}
+.fin3 .fs{font-weight:500;color:var(--sub)}
+
+/* 我的彩券：跑马灯边、老虎机数字窗、券形标签 */
+.fin3{position:relative;overflow:hidden;padding-top:16px}
+.fin3::before{content:"";position:absolute;left:0;right:0;top:0;height:8px;background:radial-gradient(circle at 50% 50%,var(--accent) 0 1.6px,transparent 2.4px) 0 0/14px 8px repeat-x,var(--accent-soft)}
+.fin3 .ft{align-items:center}
+.fin3 .ft .cap{font-size:15px;font-weight:900;letter-spacing:normal;color:var(--ink)}
+.fin3 .fs{color:var(--ink);font-weight:600}
+.fin3 .slot{display:inline-flex;align-items:center;gap:3px;font-size:15px}
+.fin3 .slot b{min-width:22px;height:32px;display:inline-flex;align-items:center;justify-content:center;font:800 22px var(--mono);color:var(--accent);background:linear-gradient(#ffffff,#e3ece6 50%,#ffffff);border:1px solid var(--accent);border-radius:5px;box-shadow:inset 0 0 6px rgba(0,0,0,.12)}
+:root[data-theme="dark"] .fin3 .slot b{color:#7df0c4;background:linear-gradient(#050909,#16262a 50%,#050909);box-shadow:inset 0 0 8px rgba(0,0,0,.8)}
+.fin3 .slot i{font-style:normal;font-weight:700;font-size:15px;color:var(--sub);margin-left:4px}
+.fin3 .eq{display:flex;align-items:center;gap:6px;margin-top:6px;flex-wrap:nowrap}
 .fin3 .eq .op{font:700 15px var(--mono);color:var(--sub)}
