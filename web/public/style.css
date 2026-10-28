@@ -1683,38 +1683,31 @@ body .stage .ck.frz{color:var(--red)}
   .fin3 .fr>.ics{display:grid}
 }
 
-/* 玩家「我的」页统一字号：小标题 17 · 正文 15 · 辅助 13（同类文字同一个号，同一行同一个号） */
-.wen .w-title span,.wen .w-k,.wen .w-lab,.wen .w-lab *{font-size:13px}
-.wen .w-team,.wen .w-hint,.wen .w-hint *{font-size:17px}
-.fin3 .ft .cap,.fin3 .fr .fh b,.fin3 .fr .fh b i,.fin3 .fr .fk,.histp h3,.histp .shrow .small,.histp .shrow .small b{font-size:17px}
-.fin3 .fn i{font-size:17px}
-.fin3 .fs{font-size:15px}
-.hrow,.hrow *,.histp .lbl{font-size:15px}
+/* 玩家「我的」页统一字号：小标题 15 · 正文 13 · 辅助 12（同类文字同一个号，同一行同一个号） */
+.wen .w-title span,.wen .w-k,.wen .w-lab,.wen .w-lab *{font-size:12px}
+.wen .w-team,.wen .w-hint,.wen .w-hint *{font-size:15px}
+.fin3 .ft .cap,.fin3 .fr .fh b,.fin3 .fr .fh b i,.fin3 .fr .fk,.histp h3,.histp .shrow .small,.histp .shrow .small b{font-size:15px}
+.fin3 .fn i{font-size:15px}
+.fin3 .fs,.hrow,.hrow *,.histp .lbl{font-size:13px}
+.fin3 .eq{display:flex;flex-wrap:wrap;align-items:flex-end;gap:6px 10px;margin-top:6px}
+.fin3 .eq .q{display:flex;flex-direction:column;gap:3px}
+.fin3 .eq .q i{font-style:normal;font-size:12px;color:var(--sub)}
+.fin3 .eq .q b{font:800 15px var(--mono);color:var(--ink)}
+.fin3 .eq .q.z b{color:var(--sub);font-weight:500}
+.fin3 .eq .op{font:700 15px var(--mono);color:var(--sub);padding-bottom:1px}
+.fin3 .eq .q.tot b{color:var(--accent)}
 
-/* 我的彩券：顶部做成一张撕票（左主票 + 右票根，中间虚线和缺口）；花色直接亮起，房间做成小扑克牌 */
-.fin3 .fhd.tkt{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0;padding:0;border:0;background:none;box-shadow:none;position:relative;filter:drop-shadow(var(--shx) var(--shx) 0 var(--stroke-c))}
-.fin3 .tkt .tkm,.fin3 .tkt .tks{background:var(--panel);display:flex;flex-direction:column;justify-content:center;gap:6px;padding:16px 18px;border:1px solid var(--stroke-c)}
-.fin3 .tkt .tkm{border-right:0;border-radius:var(--r-m) 0 0 var(--r-m);background-image:repeating-linear-gradient(135deg,transparent 0 10px,var(--accent-soft) 10px 11px)}
-.fin3 .tkt .tks{align-items:center;width:108px;box-sizing:border-box;border-left:2px dashed var(--stroke-c);border-radius:0 var(--r-m) var(--r-m) 0}
-.fin3 .tkt .tkm .cap{font-size:17px;font-weight:900;letter-spacing:.12em;color:var(--ink)}
-.fin3 .tkt .tkm .fs{font-size:15px;color:var(--sub);font-weight:700}
-.fin3 .tkt .no{font-size:13px;letter-spacing:.14em;color:var(--sub)}
-.fin3 .tkt .fn{font-size:40px;line-height:1;color:var(--accent);text-shadow:0 0 18px var(--glow)}
-.fin3 .tkt .fn i{font-size:17px;color:var(--sub);text-shadow:none}
-.fin3 .tkt::before,.fin3 .tkt::after{content:"";position:absolute;right:99px;width:18px;height:18px;border-radius:50%;background:var(--bg);border:1px solid var(--stroke-c);z-index:1}
-.fin3 .tkt::before{top:-10px;clip-path:inset(50% 0 0 0)}
-.fin3 .tkt::after{bottom:-10px;clip-path:inset(0 0 50% 0)}
-/* 花色：不要框，直接亮起 */
+/* 我的彩券：花色直接亮起，房间做成小扑克牌（不发光：没集齐淡色，集齐实色） */
 .fin3 .ics.c4{grid-template-columns:repeat(4,minmax(0,1fr));align-items:center}
 .fin3 .ic.su{height:56px;border:0;background:none;font-size:46px;color:var(--sub);opacity:.18;filter:none;transition:all .25s}
-.fin3 .ic.su.lit{opacity:1;color:var(--ink);text-shadow:0 0 18px var(--glow),0 0 2px currentColor;transform:scale(1.08)}
-.fin3 .ic.su.lit.sr{color:var(--red);text-shadow:0 0 18px var(--red-soft),0 0 14px var(--red)}
+.fin3 .ic.su.lit{opacity:1;color:var(--ink)}
+.fin3 .ic.su.lit.sr{color:var(--red)}
 /* 房间：小扑克牌 */
 .fin3 .ics.c8{grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
 @media (min-width:960px){.fin3 .ics.c8{grid-template-columns:repeat(8,minmax(0,1fr))}}
 .fin3 .ic.rm{position:relative;height:auto;aspect-ratio:5/6;flex-direction:column;justify-content:center;border-radius:7px;border:1px dashed var(--stroke-c);background:none;opacity:.32;filter:none;color:var(--sub);transition:all .25s}
 .fin3 .ic.rm .rk{position:absolute;top:5px;left:7px;font:900 15px/1 var(--mono);font-style:normal}
 .fin3 .ic.rm .st{font-size:34px;font-weight:400;line-height:1;margin-top:8px}
-.fin3 .ic.rm.lit{opacity:1;border:1px solid #d9cfb6;background:#f4eddc;color:#1c1a17;box-shadow:0 2px 0 #b9ad8f,0 0 16px var(--glow);transform:translateY(-2px)}
+.fin3 .ic.rm.lit{opacity:1;border:1px solid #d9cfb6;background:#f4eddc;color:#1c1a17;box-shadow:0 2px 0 #b9ad8f}
 .fin3 .ic.rm.lit.sr{color:#c03a25}
 .fin3 .tkt .fn{white-space:nowrap}

@@ -700,12 +700,16 @@ function viewPlayer(){
     +'<svg class="w-seal" viewBox="0 0 64 '+(wh+6)+'" role="img" aria-label="'+wseal+'"><g filter="url(#sealInk)"><rect x="3" y="3" width="58" height="'+wh+'" rx="2"></rect>'
     +wch.map((c,i)=>'<text x="32" y="'+wy[i]+'" text-anchor="middle" font-size="'+(wn>2?24:28)+'">'+c+'</text>').join('')+'</g></svg></div></div>';
   // 彩券：金币、花色、八间房各一张卡
-  const got=suitsOf(me).length,okS=got===SUITS.length,nC=me.cleared.length,okR=nC===ROOMS.length,tk=ticketsOf(me);
+  const got=suitsOf(me).length,okS=got===SUITS.length,nC=me.cleared.length,okR=nC===ROOMS.length,tkC=Math.floor(me.score/TK_COIN),tk=ticketsOf(me);
   const suits=SUITS.map(x=>'<span class="ic su'+(me.cards.includes(x)?' lit':'')+(isRed(x)?' sr':'')+'" title="'+TYPE[x]+'">'+x+'</span>').join('');
   const rms=ROOMS.map(r=>'<span class="ic rm'+(me.cleared.includes(r.id)?' lit':'')+(isRed(r.suit)?' sr':'')+'" title="'+r.name+'"><i class="rk">'+r.n+'</i><b class="st">'+r.suit+'</b></span>').join('');
   const rw=(ttl,pts,done,tot,ok,icons,cls)=>'<div class="fr'+(ok?' ok':'')+'"><div class="fh"><b>'+ttl+'<i class="mono">　+'+pts+'</i></b><span class="fk mono">'+done+' / '+tot+'</span></div><div class="ics '+cls+'">'+icons+'</div></div>';
-  const finSec='<div class="fin3"><div class="fhd tkt"><div class="tkm"><span class="cap">我的彩券</span><span class="fs">'+(me.won?'你已中奖，不再参与后面的抽取':'每 '+TK_COIN+' 金币 1 张，时间截止后参加压轴抽奖')+'</span></div>'
-    +'<div class="tks"><span class="no mono">NO.'+me.id+'</span><b class="fn">'+tk+'<i> 张</i></b></div></div><div class="fcs">'
+  const finSec='<div class="fin3"><div class="fhd"><div class="ft"><span class="cap">我的彩券</span><b class="fn">'+tk+'<i> 张</i></b></div>'
+    +(me.won?'<div class="fs">你已中奖，不再参与后面的抽取</div>':'')
+    +'<div class="eq"><span class="q"><i>金币 '+me.score+' ÷ '+TK_COIN+'</i><b>'+tkC+'</b></span>'
+    +'<span class="op">+</span><span class="q'+(okS?'':' z')+'"><i>集齐花色</i><b>'+(okS?TK_SUITS:0)+'</b></span>'
+    +'<span class="op">+</span><span class="q'+(okR?'':' z')+'"><i>八间房</i><b>'+(okR?TK_ALL:0)+'</b></span></div></div>'
+    +'<div class="fcs">'
     +rw('集齐四种花色',TK_SUITS,got,SUITS.length,okS,suits,'c4')
     +rw('八间房全部成功',TK_ALL,nC,ROOMS.length,okR,rms,'c8')+'</div></div>';
   const hist=[...me.hist].reverse().map(h=>{const r=room(h.rid),res=h.res===null?'游戏中':h.res==='win'?'成功　+'+h.pts:h.res==='lose'?'失败':'中途离开';
