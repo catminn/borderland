@@ -171,14 +171,14 @@ function revealList(x){const n=x.n||x.top.length,o=Math.max(0,x.top.length-x.rv)
 function drawResult(x,big){
   if(x.st==='reveal')return revealList(x);
   if(x.st==='wait'||!x.win)return '';
-  const p=pl(x.win);return '<div class="adeal'+(big?' big':'')+'"><span class="aseal">'+(x.st==='done'?'中奖':x.kind==='tycoon'?'第一名':'抽中')+'</span><div class="awin">'+(p?who(p):esc(x.win))+'</div><div class="aprice">'+tkTxt(x)+'</div></div>';}
+  const p=pl(x.win);if(big)return '<div class="adeal big"><div class="awin">'+(p?who(p):esc(x.win))+'</div></div>';
+  return '<div class="adeal"><span class="aseal">'+(x.st==='done'?'中奖':x.kind==='tycoon'?'第一名':'抽中')+'</span><div class="awin">'+(p?who(p):esc(x.win))+'</div><div class="aprice">'+tkTxt(x)+'</div></div>';}
 function viewDrawBoard(){
   const P=S.draw.pz,x=curPrize(),i=x?P.indexOf(x):-1;
   const strip=P.map((y,j)=>{const w=y.st==='done'&&pl(y.win);
     return '<div class="alot s-'+PCLS[y.st]+(y===x?' cur':'')+'"><span class="ai mono">'+(j+1)+'</span><b>'+esc(y.name)+'</b><span class="ast">'+(w?esc(w.nick||w.id):PST[y.st])+'</span></div>';}).join('');
   const main=!x?'<div class="amain"><div class="aname">压轴抽奖</div><div class="adesc">即将开始</div></div>'
-    :'<div class="amain'+(x.kind!=='small'?' grand':'')+'"><div class="aidx">'+(x.kind==='big'?'压轴大奖':'第 '+(i+1)+' 项')+'</div><div class="aname">'+esc(x.name)+'</div>'
-      +(x.desc?'<div class="adesc">'+esc(x.desc)+'</div>':'')
+    :'<div class="amain'+(x.kind!=='small'?' grand':'')+'"><div class="aname">'+esc(x.name)+'</div>'
       +(x.st==='wait'?'<div class="akey"><div class="await">即将开奖</div></div>':drawResult(x,true))+'</div>';
   return '<div class="stage-wrap"><div class="stage auc">'
     +'<div class="left"><div class="hd"><div class="ttl">压轴抽奖</div><div class="en">每人限得一件</div></div>'
