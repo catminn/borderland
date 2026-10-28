@@ -2022,3 +2022,14 @@ body .stage .cast .bc .x{display:-webkit-box;-webkit-box-orient:vertical;-webkit
   .stage .pd.p1 .base b{font-size:26px}.stage .pd.p2 .base b{font-size:22px}.stage .pd.p3 .base b{font-size:18px}
 }
 .stage .pd .base b{line-height:1;padding-top:6px}
+/* 新手引导：高亮分页 + 气泡箭头 */
+.coach{position:fixed;inset:0;z-index:95}
+.coach .sp{position:fixed;border-radius:12px;box-shadow:0 0 0 100vmax rgba(0,0,0,.72);outline:2px solid #fff;pointer-events:none;transition:left .25s,top .25s,width .25s,height .25s}
+.coach .tip{position:fixed;box-sizing:border-box;padding:14px 16px 14px;border-radius:14px;background:var(--accent);color:var(--accent-ink);box-shadow:3px 3px 0 var(--sh-c,#8a1712);animation:fadeIn .25s ease both}
+.coach .tip .ct{font-size:12px;opacity:.7;letter-spacing:.1em}
+.coach .tip b{display:block;font:900 20px var(--disp);margin:2px 0 4px}
+.coach .tip p{margin:0 0 12px;font-size:15px;line-height:1.5}
+.coach .tip button{min-height:40px;padding:0 20px;border-radius:10px;border:0;background:var(--accent-ink);color:var(--accent);font-size:15px;font-weight:900;float:right}
+.coach .tip::after{content:"";display:block;clear:both}
+.coach .tip .ar{position:absolute;width:14px;height:14px;background:var(--accent);transform:translateX(-50%) rotate(45deg)}
+.coach .tip.dn .ar{top:-7px}.coach .tip.up .ar{bottom:-7px}

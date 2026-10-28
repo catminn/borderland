@@ -774,16 +774,27 @@ const fzKey=()=>'borderland.fz.'+((S&&S.dur)||7200);
 const fzSeen=()=>{try{return sessionStorage.getItem(fzKey())==='1';}catch{return !!ui.fzAck;}};
 const fzDlg=()=>'<div class="ovl"><div class="dlg" data-n="fz" role="dialog" aria-modal="true" aria-labelledby="dt"><div class="new"><i></i>总控提醒</div>'
   +'<h3 id="dt">已封榜</h3><div class="body">离结束还有 15 分钟，排行榜已封。</div>'
-  +'<button data-a="fzack" data-modal="1">知道了</button></div></div>';
+  +'<div class="foot"></div><button data-a="fzack" data-modal="1">知道了</button></div></div>';
 const TUT=[['我的','看你的通行证、金币、彩券和每一间房的记录。'],['大屏','看剩余时间、金币排行和全场播报。'],['地图','看八间房现在能不能进。有问题就去 info desk。']];
 const tutSeen=()=>{try{return localStorage.getItem('borderland.tut')==='1';}catch{return !!ui.tutDone;}};
-const tutDlg=()=>{const i=ui.tut||0,t=TUT[i];
-  return '<div class="ovl"><div class="dlg" data-n="tut" role="dialog" aria-modal="true" aria-labelledby="dt"><div class="new"><i></i>欢迎 '+(i+1)+' / '+TUT.length+'</div>'
-  +'<h3 id="dt">'+t[0]+'</h3><div class="body">'+t[1]+'</div>'
-  +'<button data-a="tutnext" data-modal="1">'+(i+1<TUT.length?'下一步':'开始')+'</button></div></div>';};
+const coachOn=()=>!!(ME&&S&&!entering&&ME.role==='player'&&!DEVME&&meP()&&meP().nick&&!tutSeen());
+let coachEl=null,coachStep=-1;
+function coachRender(){
+  const on=coachOn()&&!$('#modal .dlg')&&!$('#tabs').hidden;
+  if(!on){if(coachEl){coachEl.remove();coachEl=null;coachStep=-1;}return;}
+  const i=ui.tut||0,t=TUT[i],tb=[...$('#tabs').children].find(b=>b.textContent.trim()===t[0]);if(!tb)return;
+  if(!coachEl){coachEl=document.createElement('div');coachEl.className='coach';document.body.appendChild(coachEl);coachStep=-1;}
+  if(coachStep!==i){coachStep=i;
+    coachEl.innerHTML='<div class="sp"></div><div class="tip" role="dialog" aria-live="polite"><i class="ar"></i><div class="ct">'+(i+1)+' / '+TUT.length+'</div><b>'+t[0]+'</b><p>'+t[1]+'</p><button data-a="tutnext" data-modal="1">'+(i+1<TUT.length?'下一步':'知道了')+'</button></div>';}
+  const r=tb.getBoundingClientRect(),sp=coachEl.firstChild,tip=coachEl.lastChild,W=innerWidth,H=innerHeight,pad=4;
+  sp.style.cssText='left:'+(r.left-pad)+'px;top:'+(r.top-pad)+'px;width:'+(r.width+pad*2)+'px;height:'+(r.height+pad*2)+'px';
+  const w=Math.min(300,W-32),cx=r.left+r.width/2,left=Math.max(16,Math.min(cx-w/2,W-16-w)),up=r.top>H/2;
+  tip.className='tip '+(up?'up':'dn');
+  tip.style.cssText='width:'+w+'px;left:'+left+'px;'+(up?'bottom:'+(H-r.top+pad+14)+'px':'top:'+(r.bottom+pad+14)+'px');
+  tip.firstChild.style.left=Math.max(18,Math.min(cx-left,w-18))+'px';
+}
 function modalHtml(){
   if(ME&&S&&!entering&&ME.role==='ctrl'&&S.t>=(S.dur||7200)-900&&S.t<(S.dur||7200)&&!fzSeen())return fzDlg();
-  if(ME&&S&&!entering&&ME.role==='player'&&!DEVME&&meP()&&meP().nick&&!tutSeen())return tutDlg();
   if(ME&&S&&!entering&&R.timeUp()&&!tuSeen()&&!S.draw.pz.some(x=>x.st!=='wait'))return tuDlg();
   if(ME&&ME.role!=='player'&&S&&S.notices){ // 工作人员：发给「工作人员 / 所有人」的公告，已读只记在本机
     const n=S.notices.find(x=>staffSees(x)&&!R.noticeStale(x)&&!staffAcked(x.id)&&!(x.sub==='gate'&&ME.role==='screen'));if(!n)return '';
@@ -954,6 +965,7 @@ function render(){
   const dlg=$('#modal .dlg'),mk=dlg?dlg.dataset.n:null;
   if(mk&&mk!==lastModal){buzz(dlg.dataset.k==='out'?[150,70,150,70,260]:[90,60,90]);shakeEl(dlg,'jolt');}
   lastModal=mk;
+  coachRender();
 }
 
 // ---------- login ----------
