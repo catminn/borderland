@@ -761,7 +761,7 @@ function tuDlg(){
 }
 const fzKey=()=>'borderland.fz.'+((S&&S.dur)||7200);
 const fzSeen=()=>{try{return sessionStorage.getItem(fzKey())==='1';}catch{return !!ui.fzAck;}};
-const fzDlg=()=>'<div class="ovl" data-k="time"><div class="dlg" data-n="fz" data-k="time" role="dialog" aria-modal="true" aria-labelledby="dt"><div class="new"><i></i>总控提醒</div>'
+const fzDlg=()=>'<div class="ovl"><div class="dlg" data-n="fz" role="dialog" aria-modal="true" aria-labelledby="dt"><div class="new"><i></i>总控提醒</div>'
   +'<h3 id="dt">该封榜了</h3><div class="body">离结束还有 15 分钟。</div>'
   +'<button data-a="fzlock" data-modal="1">锁定排名</button><button class="btn-line" data-a="fzack" data-modal="1" style="margin-top:8px">知道了</button></div></div>';
 const TUT=[['我的','看你的通行证、金币、彩券和每一间房的记录。'],['大屏','看剩余时间、金币排行和全场播报。'],['地图','看八间房现在能不能进。有问题就去 info desk。']];
