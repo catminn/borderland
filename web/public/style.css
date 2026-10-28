@@ -1918,10 +1918,5 @@ body.login #scene :is(.fogb,.fogf) img,body.login #scene .doll img,body.login #s
 body .lg{--pb:#0e0e0e;--pe:#2a2a2a;--edge:rgba(255,255,255,.18)}
 body.login .bx{background:#080808}
 body .lg{background:#0e0e0e!important}
-/* 深色可读性：按钮 / 卡片用灰面 + 浅灰描边 + 灰色硬投影，不再黑底融在背景里 */
-:root[data-theme="dark"] body.bwr{
-  --panel:#151515; --panel2:#1b1b1b; --card:#262626; --input:#1d1d1d;
-  --line:#383838; --line2:#555; --line3:#2a2a2a;
-  --stroke-c:#7a7a7a; --sh-c:#4a4a4a; --sh:var(--shx) var(--shx) 0 var(--sh-c);
-  --cb:#2a2a2a; --off-bg:#161616; --off-line:#2a2a2a;
-}
+/* 深色可读性：保留黑描边 + 暗红投影，只把按钮 / 卡片的填充提亮一档，并加一圈细白内描边 */
+:root[data-theme="dark"] body.bwr{--card:#1e1e1e;--input:#161616;--hair-c:rgba(255,255,255,.32)}
