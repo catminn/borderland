@@ -1654,3 +1654,31 @@ body .stage .amain.won .adeal.big .awin .who :is(b,span){font-size:150px;line-he
 
 /* 封榜最后 15 分钟：大屏倒计时变红 */
 body .stage .ck.frz{color:var(--red)}
+
+/* 我的彩券：花色和八间房改成图标，收集到的亮起来 */
+.fin3 .fcs{grid-template-columns:minmax(0,1fr);gap:12px;padding:0}
+.fin3 .fr{display:flex;flex-direction:column;gap:10px;padding:14px 16px;background-color:var(--panel);border:1px solid var(--stroke-c);border-radius:var(--r-m)}
+.fin3 .fr.ok{border-color:var(--accent)}
+.fin3 .fr .fh{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.fin3 .fr .fh b{font-size:16px;font-weight:900}
+.fin3 .fr .fh b i{font-style:normal;color:var(--accent)}
+.fin3 .fr .fk{font-size:15px;font-weight:900;color:var(--sub)}
+.fin3 .fr.ok .fk{color:var(--accent)}
+.fin3 .ics{display:grid;gap:8px}
+.fin3 .ics.c4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.fin3 .ics.c8{grid-template-columns:repeat(4,minmax(0,1fr))}
+.fin3 .ic{display:flex;align-items:center;justify-content:center;border:1px solid var(--stroke-c);border-radius:var(--r-s);font-weight:900;line-height:1;color:var(--sub);opacity:.3;filter:grayscale(1);transition:opacity .2s}
+.fin3 .ic.su{height:52px;font-size:30px}
+.fin3 .ic.rm{height:42px;font-size:20px;gap:2px}
+.fin3 .ic.lit{opacity:1;filter:none;color:var(--ink);border-color:var(--accent);background:var(--accent-soft)}
+.fin3 .ic.lit.sr,.fin3 .ic.lit .sr{color:var(--red)}
+@media (min-width:960px){.fin3 .ics.c8{grid-template-columns:repeat(8,minmax(0,1fr))}}
+@media (max-width:959px){
+  .fin3{gap:12px;border:0;background:transparent;box-shadow:none}
+  .fin3 .fhd{border:1px solid var(--stroke-c);background:var(--panel);padding:12px 14px}
+  .fin3 .fr,.fin3 .fr.ok{flex-direction:column;align-items:stretch;padding:12px 14px;border:1px solid var(--stroke-c);border-radius:var(--r-m);background:var(--panel)}
+  .fin3 .fr.ok{border-color:var(--accent)}
+  .fin3 .fr .fh b{flex:none;font-size:15px}
+  .fin3 .fr>*{display:flex}
+  .fin3 .fr>.ics{display:grid}
+}

@@ -700,14 +700,14 @@ function viewPlayer(){
     +'<svg class="w-seal" viewBox="0 0 64 '+(wh+6)+'" role="img" aria-label="'+wseal+'"><g filter="url(#sealInk)"><rect x="3" y="3" width="58" height="'+wh+'" rx="2"></rect>'
     +wch.map((c,i)=>'<text x="32" y="'+wy[i]+'" text-anchor="middle" font-size="'+(wn>2?24:28)+'">'+c+'</text>').join('')+'</g></svg></div></div>';
   // 彩券：金币、花色、八间房各一张卡
-  const got=suitsOf(me).length,okS=got===SUITS.length,nC=me.cleared.length,okR=nC===ROOMS.length,tkC=Math.floor(me.score/TK_COIN),tk=ticketsOf(me);
-  const suits=SUITS.map(x=>{const g=me.cards.includes(x);return '<div class="s4'+(g?' got':'')+'" title="'+TYPE[x]+(g?'':'：未获得')+'"><span class="g '+(isRed(x)?'sr':'')+'">'+x+'</span><span class="l">'+TYPE[x]+'</span></div>';}).join('');
-  const cc=(ok,ttl,body,okT,noT)=>'<div class="fc'+(ok?' ok':'')+'"><div class="fh"><b>'+ttl+'</b><span class="fk">'+(ok?okT||'✓ 已达成':noT||'未达成')+'</span></div>'+body+'</div>';
+  const got=suitsOf(me).length,okS=got===SUITS.length,nC=me.cleared.length,okR=nC===ROOMS.length,tk=ticketsOf(me);
+  const suits=SUITS.map(x=>'<span class="ic su'+(me.cards.includes(x)?' lit':'')+(isRed(x)?' sr':'')+'" title="'+TYPE[x]+'">'+x+'</span>').join('');
+  const rms=ROOMS.map(r=>'<span class="ic rm'+(me.cleared.includes(r.id)?' lit':'')+'" title="'+r.name+'">'+r.n+suitG(r.suit)+'</span>').join('');
+  const rw=(ttl,pts,done,tot,ok,icons,cls)=>'<div class="fr'+(ok?' ok':'')+'"><div class="fh"><b>'+ttl+'<i class="mono">　+'+pts+'</i></b><span class="fk mono">'+done+' / '+tot+'</span></div><div class="ics '+cls+'">'+icons+'</div></div>';
   const finSec='<div class="fin3"><div class="fhd"><div class="ft"><span class="cap">我的彩券</span><b class="fn">'+tk+'<i> 张</i></b></div>'
-    +'<div class="fs">'+(me.won?'你已中奖，不再参与后面的抽取':'时间截止后凭彩券参加压轴抽奖')+'</div></div><div class="fcs">'
-    +cc(tkC>0,'金币','<div class="fscore mono">'+me.score+'</div><div class="fx">每 '+TK_COIN+' 金币 1 张</div>','✓ '+tkC+' 张','0 张')
-    +cc(okS,'集齐四种花色　+'+TK_SUITS,'<div class="suits4">'+suits+'</div><div class="fx mono">'+got+' / 4</div>')
-    +cc(okR,'八间房全部成功　+'+TK_ALL,'<div class="fscore mono">'+nC+' / '+ROOMS.length+'</div><div class="bar"><span class="ok" style="width:'+nC/ROOMS.length*100+'%"></span></div>')+'</div></div>';
+    +'<div class="fs">'+(me.won?'你已中奖，不再参与后面的抽取':'每 '+TK_COIN+' 金币 1 张，时间截止后参加压轴抽奖')+'</div></div><div class="fcs">'
+    +rw('集齐四种花色',TK_SUITS,got,SUITS.length,okS,suits,'c4')
+    +rw('八间房全部成功',TK_ALL,nC,ROOMS.length,okR,rms,'c8')+'</div></div>';
   const hist=[...me.hist].reverse().map(h=>{const r=room(h.rid),res=h.res===null?'游戏中':h.res==='win'?'成功　+'+h.pts:h.res==='lose'?'失败':'中途离开';
     return '<div class="hrow"><span class="mono">'+fmt(h.t0)+'</span><b>'+cardG(r)+' '+r.name+'</b><span class="hres '+(h.res==='win'?'w':h.res==='lose'?'l':'')+'">'+res+'</span></div>';}).join('');
   const pz=puzInfo(me);
