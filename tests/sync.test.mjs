@@ -50,7 +50,7 @@ await ack(player); await player.click('#tabs button[data-v="board"]'); await sle
 T('player big screen tab shows the ranking', (await text(player)).includes('全场播报') && (await text(player)).includes('金币排行'));
 await ack(player);
 await player.click('[data-a=tab][data-v=player]');
-{ const tx = await text(player); T('player sees own page (mine tab)', tx.includes('011') && tx.includes('黑猫') && tx.includes('晋级资格进度')); }
+{ const tx = await text(player); T('player sees own page (mine tab)', tx.includes('011') && tx.includes('黑猫') && tx.includes('我的彩券')); }
 await ack(player); await ack(ctrl);
 
 // a fresh card asks for a nickname first
@@ -151,40 +151,30 @@ const dealerOf = room => client(pinOf(p => p.role === 'dealer' && p.rooms[0] ===
   { const sc = P_(v).score, r = await mp.act({ type: 'redeem', pid: v }); await sleep(200); T('self-redeem just unfreezes (no carry-out)', r.ok && P_(v).st === 'alive' && P_(v).score === sc); }
   d4.close(); }
 
-// ---- 晋级 + 拍卖, through the real server and the player phone ----
+// ---- 压轴抽奖, through the real server and the player phone ----
 { await admin.act({ type: 'admin.clock', op: 'set', sec: 700 });
   const q = async (id, rooms) => { for (const rid of rooms) { const d = await D(rid); await d.act({ type: 'enter', rid, pids: [id] }); await d.act({ type: 'finish', rid, results: { [id]: 'win' } }); await d.act({ type: 'resetdone', rid }); } };
   await q('002', ['8S', '8D', '8C', '4H']); await q('003', ['8H', '4D', '4C', '4S']);
   await sleep(200);
-  T('qualification: 4 suits + 2000', R_q('002') && R_q('003') && !R_q('001'));
-  await jd.act({ type: 'auc.add', f: { name: '盲盒', start: 100 } }); await jd.act({ type: 'auc.add', f: { name: '大奖', start: 0, big: true } });
-  T('judge cannot open before anyone is promoted', !(await jd.act({ type: 'auc.open', id: 'L1', secs: 60 })).ok);
-  T('ctrl one-click promotes qualified players', (await admin.act({ type: 'finalall' })).ok && (await sleep(200), admin.S.fin.length === 2));
-  T('judge opens with a countdown; big screen switches', (await jd.act({ type: 'auc.show', id: 'L1' })).ok && (await jd.act({ type: 'auc.open', id: 'L1', secs: 90 })).ok && (await sleep(200), admin.S.auc.screen === 'auction'));
-  await admin.act({ type: 'nick', pid: '003', nick: '出价人' });
+  T('tickets: 4 suits + coins', R_q('002') && R_q('003') && !R_q('001'));
+  await admin.act({ type: 'nick', pid: '003', nick: '中奖人' });
   const pp = await page(pinOf(p => p.pid === '003'), 390), sp = await page(P.screen, 1100); await ack(pp);
-  await pp.click('#tabs button[data-v="board"]'); await sleep(300);
-  T('qualified player sees the bid box on the auction tab', (await pp.locator('#tabs button[data-v="board"]').textContent()) === '拍卖' && (await text(pp)).includes('你的出价'));
-  T('big screen shows the auction', (await text(sp)).includes('鬼市大拍卖') && (await text(sp)).includes('盲盒'));
-  await pp.fill('#bidin', '700'); await sleep(200); await pp.click('[data-a=bid]'); await sleep(400);
-  T('player bids from the phone', admin.S.auc.lots[0].bids['003'] && admin.S.auc.lots[0].bids['003'].v === 700);
-  const c2 = await client(pinOf(p => p.pid === '002'));
-  T('player view hides other bids', Object.keys(c2.S.auc.lots[0].bids).length === 0 && c2.S.auc.lots[0].nb === 1);
-  { const sc = await client(P.screen); await c2.act({ type: 'bid', id: 'L1', v: 610 }); await sleep(300);
-    T('big screen never receives bid amounts (hello + broadcast)', Object.keys(sc.S.auc.lots[0].bids).length === 0 && sc.S.auc.lots[0].nb === 2); sc.close(); }
+  { const tx = await text(pp); T('player pass shows tickets', tx.includes('我的彩券') && !tx.includes('晋级')); }
+  T('player cannot draw', !(await (await client(pinOf(p => p.pid === '003'))).act({ type: 'draw.run', id: 'P1' })).ok);
+  T('judge draws the tycoon prize; big screen switches', (await jd.act({ type: 'draw.run', id: 'P1' })).ok && (await sleep(300), admin.S.draw.screen === 'draw' && admin.S.draw.pz[0].st === 'drawn'));
+  T('big screen shows the draw', (await text(sp)).includes('压轴抽奖') && (await text(sp)).includes('金币大亨奖'));
+  await pp.click('#tabs button[data-v="board"]'); await sleep(400);
+  T('player big screen tab shows the draw too', (await text(pp)).includes('压轴抽奖'));
+  const w0 = admin.S.draw.pz[0].win;
+  T('absent winner → redo picks someone else or the same pool', (await jd.act({ type: 'draw.redo', id: 'P1' })).ok && (await sleep(200), admin.S.draw.pz[0].st === 'drawn' && admin.S.draw.pz[0].skip.includes(w0)));
+  T('cannot pick another prize before confirming', !(await jd.act({ type: 'draw.run', id: 'P2' })).ok);
+  const w1 = admin.S.draw.pz[0].win;
+  T('confirm: winner recorded and gets a notice', (await jd.act({ type: 'draw.confirm', id: 'P1' })).ok && (await sleep(300), P_(w1).won === 'P1' && admin.S.notices[0].ids.includes(w1)));
+  { const c1 = await client(pinOf(p => p.pid === w1)); T('winner state: draw has no bid data and no fin list', !('auc' in c1.S) && !('fin' in c1.S)); c1.close(); }
   T('staff state carries at most 300 log lines', admin.S.log.length <= 300);
-  T('unqualified player cannot bid', !(await (await client(pinOf(p => p.pid === '001'))).act({ type: 'bid', id: 'L1', v: 100 })).ok);
-  T('judge +30 s / pause / resume', (await jd.act({ type: 'auc.time', op: 'add' })).ok && (await jd.act({ type: 'auc.time', op: 'pause' })).ok && !(await c2.act({ type: 'bid', id: 'L1', v: 650 })).ok && (await jd.act({ type: 'auc.time', op: 'resume' })).ok);
-  T('cannot reveal while open', !(await jd.act({ type: 'auc.reveal' })).ok);
-  await jd.act({ type: 'auc.time', op: 'close' }); await sleep(300);
-  T('big screen: closed, waiting for reveal', (await text(sp)).includes('等待揭晓'));
-  await jd.act({ type: 'auc.reveal' }); await sleep(400);
-  T('reveal: highest bid wins and pays', admin.S.auc.lots[0].win === '003' && P_('003').score === 2000 - 700);
-  T('big screen shows the deal', (await text(sp)).includes('成交'));
-  T('void the absent winner → next bidder', (await jd.act({ type: 'auc.void' })).ok && (await sleep(200), admin.S.auc.lots[0].win === '002' && P_('003').score === 2000));
-  T('redo resets the lot and refunds', (await jd.act({ type: 'auc.redo' })).ok && (await sleep(200), admin.S.auc.lots[0].st === 'wait' && P_('002').score === 2800));
-  T('judge switches the screen back', (await jd.act({ type: 'auc.screen', on: false })).ok && (await sleep(400), (await text(sp)).includes('金币排行')));
-  await pp.context().close(); await sp.context().close(); c2.close(); }
+  T('undo returns the prize and the winner to the pool', (await jd.act({ type: 'draw.undo', id: 'P1' })).ok && (await sleep(200), !P_(w1).won && admin.S.draw.pz[0].st === 'wait'));
+  T('judge switches the screen back', (await jd.act({ type: 'draw.screen', on: false })).ok && (await sleep(400), (await text(sp)).includes('金币排行')));
+  await pp.context().close(); await sp.context().close(); }
 function R_q(id) { const p = P_(id); return p.cards.length === 4 && p.score >= 2000 && p.st === 'alive'; }
 T('duration can be set', (await admin.act({ type: 'setdur', secs: 5400 })).ok && (await sleep(200), admin.S.dur === 5400));
 { const r = await admin.act({ type: 'admin.clock', op: 'reset' }); await sleep(200);

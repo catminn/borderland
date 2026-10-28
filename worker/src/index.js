@@ -309,7 +309,7 @@ export class Game extends DurableObject {
       if (s.role !== 'ctrl') return R.no('只有总控能做这个操作');
       return this.admin(a);
     }
-    this.S.t = this.now(); this.S.now = Date.now();   // 拍卖倒计时用真实时间
+    this.S.t = this.now(); this.S.now = Date.now();
     if (a.type === 'offline') await this.snapshot('离线补录前');
     const r = R.apply(this.S, s, a);
     if (r.ok && ++this.acts % SNAP_EVERY === 0) await this.snapshot('auto');

@@ -4,7 +4,7 @@ let bad = 0; const T = (n, c) => { console.log((c ? 'ok   ' : 'FAIL ') + n); if 
 let S = R.newGame(false);
 const A = (r, a, extra) => R.apply(S, { role: r, ...(extra || {}) }, a);
 const P = id => S.players.find(p => p.id === id);
-const fresh = () => { S = R.newGame(false); R.use(S); S.now = 1e12; };
+const fresh = () => { S = R.newGame(false); R.use(S); };
 
 // ---------- 身份卡 ----------
 fresh();
@@ -99,68 +99,54 @@ T('奖励只能领一次', !A('judge', { type: 'gatereward', pid: '003', kind: '
 T('奖励：拿一个花色；3 人发完自动结束', A('judge', { type: 'gatereward', pid: '004', kind: 'suit', arg: '♦' }).ok && P('004').cards.includes('♦') && !S.gp);
 T('通知上记了结果', S.notices.find(n => n.sub === 'gate').gr.length === 3);
 
-// ---------- 晋级资格与拍卖 ----------
+// ---------- 压轴抽奖 ----------
 fresh(); S.t = 7300;
-const q = (id, sc) => { const p = P(id); p.on = true; p.cards = ['♠', '♦', '♣', '♥']; p.score = sc; };
-q('001', 2500); q('002', 3000); q('003', 2000); q('004', 1999); P('005').on = true;
-T('资格条件', R.qualifies(P('001')) && R.qualifies(P('003')) && !R.qualifies(P('004')) && R.finalMiss(P('004'))[0].includes('1999'));
-T('还没人晋级不能开拍', (() => { A('judge', { type: 'auc.add', f: { name: '盲盒', start: 100 } }); return !A('judge', { type: 'auc.open', id: 'L1', secs: 60 }).ok; })());
-T('一键晋级：只晋级符合条件的人', A('ctrl', { type: 'finalall' }).ok && S.fin.length === 3 && !S.fin.includes('004'));
-T('总控可以手动加人', A('ctrl', { type: 'final', pid: '004', on: true }).ok && S.fin.includes('004'));
-T('开拍（判官输入倒计时），大屏切到拍卖', A('judge', { type: 'auc.open', id: 'L1', secs: 60 }).ok && S.auc.screen === 'auction' && S.auc.cur === 'L1');
-const B = (pid, v) => A('player', { type: 'bid', id: 'L1', v }, { pid });
-T('没资格不能出价', !B('005', 200).ok);
-T('低于起拍价不行', !B('001', 50).ok);
-T('超过余额不行', !B('003', 2001).ok);
-S.now += 1000; T('出价', B('001', 800).ok);
-S.now += 1000; T('同价先出者得：003 后出 800', B('003', 800).ok);
-S.now += 1000; B('002', 500); B('002', 600);
-T('改价以最后一次为准', S.auc.lots[0].bids['002'].v === 600);
-T('玩家看不到别人的出价，只看到人数', (() => { const v = R.viewFor(S, { role: 'player', pid: '002' }); const l = v.auc.lots[0]; return l.nb === 3 && Object.keys(l.bids).join() === '002'; })());
-T('大屏也看不到金额', Object.keys(R.viewFor(S, { role: 'screen' }).auc.lots[0].bids).length === 0);
-T('暂停时不能出价', A('judge', { type: 'auc.time', op: 'pause' }).ok && !B('004', 300).ok);
-S.now += 999999;
-T('暂停时倒计时不走', R.lotLeft(S.auc.lots[0]) > 50000 && A('judge', { type: 'auc.time', op: 'resume' }).ok);
-T('+30 秒', (() => { const e = S.auc.lots[0].end; A('judge', { type: 'auc.time', op: 'add' }); return S.auc.lots[0].end === e + 30000; })());
-T('出价中不能揭晓', !A('judge', { type: 'auc.reveal' }).ok);
-S.now = S.auc.lots[0].end + 1;
-T('倒计时到点自动截止', R.lotState(S.auc.lots[0]) === 'closed' && !B('004', 300).ok);
-T('揭晓：同价先出价者得，扣款', A('judge', { type: 'auc.reveal' }).ok && S.auc.lots[0].win === '001' && P('001').score === 1700 && P('001').won === 'L1');
-T('作废得主（不在场）→ 顺延给 003，001 退款', A('judge', { type: 'auc.void' }).ok && S.auc.lots[0].win === '003' && P('001').score === 2500 && !P('001').won && P('003').score === 1200);
-A('judge', { type: 'auc.add', f: { name: '大奖', start: 0, big: true } });
-T('上一件已成交后可以开下一件', A('judge', { type: 'auc.open', id: 'L2', secs: 30 }).ok);
-T('拍到过的人不能再出价', !A('player', { type: 'bid', id: 'L2', v: 100 }, { pid: '003' }).ok);
-T('判官可以代出价', A('judge', { type: 'bid', id: 'L2', pid: '004', v: 100 }).ok);
-T('重拍：清空出价回到待拍', A('judge', { type: 'auc.redo', id: 'L2' }).ok && S.auc.lots[1].st === 'wait' && !Object.keys(S.auc.lots[1].bids).length);
-A('judge', { type: 'auc.open', id: 'L2', secs: 30 }); A('judge', { type: 'auc.time', op: 'close' });
-T('没人出价 → 流拍', A('judge', { type: 'auc.reveal' }).ok && S.auc.lots[1].st === 'pass');
-T('重拍已成交的会退款', (() => { const s = P('003').score; A('judge', { type: 'auc.redo', id: 'L1' }); return P('003').score === s + 800 && !P('003').won; })());
-T('大屏可以切回游戏', A('judge', { type: 'auc.screen', on: false }).ok && S.auc.screen === 'game');
-A('judge', { type: 'auc.add', f: { name: '测试3' } }); A('judge', { type: 'auc.open', id: 'L3', secs: 30 }); A('judge', { type: 'auc.time', op: 'close' });
-A('judge', { type: 'auc.add', f: { name: '测试4' } });
-T('已截止没揭晓时不能切换显示别的拍品', !A('judge', { type: 'auc.show', id: 'L4' }).ok && S.auc.cur === 'L3');
-T('揭晓后可以切换', A('judge', { type: 'auc.reveal' }).ok && A('judge', { type: 'auc.show', id: 'L4' }).ok && S.auc.cur === 'L4');
+const q = (id, sc, all) => { const p = P(id); p.on = true; p.cards = all ? ['♠', '♦', '♣', '♥'] : []; p.score = sc; };
+q('001', 2500, true); q('002', 3000, true); q('003', 3000, false); q('004', 150, false); q('005', 99, false); q('006', 1000, false); P('006').st = 'market';
+P('002').cleared = R.ROOMS.map(r => r.id);
+T('彩券：每 100 金币 1 张', R.ticketsOf(P('003')) === 30 && R.ticketsOf(P('004')) === 1 && R.ticketsOf(P('005')) === 0);
+T('彩券：集齐四花色 +5', R.ticketsOf(P('001')) === 25 + 5);
+T('彩券：八间房全成功 +10', R.ticketsOf(P('002')) === 30 + 5 + 10);
+T('抽奖池：在场、上榜、没中过奖；鬼市里的不算', (() => { const ids = R.drawPool().map(p => p.id); return ids.includes('001') && ids.includes('004') && !ids.includes('006') && !ids.includes('007'); })());
+T('默认 5 个奖品：大亨奖、大奖、小奖×3', S.draw.pz.map(x => x.kind).join() === 'tycoon,big,small,small,small' && S.draw.screen === 'game');
+T('玩家不能抽', !A('player', { type: 'draw.run', id: 'P1' }, { pid: '001' }).ok);
+T('总控不能抽', !A('ctrl', { type: 'draw.run', id: 'P1' }).ok);
+T('大亨奖：金币最多者直接得（并列在并列者中抽）', (() => { const r = A('judge', { type: 'draw.run', id: 'P1' }); const x = S.draw.pz[0]; return r.ok && (x.win === '002' || x.win === '003') && x.tie === 2 && x.tk === 3000 && x.st === 'drawn' && S.draw.screen === 'draw'; })());
+T('没确认前不能抽别的', !A('judge', { type: 'draw.run', id: 'P2' }).ok && !A('judge', { type: 'draw.show', id: 'P2' }).ok);
+T('不在场 → 重抽：这位不再参与这个奖品', (() => { const old = S.draw.pz[0].win; const r = A('judge', { type: 'draw.redo', id: 'P1' }); const x = S.draw.pz[0]; return r.ok && x.win !== old && x.skip.includes(old) && x.st === 'drawn'; })());
+T('确认得主：记录、不再参与后面的抽取、有通知', (() => { const w = S.draw.pz[0].win; const n = S.notices.length; const r = A('judge', { type: 'draw.confirm', id: 'P1' }); return r.ok && P(w).won === 'P1' && S.draw.pz[0].st === 'done' && S.notices.length === n + 1 && !R.drawPool().some(p => p.id === w) && S.log[0].b === 1; })());
+T('已抽过的不能再抽', !A('judge', { type: 'draw.run', id: 'P1' }).ok);
+T('大奖：按彩券张数加权（随机数 0 → 排第一个有彩券的人）', (() => { R.use(S); const r = R.apply(S, { role: 'judge' }, { type: 'draw.run', id: 'P2' }); return r.ok; })());
+T('加权抽取：固定随机数可复现且落在有彩券的人身上', (() => { const x = S.draw.pz[1]; const w = x.win; A('judge', { type: 'draw.undo', id: 'P2' }); const ok1 = x.st === 'wait' && !x.win;
+  const lo = R.apply(S, { role: 'judge' }, { type: 'draw.run', id: 'P2' }); return ok1 && lo.ok && R.ticketsOf(P(S.draw.pz[1].win)) > 0 && S.draw.pz[1].all > 0 && !!w; })());
+T('彩券为 0 的人抽不到（遍历 20 个随机数）', (() => { const x = S.draw.pz[1]; A('judge', { type: 'draw.undo', id: 'P2' }); let okAll = true; for (let i = 0; i < 20; i++) { const r = i / 20 + 0.01; x.st = 'wait'; x.win = null; x.skip = []; S.draw.cur = 'P2'; const rr = R.apply(S, { role: 'judge' }, { type: 'draw.run', id: 'P2' }); if (!rr.ok || R.ticketsOf(P(x.win)) <= 0) okAll = false; x.st = 'wait'; x.win = null; } return okAll; })());
+T('撤销得主：这位重新参与', (() => { const x = S.draw.pz[0], w = x.win; const r = A('judge', { type: 'draw.undo', id: 'P1' }); return r.ok && !P(w).won && x.st === 'wait' && R.drawPool().some(p => p.id === w); })());
+T('没有可抽的人时不能抽', (() => { const g = R.newGame(false); R.use(g); const r = R.apply(g, { role: 'judge' }, { type: 'draw.run', id: 'P2' }); R.use(S); return !r.ok; })());
+T('奖品可以增删改排序（待抽的才行）', A('judge', { type: 'draw.add', f: { name: '拍立得', kind: 'small' } }).ok && S.draw.pz.length === 6 && A('judge', { type: 'draw.edit', id: 'P6', f: { name: '音箱', desc: 'x', kind: 'big' } }).ok && S.draw.pz[5].kind === 'big'
+  && A('judge', { type: 'draw.move', id: 'P6', d: -1 }).ok && A('judge', { type: 'draw.del', id: 'P6' }).ok && S.draw.pz.length === 5);
+T('大屏可以切回游戏', A('judge', { type: 'draw.screen', on: false }).ok && S.draw.screen === 'game');
+T('旧存档（auc / fin）自动换成抽奖', (() => { const g = R.newGame(false); delete g.draw; g.auc = { lots: [] }; g.fin = ['001']; R.use(g); const ok = g.draw.pz.length === 5 && !g.auc && !g.fin; R.use(S); return ok; })());
 
 // ---------- 权限与视图 ----------
 fresh();
 T('玩家不能结算', !A('player', { type: 'finish', rid: '4S', results: {} }, { pid: '001' }).ok);
-T('孟婆不能开拍', !A('mengpo', { type: 'auc.open', id: 'L1', secs: 60 }).ok);
+T('孟婆不能抽奖', !A('mengpo', { type: 'draw.run', id: 'P1' }).ok);
 T('Dealer 不能改金币', !A('dealer', { type: 'setscore', pid: '001', v: 9 }).ok);
 T('总控改金币写原因', A('ctrl', { type: 'setscore', pid: '001', v: 300, why: '补录' }).ok && S.log[0].text.includes('补录'));
 T('公告发给工作人员可见', (() => { A('ctrl', { type: 'publish', f: { kind: '公告', title: 'x', target: 'staff' } }); return R.staffSees(S.notices[0]); })());
 T('玩家只看到播报日志和自己的通知', (() => { R.eliminate(P('002'), '测试', ''); const v = R.viewFor(S, { role: 'player', pid: '001' }); return v.log.every(l => l.b) && v.notices.every(n => n.target !== 'player' || n.ids.includes('001')); })());
 T('新增身份卡', A('ctrl', { type: 'addplayers', n: 4 }).ok && S.players.length === 60 && !!P('060'));
 T('旧存档要重置', R.needsReset({ v: 2, rooms: [] }) && !R.needsReset(S));
-T('演示数据可以生成', (() => { const g = R.newGame(true); return g.players.filter(p => p.on).length >= 36 && g.auc.lots.length === 5 && g.rooms.some(r => r.ps.length); })());
+T('演示数据可以生成', (() => { const g = R.newGame(true); return g.players.filter(p => p.on).length >= 36 && g.draw.pz.length === 5 && g.rooms.some(r => r.ps.length); })());
 // ---------- 第 2 轮：花色可改、三套演示数据 ----------
 fresh();
 T('总控改花色', A('ctrl', { type: 'setcards', pid: '001', cards: ['♥', '♠', 'x'] }).ok && P('001').cards.join('') === '♠♥' && S.log[0].text.includes('花色'));
 T('判官不能改花色', !A('judge', { type: 'setcards', pid: '001', cards: [] }).ok);
 { for (const d of ['start', 'mid', 'pre', 'final']) { const g = R.newGame(d), t = g.log.map(l => l.t).reverse(); T('演示数据时间顺序正确：' + d, t.every((x, i) => !i || x >= t[i - 1])); }
-  const g = R.newGame('start'); T('演示·开局：前 10 分钟、房间里有人、没有晋级名单', g.t < 600 && g.rooms.some(r => r.ps.length) && !g.fin.length); }
+  const g = R.newGame('start'); T('演示·开局：前 10 分钟、房间里有人、抽奖没开始', g.t < 600 && g.rooms.some(r => r.ps.length) && g.draw.pz.every(x => x.st === 'wait')); }
 { const g = R.newGame('mid'); T('演示·中段：鬼门开进行中、鬼市有人', !!g.gp && g.gp.wins.length === 1 && g.players.some(p => p.st === 'market')); }
-{ const g = R.newGame('pre'); R.use(g); T('演示·拍卖前：时间已到、还没人晋级、符合条件的人已经够了', R.timeUp() && g.fin.length === 0 && g.players.some(R.qualifies)); }
-{ const g = R.newGame('final'); R.use(g); T('演示·晋级与拍卖：时间已到、已晋级、第 1 件成交、大屏在拍卖', R.timeUp() && g.fin.length >= 6 && g.auc.lots[0].st === 'done' && g.auc.cur === 'L2' && g.auc.screen === 'auction' && g.fin.every(id => R.qualifies(g.players.find(p => p.id === id)))); }
+{ const g = R.newGame('pre'); R.use(g); T('演示·抽奖前：时间已到、抽奖还没开始、有人有彩券', R.timeUp() && g.draw.pz.every(x => x.st === 'wait') && g.draw.screen === 'game' && g.players.some(p => p.on && R.ticketsOf(p) > 0)); }
+{ const g = R.newGame('final'); R.use(g); T('演示·抽奖进行中：大亨奖已颁发、大奖待确认、大屏在抽奖', R.timeUp() && g.draw.pz[0].st === 'done' && g.draw.pz[1].st === 'drawn' && g.draw.cur === 'P2' && g.draw.screen === 'draw' && g.players.find(p => p.id === g.draw.pz[0].win).won === 'P1'); }
 T('newGame(true) = 中段', !!R.newGame(true).gp);
 // ---------- 离线补录 ----------
 fresh(); S.t = 1000;

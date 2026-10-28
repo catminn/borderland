@@ -2,7 +2,7 @@
 // Shared by the server (authoritative: every action runs here) and the browser (read-only helpers for display).
 // To change a rule, change it here only.
 export let S;
-export function use(state){S=state;}
+export function use(state){S=state;if(S&&!S.draw){S.draw=defaultDraw();delete S.auc;delete S.fin;}}   // 旧存档（拍卖/晋级名单）自动换成抽奖
 // 4 种花色各有 简单(4) / 困难(8) 两间房，共 8 间。成功得 n×100 金币和该花色；每人每间房最多成功一次。
 // loc = 房间号，fl = 楼层（'1' 一层 / 'B' B 层），以场地地图为准（2026-10-20）。游戏规则不写在代码里：仓库公开、rules.js 会下载到玩家手机上，玩家任何情况下都不能提前知道规则。
 // solo：♥8 孟婆的交易，拿到「生」的人可以独自通关（得 solo 金币），或带一人通关（两人各得 n×100）。
@@ -37,8 +37,7 @@ const GATES=[
    rule:'只有「阎王有令」开头的口令才执行，其他口令不动；做错的当轮出局（不进鬼市）。最后剩下的人抢答决胜轮（黑白无常亮两张符咒，判官喊名字，抢答对应编号），最先答对的 3 人获胜。'},
   {id:'g2',title:'生死一线',body:'鬼门再开！想参加的请按判官指示集合。',
    rule:'每轮先给一条提示（如「阴阳颠倒，少者为生」），玩家 10 秒内选生门或死门，选错的出局观战，直到剩 3 人；最后超过 3 人就用一道抢答题决出。'}];
-const FINAL_MSG='你已获得晋级资格！请到大房间集合，参加鬼市大拍卖。';
-const FINAL_SCORE=2000;           // 时间截止时攒够 2000 金币
+const TK_COIN=100, TK_SUITS=5, TK_ALL=10;   // 压轴抽奖彩券：每 100 金币 1 张，集齐四花色 +5，八间房全部成功 +10
 const CHIP_START=200, CHIP_GOAL=500, RANSOM=500;   // 鬼市用实体筹码（网站不记）：领 200，赢到 500 自赎，输光喝孟婆汤；在场的人花 500 金币可以赎人
 const PUZ_PTS=100, PUZ_CAP=400;   // 解谜题 100 / 题，每人最多 400
 const GATE_WIN=3, GATE_COIN=300;  // 鬼门开：最先完成的 3 人，每人选 300 金币 / 救一个人 / 拿一个花色
@@ -55,14 +54,19 @@ const log=(text,kind='',b=0)=>S.log.unshift(b?{t:S.t,text,kind,b:1}:{t:S.t,text,
 const ok=(msg,data)=>data===undefined?{ok:true,msg}:{ok:true,msg,data}, no=msg=>({ok:false,msg});
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const isBcast=l=>!!l.b;
-const now=()=>S.now||0;           // 真实时间（毫秒），服务器在每次操作前设置；拍卖倒计时用它，不受游戏计时暂停影响
 
 function mkPlayer(i){return {id:pidOf(i),nick:'',on:false,st:'alive',score:0,cards:[],cleared:[],inRoom:null,hist:[],puz:[],
   outAt:null,inAt:null,pickAt:null,at:'',chk:null,won:null};}
+// 压轴抽奖奖品：tycoon 金币大亨奖（金币最多者直接得）· big 大奖 · small 小奖；st：wait 待抽 · drawn 已抽出待确认 · done 已确认
+function defaultDraw(){return {pz:[{id:'P1',name:'金币大亨奖',desc:'',kind:'tycoon',st:'wait',win:null,skip:[],tie:0,tk:0,all:0},
+  {id:'P2',name:'大奖',desc:'',kind:'big',st:'wait',win:null,skip:[],tie:0,tk:0,all:0},
+  {id:'P3',name:'小奖一',desc:'',kind:'small',st:'wait',win:null,skip:[],tie:0,tk:0,all:0},
+  {id:'P4',name:'小奖二',desc:'',kind:'small',st:'wait',win:null,skip:[],tie:0,tk:0,all:0},
+  {id:'P5',name:'小奖三',desc:'',kind:'small',st:'wait',win:null,skip:[],tie:0,tk:0,all:0}],cur:null,screen:'game',pid:6};}
 function init(){
-  S={v:3,t:0,now:0,bank:{},rules:{},dur:DUR0,cap:ROOM_CAP0,capOn:false,gp:null,fin:[],log:[],notices:[],nid:1,
+  S={v:3,t:0,now:0,bank:{},rules:{},dur:DUR0,cap:ROOM_CAP0,capOn:false,gp:null,log:[],notices:[],nid:1,
      rooms:ROOMS.map(r=>({id:r.id,st:'open',at:0,ps:[]})),players:[],
-     auc:{lots:[],cur:null,screen:'game',lid:1}};
+     draw:defaultDraw()};
   for(let i=1;i<=N_PLAYERS;i++)S.players.push(mkPlayer(i));
   log('游戏开始');
 }
@@ -78,11 +82,11 @@ const ranking=()=>active().slice().sort((a,b)=>b.score-a.score||suitsOf(b).lengt
 // ---------- 通知 ----------
 function matches(n,p){
   switch(n.target){case 'all':case 'everyone':return true;case 'player':return n.ids.includes(p.id);
-  case 'market':return p.st==='market';case 'alive':return p.st==='alive';case 'final':return fins().includes(p.id);}return false;}
+  case 'market':return p.st==='market';case 'alive':return p.st==='alive';}return false;}
 // 已经结束的鬼门开不再弹全屏
 const noticeStale=n=>n.sub==='gate'&&!(S.gp&&S.gp.nid===n.id);
 const staffSees=n=>(n.target==='staff'||n.target==='everyone')&&n.sub!=='gate';   // 鬼门开不弹给工作人员
-function targetLabel(n){return n.target==='all'?'全体玩家':n.target==='player'?(n.ids.length<=4?n.ids.join('、'):n.ids.slice(0,3).join('、')+' 等 '+n.ids.length+' 人'):n.target==='market'?'鬼市中的人':n.target==='staff'?'工作人员':n.target==='everyone'?'所有人':n.target==='final'?'晋级资格者':'存活玩家';}
+function targetLabel(n){return n.target==='all'?'全体玩家':n.target==='player'?(n.ids.length<=4?n.ids.join('、'):n.ids.slice(0,3).join('、')+' 等 '+n.ids.length+' 人'):n.target==='market'?'鬼市中的人':n.target==='staff'?'工作人员':n.target==='everyone'?'所有人':'存活玩家';}
 function pushNotice(o){S.notices.unshift({id:S.nid++,sub:o.sub||null,tone:o.tone||'',t:S.t,kind:o.kind,title:o.title,body:o.body,target:o.target,ids:o.ids||[],due:o.mins?S.t+o.mins*60:null,acks:{}});}
 const tell=(pid,title,body,tone)=>pushNotice({kind:'通知',title,body,target:'player',ids:[pid],tone});
 // 公告：发给任意对象。鬼门开：发给全场，最先完成的 3 人有奖励。
@@ -95,9 +99,8 @@ function publish(f){f=f||{};const str=(v,n)=>String(v==null?'':v).slice(0,n);f={
     if(S.gp)return no('鬼门开正在进行，先结束上一轮');
     target='all';sub='gate';
   }else{
-    if(!['all','player','alive','market','staff','everyone','final'].includes(target))return no('发布对象不对');
+    if(!['all','player','alive','market','staff','everyone'].includes(target))return no('发布对象不对');
     if(!f.title.trim())return no('先写标题');
-    if(target==='final'&&!fins().length)return no('还没有人晋级，发给「晋级资格者」没有人能收到');
     if(target==='player'){const want=Array.isArray(f.players)?f.players:f.player?[f.player]:[];ids=[...new Set(want)].filter(id=>pl(id));if(!ids.length)return no('先选玩家');}
   }
   pushNotice({kind:f.kind,sub,title:f.title.trim(),body:f.body.trim(),target,ids,mins:Math.max(0,+f.mins||0)});
@@ -262,92 +265,52 @@ function gateReward(pid,kind,arg){const g=S.gp;if(!g)return no('现在没有进�
 function gateRec(){const g=S.gp,n=g&&S.notices.find(x=>x.id===g.nid);if(n)n.gr=g.wins.map(w=>({...w}));}
 function gateEnd(auto){if(!S.gp)return no('现在没有进行中的鬼门开');gateRec();S.gp=null;log('鬼门开结束'+(auto?'（3 人奖励已发完）':''),'',1);return ok('鬼门开已结束');}
 
-// ---------- 晋级资格 ----------
-function finalMiss(p){const m=[],miss=SUITS.filter(x=>!p.cards.includes(x));
-  if(p.st!=='alive')m.push('不在场（'+stLabel(p)+'）');
-  if(miss.length)m.push('缺花色 '+miss.join(''));
-  if(p.score<FINAL_SCORE)m.push('金币 '+p.score+' / '+FINAL_SCORE);
-  return m;}
-const qualifies=p=>!finalMiss(p).length;
-// 晋级名单（2026-10-20 起没有「锁定」）：S.fin 一直是数组。总控在生死簿里一键晋级所有符合条件的人，
-// 也可以单个晋级（不符合条件也行，界面上先提示）或取消晋级。只有名单里的人能在拍卖出价。
-const fins=()=>S.fin||(S.fin=[]);
-function setFinal(pid,on){const p=pl(pid);if(!p)return no('没有这个编号');
-  const has=fins().includes(pid);if(!!on===has)return no(p.id+(has?' 已经晋级':' 本来就没有晋级'));
-  if(on){S.fin.push(pid);tell(pid,'获得晋级资格',FINAL_MSG,'final');log('总控让 '+nm(p)+' 晋级'+(qualifies(p)?'':'（'+finalMiss(p).join('，')+'）'),'back',1);}
-  else{S.fin=S.fin.filter(x=>x!==pid);log('总控取消 '+nm(p)+' 的晋级');}
-  return ok(on?p.id+' 已晋级':p.id+' 已取消晋级');}
-function finalAll(){const add=active().filter(p=>qualifies(p)&&!fins().includes(p.id));if(!add.length)return no('没有新的符合条件的人');
-  add.forEach(p=>{S.fin.push(p.id);tell(p.id,'获得晋级资格',FINAL_MSG,'final');});
-  log(add.length+' 人晋级：'+add.map(nm).join('、'),'back',1);return ok(add.length+' 人已晋级');}
-
-// ---------- 拍卖（判官主持） ----------
-// 拍品状态：wait 待拍 · open 出价中（倒计时，可暂停）· closed 已截止待揭晓 · done 已成交 · pass 流拍
-// 倒计时用真实时间 S.now（毫秒）；l.end 截止时刻，暂停时 l.left 存剩余毫秒。
-const lot=id=>S.auc.lots.find(l=>l.id===id);
-const curLot=()=>S.auc.cur?lot(S.auc.cur):null;
-const lotLeft=l=>!l||l.st!=='open'?0:l.left!=null?l.left:Math.max(0,l.end-now());
-function aucAdd(f){f=f||{};const name=String(f.name||'').trim().slice(0,40);if(!name)return no('先写拍品名称');
-  const start=Math.max(0,Math.round(+f.start||0));
-  S.auc.lots.push({id:'L'+(S.auc.lid++),name,desc:String(f.desc||'').trim().slice(0,200),start,big:!!f.big,st:'wait',bids:{},bad:[],win:null,price:0,end:0,left:null,secs:0});
-  return ok('已添加拍品「'+name+'」');}
-function aucEdit(id,f){const l=lot(id);if(!l)return no('没有这件拍品');if(l.st!=='wait')return no('只能改待拍的拍品');
-  const name=String((f&&f.name)||'').trim().slice(0,40);if(!name)return no('先写拍品名称');
-  l.name=name;l.desc=String(f.desc||'').trim().slice(0,200);l.start=Math.max(0,Math.round(+f.start||0));l.big=!!f.big;return ok('已保存');}
-function aucDel(id){const l=lot(id);if(!l)return no('没有这件拍品');if(l.st!=='wait')return no('只能删待拍的拍品');
-  S.auc.lots=S.auc.lots.filter(x=>x!==l);if(S.auc.cur===id)S.auc.cur=null;return ok('已删除「'+l.name+'」');}
-function aucMove(id,d){const a=S.auc.lots,i=a.findIndex(l=>l.id===id),j=i+(d<0?-1:1);if(i<0||j<0||j>=a.length)return no('不能再移了');[a[i],a[j]]=[a[j],a[i]];return ok('');}
-function aucOpen(id,secs){const l=lot(id);if(!l)return no('没有这件拍品');if(l.st!=='wait')return no('这件拍品不是待拍状态（要重来请用「重拍」）');
-  if(!fins().length)return no('还没有人晋级');
-  const c=curLot();if(c&&(c.st==='open'||c.st==='closed'))return no('「'+c.name+'」还没结束');
-  secs=Math.round(+secs);if(!(secs>=10&&secs<=3600))return no('倒计时要在 10 秒到 60 分钟之间');
-  l.st='open';l.bids={};l.bad=[];l.win=null;l.price=0;l.secs=secs;l.end=now()+secs*1000;l.left=null;S.auc.cur=l.id;S.auc.screen='auction';
-  log('判官开拍「'+l.name+'」，倒计时 '+fmtSecs(secs),'',1);return ok('已开拍，倒计时 '+fmtSecs(secs));}
-const fmtSecs=s=>Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
-function aucTime(op,id){const l=lot(id)||curLot();if(!l||l.st!=='open')return no('没有出价中的拍品');
-  if(op==='add'){if(l.left!=null)l.left+=30000;else l.end=Math.max(l.end,now())+30000;return ok('+30 秒');}
-  if(op==='pause'){if(l.left!=null)return no('已经暂停了');l.left=Math.max(0,l.end-now());return ok('已暂停');}
-  if(op==='resume'){if(l.left==null)return no('没有暂停');l.end=now()+l.left;l.left=null;return ok('已继续');}
-  if(op==='close'){l.st='closed';l.left=null;l.end=Math.min(l.end,now());log('「'+l.name+'」截止出价，共 '+Object.keys(l.bids).length+' 人出价');return ok('已截止，等待揭晓');}
-  return no('未知操作');}
-// 倒计时到 0 的拍品自动视为截止（不靠定时器：每次操作 / 显示时派生）
-function aucSweep(){S.auc.lots.forEach(l=>{if(l.st==='open'&&l.left==null&&now()>=l.end){l.st='closed';log('「'+l.name+'」倒计时结束，共 '+Object.keys(l.bids).length+' 人出价');}});}
-const lotState=l=>l&&l.st==='open'&&l.left==null&&now()>=l.end?'closed':l&&l.st;
-function whyNotBid(pid,l){const p=pl(pid);
-  if(!l||lotState(l)!=='open')return '现在没有可以出价的拍品';
-  if(l.left!=null)return '拍卖暂停中';
-  if(!fins().includes(pid))return '你没有晋级资格';
-  if(!p||p.st!=='alive')return '你不在场';
-  if(p.won)return '你已经拍到一件了（每人最多 1 件）';
-  return null;}
-function bid(pid,id,v){const l=lot(id),why=whyNotBid(pid,l);if(why)return no(why);const p=pl(pid);
-  v=Number(v);if(!Number.isInteger(v)||v<0)return no('出价要是整数');
-  if(v<l.start)return no('起拍价是 '+l.start);if(v>p.score)return no('你只有 '+p.score+' 金币');
-  l.bids[pid]={v,t:now()};return ok('已出价 '+v+'（截止前可以改，以最后一次为准）');}
-// 排序：价高者先；同价先出价者先；剔除被作废的人、已不在晋级名单的人、拍到过别的拍品的人、钱不够的人
-function bidOrder(l){return Object.entries(l.bids).map(([pid,b])=>({pid,...b}))
-  .filter(b=>!l.bad.includes(b.pid)&&fins().includes(b.pid)&&pl(b.pid)&&!(pl(b.pid).won&&pl(b.pid).won!==l.id)&&pl(b.pid).score+(l.win===b.pid?l.price:0)>=b.v)
-  .sort((a,b)=>b.v-a.v||a.t-b.t);}
-function settle(l){const top=bidOrder(l)[0];
-  if(!top){l.st='pass';l.win=null;l.price=0;log('「'+l.name+'」流拍','',1);return '流拍';}
-  const p=pl(top.pid);p.score-=top.v;p.won=l.id;l.win=p.id;l.price=top.v;l.st='done';
-  log(nm(p)+' 以 '+top.v+' 金币拍得「'+l.name+'」','back',1);tell(p.id,'你拍到了「'+l.name+'」','成交价 '+top.v+' 金币，已从你的金币里扣除。请到台前领取。','final');
-  return nm(p)+' '+top.v;}
-function refund(l){if(l.win){const p=pl(l.win);if(p){p.score+=l.price;if(p.won===l.id)p.won=null;}}l.win=null;l.price=0;}
-function aucReveal(id){const l=lot(id)||curLot();if(!l)return no('没有这件拍品');
-  if(lotState(l)==='open')return no('还在出价中，先截止');if(l.st==='wait')return no('这件还没开拍');if(l.st!=='closed'&&l.st!=='open')return no('这件已经揭晓过了');
-  l.st='closed';const r=settle(l);return ok('揭晓：'+r);}
-// 得主不在场：作废，顺延给下一位
-function aucVoid(id){const l=lot(id)||curLot();if(!l||l.st!=='done')return no('只有已成交的拍品能作废得主');
-  const old=l.win;refund(l);l.bad.push(old);log('「'+l.name+'」得主 '+nameOf(old)+' 作废（不在场），顺延');
-  const r=settle(l);return ok('已作废 '+old+'，顺延：'+r);}
-// 重拍：作废全部出价，回到待拍；已成交的退款
-function aucRedo(id){const l=lot(id)||curLot();if(!l)return no('没有这件拍品');if(l.st==='wait')return no('这件还没拍过');
-  refund(l);l.st='wait';l.bids={};l.bad=[];l.end=0;l.left=null;log('「'+l.name+'」重拍','',1);return ok('已重置为待拍，重新开拍即可');}
-function aucScreen(on){S.auc.screen=on?'auction':'game';return ok(on?'大屏切到拍卖':'大屏切回游戏');}
-function aucShow(id){const l=lot(id);if(!l)return no('没有这件拍品');const c=curLot(),cs=c&&lotState(c);
-  if(c&&c!==l&&(cs==='open'||cs==='closed'))return no('「'+c.name+'」'+(cs==='open'?'还在出价中':'还没揭晓，请先揭晓'));
-  S.auc.cur=l.id;return ok('大屏显示「'+l.name+'」');}
+// ---------- 压轴抽奖（判官主持） ----------
+// 彩券 = 金币 ÷ 100（取整）+ 集齐四花色 5 张 + 八间房全部成功 10 张。在场（存活）的人才参与，鬼市里和待接的不算；中过奖的人不再参与。
+// 金币大亨奖：金币最多的人直接得，并列则在并列者中抽一位。其余奖品按彩券张数加权随机抽。得主不在场就「不在场，重抽」。
+const ticketsOf=p=>p?Math.floor(p.score/TK_COIN)+(SUITS.every(x=>p.cards.includes(x))?TK_SUITS:0)+(ROOMS.every(r=>p.cleared.includes(r.id))?TK_ALL:0):0;
+const drawPool=pr=>S.players.filter(p=>p.on&&p.st==='alive'&&!p.won&&!(pr&&pr.skip.includes(p.id)));
+const prize=id=>S.draw.pz.find(x=>x.id===id);
+const curPrize=()=>S.draw.cur?prize(S.draw.cur):null;
+const KIND_NAME={tycoon:'金币大亨奖',big:'大奖',small:'小奖'};
+function drawAdd(f){f=f||{};const name=String(f.name||'').trim().slice(0,40);if(!name)return no('先写奖品名称');
+  const kind=KIND_NAME[f.kind]?f.kind:'small';
+  S.draw.pz.push({id:'P'+(S.draw.pid++),name,desc:String(f.desc||'').trim().slice(0,200),kind,st:'wait',win:null,skip:[],tie:0,tk:0,all:0});
+  return ok('已添加「'+name+'」');}
+function drawEdit(id,f){const x=prize(id);if(!x)return no('没有这个奖品');if(x.st!=='wait')return no('只能改待抽的奖品');
+  const name=String((f&&f.name)||'').trim().slice(0,40);if(!name)return no('先写奖品名称');
+  x.name=name;x.desc=String(f.desc||'').trim().slice(0,200);x.kind=KIND_NAME[f.kind]?f.kind:x.kind;return ok('已保存');}
+function drawDel(id){const x=prize(id);if(!x)return no('没有这个奖品');if(x.st!=='wait')return no('只能删待抽的奖品');
+  S.draw.pz=S.draw.pz.filter(y=>y!==x);if(S.draw.cur===id)S.draw.cur=null;return ok('已删除「'+x.name+'」');}
+function drawMove(id,d){const a=S.draw.pz,i=a.findIndex(x=>x.id===id),j=i+(d<0?-1:1);if(i<0||j<0||j>=a.length)return no('不能再移了');[a[i],a[j]]=[a[j],a[i]];return ok('');}
+// 抽一位：rnd 是 0–1 的随机数（测试时可传入固定值）
+function drawRun(id,rnd){const x=prize(id)||curPrize();if(!x)return no('先选一个奖品');
+  if(x.st==='done')return no('这个奖品已经抽过了（要重来请先撤销）');
+  const c=S.draw.pz.find(y=>y.st==='drawn');if(c&&c!==x)return no('「'+c.name+'」抽出的人还没确认');
+  const pool=drawPool(x),r=rnd==null?Math.random():rnd;let pick,tie=0,tk=0;
+  if(x.kind==='tycoon'){const top=Math.max(0,...pool.map(p=>p.score));if(!(top>0))return no('没有可以抽的人');
+    const ts=pool.filter(p=>p.score===top);tie=ts.length;pick=ts[Math.min(ts.length-1,Math.floor(r*ts.length))];tk=top;}
+  else{const w=pool.map(p=>ticketsOf(p)),sum=w.reduce((a,b)=>a+b,0);if(!(sum>0))return no('没有可以抽的人');
+    let t=r*sum;let i=0;while(i<w.length-1&&t>=w[i]){t-=w[i];i++;}
+    while(w[i]===0&&i>0)i--;pick=pool[i];tk=w[i];x.all=sum;}
+  x.st='drawn';x.win=pick.id;x.tie=tie;x.tk=tk;S.draw.cur=x.id;S.draw.screen='draw';
+  log('抽「'+x.name+'」：'+nm(pick)+(x.kind==='tycoon'?'（金币 '+tk+(tie>1?'，并列 '+tie+' 人中抽出':'')+'）':'（彩券 '+tk+' / 共 '+x.all+' 张）'));
+  return ok('抽到 '+nm(pick));}
+function drawConfirm(id){const x=prize(id)||curPrize();if(!x||x.st!=='drawn')return no('没有等待确认的得主');
+  const p=pl(x.win);p.won=x.id;x.st='done';log(nm(p)+' 获得「'+x.name+'」','back',1);
+  tell(p.id,'你中奖了',(x.kind==='tycoon'?'恭喜获得「'+x.name+'」！':'恭喜中奖：「'+x.name+'」！')+'请到台前领取。','final');
+  return ok(nm(p)+' 获得「'+x.name+'」');}
+// 得主不在场：这位不再参与这个奖品，马上重抽
+function drawRedo(id,rnd){const x=prize(id)||curPrize();if(!x||x.st!=='drawn')return no('没有等待确认的得主');
+  const old=x.win;x.skip.push(old);x.st='wait';x.win=null;log(nameOf(old)+' 不在场，「'+x.name+'」重抽');
+  const r=drawRun(x.id,rnd);if(!r.ok){return ok('没有可以再抽的人了');}return r;}
+// 撤销已确认的得主：回到待抽，这位重新参与
+function drawUndo(id){const x=prize(id)||curPrize();if(!x||(x.st!=='done'&&x.st!=='drawn'))return no('这个奖品还没抽');
+  const p=pl(x.win);if(p&&p.won===x.id)p.won=null;log('「'+x.name+'」撤销得主 '+nameOf(x.win));x.st='wait';x.win=null;x.skip=[];x.tie=0;x.tk=0;x.all=0;return ok('已撤销，可以重新抽');}
+function drawScreen(on){S.draw.screen=on?'draw':'game';return ok(on?'大屏切到抽奖':'大屏切回游戏');}
+function drawShow(id){const x=prize(id);if(!x)return no('没有这个奖品');const c=S.draw.pz.find(y=>y.st==='drawn');
+  if(c&&c!==x)return no('「'+c.name+'」抽出的人还没确认');
+  S.draw.cur=x.id;return ok('大屏显示「'+x.name+'」');}
 
 // ---------- 其他 ----------
 function setScore(pid,v,why){const p=pl(pid);if(!p)return no('没有这个编号');v=Math.round(+v);if(!Number.isFinite(v)||v<0)return no('金币数要是不小于 0 的整数');
@@ -412,10 +375,9 @@ const ROLE_LABEL={dealer:'Dealer',judge:'判官',mengpo:'孟婆',wuchang:'黑白
 // ---------- 演示数据 ----------
 const DEMO_NICK=['阿鬼','小白','无常','纸扎','孟孟','判判','铜钱','灯笼','彼岸','骨花','黑猫','红绸','书生','狐狸','小倩','钟馗','小青','白蛇','花脸','长舌',
   '阿飘','画皮','聂聂','宁采','燕赤','山魈','魍魉','魑魅','夜叉','罗刹','鬼火','冥灯','奈何','忘川','孟汤','黄泉'];
-// 三套演示数据（总控工具里「载入演示数据」可选）：start 开局 · mid 游戏中段 · final 时间截止后（晋级名单 + 拍卖）
-const DEMOS={start:'开局（T+5 分钟）',mid:'游戏中段（鬼门开进行中）',pre:'拍卖前（时间截止，还没晋级）',final:'晋级与拍卖（时间截止后）'};
-function demoBase(n){init();S.now=Date.parse('2026-10-31T23:00:00Z');S.players.slice(0,n).forEach((p,i)=>{p.nick=DEMO_NICK[i]||('玩家'+p.id);p.on=true;});}
-const demoLots=()=>{['第一件拍品','第二件拍品','第三件拍品','第四件拍品'].forEach(n=>aucAdd({name:n+'（占位）',desc:'盲盒',start:100}));aucAdd({name:'最终大奖（占位）',desc:'神秘大奖',start:300,big:true});};
+// 三套演示数据（总控工具里「载入演示数据」可选）：start 开局 · mid 游戏中段 · pre 抽奖前 · final 抽奖进行中
+const DEMOS={start:'开局（T+5 分钟）',mid:'游戏中段（鬼门开进行中）',pre:'抽奖前（时间截止，还没开始抽）',final:'抽奖进行中（时间截止后）'};
+function demoBase(n){init();S.players.slice(0,n).forEach((p,i)=>{p.nick=DEMO_NICK[i]||('玩家'+p.id);p.on=true;});}
 function seedStart(){
   demoBase(30);
   // 开场 5 分钟：大家陆续进房间；♣4（简单）最先结束，1 人输了在原地等黑白无常
@@ -424,7 +386,6 @@ function seedStart(){
   S.t=90; enterRoom('8C',['006']); enterRoom('4D',['014','022']);
   S.t=270; finishRoom('4C',{'005':'win','013':'win','021':'lose'});
   S.t=300; log('演示数据（开局）：7 间房有人，♣4 刚结算、重置中，♦8 还空着；021 输了在等黑白无常');
-  demoLots();
 }
 function seedMid(){
   demoBase(36);
@@ -457,9 +418,8 @@ function seedMid(){
   S.t=M(41); finishRoom('4C',{'017':'lose'});
   S.t=M(42); gateWin('013');
   S.t=M(43); log('演示数据（游戏中段）：第二次鬼门开进行中（已有 1 人完成），♦8、♠4、♠8 进行中，♣4 刚结算、重置中，鬼市 1 人，待接 1 人');
-  demoLots();
 }
-// 时间截止后：一批人四花色 + 2000 金币。pre = 还没人晋级、拍卖没开始；final = 已晋级，拍卖第 1 件已成交，第 2 件选中待开拍
+// 时间截止后：一批人集齐花色、攒了不少金币。pre = 抽奖还没开始；final = 大亨奖已颁发，大奖已抽出待确认
 function seedFinal(pre){
   demoBase(40);
   let k=7;const rnd=()=>(k=(k*1103515245+12345)%2147483648)/2147483648;
@@ -471,28 +431,25 @@ function seedFinal(pre){
   S.players.slice(8,40).forEach(p=>{const n=1+Math.floor(rnd()*4);for(let i=0;i<n;i++){S.t+=55;play(p.id,ROOMS[Math.floor(rnd()*8)].id,rnd()<.7?'win':'lose');
     if(p.st==='out'){pickup(p.id);checkIn(p.id,'wuchang');confirmIn(p.id,'mengpo');if(rnd()<.6){rnd();selfRedeem(p.id);}}}});
   ['009','015','022','030'].forEach((id,i)=>{puzRedeem(id,'1');puzRedeem(id,'2');});
-  S.t=7300; demoLots();
-  if(pre){S.t=7320;log('演示数据（拍卖前）：时间已截止，'+active().filter(qualifies).length+' 人符合晋级条件，还没晋级');return;}
-  finalAll();
-  const ids=S.fin.slice();
-  aucOpen('L1',120);[[ids[0],900],[ids[1],1200],[ids[2],1200],[ids[3],500]].forEach(([pid,v],i)=>{if(pid){S.now+=1000;bid(pid,'L1',v);}});
-  S.now+=5000;aucTime('close','L1');aucReveal('L1');
-  S.auc.cur='L2';S.auc.screen='auction';
-  S.t=7500; log('演示数据（晋级与拍卖）：'+S.fin.length+' 人已晋级，第 1 件已成交，第 2 件已选中、等判官开拍');
+  S.t=7300;
+  if(pre){S.t=7320;log('演示数据（抽奖前）：时间已截止，'+drawPool().filter(p=>ticketsOf(p)>0).length+' 人有彩券，还没开始抽');return;}
+  drawRun('P1',0);drawConfirm('P1');
+  drawRun('P2',0.37);S.draw.cur='P2';S.draw.screen='draw';
+  S.t=7500; log('演示数据（抽奖进行中）：大亨奖已颁发，「大奖」抽出了 '+nameOf(S.draw.pz[1].win)+'，等判官确认');
 }
 const seed=w=>w==='start'?seedStart():w==='final'?seedFinal():w==='pre'?seedFinal(true):seedMid();
 export function newGame(demo){init();if(demo)seed(demo);return S;}
 
 // Which roles may perform each action. 总控只做自己页面上的事（金币、名单、发布、设置），不代替其他工作人员操作。
 const ROLE_OK={setrule:['dealer','ctrl'],enter:['dealer'],finish:['dealer'],resetdone:['dealer'],kick:['dealer'],
-  setcap:['ctrl'],setcapon:['ctrl'],setdur:['ctrl'],setscore:['ctrl'],setcards:['ctrl'],seton:['ctrl'],addplayers:['ctrl'],setbank:['ctrl'],finalall:['ctrl'],final:['ctrl'],
+  setcap:['ctrl'],setcapon:['ctrl'],setdur:['ctrl'],setscore:['ctrl'],setcards:['ctrl'],seton:['ctrl'],addplayers:['ctrl'],setbank:['ctrl'],
   publish:['ctrl','judge'],revoke:['ctrl','judge'],
   gatewin:['judge'],gateunwin:['judge'],gatereward:['judge'],gateend:['judge'],puz:['judge'],puzundo:['judge'],
   pickup:['wuchang'],checkin:['wuchang','mengpo'],confirm:['wuchang','mengpo'],
   redeem:['mengpo'],ransom:['mengpo'],soup:['mengpo'],
-  'auc.add':['judge'],'auc.edit':['judge'],'auc.del':['judge'],'auc.move':['judge'],'auc.open':['judge'],'auc.time':['judge'],'auc.reveal':['judge'],
-  'auc.void':['judge'],'auc.redo':['judge'],'auc.screen':['judge'],'auc.show':['judge'],
-  ack:['player'],nick:['player','ctrl'],bid:['player','judge'],offline:['dealer','judge','mengpo','wuchang']};
+  'draw.add':['judge'],'draw.edit':['judge'],'draw.del':['judge'],'draw.move':['judge'],'draw.run':['judge'],'draw.confirm':['judge'],
+  'draw.redo':['judge'],'draw.undo':['judge'],'draw.screen':['judge'],'draw.show':['judge'],
+  ack:['player'],nick:['player','ctrl'],offline:['dealer','judge','mengpo','wuchang']};
 
 // Apply one action from one signed-in person. Returns {ok,msg}.
 export function apply(state,me,a){
@@ -501,7 +458,6 @@ export function apply(state,me,a){
   if(!roles)return no('未知操作');
   if(!roles.includes(me.role))return no('你的身份不能做这个操作');
   if(me.role==='dealer'&&Array.isArray(me.rooms)&&['enter','finish','resetdone','kick','setrule'].includes(a.type)&&!me.rooms.includes(a.rid))return no('这个房间不归你管，只能操作：'+me.rooms.map(r=>room(r).card).join(' '));
-  aucSweep();
   switch(a.type){
     case 'enter':return enterRoom(a.rid,a.pids||a.pid);
     case 'finish':return finishRoom(a.rid,a.results||{});
@@ -516,8 +472,6 @@ export function apply(state,me,a){
     case 'addplayers':return addPlayers(a.n);
     case 'setbank':return setBank(a.rows);
     case 'setrule':return setRule(a.rid,a.text);
-    case 'finalall':return finalAll();
-    case 'final':return setFinal(a.pid,!!a.on);
     case 'publish':if(me.role==='judge'&&!(a.f&&a.f.kind==='鬼门开'))return no('判官只能发布鬼门开');return publish(a.f);
     case 'revoke':return revokeNotice(+a.nid);
     case 'gatewin':return gateWin(a.pid);
@@ -532,39 +486,35 @@ export function apply(state,me,a){
     case 'redeem':return selfRedeem(a.pid);
     case 'ransom':return ransom(a.pid,a.by);
     case 'soup':return soup(a.pid);
-    case 'auc.add':return aucAdd(a.f);
-    case 'auc.edit':return aucEdit(a.id,a.f);
-    case 'auc.del':return aucDel(a.id);
-    case 'auc.move':return aucMove(a.id,a.d);
-    case 'auc.open':return aucOpen(a.id,a.secs);
-    case 'auc.time':return aucTime(a.op,a.id);
-    case 'auc.reveal':return aucReveal(a.id);
-    case 'auc.void':return aucVoid(a.id);
-    case 'auc.redo':return aucRedo(a.id);
-    case 'auc.screen':return aucScreen(!!a.on);
-    case 'auc.show':return aucShow(a.id);
+    case 'draw.add':return drawAdd(a.f);
+    case 'draw.edit':return drawEdit(a.id,a.f);
+    case 'draw.del':return drawDel(a.id);
+    case 'draw.move':return drawMove(a.id,a.d);
+    case 'draw.run':return drawRun(a.id);
+    case 'draw.confirm':return drawConfirm(a.id);
+    case 'draw.redo':return drawRedo(a.id);
+    case 'draw.undo':return drawUndo(a.id);
+    case 'draw.screen':return drawScreen(!!a.on);
+    case 'draw.show':return drawShow(a.id);
     case 'ack':if(!me.pid)return no('只有玩家需要确认通知');ack(+a.nid,me.pid);return ok('');
     case 'nick':return setNick(me.role==='player'?me.pid:a.pid,a.nick);
     case 'offline':return offImport(me,a.rows);
-    case 'bid':return bid(me.role==='player'?me.pid:a.pid,a.id,a.v);   // 判官可以替手机打不开的人代出价
   }
 }
 
-// What one person is allowed to see. Staff see everything except: the big screen and players never see other people's bids.
-// A player sees only their own notices and the broadcast lines of the log.
-function hideBids(state,pid){return {...state.auc,lots:state.auc.lots.map(l=>{const n=Object.keys(l.bids).length,mine=pid&&l.bids[pid];
-  return {...l,bids:mine?{[pid]:mine}:{},nb:n,bad:[]};})};}
+// What one person is allowed to see. A player sees only their own notices and the broadcast lines of the log.
 const STAFF_LOG=300;   // 工作人员页最多看 300 行日志（全场日志页也只显示 300 行）；完整日志留在服务器
 export function viewFor(state,me){
+  use(state);
   const lg=state.log.length>STAFF_LOG?state.log.slice(0,STAFF_LOG):state.log;
-  if(me.role==='screen')return {...state,log:lg,bank:{},rules:{},auc:hideBids(state,null)};
+  if(me.role==='screen')return {...state,log:lg,bank:{},rules:{}};
   if(['ctrl','judge','dev'].includes(me.role))return lg===state.log?state:{...state,log:lg};
   if(me.role!=='player')return {...state,log:lg,bank:{}};   // 题库（含答案）只给判官和总控
-  use(state);const p=state.players.find(x=>x.id===me.pid);
+  const p=state.players.find(x=>x.id===me.pid);
   return {...state,bank:{},rules:{},log:state.log.filter(isBcast).slice(0,30),notices:state.notices.filter(n=>p&&matches(n,p)),
-    players:state.players.map(x=>x.id===me.pid?x:{...x,hist:[],puz:[]}),auc:hideBids(state,me.pid)};
+    players:state.players.map(x=>x.id===me.pid?x:{...x,hist:[],puz:[]})};
 }
 
-export {roomRule,noticeStale,staffSees,puzCode,timeUp,marketShut,needsReset,whyNotEnter,eliminate,soup,puzInfo,finalMiss,qualifies,whyNotBid,bidOrder,lotLeft,lotState,
+export {roomRule,noticeStale,staffSees,puzCode,timeUp,marketShut,needsReset,whyNotEnter,eliminate,soup,puzInfo,ticketsOf,drawPool,KIND_NAME,
   ranking,suitsOf,stLabel,inMk,pl,nm,matches,targetLabel,room,fmt,esc,log,no,
-  OFF_KINDS,ROOMS,SUITS,GATES,FINAL_SCORE,CHIP_START,CHIP_GOAL,RANSOM,PUZ_PTS,PUZ_CAP,GATE_WIN,GATE_COIN,ROOM_CAP0,DEMOS};
+  OFF_KINDS,ROOMS,SUITS,GATES,TK_COIN,TK_SUITS,TK_ALL,CHIP_START,CHIP_GOAL,RANSOM,PUZ_PTS,PUZ_CAP,GATE_WIN,GATE_COIN,ROOM_CAP0,DEMOS};
