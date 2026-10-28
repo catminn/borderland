@@ -168,21 +168,29 @@ const tkTxt=x=>x.kind==='tycoon'?'金币 <span class="mono">'+x.tk+'</span>'+(x.
 // 金币大亨奖并列第一：一起揭晓
 function revealList(x){return '<div class="aidx">并列第一</div><div class="alist rvl">'+x.top.map(id=>{const p=pl(id);return '<div class="li"><div class="grow"><span class="x">'+(p?who(p):esc(id))+'</span></div><b class="mono">'+x.tk+' 金币</b></div>';}).join('')+'</div>';}
 // 抽奖动画：老虎机式滚动名单，慢慢停在得主上（本页看到「待抽 / 并列 → 抽出」的那一刻才放，刷新不重放）
-let ROLL=null;const ROLL_MS=4800;
-function rollInner(R_,t){const N=R_.seq.length,k=Math.min(1,(t-R_.start)/R_.dur),e=1-Math.pow(1-k,3.2),pos=e*(N-1),i=Math.floor(pos),f=pos-i;
-  const row=j=>'<div class="rw">'+(R_.seq[Math.max(0,Math.min(N-1,j))])+'</div>';
-  return '<div class="rin" style="transform:translateY(calc('+(-f).toFixed(4)+' * var(--rh)))">'+row(i-1)+row(i)+row(i+1)+row(i+2)+'</div>';}
+// 抽奖动画：老虎机式滚动名单（金框、跑马灯、中间高亮带、两侧指针）；先快后慢，快的时候有动态模糊，冲过头再回弹停在得主上，亮灯闪烁
+function reelHtml(R_,t){const N=R_.seq.length,W=R_.w,ov=.3,k=Math.min(1,(t-R_.start)/R_.dur);
+  const P=q=>q<.9?(W+ov)*(1-Math.pow(1-q/.9,3.4)):W+ov*Math.pow(1-(q-.9)/.1,2);
+  const pos=P(k),sp=(pos-P(Math.max(0,k-.015)))/.015,bl=Math.min(5,Math.max(0,(sp-14)/9)),i=Math.floor(pos),f=pos-i;
+  const row=j=>'<div class="rw">'+R_.seq[Math.max(0,Math.min(N-1,j))]+'</div>';
+  const bulbs=c=>'<div class="bulbs '+c+'">'+Array.from({length:14},(_,n)=>'<i'+((k>.9?Math.floor(t/150)%2===0:(n+Math.floor(t/90))%3===0)?' on':'')+'></i>').join('')+'</div>';
+  return '<div class="rg" style="--g:'+(k*k).toFixed(3)+'">'+bulbs('t')+'<div class="rwin"><div class="band"></div><div class="rin" style="transform:translateY(calc('+(-f).toFixed(4)+' * var(--rh)));filter:blur('+bl.toFixed(1)+'px)">'+row(i-1)+row(i)+row(i+1)+row(i+2)+'</div></div>'+bulbs('b')+'<i class="ptr l"></i><i class="ptr r"></i></div>';}
+let ROLL=null;const ROLL_MS=5600;
 function startRoll(x){
   if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
   const w=pl(x.win);if(!w)return;
   const ids=x.kind==='tycoon'&&x.tie>1?x.top:R.drawPool(x).map(p=>p.id);
-  const C=ids.map(pl).filter(Boolean),N=40,seq=[];let last=null;
-  for(let k=0;k<N-1;k++){let c=C[Math.floor(Math.random()*C.length)];if(C.length>1&&c===last)c=C[(C.indexOf(c)+1)%C.length];seq.push(who(c));last=c;}
-  seq.push(who(w));ROLL={id:x.id,start:Date.now(),dur:ROLL_MS,seq};requestAnimationFrame(rollTick);
+  const C=ids.map(pl).filter(Boolean),N=44,seq=[];let last=null;
+  const pick=()=>{let c=C[Math.floor(Math.random()*C.length)];if(C.length>1&&c===last)c=C[(C.indexOf(c)+1)%C.length];last=c;return who(c);};
+  for(let k=0;k<N;k++)seq.push(pick());
+  seq.push(who(w));seq.push(pick());seq.push(pick());
+  ROLL={id:x.id,start:Date.now(),dur:ROLL_MS,seq,w:N};requestAnimationFrame(rollTick);
 }
 function rollTick(){if(!ROLL)return;const t=Date.now(),el=document.querySelector('[data-reel]');
-  if(t-ROLL.start>=ROLL.dur){const x=prize(ROLL.id);ROLL=null;render();if(x&&ME&&ME.role!=='player')confetti(x.kind!=='small');return;}
-  if(el)el.innerHTML=rollInner(ROLL,t);requestAnimationFrame(rollTick);}
+  if(t-ROLL.start>=ROLL.dur){const x=prize(ROLL.id);ROLL=null;render();
+    const aw=document.querySelector('.stage .adeal .awin');if(aw&&aw.animate)aw.animate([{transform:'scale(1.35)',filter:'brightness(2.2) drop-shadow(0 0 28px #f2c14e)'},{transform:'scale(.96)',filter:'brightness(1.3)',offset:.6},{transform:'scale(1)',filter:'none'}],{duration:1100,easing:'cubic-bezier(.2,.9,.3,1)'});
+    if(x&&ME&&ME.role!=='player')confetti(x.kind!=='small');return;}
+  if(el)el.innerHTML=reelHtml(ROLL,t);requestAnimationFrame(rollTick);}
 function drawResult(x,big){
   if(x.st==='reveal')return revealList(x);
   if(x.st==='wait'||!x.win)return '';
@@ -194,7 +202,7 @@ function viewDrawBoard(){
     return '<div class="alot s-'+PCLS[y.st]+(y===x?' cur':'')+'"><span class="ai mono">'+(j+1)+'</span><b>'+esc(y.name)+'</b><span class="ast">'+(w?esc(w.nick||w.id):PST[y.st])+'</span></div>';}).join('');
   const main=!x?'<div class="amain"><div class="aname">压轴抽奖</div><div class="adesc">即将开始</div></div>'
     :'<div class="amain'+(x.kind!=='small'?' grand':'')+'"><div class="aname">'+esc(x.name)+'</div>'
-      +(x.st==='wait'?'':ROLL&&ROLL.id===x.id&&x.st==='drawn'?'<div class="reel" data-reel>'+rollInner(ROLL,Date.now())+'</div>':drawResult(x,true))+'</div>';
+      +(x.st==='wait'?'':ROLL&&ROLL.id===x.id&&x.st==='drawn'?'<div class="reel" data-reel>'+reelHtml(ROLL,Date.now())+'</div>':drawResult(x,true))+'</div>';
   return '<div class="stage-wrap"><div class="stage auc">'
     +'<div class="left"><div class="hd"><div class="ttl">压轴抽奖</div><div class="en">每人限得一件</div></div>'
     +'<div class="alots">'+strip+'</div></div>'
