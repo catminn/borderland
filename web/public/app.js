@@ -152,7 +152,7 @@ function viewBoard(){
     +'</div>'+gateBox()
     +'<div class="cast"><span class="cap" style="padding-bottom:8px">全场播报</span>'
     +(bc.length?bc.map(b=>'<div class="bc '+b.c+'"><span class="t">'+fmt(b.t)+'</span><span class="x">'+esc(b.x)+'</span></div>').join(''):'<div class="bc"><span class="x muted">暂无播报</span></div>')+'</div></div>'
-    +'<div class="right"><div class="rank"><div class="rh"><b>金币排行</b><span>在场 '+(act.length-mk)+' 人'+(mk?'　鬼市 '+mk+' 人':'')+'</span></div>'+(pod?podiumHtml()+(paged?'<div class="plist">'+rankRows(RP,ui.rkp,3)+'</div>':'<div class="plist pod">'+rankRows(10,null,3)+'</div>'):'<div class="plist">'+rankRows(10)+'</div>')
+    +'<div class="right"><div class="rank"><div class="rh"><b>金币排行</b><span>在场 '+(act.length-mk)+' 人'+(mk?'　鬼市 '+mk+' 人':'')+'</span></div>'+(pod?podiumHtml()+(paged?'<div class="plist">'+rankRows(RP,ui.rkp,3)+'</div>':'<div class="plist pod">'+rankRows(11,null,3)+'</div>'):'<div class="plist">'+rankRows(10)+'</div>')
       +(paged&&np>1?'<div class="rpg"><button data-a="rkpg" data-v="-1"'+(ui.rkp<=0?' disabled':'')+'>‹</button><span class="mono">'+(ui.rkp+1)+' / '+np+'</span><button data-a="rkpg" data-v="1"'+(ui.rkp>=np-1?' disabled':'')+'>›</button></div>':'')+'</div>'
     +'<div class="rgrid">'+ROOMS.map(r=>roomCard(r,me)).join('')+'</div></div>'
     +'</div></div>';

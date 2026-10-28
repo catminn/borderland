@@ -2008,3 +2008,17 @@ body .stage .cast .bc .x{display:-webkit-box;-webkit-box-orient:vertical;-webkit
   .stage .pd .base b{font-size:22px}.stage .pd.p1 .base b{font-size:28px}
   .stage .pd.p1 .base{height:52px}.stage .pd.p2 .base{height:38px}.stage .pd.p3 .base{height:28px}
 }
+/* 领奖台：白 / 灰 / 深灰，数字不超框 */
+.stage .podium{height:214px}
+.stage .pd.p1 .base{height:80px}.stage .pd.p2 .base{height:62px}.stage .pd.p3 .base{height:48px}
+.stage .pd.p1 .base b{font-size:50px}.stage .pd.p2 .base b{font-size:38px}.stage .pd.p3 .base b{font-size:32px}
+.stage .pd.p2 .base{background:color-mix(in srgb,var(--accent) 52%,var(--bg));border-color:transparent}
+.stage .pd.p2 .base b{color:var(--accent-ink)}
+.stage .pd.p3 .base{background:color-mix(in srgb,var(--accent) 22%,var(--bg));border-color:transparent}
+.stage .pd.p3 .base b{color:var(--ink)}
+@media (max-width:819px){
+  .stage .podium{height:140px}
+  .stage .pd.p1 .base{height:48px}.stage .pd.p2 .base{height:38px}.stage .pd.p3 .base{height:30px}
+  .stage .pd.p1 .base b{font-size:26px}.stage .pd.p2 .base b{font-size:22px}.stage .pd.p3 .base b{font-size:18px}
+}
+.stage .pd .base b{line-height:1;padding-top:6px}

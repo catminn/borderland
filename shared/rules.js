@@ -440,6 +440,11 @@ function seedFinal(mode){const fz=mode==='freeze';
   S.players.slice(8,40).forEach(p=>{const n=1+Math.floor(rnd()*4);for(let i=0;i<n;i++){S.t+=fz?30:55;play(p.id,ROOMS[Math.floor(rnd()*8)].id,rnd()<.7?'win':'lose');
     if(p.st==='out'){pickup(p.id);checkIn(p.id,'wuchang');confirmIn(p.id,'mengpo');if(rnd()<.6){rnd();selfRedeem(p.id);}}}});
   ['009','015','022','030'].forEach((id,i)=>{puzRedeem(id,'1');puzRedeem(id,'2');});
+  // 前十名分数各不相同，其中两人在鬼市（排行演示用）
+  S.t+=60;play('004','4S','lose');pickup('004');checkIn('004','wuchang');confirmIn('004','mengpo');
+  S.t+=60;play('007','4H','lose');pickup('007');checkIn('007','wuchang');confirmIn('007','mengpo');
+  const TOP=['002','001','005','004','003','006','007','008','010','009'],TS=[3600,3300,3000,2800,2500,2300,2100,1900,1700,1500];
+  S.players.forEach(p=>{const i=TOP.indexOf(p.id);p.score=i>=0?TS[i]:Math.min(p.score,1400);});
   if(fz){S.t=(S.dur||DUR0)-FREEZE_SEC;log('演示数据（封榜）：离结束还有 15 分钟，排行榜已封，玩家和大屏看不到名次');return;}
   S.t=7320;log('演示数据（抽奖前）：时间已截止，'+drawPool().filter(p=>ticketsOf(p)>0).length+' 人有彩券，还没开始抽');
 }
