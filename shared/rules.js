@@ -266,10 +266,10 @@ function gateRec(){const g=S.gp,n=g&&S.notices.find(x=>x.id===g.nid);if(n)n.gr=g
 function gateEnd(auto){if(!S.gp)return no('现在没有进行中的鬼门开');gateRec();S.gp=null;log('鬼门开结束'+(auto?'（3 人奖励已发完）':''),'',1);return ok('鬼门开已结束');}
 
 // ---------- 压轴抽奖（判官主持） ----------
-// 彩券 = 金币 ÷ 100（取整）+ 集齐四花色 5 张 + 八间房全部成功 10 张。在场（存活）的人才参与，鬼市里和待接的不算；中过奖的人不再参与。
+// 彩券 = 金币 ÷ 100（取整）+ 集齐四花色 5 张 + 八间房全部成功 10 张。所有上榜的人都参与（鬼市里的人也算，冻结的金币照算）；中过奖的人不再参与。
 // 金币大亨奖：金币最多的人直接得，并列则在并列者中抽一位。其余奖品按彩券张数加权随机抽。得主不在场就「不在场，重抽」。
 const ticketsOf=p=>p?Math.floor(p.score/TK_COIN)+(SUITS.every(x=>p.cards.includes(x))?TK_SUITS:0)+(ROOMS.every(r=>p.cleared.includes(r.id))?TK_ALL:0):0;
-const drawPool=pr=>S.players.filter(p=>p.on&&p.st==='alive'&&!p.won&&!(pr&&pr.skip.includes(p.id)));
+const drawPool=pr=>S.players.filter(p=>p.on&&!p.won&&!(pr&&pr.skip.includes(p.id)));
 const prize=id=>S.draw.pz.find(x=>x.id===id);
 const curPrize=()=>S.draw.cur?prize(S.draw.cur):null;
 const KIND_NAME={tycoon:'金币大亨奖',big:'大奖',small:'小奖'};

@@ -369,7 +369,7 @@ function viewDraw(){
   const sum=pool.reduce((a,b)=>a+b.tk,0),tyc=x&&x.kind==='tycoon';
   const tl=ui.showTk?'<div class="alist">'+(pool.length?pool.map(({p,tk})=>'<div class="li"><div class="grow"><span class="x">'+who(p)+'</span></div><b class="mono">'+(tyc?p.score+' 金币':tk+' 张')+'</b></div>').join(''):'<div class="li small">没有可以抽的人</div>')+'</div>':'';
   const tkp='<div class="pn finl"><div class="shrow"><h3>参与抽奖</h3><span class="small"><b class="mono">'+pool.length+'</b> 人　彩券共 <b class="mono">'+sum+'</b> 张</span></div>'
-    +'<span class="small">在场且没中过奖的人。鬼市里、待接的人不算。</span>'
+    +'<span class="small">上榜且没中过奖的人，鬼市里的人也算。</span>'
     +'<div class="shrow"><span></span><button class="btn-line" data-a="showtk">'+(ui.showTk?'收起名单':'查看名单')+'</button></div>'+tl+'</div>';
   let cur;
   if(!x)cur='<div class="pn acur"><h3>当前奖品</h3><span class="muted">在奖品列表里「选中」一个。</span></div>';
@@ -686,7 +686,7 @@ function viewPlayer(){
   const suits=SUITS.map(x=>{const g=me.cards.includes(x);return '<div class="s4'+(g?' got':'')+'" title="'+TYPE[x]+(g?'':'：未获得')+'"><span class="g '+(isRed(x)?'sr':'')+'">'+x+'</span><span class="l">'+TYPE[x]+'</span></div>';}).join('');
   const cc=(ok,ttl,body,okT,noT)=>'<div class="fc'+(ok?' ok':'')+'"><div class="fh"><b>'+ttl+'</b><span class="fk">'+(ok?okT||'✓ 已达成':noT||'未达成')+'</span></div>'+body+'</div>';
   const finSec='<div class="fin3"><div class="fhd"><div class="ft"><span class="cap">我的彩券</span><b class="fn">'+tk+'<i> 张</i></b></div>'
-    +'<div class="fs">'+(me.won?'你已中奖，不再参与后面的抽取':me.st!=='alive'?'回到场内才参与抽奖':'时间截止后凭彩券参加压轴抽奖')+'</div></div><div class="fcs">'
+    +'<div class="fs">'+(me.won?'你已中奖，不再参与后面的抽取':'时间截止后凭彩券参加压轴抽奖')+'</div></div><div class="fcs">'
     +cc(tkC>0,'金币','<div class="fscore mono">'+me.score+'</div><div class="fx">每 '+TK_COIN+' 金币 1 张</div>','✓ '+tkC+' 张','0 张')
     +cc(okS,'集齐四种花色　+'+TK_SUITS,'<div class="suits4">'+suits+'</div><div class="fx mono">'+got+' / 4</div>')
     +cc(okR,'八间房全部成功　+'+TK_ALL,'<div class="fscore mono">'+nC+' / '+ROOMS.length+'</div><div class="bar"><span class="ok" style="width:'+nC/ROOMS.length*100+'%"></span></div>')+'</div></div>';

@@ -107,7 +107,7 @@ P('002').cleared = R.ROOMS.map(r => r.id);
 T('彩券：每 100 金币 1 张', R.ticketsOf(P('003')) === 30 && R.ticketsOf(P('004')) === 1 && R.ticketsOf(P('005')) === 0);
 T('彩券：集齐四花色 +5', R.ticketsOf(P('001')) === 25 + 5);
 T('彩券：八间房全成功 +10', R.ticketsOf(P('002')) === 30 + 5 + 10);
-T('抽奖池：在场、上榜、没中过奖；鬼市里的不算', (() => { const ids = R.drawPool().map(p => p.id); return ids.includes('001') && ids.includes('004') && !ids.includes('006') && !ids.includes('007'); })());
+T('抽奖池：上榜、没中过奖；鬼市里的人也算', (() => { const ids = R.drawPool().map(p => p.id); return ids.includes('001') && ids.includes('004') && ids.includes('006') && !ids.includes('007'); })());
 T('默认 5 个奖品：大亨奖、大奖、小奖×3', S.draw.pz.map(x => x.kind).join() === 'tycoon,big,small,small,small' && S.draw.screen === 'game');
 T('玩家不能抽', !A('player', { type: 'draw.run', id: 'P1' }, { pid: '001' }).ok);
 T('总控不能抽', !A('ctrl', { type: 'draw.run', id: 'P1' }).ok);
