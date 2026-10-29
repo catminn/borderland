@@ -14,7 +14,7 @@ const RN={'一二三纸扎人':'Paper Doll 1-2-3','红线劫':'Red Thread Trial'
 const D={
   '游戏中（':'Playing (','你在这里（':'You are here (','）':')','金币':'coins','分页':'Pages','场地平面图':'Floor plan','⏱ 已截止':'⏱ Closed','已截止':'Closed',
   // 通用 / 页头
-  '百鬼夜行':'Borderland','Cornell CSSA 万圣夜':'Cornell CSSA Halloween Night','CORNELL CSSA 万圣夜':'CORNELL CSSA HALLOWEEN NIGHT',
+  'Cornell CSSA 万圣夜':'Cornell CSSA Halloween Night','CORNELL CSSA 万圣夜':'CORNELL CSSA HALLOWEEN NIGHT',
   '输入 6 位 PIN':'Enter your 6-digit PIN','进入':'Enter','PIN 印在你的身份卡上':'Your PIN is on your ID card','PIN 不正确，请核对身份卡':'Wrong PIN, please check your ID card','PIN 不正确':'Wrong PIN',
   '连接中…':'Connecting…','已连接':'Connected','重连中…':'Reconnecting…','本地展示':'Local demo','退出':'Log out','浅色':'Light','深色':'Dark','玩家':'Player','切换深浅色':'Switch light/dark',
   '正在连接服务器…':'Connecting to the server…','游戏时钟':'Game clock','知道了':'Got it','下一步':'Next','取消':'Cancel','确认':'Confirm',

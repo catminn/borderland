@@ -1993,10 +1993,11 @@ body.bwr .mapp .mp-plan .mp-room.sel:not(.mine)>rect{fill:color-mix(in srgb,var(
 .mp-dt{fill:var(--sub)!important;font-size:16px;font-weight:400;letter-spacing:.1em;text-anchor:middle;dominant-baseline:central}
 
 /* 英文版：标题用哥特体（海报同款 UnifrakturMaguntia），通行证标题和副标题字距放宽 */
-html[data-lang="en"]{--disp:"UnifrakturMaguntia","ZCOOL XiaoWei","Songti SC",serif}
+html[data-lang="en"]{--disp:"Pirata One","ZCOOL XiaoWei","Songti SC",serif}
 html[data-lang="en"] .wen .w-title{flex-direction:column;gap:8px;align-items:flex-start}
 html[data-lang="en"] .wen{overflow:hidden}
-html[data-lang="en"] .wen .w-title b{font-size:32px;letter-spacing:.05em}
+html[data-lang="en"] .wen .w-title b{font-size:38px;letter-spacing:.06em}
 html[data-lang="en"] .wen .w-title span{font-size:11px;letter-spacing:.28em;text-transform:uppercase;white-space:normal}
 html[data-lang="en"] .stage .ttl{letter-spacing:.03em}
 .lgl{position:fixed;top:14px;right:14px;z-index:5}
+html:has(body.login){scrollbar-gutter:auto;background-color:#030707}
