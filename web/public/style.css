@@ -1997,13 +1997,18 @@ html[data-lang="en"]{--disp:"Pirata One","ZCOOL XiaoWei","Songti SC",serif}
 html[data-lang="en"] .wen .w-title{flex-direction:column;gap:8px;align-items:flex-start}
 html[data-lang="en"] .wen{overflow:hidden}
 html[data-lang="en"] .wen .w-title b{font-size:38px;letter-spacing:.06em}
-html[data-lang="en"] .wen .w-title span{font-size:11px;letter-spacing:.28em;text-transform:uppercase;white-space:normal}
+html[data-lang="en"] .wen .w-title span{display:none}
 html[data-lang="en"] .stage .ttl{letter-spacing:.03em}
 .lgl{position:fixed;top:14px;right:14px;z-index:5}
 html:has(body.login){scrollbar-gutter:auto;background-color:#030707}
 html[data-lang="en"] .wen .w-seal text.en{font-family:var(--sans);stroke:var(--sc);stroke-width:.5;paint-order:stroke}
-html[data-lang="en"] .wen .w-id{font-family:var(--disp);font-weight:400;font-size:34px;letter-spacing:.06em}
-@media (max-width:719px){html[data-lang="en"] .wen .w-id{font-size:52px}}
-html[data-lang="en"] nav.pages button,html[data-lang="en"] .subtabs button{font-family:var(--disp);font-weight:400;font-size:22px;letter-spacing:.05em}
-html[data-lang="en"] nav.pages button[aria-selected="true"],html[data-lang="en"] .subtabs button[aria-selected="true"]{font-weight:400}
-html[data-lang="en"] .subtabs .n{font-family:var(--mono)}
+
+/* 英文版：正文改有衬线（Cormorant Garamond，海报同款）；哥特体只留给大标题和底部一级分页 */
+html[data-lang="en"]{--sans:"Cormorant Garamond","Noto Sans SC","PingFang SC","Microsoft YaHei",serif}
+html[data-lang="en"] body,html[data-lang="en"] :is(button,input,select,textarea){font-size-adjust:.46}
+html[data-lang="en"] nav.pages button{font-family:var(--disp);font-weight:400;font-size:28px;letter-spacing:.04em;min-height:62px}
+html[data-lang="en"] :is(.stage .cap,.stage .rh b,.gbox .gh b,.mp-list h3,.coach .tip b,.stage .pd .base b){font-family:var(--sans);font-weight:700;letter-spacing:.04em}
+html[data-lang="en"] .mp-ct{font-family:var(--sans)!important;font-weight:700}
+html[data-lang="en"] .pill{font-size-adjust:none}
+html[data-lang="en"] nav.pages button,html[data-lang="en"] #tabs button{font-size:30px!important;font-weight:400!important;letter-spacing:.04em}
+html[data-lang="en"] svg text{font-size-adjust:none}
