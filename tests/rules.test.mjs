@@ -77,12 +77,11 @@ P('002').score = 800;
 T('赎人：在场的人花 500 金币', A('mengpo', { type: 'ransom', pid: '001', by: '002' }).ok && P('002').score === 300 && P('001').st === 'alive' && P('001').score === 1000);
 R.eliminate(P('003'), '测试', ''); A('wuchang', { type: 'checkin', pid: '003' }); A('mengpo', { type: 'confirm', pid: '003' });
 R.eliminate(P('001'), '测试', ''); A('wuchang', { type: 'checkin', pid: '001' }); A('mengpo', { type: 'confirm', pid: '001' });
-T('孟婆汤：免费复活，随机忘掉一个花色', R.soup('001', 0).ok && P('001').st === 'alive' && P('001').cards.length === 1 && P('001').cards[0] === '♥');
-T('忘掉的花色可以再挑战同花色房间', !P('001').cleared.includes('4S') && P('001').cleared.includes('4H'));
+T('复活：不忘花色，不管时间都能复活（孟婆可强行）', R.soup('001').ok && P('001').st === 'alive' && P('001').cards.length === 2 && P('001').cleared.includes('4S') && P('001').cleared.includes('4H'));
 S.t = 7200 + 10; R.eliminate(P('004'), '测试', ''); A('wuchang', { type: 'checkin', pid: '004' });
 T('截止后失败的人照常收进鬼市', A('mengpo', { type: 'confirm', pid: '004' }).ok && P('004').st === 'market');
 S.t = 7200 + 900;
-T('截止 15 分钟后停止复活名额', !A('mengpo', { type: 'redeem', pid: '003' }).ok);
+T('截止 15 分钟后照常可以复活', A('mengpo', { type: 'redeem', pid: '003' }).ok);
 
 // ---------- 解谜题 ----------
 fresh(); S.t = 1000;
@@ -183,7 +182,7 @@ fresh(); S.t = 1000;
   off('mengpo', [{ k: 'market', pid: '004' }, { k: 'ransom', pid: '004', by: '001' }]);
   T('离线补录：被别人赎，出钱人扣 500（不够就扣光）', P('004').st === 'alive' && P('001').score === 0);
   P('005').cards = ['♠', '♥']; off('mengpo', [{ k: 'market', pid: '005' }, { k: 'soup', pid: '005' }]);
-  T('离线补录：孟婆汤忘掉一个花色', P('005').st === 'alive' && P('005').cards.length === 1);
+  T('离线补录：复活不忘花色', P('005').st === 'alive' && P('005').cards.length === 2);
   const j = off('judge', [{ k: 'puz', pid: '006', code: '1' }, { k: 'puz', pid: '006', code: '1' }, { k: 'gate', pid: '006', rw: 'coin' }, { k: 'gate', pid: '007', rw: 'suit', arg: '♦' }]);
   T('离线补录：判官解谜（同题不重复）+ 鬼门开奖励', P('006').score === R.PUZ_PTS + R.GATE_COIN && /已经兑换过/.test(j.data[1].msg) && P('007').cards.includes('♦'));
   T('离线补录：总控和玩家不能补录', !A('ctrl', { type: 'offline', rows: [{ k: 'room', rid: '4S', pid: '001', res: 'win' }] }).ok && !A('player', { type: 'offline', rows: [] }, { pid: '001' }).ok);

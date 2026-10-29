@@ -3,7 +3,7 @@
 // for the signed-in role, and sends actions. Rule helpers come from rules.js (same file the server runs).
 import * as R from './rules.js';
 const {ROOMS,SUITS,TK_COIN,TK_SUITS,TK_ALL,KIND_NAME,ticketsOf,GATES,PUZ_CAP,PUZ_PTS,GATE_WIN,GATE_COIN,CHIP_START,CHIP_GOAL,RANSOM,puzCode,
-  room,fmt,esc,matches,targetLabel,whyNotEnter,no,timeUp,marketShut,staffSees,ranking,suitsOf,stLabel,inMk,pl,nm,puzInfo}=R;
+  room,fmt,esc,matches,targetLabel,whyNotEnter,no,timeUp,MARKET_WAIT,staffSees,ranking,suitsOf,stLabel,inMk,pl,nm,puzInfo}=R;
 // 奖品（用本页的 S，不依赖 rules.js 里的模块变量）
 const prize=id=>S&&S.draw?S.draw.pz.find(x=>x.id===id):null;
 const curPrize=()=>S&&S.draw&&S.draw.cur?prize(S.draw.cur):null;
@@ -458,18 +458,16 @@ function inboundPanel(){
     +(rows?'<div class="mlist">'+rows+'</div>':'<div class="empty">现在没有等着入鬼市的人。</div>')+'</section>';
 }
 function viewMarket(){
-  const mk=S.players.filter(inMk).sort((a,b)=>a.inAt-b.inAt),shut=marketShut();
+  const mk=S.players.filter(inMk).sort((a,b)=>a.inAt-b.inAt);
   const rows=mk.map(p=>{const a=ui.mkAsk;
     const byId=ui.ransomBy[p.id]||'',by=findP(byId),bw=!byId?'':!by?'没有这个编号':by.id===p.id?'不能自己赎自己':by.st!=='alive'?by.id+' 不在场':by.score<RANSOM?by.id+' 只有 '+by.score:'';
-    const act=a&&a.pid===p.id?'<div class="rvask"><button class="btn-main glow" data-a="mkok">'+({redeem:'确认自赎（筹码已赢到 '+CHIP_GOAL+'）',soup:'确认喝孟婆汤（随机忘掉一个花色）',ransom:'确认 '+(by?by.id:'')+' 出 '+RANSOM+' 金币赎人'})[a.k]+'</button><button class="btn-line" data-a="mkno">取消</button></div>'
-      :shut?'<span class="chk wait">已停止发放复活名额</span>'
-      :'<div class="btns mkbtns two2"><button class="btn-main" data-a="mkask" data-p="'+p.id+'" data-v="redeem">自赎（赢到 '+CHIP_GOAL+'）</button><button class="btn-main red" data-a="mkask" data-p="'+p.id+'" data-v="soup">输光：孟婆汤</button></div>'
+    const act=a&&a.pid===p.id?'<div class="rvask"><button class="btn-main glow" data-a="mkok">'+({redeem:'确认自赎（筹码已赢到 '+CHIP_GOAL+'）',soup:(S.t-p.inAt<MARKET_WAIT?'还没满 15 分钟，仍要强行复活':'确认复活'),ransom:'确认 '+(by?by.id:'')+' 出 '+RANSOM+' 金币赎人'})[a.k]+'</button><button class="btn-line" data-a="mkno">取消</button></div>'
+      :'<div class="btns mkbtns two2"><button class="btn-main" data-a="mkask" data-p="'+p.id+'" data-v="redeem">自赎（赢到 '+CHIP_GOAL+'）</button><button class="btn-main'+(S.t-p.inAt>=MARKET_WAIT?' glow':'')+'" data-a="mkask" data-p="'+p.id+'" data-v="soup">复活</button></div>'
         +'<div class="give"><input class="in mono" data-m="ransomBy" data-p="'+p.id+'" value="'+esc(byId)+'" inputmode="numeric" placeholder="出钱人编号" aria-label="出钱人编号">'
         +'<button data-a="mkask" data-p="'+p.id+'" data-v="ransom"'+(by&&!bw?'':' disabled')+'>'+(bw||'别人花 '+RANSOM+' 金币赎他')+'</button></div>';
-    return '<div class="mrow"><div class="l1">'+who(p)+'<span class="stay">已待 <b class="mono">'+mm(S.t-p.inAt)+'</b></span><span class="stay">冻结金币 <b class="mono">'+p.score+'</b></span><span class="stay">'+suits4(p)+'</span></div>'
+    return '<div class="mrow"><div class="l1">'+who(p)+'<span class="stay">已待 <b class="mono">'+mm(S.t-p.inAt)+'</b>'+(S.t-p.inAt>=MARKET_WAIT?'，<b>已满 15 分钟，可以复活</b>':'，还差 '+mm(MARKET_WAIT-(S.t-p.inAt)))+'</span><span class="stay">冻结金币 <b class="mono">'+p.score+'</b></span><span class="stay">'+suits4(p)+'</span></div>'
       +act+'</div>';}).join('');
-  const left='<section class="mcol"><div class="shrow"><h2 class="sh">鬼市</h2><span class="hint">领 '+CHIP_START+' 筹码，赢到 '+CHIP_GOAL+' 自赎，输光喝孟婆汤（随机忘一个花色），别人可花 '+RANSOM+' 金币赎人</span></div>'
-    +(shut?'<div class="gatebar"><b>已停止复活</b><span>时间截止已过 15 分钟</span></div>':'')
+  const left='<section class="mcol"><div class="shrow"><h2 class="sh">鬼市</h2><span class="hint">领 '+CHIP_START+' 筹码，赢到 '+CHIP_GOAL+' 自赎，待满 15 分钟不管赚没赚到都能复活，别人可花 '+RANSOM+' 金币赎人</span></div>'
     +(rows?'<div class="mlist">'+rows+'</div>':'<div class="empty">鬼市现在没有人。</div>')+'</section>';
   return lanternsHtml()+'<div class="page mkt">'+left+inboundPanel()+'</div>';
 }
@@ -836,10 +834,10 @@ function offGet(){try{return JSON.parse(localStorage.getItem(offKey())||'[]');}c
 function offSet(rows){ui.offMem=rows;try{rows.length?localStorage.setItem(offKey(),JSON.stringify(rows)):localStorage.removeItem(offKey());}catch{/* 无痕模式：只留在本页 */}}
 const online=()=>connected&&!ui.simOff;   // 模拟离线时当作断网
 const offRid=()=>Array.isArray(ME.rooms)&&ME.rooms.length?ME.rooms[0]:ui.room;
-const OFF_MK=[['market','入鬼市'],['redeem','自赎'],['ransom','被别人赎'],['soup','孟婆汤']];
+const OFF_MK=[['market','入鬼市'],['redeem','自赎'],['ransom','被别人赎'],['soup','复活']];
 function offDesc(x){const r=x.rid&&room(x.rid);
   return x.k==='room'?x.pid+' '+({win:'赢',solo:'独自通关',lose:'输'})[x.res]+' '+(r?r.card:''):x.k==='pickup'?'抓到 '+x.pid:x.k==='market'?x.pid+' 入鬼市'
-    :x.k==='redeem'?x.pid+' 自赎':x.k==='ransom'?x.pid+' 被 '+x.by+' 赎出':x.k==='soup'?x.pid+' 喝孟婆汤'
+    :x.k==='redeem'?x.pid+' 自赎':x.k==='ransom'?x.pid+' 被 '+x.by+' 赎出':x.k==='soup'?x.pid+' 复活'
     :x.k==='puz'?x.pid+' 解出 #'+x.code:x.k==='gate'?x.pid+' 鬼门开奖励：'+(x.rw==='coin'?'+'+GATE_COIN+' 金币':x.rw==='save'?'救 '+x.arg:'拿 '+x.arg):'';}
 // 表单填好了吗：返回 null = 可以记；否则是按钮上显示的提示
 function offWhy(){const f=ui.off,ids=parseIds(f.ids),k=ME.role==='dealer'?'room':f.k;

@@ -38,10 +38,10 @@ const GATES=[
   {id:'g2',title:'生死一线',body:'鬼门再开！想参加的请按判官指示集合。',
    rule:'每轮先给一条提示（如「阴阳颠倒，少者为生」），玩家 10 秒内选生门或死门，选错的出局观战，直到剩 3 人；最后超过 3 人就用一道抢答题决出。'}];
 const TK_COIN=100, TK_SUITS=5, TK_ALL=10;   // 压轴抽奖彩券：每 100 金币 1 张，集齐四花色 +5，八间房全部成功 +10
-const CHIP_START=200, CHIP_GOAL=500, RANSOM=500;   // 鬼市用实体筹码（网站不记）：领 200，赢到 500 自赎，输光喝孟婆汤；在场的人花 500 金币可以赎人
+const CHIP_START=200, CHIP_GOAL=500, RANSOM=500, MARKET_WAIT=900;   // 鬼市用实体筹码（网站不记）：领 200，赢到 500 自赎；待满 15 分钟（MARKET_WAIT）不管赚没赚到都可以复活，孟婆也可以提前强行复活；在场的人花 500 金币可以赎人
 const PUZ_PTS=100, PUZ_CAP=400;   // 解谜题 100 / 题，每人最多 400
 const GATE_WIN=3, GATE_COIN=300;  // 鬼门开：最先完成的 3 人，每人选 300 金币 / 救一个人 / 拿一个花色
-const ROOM_CAP0=6, DUR0=7200, MARKET_GRACE=900;  // 房间默认容量；主游戏 2 小时；鬼市复活名额在时间截止后再留 15 分钟
+const ROOM_CAP0=6, DUR0=7200;  // 房间默认容量；主游戏 2 小时
 const FREEZE_SEC=900;   // 封榜：时间截止前最后 15 分钟，玩家和大屏看不到排行榜（判官揭晓金币大亨奖后恢复）
 const KINDS=['公告','鬼门开'];
 
@@ -75,7 +75,6 @@ function init(){
 const needsReset=st=>!st||st.v!==3||!Array.isArray(st.rooms)||st.rooms.length!==ROOMS.length||st.rooms.some((r,i)=>r.id!==ROOMS[i].id);
 const timeUp=()=>S.t>=(S.dur||DUR0);
 const frozen=()=>!S.draw.pz.some(x=>x.kind==='tycoon'&&x.st==='done')&&(S.draw.lock===true||(S.draw.lock!==false&&S.t>=(S.dur||DUR0)-FREEZE_SEC&&S.draw.pz.some(x=>x.kind==='tycoon')));
-const marketShut=()=>S.t>=(S.dur||DUR0)+MARKET_GRACE;   // 截止 15 分钟后：停止发放复活名额
 const active=()=>S.players.filter(p=>p.on);
 const suitsOf=p=>SUITS.filter(x=>p.cards.includes(x));
 // 排名：金币多的在前；同分花色多的在前；再按编号
@@ -179,7 +178,7 @@ function enterMarket(p,by){
   if(p.st==='alive')p.outAt=S.t;if(p.pickAt==null)p.pickAt=S.t;
   p.st='market';p.inAt=S.t;p.on=true;p.chk={by,ok:true};
   log(nm(p)+' 进入鬼市，金币冻结','back');
-  tell(p.id,'你已进入鬼市','金币已冻结。用实体筹码赢到 '+CHIP_GOAL+' 就能自赎；输光可以喝孟婆汤复活，但会随机忘掉一个花色。');}
+  tell(p.id,'你已进入鬼市','金币已冻结。用实体筹码赢到 '+CHIP_GOAL+' 就能自赎；待满 15 分钟，不管赚没赚到都可以复活。');}
 function checkIn(pid,role){const p=pl(pid);
   if(!p)return no('没有这个编号');
   if(role==='mengpo'){if(p.st==='market'&&!(p.chk&&!p.chk.ok))return no(p.id+' 已经在鬼市');
@@ -198,13 +197,11 @@ function backAlive(p){p.st='alive';p.outAt=null;p.inAt=null;p.pickAt=null;p.chk=
 const inMk=p=>p&&p.st==='market'&&!(p.chk&&!p.chk.ok);
 // 自赎：玩家用实体筹码赢到 500，孟婆确认后点。不带出任何金币，只是解冻。
 function selfRedeem(pid){const p=pl(pid);if(!inMk(p))return no('该玩家不在鬼市');
-  if(marketShut())return no('已停止发放复活名额');
   backAlive(p);log(nm(p)+' 在鬼市赢够筹码，自赎回到人间','back',1);
   tell(p.id,'自赎成功','你回到了人间，金币已解冻。');
   return ok(p.id+' 已自赎');}
 // 赎人：任何在场的人花 500 金币把鬼市里的人赎出来
 function ransom(pid,byId){const p=pl(pid),by=pl(byId);if(!inMk(p))return no('该玩家不在鬼市');
-  if(marketShut())return no('已停止复活');
   if(!by)return no('先输入出钱人的编号');if(by.id===p.id)return no('不能自己赎自己');
   if(by.st!=='alive')return no(by.id+' 不在场，不能出钱');
   if(by.score<RANSOM)return no(by.id+' 只有 '+by.score+' 金币，不够 '+RANSOM);
@@ -213,15 +210,12 @@ function ransom(pid,byId){const p=pl(pid),by=pl(byId);if(!inMk(p))return no('该
   tell(p.id,'有人赎你','你被 '+nm(by)+' 花 '+RANSOM+' 金币赎了出来，金币已解冻。');
   tell(by.id,'赎人成功','你花 '+RANSOM+' 金币赎出了 '+nm(p)+'。');
   return ok(by.id+' 赎出 '+p.id+'，扣 '+RANSOM+' 金币');}
-// 孟婆汤：实体筹码输光 → 免费复活，但随机忘掉一个花色（rnd 只给测试用）
-function soup(pid,rnd){const p=pl(pid);if(!inMk(p))return no('该玩家不在鬼市');
-  if(marketShut())return no('已停止发放复活名额');
-  let lost=null;if(p.cards.length){const i=Math.floor((rnd==null?Math.random():rnd)*p.cards.length)%p.cards.length;lost=p.cards.splice(i,1)[0];
-    p.cleared=p.cleared.filter(id=>room(id).suit!==lost);}   // 忘掉的花色可以再去同花色的房间赢回来
+// 复活（孟婆汤）：待满 15 分钟，不管赚没赚到都可以复活；孟婆也可以不管时间强行复活。不再忘花色。
+function soup(pid){const p=pl(pid);if(!inMk(p))return no('该玩家不在鬼市');
   backAlive(p);
-  log(nm(p)+' 喝下孟婆汤复活'+(lost?'，忘掉了 '+lost:''),'back',1);
-  tell(p.id,'喝下孟婆汤','你复活了'+(lost?'，但忘掉了花色 '+lost+'（同花色的房间可以再挑战）':'')+'。金币已解冻。');
-  return ok(p.id+' 已复活'+(lost?'，忘掉 '+lost:''));}
+  log(nm(p)+' 喝下孟婆汤复活','back',1);
+  tell(p.id,'你复活了','金币已解冻。');
+  return ok(p.id+' 已复活');}
 
 // ---------- 解谜题 ----------
 function puzInfo(p){const used=p.puz.reduce((a,r)=>a+r.pts,0);return {used,left:Math.max(0,PUZ_CAP-used),cap:PUZ_CAP};}
@@ -262,7 +256,6 @@ function gateReward(pid,kind,arg){const g=S.gp;if(!g)return no('现在没有进�
   if(w.rw)return no('已经领过奖励');const p=pl(pid);
   if(kind==='coin'){p.score+=GATE_COIN;w.rw={k:'coin'};log(nm(p)+' 鬼门开奖励：+'+GATE_COIN+' 金币','back',1);}
   else if(kind==='save'){const q=pl(arg);if(!q)return no('先选要救的人');if(q.st==='alive')return no(q.id+' 本来就在场');
-    if(marketShut())return no('已停止发放复活名额');
     backAlive(q);w.rw={k:'save',pid:q.id};
     log(nm(p)+' 用鬼门开奖励救出了 '+nm(q),'back',1);tell(q.id,'有人救了你',nm(p)+' 用鬼门开奖励把你救了回来。');}
   else if(kind==='suit'){if(!SUITS.includes(arg))return no('先选花色');if(p.cards.includes(arg))return no(p.id+' 已经有 '+arg);
@@ -375,9 +368,7 @@ function offRow(me,x,rnd){
   if(x.k==='redeem'){if(p.st==='alive')return ok(p.id+' 已经在场');backAlive(p);log(nm(p)+' 自赎回到人间'+tag,'back',1);return ok(p.id+' 自赎');}
   if(x.k==='ransom'){if(p.st==='alive')return ok(p.id+' 已经在场');const by=pl(String(x.by||''));if(!by)return no('没有出钱人编号 '+(x.by||'？'));if(by.id===p.id)return no('出钱人不能是自己');
     const paid=Math.min(RANSOM,by.score);by.score-=paid;backAlive(p);log(nm(by)+' 花 '+paid+' 金币把 '+nm(p)+' 从鬼市赎了出来'+tag,'back',1);return ok(by.id+' 赎出 '+p.id+(paid<RANSOM?'（只有 '+paid+'）':''));}
-  if(x.k==='soup'){if(p.st==='alive')return ok(p.id+' 已经在场');let lost=null;
-    if(p.cards.length){const i=Math.floor((rnd==null?Math.random():rnd)*p.cards.length)%p.cards.length;lost=p.cards.splice(i,1)[0];p.cleared=p.cleared.filter(id=>room(id).suit!==lost);}
-    backAlive(p);log(nm(p)+' 喝下孟婆汤复活'+(lost?'，忘掉了 '+lost:'')+tag,'back',1);return ok(p.id+' 孟婆汤'+(lost?'，忘掉 '+lost:''));}
+  if(x.k==='soup'){if(p.st==='alive')return ok(p.id+' 已经在场');backAlive(p);log(nm(p)+' 喝下孟婆汤复活'+tag,'back',1);return ok(p.id+' 复活');}
   if(x.k==='puz'){const code=puzCode(x.code),key='z'+code,t=code&&puzTitle(code);if(!code)return no('谜题编码不对');if(p.puz.some(r=>r.k===key))return ok(p.id+' 已经兑换过 #'+code);
     const i=puzInfo(p);if(i.left<=0)return ok(p.id+' 解谜题已达上限');const pts=Math.min(PUZ_PTS,i.left);p.puz.push({k:key,title:t,t:S.t,pts});p.score+=pts;p.on=true;
     log('判官记录 '+nm(p)+' 解出 '+t+'，+'+pts+' 金币'+tag,'back');return ok(p.id+' 解谜 #'+code+' +'+pts);}
@@ -547,6 +538,6 @@ export function viewFor(state,me){
     players:state.players.map(x=>x.id===me.pid?x:{...x,hist:[],puz:[]}),...hideDraw(state,me.pid)};
 }
 
-export {setPlayerCount,roomRule,noticeStale,staffSees,puzCode,timeUp,marketShut,needsReset,whyNotEnter,eliminate,soup,puzInfo,ticketsOf,drawPool,KIND_NAME,frozen,FREEZE_SEC,
+export {setPlayerCount,roomRule,noticeStale,staffSees,puzCode,timeUp,MARKET_WAIT,needsReset,whyNotEnter,eliminate,soup,puzInfo,ticketsOf,drawPool,KIND_NAME,frozen,FREEZE_SEC,
   ranking,suitsOf,stLabel,inMk,pl,nm,matches,targetLabel,room,fmt,esc,log,no,
   OFF_KINDS,ROOMS,SUITS,GATES,TK_COIN,TK_SUITS,TK_ALL,CHIP_START,CHIP_GOAL,RANSOM,PUZ_PTS,PUZ_CAP,GATE_WIN,GATE_COIN,ROOM_CAP0,DEMOS};
