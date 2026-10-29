@@ -738,7 +738,7 @@ function viewPlayer(){
     +'<span class="w-teamg"><span class="w-k">名号</span><span class="w-team">'+esc(me.nick||'—')+'</span></span></div>'
     +'<div class="w-state"><div class="w-note">'+wnote+'</div>'
     +'<svg class="w-seal" viewBox="0 0 64 '+(wh+6)+'" role="img" aria-label="'+wseal+'"><g filter="url(#sealInk)"><rect x="3" y="3" width="58" height="'+wh+'" rx="2"></rect>'
-    +(EN_?'<text x="32" y="38" text-anchor="middle" font-size="13" letter-spacing="1" font-weight="900">'+wch[0]+'</text>':wch.map((c,i)=>'<text x="32" y="'+wy[i]+'" text-anchor="middle" font-size="'+(wn>2?24:28)+'">'+c+'</text>').join(''))+'</g></svg></div></div>';
+    +(EN_?'<text x="32" y="'+(wch[0].length>5?37:39)+'" text-anchor="middle" class="en" font-size="'+(wch[0].length>5?12.5:15.5)+'" font-weight="900">'+wch[0]+'</text>':wch.map((c,i)=>'<text x="32" y="'+wy[i]+'" text-anchor="middle" font-size="'+(wn>2?24:28)+'">'+c+'</text>').join(''))+'</g></svg></div></div>';
   // 彩券：金币、花色、八间房各一张卡
   const got=suitsOf(me).length,okS=got===SUITS.length,nC=me.cleared.length,okR=nC===ROOMS.length,tkC=Math.floor(me.score/TK_COIN),tk=ticketsOf(me);
   const suits=SUITS.map(x=>'<span class="ic su'+(me.cards.includes(x)?' lit':'')+(isRed(x)?' sr':'')+'" title="'+TYPE[x]+'">'+x+'</span>').join('');
@@ -933,6 +933,7 @@ function headerLang(){document.documentElement.dataset.lang=enOn()?'en':'zh';
 function render(){
   headerLang();
   if(DEVME&&!entering){ME=devMe();if(FULL)S=ME.role==='player'||ME.role==='screen'?R.viewFor(FULL,ME):FULL;}
+  headerLang();setConn();
   if(DEVME&&DEVME.demo)ui.devOps=!!DEVME.dwrite;
   const da=$('#devas');da.hidden=!DEVME||entering;
   const dop=$('#devops');dop.hidden=da.hidden;dop.disabled=!!(DEVME&&DEVME.demo);dop.textContent=ui.devOps?'可操作':DEVME&&DEVME.demo?'只读模式':'只读';dop.classList.toggle('ro',!!(DEVME&&DEVME.demo&&!ui.devOps));dop.classList.toggle('on',ui.devOps);dop.setAttribute('aria-pressed',String(ui.devOps));
@@ -969,7 +970,7 @@ function render(){
     else{delete g.dataset.free;delete g.dataset.more;}}}
   const nav=$('#tabs');nav.hidden=tabs.length<2;
   morph(nav,X(tabs.map(v=>'<button role="tab" data-a="tab" data-v="'+v+'" aria-selected="'+(v===ui.tab)+'">'+TAB_NAME[v]+'</button>').join('')));
-  $('#logo').innerHTML=ui.tab==='ctrl'?'<span class="scroll"></span>总控':X('百鬼夜行');
+  $('#logo').innerHTML=ui.tab==='ctrl'?'<span class="scroll"></span>总控':XT('百鬼夜行');
   $('#who').textContent=(DEVME?(DEVME.demo?'展示 ':'开发者 '):'')+(ME.role==='player'?(DEVME?ME.pid:XT('玩家')):ME.role==='ctrl'?'总控':ME.label||ROLE_NAME[ME.role]);
   $('#logout').hidden=false;$('#conn').hidden=false;
   const run=CLOCK&&CLOCK.running;

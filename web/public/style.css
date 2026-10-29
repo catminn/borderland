@@ -2001,3 +2001,9 @@ html[data-lang="en"] .wen .w-title span{font-size:11px;letter-spacing:.28em;text
 html[data-lang="en"] .stage .ttl{letter-spacing:.03em}
 .lgl{position:fixed;top:14px;right:14px;z-index:5}
 html:has(body.login){scrollbar-gutter:auto;background-color:#030707}
+html[data-lang="en"] .wen .w-seal text.en{font-family:var(--sans);stroke:var(--sc);stroke-width:.5;paint-order:stroke}
+html[data-lang="en"] .wen .w-id{font-family:var(--disp);font-weight:400;font-size:34px;letter-spacing:.06em}
+@media (max-width:719px){html[data-lang="en"] .wen .w-id{font-size:52px}}
+html[data-lang="en"] nav.pages button,html[data-lang="en"] .subtabs button{font-family:var(--disp);font-weight:400;font-size:22px;letter-spacing:.05em}
+html[data-lang="en"] nav.pages button[aria-selected="true"],html[data-lang="en"] .subtabs button[aria-selected="true"]{font-weight:400}
+html[data-lang="en"] .subtabs .n{font-family:var(--mono)}
