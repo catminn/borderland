@@ -1176,13 +1176,14 @@ html{scrollbar-gutter:stable}
 /* 生死簿：玩家表 + 修改 */
 .cols-ed{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:20px;align-items:start}
 .ptbl{display:flex;flex-direction:column;max-height:70vh;overflow-y:auto}
-.ptr{display:grid;grid-template-columns:52px minmax(0,1fr) 110px 76px 64px 64px;align-items:center;gap:8px;padding:8px 6px;border:0;border-bottom:1px solid var(--line3);background:none;color:var(--ink);text-align:left;font:inherit;cursor:pointer;border-radius:6px}
+.ptr{display:grid;grid-template-columns:52px minmax(0,1fr) 110px 96px 64px 56px;align-items:center;gap:8px;padding:8px 6px;border:0;border-bottom:1px solid var(--line3);background:none;color:var(--ink);text-align:left;font:inherit;cursor:pointer;border-radius:6px}
 .ptr.th{cursor:default;font-size:12px;font-weight:700;color:var(--sub);position:sticky;top:0;background:var(--panel);z-index:1}
 .ptr:not(.th):hover{background:var(--accent-soft)}
 .ptr.on{background:var(--accent-soft);box-shadow:inset 3px 0 0 var(--accent)}
 .ptr .b{font-weight:800}.ptr .nk{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ptr .stt{font-size:13px;color:var(--sub)}.ptr .stt.red{color:var(--red);font-weight:700}
 .ptr .sc{font-weight:800;text-align:right}
+.ptr.th>:nth-child(5),.ptr.th>:nth-child(6){text-align:right}
 .kvs{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:14px;color:var(--ink2)}
 /* 孟婆：赎人输入 */
 .mrow .give{display:flex;gap:8px}

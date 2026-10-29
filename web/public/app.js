@@ -505,7 +505,7 @@ function playerTable(){
   list=f==='off'?list:list.sort((a,b)=>b.score-a.score||a.id.localeCompare(b.id));
   const rows=list.map(p=>'<button class="ptr'+(ui.ed.pid===p.id?' on':'')+(p.st!=='alive'?' down':'')+'" data-a="edpick" data-v="'+p.id+'"><span class="mono b">'+p.id+'</span><span class="nk">'+esc(p.nick||'—')+'</span>'
     +'<span class="stt'+(p.st==='alive'?'':' red')+'">'+(!p.on?'未上榜':p.inRoom?'房间 '+room(p.inRoom).card:p.st==='alive'?'存活':stLabel(p))+'</span>'+suits4(p)+'<span class="mono sc">'+p.score+'</span>'
-    +'<span class="small mono">'+(p.won?'<b class="acc">中奖</b>':ticketsOf(p)+' 张')+'</span></button>').join('');
+    +'<span class="mono sc">'+(p.won?'<b class="acc">中奖</b>':ticketsOf(p))+'</span></button>').join('');
   return '<div class="pn" style="gap:10px"><div class="btns"><input class="in" id="pq" data-m="q" value="'+esc(ui.q)+'" placeholder="搜编号或昵称" style="max-width:220px">'
     +FLT.map(([k,l])=>'<button class="btn-line'+(f===k?' fill':'')+'" data-a="flt" data-v="'+k+'">'+l+'</button>').join('')+'<span class="small">'+list.length+' 人</span></div>'
     +'<div class="ptbl"><div class="ptr th"><span>编号</span><span>昵称</span><span>状态</span><span>花色</span><span>金币</span><span>彩券</span></div>'+(rows||'<div class="li small">没有符合的人</div>')+'</div></div>';
