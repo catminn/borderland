@@ -247,7 +247,7 @@ function rankConfetti(){ // 玩家看到「最终名次」弹窗的那一刻放�
   if(!S||!ME||ME.role!=='player')return;
   const d=document.querySelector('.dlg[data-n]');if(!d)return;
   const n=S.notices.find(x=>String(x.id)===d.dataset.n);
-  if(n&&n.sub==='final'&&!rankConf.has(n.id)){rankConf.add(n.id);confetti(true);}
+  if(n&&n.tone==='final'&&!rankConf.has(n.id)){rankConf.add(n.id);confetti(true);}
 }
 function confetti(big){
   if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
