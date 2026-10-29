@@ -267,7 +267,7 @@ function mapSvg(me){
   const t=(x,y,c,txt)=>'<text x="'+x+'" y="'+y+'" class="'+c+'">'+txt+'</text>';
   let h='<svg viewBox="20 20 1160 640" role="img" aria-label="场地平面图">'
     +'<rect class="mp-common" x="440" y="40" width="250" height="200"/>'
-    +t(565,86,'mp-cap','公共区域')+t(565,128,'mp-ct','鬼市')+t(565,164,'mp-cs','淘汰点')+t(565,190,'mp-cs','最终抽奖集合点')
+    +t(565,86,'mp-cap','最终抽奖集合点')+t(565,136,'mp-ct','鬼市')+t(565,174,'mp-cs','CASINO')
     +t(140,345,'mp-cor','走 廊')
     +'<g class="mp-desk"><rect x="450" y="282" width="230" height="64" rx="5"/>'+t(565,315,"mp-dk","info desk")+'</g>';
   MAP_ROOMS.forEach(([id,x,y,w,hh])=>{const r=room(id),[sl,sc]=mapSt(r),mine=me&&me.inRoom===id,done=me&&me.cleared.includes(id),cx=x+w/2,cy=y+hh/2;
