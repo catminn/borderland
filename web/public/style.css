@@ -1558,7 +1558,7 @@ body .room.mine :is(.cd,.pt){color:var(--ink)}
   body .stage .prow .who b{font-size:13px}
 }
 .rulein{width:100%;min-height:260px;resize:vertical;font:inherit;font-size:16px;line-height:1.6;padding:12px 14px}
-.stage .prow.frz{display:block;text-align:center;font-family:var(--disp);font-weight:900;color:var(--red);padding-top:70px;font-size:72px;letter-spacing:.06em}
+.stage .prow.frz{display:block;text-align:center;font-family:var(--disp);font-weight:400;color:var(--red);padding-top:70px;font-size:72px;letter-spacing:.06em}
 .stage .amain .rvl{width:min(100%,960px);display:grid;gap:22px;margin-top:28px}
 .stage .amain .rvl .li{display:flex;justify-content:space-between;align-items:baseline;gap:24px;border:0;border-top:2px solid var(--line);padding:18px 0 0;font-size:56px;font-weight:900}
 .stage .amain .rvl .li .x,.stage .amain .rvl .li .x *{font-size:inherit}
@@ -1821,7 +1821,6 @@ body.bwr .ovl[data-k="time"]{--accent:#f2f2f2;--accent-ink:#0a0a0a}
 body.bwr .stage .prow.me{border-left-color:var(--red)}
 body.bwr .fin3 .slot b,:root[data-theme="dark"] body.bwr .fin3 .slot b{color:var(--ink)}
 /* 玩家页标题：粗宋体，接近海报的高反差字形 */
-body.bwr{--disp:"BD Title","Noto Serif SC","Songti SC",serif}
 body.bwr :is(.sh,.rank .rh b,.cast .rh b,.gbox .gh b,.ck-l,.tn){font-weight:900}
 /* ===== 状态色：开放 = 绿，游戏中 / 重置中 = 灰（进不去），你在这里 = 红，已成功 = 同一种墨色 ===== */
 body.bwr{--ok:#0b7658;--ok-soft:rgba(11,118,88,.12)}
