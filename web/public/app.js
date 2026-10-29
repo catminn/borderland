@@ -794,7 +794,7 @@ const coachOn=()=>!!(ME&&S&&!entering&&ME.role==='player'&&!DEVME&&meP()&&meP().
 let coachEl=null,coachStep=-1,coachRaf=0;
 function coachPos(){
   if(!coachEl)return;
-  const i=ui.tut||0,t=TUT[i],tg=t[2]==='tab'?[...$('#tabs').children].find(b=>b.textContent.trim()===t[0]):$(t[2]);if(!tg)return;
+  const i=ui.tut||0,t=TUT[i],tg=t[2]==='tab'?[...$('#tabs').children].find(b=>{const x=b.textContent.trim();return x===t[0]||x===XT(t[0]);}):$(t[2]);if(!tg)return;
   const r=tg.getBoundingClientRect(),sp=coachEl.firstChild,tip=coachEl.lastChild,de=document.documentElement,W=de.clientWidth,H=de.clientHeight,pad=4;
   sp.style.cssText='left:'+(r.left-pad)+'px;top:'+(r.top-pad)+'px;width:'+(r.width+pad*2)+'px;height:'+(r.height+pad*2)+'px';
   const w=Math.min(300,W-32),cx=r.left+r.width/2,left=Math.max(16,Math.min(cx-w/2,W-16-w));tip.style.width=w+'px';const th=tip.offsetHeight,fitDn=r.bottom+pad+14+th<=H-12,fitUp=r.top-pad-14-th>=12,up=fitDn?(!fitUp?false:r.top>H/2):fitUp;
@@ -814,7 +814,7 @@ function coachRender(){
     coachEl.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});coachEl.addEventListener('wheel',e=>e.preventDefault(),{passive:false});}
   document.documentElement.classList.add('coaching');
   if(coachStep!==i){coachStep=i;scrollTo(0,0);
-    coachEl.innerHTML=X('<div class="sp"></div><div class="tip" role="dialog" aria-live="polite"><i class="ar"></i><div class="ct">'+(i+1)+' / '+TUT.length+'</div><b>'+t[0]+'</b><p>'+esc(t[1]).replace(/\n/g,'<br>')+'</p><button data-a="tutnext" data-modal="1">'+(i+1<TUT.length?'下一步':'知道了')+'</button></div>');}
+    coachEl.innerHTML=X('<div class="sp"></div><div class="tip" role="dialog" aria-live="polite"><i class="ar"></i><div class="ct">'+(i+1)+' / '+TUT.length+'</div><b>'+t[0]+'</b><p>'+esc(XT(t[1])).replace(/\n/g,'<br>')+'</p><button data-a="tutnext" data-modal="1">'+(i+1<TUT.length?'下一步':'知道了')+'</button></div>');}
   coachPos();
 }
 function modalHtml(){
