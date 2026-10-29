@@ -260,7 +260,11 @@ function confetti(big){
 
 // ---------- 地图（单房间平面图，房间显示实时状态） ----------
 // 坐标沿用场地图（1 米 = 50），手机和电脑同一张图；手机上只保留牌和颜色，游戏名看下面的列表。玩家不看尺寸、排队线等布置细节。
-const MAP_ROOMS=[['8H',40,40,200,200],['8D',240,40,200,200],['4D',690,40,200,200],['8C',890,40,200,200],['4S',40,440,325,200],['4H',365,440,200,200],['4C',565,440,200,200],['8S',765,440,325,200]];
+const MAP_ROOMS=[['8H',40,40,200,200,'困难心理 · 6人'],['8D',240,40,200,200,'困难逻辑 · 每轮1-4人'],['4D',690,40,200,200,'简易逻辑 · 多人'],['8C',890,40,200,200,'困难团队配合 · 2v2 / 3v3'],['4S',40,440,325,200,'简易体能 · 6人'],['4H',365,440,200,200,'简易心理 · 1v1 回合制'],['4C',565,440,200,200,'简易团队配合 · 6人'],['8S',765,440,325,200,'困难体能 · 1人 · 90秒']];
+// 隔断布帘和排队方向按场地原图：每两间共用一个入口，排队顺着隔间前面往入口走
+const MAP_CUR='M40 240H190M290 240H440M690 240H840M940 240H1090M240 40V290M440 40V240M690 40V240M890 40V290M40 440H315M415 440H715M815 440H1090M365 390V640M565 440V640M765 390V640';
+const MAP_Q='M67 341V283H217V258M67 341V399H342V422M421 314V283H267V258M711 314V283H865V258M987 341V283H914V258M987 341V399H789V422M544 376V399H392V422M587 376V399H740V422';
+const MAP_QH=[[217,250,-1],[267,250,-1],[865,250,-1],[914,250,-1],[342,432,1],[392,432,1],[740,432,1],[789,432,1]];
 function mapSt(r){const x=S.rooms.find(y=>y.id===r.id);
   return x.st==='play'?['游戏中 '+x.ps.length+' 人','on']:x.st==='reset'?['重置中','rst']:timeUp()?['已关闭','shut']:['开放','idle'];}
 function mapSvg(me){
@@ -269,14 +273,16 @@ function mapSvg(me){
     +'<rect class="mp-common" x="440" y="40" width="250" height="200"/>'
     +t(565,86,'mp-cap','最终抽奖集合点')+t(565,136,'mp-ct','鬼市')+t(565,174,'mp-cs','CASINO')
     +t(140,345,'mp-cor','走 廊')
-    +'<g class="mp-desk"><rect x="450" y="282" width="230" height="64" rx="5"/>'+t(565,315,"mp-dk","info desk")+'</g>';
-  MAP_ROOMS.forEach(([id,x,y,w,hh])=>{const r=room(id),[sl,sc]=mapSt(r),mine=me&&me.inRoom===id,done=me&&me.cleared.includes(id),cx=x+w/2,cy=y+hh/2;
+    +'<path class="mp-q" d="'+MAP_Q+'"/>'+MAP_QH.map(([x,y,d])=>'<path class="mp-qh" d="M'+(x-8)+' '+(y-11*d)+'L'+x+' '+y+'L'+(x+8)+' '+(y-11*d)+'Z"/>').join('')
+    +'<g class="mp-desk"><rect x="450" y="302" width="230" height="74" rx="5"/>'+t(565,340,"mp-dk","info desk")+'</g>';
+  MAP_ROOMS.forEach(([id,x,y,w,hh,sub])=>{const r=room(id),[sl,sc]=mapSt(r),mine=me&&me.inRoom===id,done=me&&me.cleared.includes(id),cx=x+w/2,cy=y+hh/2;
     h+='<g class="mp-room s-'+sc+(mine?' mine':done?' done':'')+(ui.msel===id?' sel':'')+'" data-a="msel" data-v="'+id+'" role="button" aria-label="'+r.card+' '+esc(r.name)+' '+sl+'">'
       +'<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+hh+'" rx="3"/>'
       +'<g class="mp-tag'+(isRed(r.suit)?' red':'')+'" transform="translate('+(cx-22)+' '+(cy-62)+')"><rect width="44" height="26" rx="4"/>'+t(22,19,'',r.n+r.suit)+'</g>'
-      +t(cx,cy+2,'mp-gn mid',esc(r.name))+t(cx,cy+40,'mp-st',mine?'你在这里':done?'✓ 已成功':sl)+t(cx,cy,'mp-num mp-only',r.n+r.suit)+'</g>';});
-  h+='<path class="mp-wall" d="M1090 300 V40 H40 V640 H1090 V380"/>'
-    +'<g class="mp-in"><rect x="978" y="312" width="108" height="56" rx="4"/>'+t(1032,340,'','签到台')+'</g>'
+      +t(cx,cy+2,'mp-gn mid',esc(r.name))+t(cx,cy+30,'mp-sub',esc(sub))+t(cx,cy+62,'mp-st',mine?'你在这里':done?'✓ 已成功':sl)+t(cx,cy,'mp-num mp-only',r.n+r.suit)+'</g>';});
+  h+='<path class="mp-cur" d="'+MAP_CUR+'"/>'
+    +'<path class="mp-wall" d="M1090 300 V40 H40 V640 H1090 V380"/>'
+    +'<g class="mp-gate"><rect x="1010" y="300" width="76" height="80" rx="4"/>'+t(1048,330,'mp-dt','入口')+t(1048,356,'mp-dt','不排队')+'</g>'
     +'<path class="mp-arrow" d="M1170 340 H1100 M1110 332 L1100 340 L1110 348"/>'+t(1135,320,'mp-ent','入口');
   return h+'</svg>';
 }

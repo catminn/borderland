@@ -1394,7 +1394,7 @@ body:has(#modal .ovl) :is(.wrap,#amb,#scene){visibility:hidden}
 /* 手机：同一张图等比缩小，只留房间号、区域名和颜色（游戏名和状态看下面的列表） */
 @media (max-width:719px){
   .mp-plan{padding:4px}
-  .mp-room .mp-num:not(.mp-only),.mp-st,.mp-tag,.mp-gn,.mp-cap,.mp-cs,.mp-sl,.mp-cor{display:none}
+  .mp-room .mp-num:not(.mp-only),.mp-st,.mp-tag,.mp-gn,.mp-cap,.mp-cs,.mp-sl,.mp-sub,.mp-dt,.mp-cor{display:none}
   .mp-only{display:inline}
   .mp-plan .mp-num{font-size:46px}
   .mp-plan .mp-ct{font-size:60px}
@@ -1983,3 +1983,11 @@ html.coaching,html.coaching body{overflow:hidden!important;overscroll-behavior:n
 .stage .pd.me .base b,.stage .pd.me.p1 .base b,.stage .pd.me.p2 .base b,.stage .pd.me.p3 .base b{color:#fff}
 /* 地图：点上面的房间，上面的房间也变灰（和点下面列表一致；原先只有「游戏中」状态的房间会变） */
 body.bwr .mapp .mp-plan .mp-room.sel:not(.mine)>rect{fill:color-mix(in srgb,var(--mute) 35%,transparent)}
+
+/* 地图：隔断布帘（红）、排队方向（黄虚线）、入口框 */
+.mp-cur{fill:none;stroke:var(--red);stroke-width:4;stroke-linecap:round}
+.mp-q{fill:none;stroke:var(--warn);stroke-width:3;stroke-dasharray:9 7;stroke-linejoin:round}
+.mp-qh{fill:var(--warn);stroke:none}
+.mp-sub{font-size:14px;fill:var(--sub)!important;text-anchor:middle}
+.mp-gate rect{fill:none;stroke:var(--sub);stroke-width:2;stroke-dasharray:6 5}
+.mp-dt{fill:var(--sub)!important;font-size:16px;font-weight:400;letter-spacing:.1em;text-anchor:middle;dominant-baseline:central}
