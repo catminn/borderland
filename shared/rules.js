@@ -26,8 +26,8 @@ const ROOMS=[
    rule:"房间内有 8 张符咒，其中 4 张是真符、4 张是假符。真符上的话一定为真，假符上的话一定为假。玩家需在 5 分钟内根据符咒之间的逻辑关系找出 4 张真符，并按照符咒编号从小到大读取真符上的数字，组成 4 位密码打开密码箱。最多尝试 3 次密码；成功获得 ♦ + 800 金币，超时或 3 次输入错误则挑战失败进入鬼市。现场随机使用 A/B 两套题目；如发现玩家通过泄题直接输入正确密码，可直接判定失败。"}];
 const winPts=(r,res)=>res==='solo'&&r.solo?r.solo:r.n*100;
 const SUITS=['♠','♦','♣','♥'];
-// 身份卡：编号 001 起，默认 56 张。没有起始房间（2026-10-19 删掉了，现场见机行事）。
-const N_PLAYERS=56;
+// 身份卡：编号 001 起，默认 100 张。没有起始房间（2026-10-19 删掉了，现场见机行事）。
+const N_PLAYERS=100;
 const pidOf=i=>String(i).padStart(3,'0');
 // 解谜题题库不写在代码里（仓库公开、rules.js 会下载到每个玩家手机上）：总控在网站上粘贴导入，存在 S.bank = {编码:{q,a}}，只发给判官和总控。
 const puzCode=v=>{const n=parseInt(String(v==null?'':v).trim(),10);return n>0&&n<100000?String(n):null;};
@@ -340,6 +340,13 @@ function setCards(pid,cards){const p=pl(pid);if(!p)return no('没有这个编号
 function setOn(pid,on){const p=pl(pid);if(!p)return no('没有这个编号');p.on=!!on;log('总控把 '+nm(p)+(on?' 加入':' 移出')+'排行榜');return ok(on?'已加入排行':'已移出排行');}
 function addPlayers(n){n=Math.round(+n);if(!(n>=1&&n<=40))return no('一次加 1–40 个');const k=S.players.length;for(let i=1;i<=n;i++)S.players.push(mkPlayer(k+i));
   log('总控新增 '+n+' 张身份卡（'+pidOf(k+1)+'–'+pidOf(k+n)+'）');return ok('已新增 '+n+' 张，记得生成 PIN');}
+// 设置身份卡总数：不够就补，多了只删末尾还没用过的（没上榜、没记录、没分数）；已经用过的卡不删。
+function setPlayerCount(n){n=Math.round(+n);if(!(n>=1&&n<=500))return no('玩家数量要在 1–500 之间');
+  const k=S.players.length;for(let i=k+1;i<=n;i++)S.players.push(mkPlayer(i));
+  const unused=p=>!p.on&&p.st==='alive'&&!p.inRoom&&!p.score&&!p.hist.length&&!p.puz.length&&!p.cards.length&&!p.won;
+  while(S.players.length>n&&unused(S.players[S.players.length-1]))S.players.pop();
+  const now=S.players.length;if(now!==k)log('总控把身份卡设为 '+now+' 张');
+  return ok(now===n?'身份卡共 '+n+' 张':'身份卡共 '+now+' 张（后面的卡已有人用过，没法再减）');}
 function setDur(secs){secs=Math.round(+secs);if(!(secs>=60&&secs<=86400))return no('总时长要在 1 分钟到 24 小时之间');S.dur=secs;log('总控把总时长设为 '+Math.floor(secs/60)+' 分钟');return ok('总时长已设为 '+Math.floor(secs/60)+' 分钟');}
 
 // ---------- 离线补录 ----------
@@ -540,6 +547,6 @@ export function viewFor(state,me){
     players:state.players.map(x=>x.id===me.pid?x:{...x,hist:[],puz:[]}),...hideDraw(state,me.pid)};
 }
 
-export {roomRule,noticeStale,staffSees,puzCode,timeUp,marketShut,needsReset,whyNotEnter,eliminate,soup,puzInfo,ticketsOf,drawPool,KIND_NAME,frozen,FREEZE_SEC,
+export {setPlayerCount,roomRule,noticeStale,staffSees,puzCode,timeUp,marketShut,needsReset,whyNotEnter,eliminate,soup,puzInfo,ticketsOf,drawPool,KIND_NAME,frozen,FREEZE_SEC,
   ranking,suitsOf,stLabel,inMk,pl,nm,matches,targetLabel,room,fmt,esc,log,no,
   OFF_KINDS,ROOMS,SUITS,GATES,TK_COIN,TK_SUITS,TK_ALL,CHIP_START,CHIP_GOAL,RANSOM,PUZ_PTS,PUZ_CAP,GATE_WIN,GATE_COIN,ROOM_CAP0,DEMOS};

@@ -83,9 +83,14 @@ export class Game extends DurableObject {
   genPins(counts) {
     const pins = this.auth.pins, taken = this.takenPins();
     let made = 0;
+    this.removedPins = 0;
+    if (counts.players != null) {   // 玩家数量：身份卡不够就补，多出来没用过的删掉
+      R.use(this.S); R.setPlayerCount(counts.players);
+      const ids = new Set(this.S.players.map(p => p.id));
+      for (const [pin, v] of Object.entries(pins)) if (v.role === 'player' && !ids.has(v.pid)) { delete pins[pin]; this.removedPins++; }
+    }
     const have = new Set(Object.values(pins).filter(v => v.pid).map(v => v.pid));
     for (const p of this.S.players) if (!have.has(p.id)) { const pin = newPin(taken); taken.add(pin); pins[pin] = { role: 'player', pid: p.id, label: p.id }; made++; }
-    this.removedPins = 0;
     for (const role of STAFF_ROLES) {
       if (counts[role] == null) continue;   // 没传这个角色的数量 = 不动
       const want = Math.max(0, Math.min(30, Math.round(+counts[role]) || 0));
@@ -264,10 +269,10 @@ export class Game extends DurableObject {
     if (a.type === 'pincounts' || a.type === 'setpincounts') {   // 「生成 PIN」各角色人数的共用默认值：总控和真开发者可读写，存服务器，所有设备一致
       if (this.inSandbox || s.demo) return { ok: true, msg: '', changed: false, data: null };   // 演示局不读写真实默认值
       if (!(s.role === 'ctrl' || s.role === 'dev')) return R.no('没有权限');
-      const au = this.realAuth || this.auth, def = { dealer: 8, judge: 1, mengpo: 1, wuchang: 1, ctrl: 1, screen: 1 };
+      const au = this.realAuth || this.auth, def = { dealer: 8, judge: 1, mengpo: 1, wuchang: 1, ctrl: 1, screen: 1, players: 100 };
       if (a.type === 'setpincounts') {
         const c = { ...def, ...(au.counts || {}) };
-        for (const k of Object.keys(def)) if (k !== 'dealer' && a.counts && a.counts[k] != null) { const v = Math.round(+a.counts[k]); if (v >= 0 && v <= 30) c[k] = v; }
+        for (const k of Object.keys(def)) if (k !== 'dealer' && a.counts && a.counts[k] != null) { const v = Math.round(+a.counts[k]); if (v >= 0 && v <= (k === 'players' ? 500 : 30)) c[k] = v; }
         au.counts = c; await this.ctx.storage.put('auth', au);
       }
       return { ok: true, msg: '', changed: false, data: { ...def, ...(au.counts || {}) } };
@@ -342,8 +347,8 @@ export class Game extends DurableObject {
         return ok(a.demo ? '已载入演示数据（计时暂停）' : '已重置为空白游戏（计时暂停）');
       }
       case 'admin.genpins': {
-        const made = this.genPins(a.counts || {}), pins = this.auth.pins;
-        return ok('新生成 ' + made + ' 个 PIN' + (this.removedPins ? '，删除多出的 ' + this.removedPins + ' 个' : '') + '，共 ' + Object.keys(pins).length + ' 个', { changed: false, auth: true, kick: this.removedPins > 0, data: this.pinList() });
+        const counts0 = a.counts || {}, made = this.genPins(counts0), pins = this.auth.pins;
+        return ok('新生成 ' + made + ' 个 PIN' + (this.removedPins ? '，删除多出的 ' + this.removedPins + ' 个' : '') + '，共 ' + Object.keys(pins).length + ' 个', { changed: counts0.players != null, auth: true, kick: this.removedPins > 0, data: this.pinList() });
       }
       case 'admin.pins': return ok('', { changed: false, data: this.pinList() });
       case 'admin.resetpin': case 'admin.setpin': {   // resetpin = 随机换一个；setpin = 改成指定的 6 位数

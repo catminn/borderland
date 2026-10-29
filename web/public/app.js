@@ -32,8 +32,8 @@ function buzz(p){
   if(!IOS)return;const a=Array.isArray(p)?p:[p];let t=0;
   a.forEach((d,i)=>{if(i%2===0)setTimeout(iosTick,t);t+=d;});}
 function shakeEl(el,cls){if(!el)return;el.classList.remove(cls);void el.offsetWidth;el.classList.add(cls);}
-function loadCounts(){const c={dealer:8,judge:1,mengpo:1,wuchang:1,ctrl:1,screen:1};
-  try{const o=JSON.parse(localStorage.getItem('borderland.pincounts')||'{}');for(const k in c){const v=Math.round(+o[k]);if(k!=='dealer'&&v>=0&&v<=30)c[k]=v;}}catch(e){}return c;}
+function loadCounts(){const c={dealer:8,judge:1,mengpo:1,wuchang:1,players:100,screen:1};
+  try{const o=JSON.parse(localStorage.getItem('borderland.pincounts')||'{}');for(const k in c){const v=Math.round(+o[k]);if(k!=='dealer'&&v>=(k==='players'?1:0)&&v<=(k==='players'?500:30))c[k]=v;}}catch(e){}return c;}
 let ui={ddOpen:null,tab:null,room:'4S',as:(()=>{try{return localStorage.getItem('borderland.as')||'ctrl';}catch{return 'ctrl';}})(),devOps:true,demoRows:null,devAck:new Set(),
   ent:'',res:{},settled:null,kickAsk:null,                       // Dealer
   gw:'',gr:{},jg:{gate:'',title:'',body:'',mins:10},gateEndAsk:false,pz:{pid:'',code:''},      // 判官
@@ -642,7 +642,7 @@ function bankPanel(){
 function adminPanel(){
   if(!LOCAL&&!ui.cntTried&&ws&&connected){ui.cntTried=true;send({type:'pincounts'},m=>{if(m.data)Object.assign(ui.admin.counts,m.data);},true);}
   const A=ui.admin,c=A.counts,run=CLOCK&&CLOCK.running;
-  const num=(k,l,fixed)=>'<label class="fld"><span>'+l+'</span><input class="in mono" type="number" id="adm-'+k+'" min="0" max="30" data-m="adm.'+k+'" value="'+c[k]+'"'+(fixed?' disabled':'')+'></label>';
+  const num=(k,l,fixed)=>'<label class="fld"><span>'+l+'</span><input class="in mono" type="number" id="adm-'+k+'" min="0" max="'+(k==='players'?500:30)+'" data-m="adm.'+k+'" value="'+c[k]+'"'+(fixed?' disabled':'')+'></label>';
   const pins=A.pins?'<div class="pins"><div class="pr h"><span>身份</span><span>编号 / 名称</span><span>PIN</span><span></span></div>'
     +A.pins.map(p=>{const ed=A.ask==='edit:'+p.pin,okTo=/^\d{6}$/.test(A.pinTo||'')&&A.pinTo!==p.pin;
       return '<div class="pr"><span>'+esc(p.roleName)+'</span><span class="mono" style="font-weight:700">'+esc(p.pid||p.label)+'</span>'
@@ -684,7 +684,7 @@ function adminPanel(){
   const rs=A.resetTxt==='重置';
   const right='<div class="stack">'
     +'<div class="pn"><div class="shrow"><h3>PIN</h3><span class="small">改小会删掉编号靠后的 PIN</span></div>'
-    +'<div class="cnts">'+num('dealer','Dealer')+num('judge','判官')+num('mengpo','孟婆')+num('wuchang','黑白无常')+num('ctrl','总控')+num('screen','大屏')+'</div>'
+    +'<div class="cnts">'+num('dealer','Dealer')+num('judge','判官')+num('mengpo','孟婆')+num('wuchang','黑白无常')+num('players','玩家数量')+num('screen','大屏')+'</div>'
     +'<div class="btns"><button class="btn-line acc" data-a="adm-gen">生成 PIN</button><button class="btn-line" data-a="adm-pins">查看全部 PIN</button></div>'
     +pins+'</div>'
     +'<div class="danger"><h3>危险操作</h3><p>清空所有游戏数据（PIN 和题库保留）。输入“重置”后点按钮。</p>'
@@ -1123,7 +1123,7 @@ function localAdmin(a){
       return ok(CLOCK.running?'计时进行中':'计时已暂停');
     case 'admin.reset':{const bank=FULL.bank;lSnap('重置前');FULL=R.newGame(a.demo||false);if(bank)FULL.bank=bank;}FULL.now=Date.now();CLOCK={running:false,base:a.demo?FULL.t:0,at:Date.now()};return ok(a.demo?'已载入演示数据（计时暂停）':'已重置为空白游戏（计时暂停）');
     case 'admin.genpins':{
-      const counts=a.counts||{};let made=0;const have=new Set(Object.values(LPINS).filter(v=>v.pid).map(v=>v.pid));
+      const counts=a.counts||{};let made=0;if(counts.players!=null){R.use(FULL);R.setPlayerCount(counts.players);const ids=new Set(FULL.players.map(p=>p.id));for(const k of Object.keys(LPINS))if(LPINS[k].role==='player'&&!ids.has(LPINS[k].pid))delete LPINS[k];}const have=new Set(Object.values(LPINS).filter(v=>v.pid).map(v=>v.pid));
       for(const p of FULL.players)if(!have.has(p.id)){LPINS[lNewPin()]={role:'player',pid:p.id,label:p.id};made++;}
       let removed=0;
       for(const role of L_ROLES){if(counts[role]==null)continue;const want=Math.max(0,Math.min(30,Math.round(+counts[role])||0));
@@ -1278,7 +1278,7 @@ document.addEventListener('click',e=>{
   else if(a==='adm-cancel'){A.ask=null;}
   else if(a==='bank-import'){send({type:'setbank',rows:bankRows(A.bankTxt)},()=>{A.bankTxt='';});}
   else if(a==='bank-clear'){A.ask=null;send({type:'setbank',rows:[]});}
-  else if(a==='adm-gen'){send({type:'admin.genpins',counts:A.counts},m=>{A.pins=m.data;});}
+  else if(a==='adm-gen'){send({type:'admin.genpins',counts:{...A.counts,ctrl:undefined}},m=>{A.pins=m.data;});}
   else if(a==='adm-pins'){send({type:'admin.pins'},m=>{A.pins=m.data;},true);}
   else if(a==='adm-hide'){A.pins=null;}
   else if(a==='adm-resetpin'){A.ask=null;send({type:'admin.resetpin',pin:v},m=>{A.pins=m.data;});}

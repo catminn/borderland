@@ -8,7 +8,7 @@ const fresh = () => { S = R.newGame(false); R.use(S); };
 
 // ---------- 身份卡 ----------
 fresh();
-T('56 张身份卡，编号 001–056', S.players.length === 56 && S.players[0].id === '001' && S.players[55].id === '056');
+T('100 张身份卡，编号 001–100', S.players.length === 100 && S.players[0].id === '001' && S.players[99].id === '100');
 T('没有起始房间', S.players.every(p => !('start' in p)));
 T('没登录的人不进排行', R.ranking().length === 0);
 T('玩家取昵称', A('player', { type: 'nick', nick: '阿鬼' }, { pid: '001' }).ok && P('001').nick === '阿鬼' && P('001').on);
@@ -63,6 +63,10 @@ T('孟婆输入编号登记在场的人（自己走进鬼市）：直接入鬼�
 T('已在鬼市的人不能重复登记', !A('mengpo', { type: 'checkin', pid: '003' }).ok);
 A('mengpo', { type: 'redeem', pid: '003' });
 R.eliminate(P('001'), '测试', '');
+{ const n0 = R.S.players.length; R.setPlayerCount(n0 + 5); const up = R.S.players.length === n0 + 5; R.setPlayerCount(n0);
+  T('设置玩家数量：补到指定张数，多出来没用过的卡可以减回去', up && R.S.players.length === n0);
+  R.S.players[R.S.players.length - 1].on = true; R.setPlayerCount(n0 - 3);
+  T('设置玩家数量：最后一张卡用过了就不删', R.S.players.length === n0); R.S.players[R.S.players.length - 1].on = false; }
 T('孟婆不能记筹码（实体筹码）', !A('mengpo', { type: 'chips', pid: '001', v: 650 }).ok);
 A('wuchang', { type: 'checkin', pid: '001' }); A('mengpo', { type: 'confirm', pid: '001' });
 T('自赎：直接解冻，不带出金币', A('mengpo', { type: 'redeem', pid: '001' }).ok && P('001').st === 'alive' && P('001').score === 1000);
@@ -150,7 +154,7 @@ T('Dealer 不能改金币', !A('dealer', { type: 'setscore', pid: '001', v: 9 })
 T('总控改金币写原因', A('ctrl', { type: 'setscore', pid: '001', v: 300, why: '补录' }).ok && S.log[0].text.includes('补录'));
 T('公告发给工作人员可见', (() => { A('ctrl', { type: 'publish', f: { kind: '公告', title: 'x', target: 'staff' } }); return R.staffSees(S.notices[0]); })());
 T('玩家只看到播报日志和自己的通知', (() => { R.eliminate(P('002'), '测试', ''); const v = R.viewFor(S, { role: 'player', pid: '001' }); return v.log.every(l => l.b) && v.notices.every(n => n.target !== 'player' || n.ids.includes('001')); })());
-T('新增身份卡', A('ctrl', { type: 'addplayers', n: 4 }).ok && S.players.length === 60 && !!P('060'));
+T('新增身份卡', A('ctrl', { type: 'addplayers', n: 4 }).ok && S.players.length === 104 && !!P('104'));
 T('旧存档要重置', R.needsReset({ v: 2, rooms: [] }) && !R.needsReset(S));
 T('演示数据可以生成', (() => { const g = R.newGame(true); return g.players.filter(p => p.on).length >= 36 && g.draw.pz.length === 5 && g.rooms.some(r => r.ps.length); })());
 // ---------- 第 2 轮：花色可改、三套演示数据 ----------

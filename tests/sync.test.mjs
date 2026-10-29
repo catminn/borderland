@@ -20,7 +20,7 @@ T('admin login', admin.me.role === 'ctrl');
 T('load demo', (await admin.act({ type: 'admin.reset', demo: true })).ok);
 const gen = await admin.act({ type: 'admin.genpins', counts: { dealer: 8, wuchang: 1, judge: 2, mengpo: 1, ctrl: 1, screen: 1 } });
 const pins = gen.data, pinOf = f => pins.find(f).pin;
-T('pins generated (56 players + 8 dealers + 6 other staff)', pins.length === 56 + 8 + 2 + 1 + 1 + 1 + 1);
+T('pins generated (100 players + 8 dealers + 6 other staff)', pins.length === 100 + 8 + 2 + 1 + 1 + 1 + 1);
 T('player PINs are labelled with the card number', pins.filter(p => p.role === 'player').every(p => /^\d{3}$/.test(p.pid)));
 T('seed (mid) has one finished gate and one running', admin.S.notices.some(n => n.sub === 'gate' && n.gr) && !!admin.S.gp);
 const J0 = await client(pinOf(p => p.role === 'judge')), dcache = {}, D = async rid => dcache[rid] || (dcache[rid] = await client(pinOf(p => p.role === 'dealer' && p.rooms[0] === rid)));
