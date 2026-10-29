@@ -2,6 +2,7 @@
 // The server owns the game state; this page signs in with a PIN, keeps a live WebSocket, renders the pages
 // for the signed-in role, and sends actions. Rule helpers come from rules.js (same file the server runs).
 import * as R from './rules.js';
+import { getLang, setLang, trHtml, t as tt } from './i18n.js';
 const {ROOMS,SUITS,TK_COIN,TK_SUITS,TK_ALL,KIND_NAME,ticketsOf,GATES,PUZ_CAP,PUZ_PTS,GATE_WIN,GATE_COIN,CHIP_START,CHIP_GOAL,RANSOM,puzCode,
   room,fmt,esc,matches,targetLabel,whyNotEnter,no,timeUp,MARKET_WAIT,staffSees,ranking,suitsOf,stLabel,inMk,pl,nm,puzInfo}=R;
 // 奖品（用本页的 S，不依赖 rules.js 里的模块变量）
@@ -50,6 +51,10 @@ const ROLE_TABS={ctrl:['ctrl','board','map'],dealer:['dealer','board','map'],jud
 const TAB_NAME={board:'大屏',map:'地图',player:'我的',dealer:'Dealer',ctrl:'总控',npc:'判官',draw:'抽奖',market:'鬼市',wuchang:'黑白无常'};
 const ROLE_NAME={player:'玩家',dealer:'Dealer',judge:'判官',mengpo:'孟婆',wuchang:'黑白无常',ctrl:'总控',screen:'大屏'};
 const nowT=()=>!CLOCK?0:CLOCK.running?CLOCK.base+Math.floor((Date.now()+OFFSET-CLOCK.at)/1000):CLOCK.base;
+// 玩家端英文版：只有玩家（和登录页）翻译，工作人员页一直是中文
+const enOn=()=>getLang()==='en'&&(!ME||entering||ME.role==='player');
+const X=h=>enOn()?trHtml(h):h;
+const XT=s=>enOn()?tt(s):s;
 const drawOn=()=>!!(S&&S.draw&&S.draw.screen==='draw');
 
 // ---------- look ----------
@@ -271,7 +276,7 @@ function mapSvg(me){
   const t=(x,y,c,txt)=>'<text x="'+x+'" y="'+y+'" class="'+c+'">'+txt+'</text>';
   let h='<svg viewBox="20 20 1160 640" role="img" aria-label="场地平面图">'
     +'<rect class="mp-common" x="440" y="40" width="250" height="200"/>'
-    +t(565,86,'mp-cap','最终抽奖集合点')+t(565,136,'mp-ct','鬼市')+t(565,174,'mp-cs','CASINO')
+    +t(565,86,'mp-cap','最终抽奖集合点')+t(565,136,'mp-ct',enOn()?'Market':'鬼市')+t(565,174,'mp-cs','CASINO')
     +t(140,345,'mp-cor','走 廊')
     +'<path class="mp-q" d="'+MAP_Q+'"/>'+MAP_QH.map(([x,y,d])=>'<path class="mp-qh" d="M'+(x-8)+' '+(y-11*d)+'L'+x+' '+y+'L'+(x+8)+' '+(y-11*d)+'Z"/>').join('')
     +'<g class="mp-desk"><rect x="450" y="302" width="230" height="74" rx="5"/>'+t(565,340,"mp-dk","info desk")+'</g>';
@@ -282,8 +287,8 @@ function mapSvg(me){
       +t(cx,cy+2,'mp-gn mid',esc(r.name))+t(cx,cy+30,'mp-sub',esc(sub))+t(cx,cy+62,'mp-st',mine?'你在这里':done?'✓ 已成功':sl)+t(cx,cy,'mp-num mp-only',r.n+r.suit)+'</g>';});
   h+='<path class="mp-cur" d="'+MAP_CUR+'"/>'
     +'<path class="mp-wall" d="M1090 300 V40 H40 V640 H1090 V380"/>'
-    +'<g class="mp-gate"><rect x="1010" y="300" width="76" height="80" rx="4"/>'+t(1048,330,'mp-dt','入口')+t(1048,356,'mp-dt','不排队')+'</g>'
-    +'<path class="mp-arrow" d="M1170 340 H1100 M1110 332 L1100 340 L1110 348"/>'+t(1135,320,'mp-ent','入口');
+    +'<g class="mp-gate"><rect x="1010" y="300" width="76" height="80" rx="4"/>'+t(1048,330,'mp-dt',enOn()?'Entry':'入口')+t(1048,356,'mp-dt',enOn()?'No queue':'不排队')+'</g>'
+    +'<path class="mp-arrow" d="M1170 340 H1100 M1110 332 L1100 340 L1110 348"/>'+t(1135,320,'mp-ent',enOn()?'Entry':'入口');
   return h+'</svg>';
 }
 function viewMap(){
@@ -725,7 +730,7 @@ function viewPlayer(){
     :inMkt?'<span class="w-hint">你在鬼市</span><span class="w-lab">实体筹码赢到 '+CHIP_GOAL+' 可自赎</span><span class="w-lab">金币已冻结</span>'
     :me.won?'<span class="w-hint">你中奖了</span><span class="w-lab">「'+esc((prize(me.won)||{}).name||'')+'」，请到台前领取</span>'
     :'<span class="w-hint">金币 <b class="mono">'+me.score+'</b></span><span class="w-lab">'+(myRank(me)?'排第 '+myRank(me)+' 名':'')+'</span>';
-  const wch=[...wseal],wn=wch.length,wh=wn>2?78:58,wy=wn>2?[27,51,75]:[29,55];
+  const EN_=enOn(),WSE={'待抓':'CAUGHT','鬼市':'MARKET','中奖':'WINNER','在场':'ALIVE'},wch=EN_?[WSE[wseal]]:[...wseal],wn=EN_?2:wch.length,wh=wn>2?78:58,wy=wn>2?[27,51,75]:[29,55];
   const wen='<div class="wen" data-st="'+wst+'"><svg class="w-grain" aria-hidden="true"><rect width="100%" height="100%" filter="url(#paperGrain)"></rect></svg>'
     +'<i class="w-frame"></i><i class="w-cn tl"></i><i class="w-cn tr"></i><i class="w-cn bl"></i><i class="w-cn br"></i>'
     +'<div class="w-title"><b>酆都通行证</b><span>冥府签发</span></div><div class="w-rule"></div>'
@@ -733,7 +738,7 @@ function viewPlayer(){
     +'<span class="w-teamg"><span class="w-k">名号</span><span class="w-team">'+esc(me.nick||'—')+'</span></span></div>'
     +'<div class="w-state"><div class="w-note">'+wnote+'</div>'
     +'<svg class="w-seal" viewBox="0 0 64 '+(wh+6)+'" role="img" aria-label="'+wseal+'"><g filter="url(#sealInk)"><rect x="3" y="3" width="58" height="'+wh+'" rx="2"></rect>'
-    +wch.map((c,i)=>'<text x="32" y="'+wy[i]+'" text-anchor="middle" font-size="'+(wn>2?24:28)+'">'+c+'</text>').join('')+'</g></svg></div></div>';
+    +(EN_?'<text x="32" y="38" text-anchor="middle" font-size="13" letter-spacing="1" font-weight="900">'+wch[0]+'</text>':wch.map((c,i)=>'<text x="32" y="'+wy[i]+'" text-anchor="middle" font-size="'+(wn>2?24:28)+'">'+c+'</text>').join(''))+'</g></svg></div></div>';
   // 彩券：金币、花色、八间房各一张卡
   const got=suitsOf(me).length,okS=got===SUITS.length,nC=me.cleared.length,okR=nC===ROOMS.length,tkC=Math.floor(me.score/TK_COIN),tk=ticketsOf(me);
   const suits=SUITS.map(x=>'<span class="ic su'+(me.cards.includes(x)?' lit':'')+(isRed(x)?' sr':'')+'" title="'+TYPE[x]+'">'+x+'</span>').join('');
@@ -809,7 +814,7 @@ function coachRender(){
     coachEl.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});coachEl.addEventListener('wheel',e=>e.preventDefault(),{passive:false});}
   document.documentElement.classList.add('coaching');
   if(coachStep!==i){coachStep=i;scrollTo(0,0);
-    coachEl.innerHTML='<div class="sp"></div><div class="tip" role="dialog" aria-live="polite"><i class="ar"></i><div class="ct">'+(i+1)+' / '+TUT.length+'</div><b>'+t[0]+'</b><p>'+esc(t[1]).replace(/\n/g,'<br>')+'</p><button data-a="tutnext" data-modal="1">'+(i+1<TUT.length?'下一步':'知道了')+'</button></div>';}
+    coachEl.innerHTML=X('<div class="sp"></div><div class="tip" role="dialog" aria-live="polite"><i class="ar"></i><div class="ct">'+(i+1)+' / '+TUT.length+'</div><b>'+t[0]+'</b><p>'+esc(t[1]).replace(/\n/g,'<br>')+'</p><button data-a="tutnext" data-modal="1">'+(i+1<TUT.length?'下一步':'知道了')+'</button></div>');}
   coachPos();
 }
 function modalHtml(){
@@ -922,7 +927,11 @@ function themeFor(){if(ME&&ME.role==='player'&&inMarketNow())return 'dark';   //
   let v=null;try{v=localStorage.getItem(THEME_KEY);}catch{/* private mode */}
   return v||'dark';}
 
+function headerLang(){
+  const lb=$('#lang');lb.hidden=!(!ME||entering||ME.role==='player');lb.textContent=getLang()==='en'?'中文':'EN';
+  $('#logout').textContent=XT('退出');$('#clk').parentElement.setAttribute('aria-label',XT('游戏时钟'));$('#theme').setAttribute('aria-label',XT('切换深浅色'));}
 function render(){
+  headerLang();
   if(DEVME&&!entering){ME=devMe();if(FULL)S=ME.role==='player'||ME.role==='screen'?R.viewFor(FULL,ME):FULL;}
   if(DEVME&&DEVME.demo)ui.devOps=!!DEVME.dwrite;
   const da=$('#devas');da.hidden=!DEVME||entering;
@@ -959,18 +968,18 @@ function render(){
       const more=ui.tab==='player'&&inMarketNow()?'1':'0';if(g.dataset.more!==more)g.dataset.more=more;}
     else{delete g.dataset.free;delete g.dataset.more;}}}
   const nav=$('#tabs');nav.hidden=tabs.length<2;
-  morph(nav,tabs.map(v=>'<button role="tab" data-a="tab" data-v="'+v+'" aria-selected="'+(v===ui.tab)+'">'+TAB_NAME[v]+'</button>').join(''));
-  $('#logo').innerHTML=ui.tab==='ctrl'?'<span class="scroll"></span>总控':'百鬼夜行';
-  $('#who').textContent=(DEVME?(DEVME.demo?'展示 ':'开发者 '):'')+(ME.role==='player'?(DEVME?ME.pid:'玩家'):ME.role==='ctrl'?'总控':ME.label||ROLE_NAME[ME.role]);
+  morph(nav,X(tabs.map(v=>'<button role="tab" data-a="tab" data-v="'+v+'" aria-selected="'+(v===ui.tab)+'">'+TAB_NAME[v]+'</button>').join('')));
+  $('#logo').innerHTML=ui.tab==='ctrl'?'<span class="scroll"></span>总控':X('百鬼夜行');
+  $('#who').textContent=(DEVME?(DEVME.demo?'展示 ':'开发者 '):'')+(ME.role==='player'?(DEVME?ME.pid:XT('玩家')):ME.role==='ctrl'?'总控':ME.label||ROLE_NAME[ME.role]);
   $('#logout').hidden=false;$('#conn').hidden=false;
   const run=CLOCK&&CLOCK.running;
   const cc=$('#clockctl');cc.hidden=ME.role!=='ctrl';cc.textContent=run?'暂停计时':'开始计时';
-  const th=$('#theme');th.hidden=!!(ME&&ME.role==='player'&&inMarketNow());th.textContent=themeFor()==='dark'?'浅色':'深色';
+  const th=$('#theme');th.hidden=!!(ME&&ME.role==='player'&&inMarketNow());th.textContent=XT(themeFor()==='dark'?'浅色':'深色');
   $('.clk').classList.toggle('paused',!run);$('#clkdot').className='gd'+(run?'':' off');
-  if(!S){$('#view').innerHTML='<section class="pn muted">正在连接服务器…</section>';return;}
+  if(!S){$('#view').innerHTML=X('<section class="pn muted">正在连接服务器…</section>');return;}
   R.use(S);S.t=nowT();$('#clk').textContent=fmt(S.t);
   confettiCheck();
-  morph($('#view'),offBar()+(ui.tab==='board'&&ME&&ME.role==='ctrl'?ctlBar():'')+(ui.tab==='board'?viewBoard():ui.tab==='map'?viewMap():ui.tab==='dealer'?viewDealer():ui.tab==='ctrl'?viewCtrl():ui.tab==='npc'?viewNpc():ui.tab==='draw'?viewDraw():ui.tab==='market'?viewMarket():ui.tab==='wuchang'?viewWuchang():viewPlayer())+cfmDlg());
+  morph($('#view'),X(offBar()+(ui.tab==='board'&&ME&&ME.role==='ctrl'?ctlBar():'')+(ui.tab==='board'?viewBoard():ui.tab==='map'?viewMap():ui.tab==='dealer'?viewDealer():ui.tab==='ctrl'?viewCtrl():ui.tab==='npc'?viewNpc():ui.tab==='draw'?viewDraw():ui.tab==='market'?viewMarket():ui.tab==='wuchang'?viewWuchang():viewPlayer())+cfmDlg()));
   fitStage();rankConfetti();
   { // 灯笼 / 面具的绳子接到页头那条线：算出它们离页头底边的距离（有标签栏时不上提，免得盖住标签）
     const root=document.documentElement,hb=$('#top').getBoundingClientRect().bottom;
@@ -979,7 +988,7 @@ function render(){
       root.style.setProperty('--lup',(nav.hidden?Math.max(0,Math.round(nat-hb)):0)+'px');}
     const wm=$('.wc-in');if(wm){const top=wm.getBoundingClientRect().top;root.style.setProperty('--wup',Math.max(0,Math.round(top-hb))+'px');}
   }
-  const had=!!$('#modal .dlg');morph($('#modal'),modalHtml());
+  const had=!!$('#modal .dlg');morph($('#modal'),X(modalHtml()));
   const mb=$('#modal button');if(mb&&!had)mb.focus();
   const dlg=$('#modal .dlg'),mk=dlg?dlg.dataset.n:null;
   if(mk&&mk!==lastModal){buzz(dlg.dataset.k==='out'?[150,70,150,70,260]:[90,60,90]);shakeEl(dlg,'jolt');}
@@ -992,10 +1001,10 @@ let entering=false,errKey=0,lgerrT=0;
 function renderLogin(){
   $('#tabs').hidden=true;$('#modal').innerHTML='';
   if($('#loginf'))return;
-  $('#view').innerHTML='<div class="lg" id="lgcard"><div class="t">百鬼夜行</div><div class="s">Cornell CSSA 万圣夜</div><div class="dv"><i></i><b></b><i></i></div>'
+  $('#view').innerHTML=X('<div class="lg" id="lgcard"><div class="t">百鬼夜行</div><div class="s">Cornell CSSA 万圣夜</div><div class="dv"><i></i><b></b><i></i></div>'
     +'<form id="loginf" style="display:flex;flex-direction:column;gap:inherit"><label class="k" for="pin">输入 6 位 PIN</label>'
     +'<div class="boxes" id="boxes">'+'<div class="bx"></div>'.repeat(6)+'<input id="pin" inputmode="numeric" autocomplete="one-time-code" maxlength="6" aria-label="PIN"></div>'
-    +'<button class="go">进入</button></form><div class="h" id="lgmsg" role="status">PIN 印在你的身份卡上</div></div>';
+    +'<button class="go">进入</button></form><div class="h" id="lgmsg" role="status">PIN 印在你的身份卡上</div></div>');
   syncBoxes();$('#pin').focus();
 }
 function syncBoxes(err){
@@ -1005,7 +1014,7 @@ function syncBoxes(err){
   const g=$('#amb ghost-ambience');if(g)g.setAttribute('data-len',String(v.length));
 }
 // The message takes the place of the hint line, so the card never changes size.
-function loginMsg(msg){const e=$('#lgmsg');if(!e)return;e.classList.toggle('err',!!msg);e.textContent=msg||'PIN 印在你的身份卡上';}
+function loginMsg(msg){const e=$('#lgmsg');if(!e)return;e.classList.toggle('err',!!msg);e.textContent=XT(msg||'PIN 印在你的身份卡上');}
 function loginError(msg){
   if(!$('#lgmsg'))return;
   loginMsg(msg==='PIN 不正确'?'PIN 不正确，请核对身份卡':msg);
@@ -1023,7 +1032,7 @@ function showSeal(){
 
 let sayT=null;
 function say(r){const n=$('#notice');clearTimeout(sayT);if(!r||!r.msg){n.className='notice';n.innerHTML='';return;}
-  n.className='notice '+(r.ok?'ok':'bad');const ro=!r.ok&&r.msg==='只读模式';n.innerHTML='<b>'+(ro?'只读模式':r.ok?'已记录':'不能这样操作')+'</b>'+(ro?'':'<span></span>');if(!ro)n.querySelector('span').textContent=r.msg;
+  n.className='notice '+(r.ok?'ok':'bad');const ro=!r.ok&&r.msg==='只读模式';n.innerHTML='<b>'+XT(ro?'只读模式':r.ok?'已记录':'不能这样操作')+'</b>'+(ro?'':'<span></span>');if(!ro)n.querySelector('span').textContent=XT(r.msg);
   sayT=setTimeout(()=>say(null),r.ok?6000:10000);}
 
 // ---------- session ----------
@@ -1062,8 +1071,8 @@ function logout(msg){
 // ---------- live connection ----------
 let ws=null,connected=false,retry=0,timer=null,seq=0,lastMsg=0;const pending=new Map();
 function setConn(){const c=$('#conn');c.className='pill '+(connected?'free':'bad');
-  if(ui.simOff){c.className='pill bad';c.textContent='模拟离线';return;}
-  c.textContent=connected?(LOCAL?'本地展示':'已连接'):STALE?'离线，最后同步 '+new Date(STALE).toTimeString().slice(0,5):'重连中…';}
+  if(ui.simOff){c.className='pill bad';c.textContent=XT('模拟离线');return;}
+  c.textContent=XT(connected?(LOCAL?'本地展示':'已连接'):STALE?'离线，最后同步 '+new Date(STALE).toTimeString().slice(0,5):'重连中…');}
 // 离线重开：每隔几秒（和断线那一刻）把最后一次同步的状态存在本机；页面重开后连不上服务器时，用它显示（只读）。
 // 只存这个账号自己看到的那份状态；退出登录时删除。冻结的计时只用于显示，不代表真实时间。
 const LASTK='borderland.last';let lastSave=0,STALE=null;
@@ -1184,6 +1193,7 @@ document.addEventListener('click',e=>{
   else if(a==='pick'){ui.ddOpen=null;const k=b.dataset.k;setp(k,b.dataset.t&&getp(k)===v?'':v);
     if(/^gr\.[^.]+\.k$/.test(k))setp(k.replace(/\.k$/,'.arg'),'');}
   else if(a==='copypin'){copyText(v).then(()=>say({ok:true,msg:'已复制 PIN '+v}),()=>say(no('复制失败，请手动选中 PIN')));}
+  else if(a==='lang'){setLang(getLang()==='en'?'zh':'en');if(!ME||entering){const v=$('#view');if(v)v.innerHTML='';}coachStep=-1;lastModal=null;setConn();}
   else if(a==='theme'){const nx=themeFor()==='dark'?'light':'dark';try{localStorage.setItem(THEME_KEY,nx);}catch{/* private mode */}}
   else if(a==='logout'){logout();return;}
   else if(a==='demo-add'){(ui.demoRows=ui.demoRows||[]).push({pin:String(Math.floor(100000+Math.random()*900000)),old:'',mode:'shared',write:false});}
