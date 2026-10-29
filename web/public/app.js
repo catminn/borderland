@@ -927,7 +927,7 @@ function themeFor(){if(ME&&ME.role==='player'&&inMarketNow())return 'dark';   //
   let v=null;try{v=localStorage.getItem(THEME_KEY);}catch{/* private mode */}
   return v||'dark';}
 
-function headerLang(){
+function headerLang(){document.documentElement.dataset.lang=enOn()?'en':'zh';
   const lb=$('#lang');lb.hidden=!(!ME||entering||ME.role==='player');lb.textContent=getLang()==='en'?'中文':'EN';
   $('#logout').textContent=XT('退出');$('#clk').parentElement.setAttribute('aria-label',XT('游戏时钟'));$('#theme').setAttribute('aria-label',XT('切换深浅色'));}
 function render(){
@@ -1001,7 +1001,7 @@ let entering=false,errKey=0,lgerrT=0;
 function renderLogin(){
   $('#tabs').hidden=true;$('#modal').innerHTML='';
   if($('#loginf'))return;
-  $('#view').innerHTML=X('<div class="lg" id="lgcard"><div class="t">百鬼夜行</div><div class="s">Cornell CSSA 万圣夜</div><div class="dv"><i></i><b></b><i></i></div>'
+  $('#view').innerHTML=X('<button type="button" class="tbtn lgl" data-a="lang">'+(getLang()==='en'?'中文':'EN')+'</button><div class="lg" id="lgcard"><div class="t">百鬼夜行</div><div class="s">Cornell CSSA 万圣夜</div><div class="dv"><i></i><b></b><i></i></div>'
     +'<form id="loginf" style="display:flex;flex-direction:column;gap:inherit"><label class="k" for="pin">输入 6 位 PIN</label>'
     +'<div class="boxes" id="boxes">'+'<div class="bx"></div>'.repeat(6)+'<input id="pin" inputmode="numeric" autocomplete="one-time-code" maxlength="6" aria-label="PIN"></div>'
     +'<button class="go">进入</button></form><div class="h" id="lgmsg" role="status">PIN 印在你的身份卡上</div></div>');

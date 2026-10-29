@@ -28,7 +28,7 @@ const D={
   '你在鬼市':'You are in the Ghost Market','金币已冻结':'Your coins are frozen','你中奖了':'You won a prize','请到台前领取':'please collect it at the front',
   // 彩券
   '我的彩券':'My Tickets','张':'tickets','彩券越多，最终抽奖越容易中奖':'More tickets, better odds in the final raffle','你已中奖，不再参与后面的抽取':'You already won, so you are out of the remaining draws',
-  '金币÷100':'Coins ÷100','花色':'Suits','八间房':'8 Rooms','集齐四种花色':'Collect all 4 suits','八间房全部成功':'Win all 8 rooms',
+  '金币÷100':'Coins','花色':'Suits','八间房':'Rooms','集齐四种花色':'All 4 suits','八间房全部成功':'All 8 rooms',
   '体能':'Physical','逻辑':'Logic','团队配合':'Teamwork','心理':'Mind',
   // 记录
   '我的记录':'My Record','解谜题':'Puzzles','还没有进过房间。':'No rooms entered yet.','游戏中':'In progress','失败':'Failed','中途离开':'Left early',
