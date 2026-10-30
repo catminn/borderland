@@ -2009,3 +2009,8 @@ html[data-lang="en"] nav.pages button{font-family:var(--disp);font-weight:400;fo
 html[data-lang="en"] :is(.stage .cap,.stage .rh b,.gbox .gh b,.mp-list h3,.coach .tip b,.stage .pd .base b){font-family:var(--sans);font-weight:700;letter-spacing:.04em}
 html[data-lang="en"] .mp-ct{font-family:var(--sans)!important;font-weight:700}
 html[data-lang="en"] nav.pages button,html[data-lang="en"] #tabs button{font-size:30px!important;font-weight:400!important;letter-spacing:.04em}
+
+/* 总控大屏操作栏：做成和分页一样的连体分段按钮 */
+.ctlbar .seg2{gap:0;width:fit-content;max-width:100%;border:1px solid var(--stroke-c);border-radius:var(--r-m);box-shadow:inset 0 0 0 calc(var(--stroke) - 1px) var(--stroke-c),var(--sh);background:var(--panel);padding:var(--stroke)}
+.ctlbar .seg2 .sbtn{border:0;border-radius:calc(var(--r-m) - 2px);box-shadow:none;transform:none;background:transparent;min-height:34px;padding:0 14px;font-size:14px;font-weight:800}
+.ctlbar .seg2 .sbtn.on{background:var(--accent);color:var(--accent-ink)}

@@ -140,7 +140,7 @@ function ctlBar(jd){const on=drawOn(),fz=R.frozen(),manual=S.draw.lock===true;
   return '<div class="pn ctlbar"><div class="cbg"><span class="cb-l">大屏显示</span><div class="seg2">'
     +'<button class="sbtn'+(!on?' on':'')+'" data-a="scrask" data-v="0" aria-pressed="'+(!on)+'">游戏大屏</button>'
     +'<button class="sbtn'+(on?' on':'')+'" data-a="scrask" data-v="1" aria-pressed="'+on+'">抽奖大屏</button></div></div>'
-    +'<div class="cbg"><span class="cb-l">排名</span><button class="sbtn'+(fz?' on':'')+'" data-a="lockask" data-v="'+(fz?'0':'1')+'" aria-pressed="'+fz+'">'+(fz?(manual?'已锁定，点此解锁':'已自动封榜，点此解锁'):'锁定排名')+'</button></div>'
+    +'<div class="cbg"><span class="cb-l">排名</span><div class="seg2"><button class="sbtn'+(fz?' on':'')+'" data-a="lockask" data-v="'+(fz?'0':'1')+'" aria-pressed="'+fz+'">'+(fz?(manual?'已锁定，点此解锁':'已自动封榜，点此解锁'):'锁定排名')+'</button></div></div>'
     +'</div>';}
 function viewBoard(){
   if(drawOn())return viewDrawBoard();
