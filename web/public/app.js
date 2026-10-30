@@ -957,8 +957,8 @@ function render(){
   document.body.classList.toggle('inmk',ME.role==='player'&&inMarketNow());
   document.body.classList.toggle('natscroll',ui.tab==='market'||ui.tab==='wuchang'||ui.tab==='draw'||ui.tab==='map'||(ui.tab==='player'&&ME&&ME.role==='player'));
   // Staff and player pages: the big screen's full-window background on computers, and on phones in dark mode;
-  // flames and eyes only show where no panel covers them (data-free). Phones in light mode keep the header strip.
-  const userTab=['dealer','npc','draw','market','wuchang','ctrl','player','map'].includes(ui.tab),tone=themeFor(),full=userTab&&(innerWidth>=720||tone==='dark');
+  // flames and eyes only show where no panel covers them (data-free).
+  const userTab=['dealer','npc','draw','market','wuchang','ctrl','player','map'].includes(ui.tab),tone=themeFor(),full=userTab;
   document.body.classList.toggle('fullamb',full);
   setAmb(ui.tab==='board'||full?'screen':userTab?'page':null,tone);
   {const g=$('#amb ghost-ambience');if(g){
