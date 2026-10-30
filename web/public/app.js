@@ -330,7 +330,7 @@ function viewDealer(){
   const rTxt=R.roomRule(r.id),rEd=ui.ruleEd===r.id,rMod=!!(S.rules&&S.rules[r.id]);
   const rulePn='<div class="pn" style="gap:10px"><div class="shrow"><h2 class="sh">规则</h2>'+(rEd?'':'<button class="btn-line" data-a="ruleed">修改</button>')+'</div>'
     +(rEd?'<textarea class="in rulein" id="rulein" data-m="ruleTx" rows="12" placeholder="清空后保存 = 恢复原文">'+esc(ui.ruleTx)+'</textarea>'
-      +'<div class="btns"><button class="btn-main" data-a="rulesave">保存</button><button class="btn-line" data-a="rulecancel">取消</button>'+(rMod?'<button class="btn-line" data-a="rulereset">恢复原文</button>':'')+'</div>'
+      +'<div class="btns"><button class="btn-main" data-a="rulesave">保存</button><button class="btn-line" data-a="rulecancel">取消</button>'+'</div>'
       :(rTxt?'<div class="rule rtx">'+esc(rTxt)+'</div>':'<span class="muted">还没有规则，点「修改」写一份</span>'))+'</div>';
   // 结算：每人一行 赢 / 输（中途放弃算输）
   const done=ui.settled&&ui.settled.rid===r.id&&st==='reset';
