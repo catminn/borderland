@@ -53,7 +53,7 @@ class GhostAmbience extends HTMLElement{
     if(!this.ctx||!this.flames)return;
     if(n==='data-len')this.len=+v||0;
     if(n==='data-tone'&&v!==o){this.init();if(this.reduced)this.drawStatic();return;}
-    if((n==='data-keep'||n==='data-top')&&v!==o)this.flames.forEach(f=>{if(this.inKeep(f.x,f.y,8))Object.assign(f,this.spot());});
+    if((n==='data-keep'||n==='data-top')&&v!==o&&!this.over())this.flames.forEach(f=>{if(this.inKeep(f.x,f.y,8))Object.assign(f,this.spot());});
     if(n==='data-err'&&o!==null&&v!==o&&v!=='0')this.triggerError();
     if(n==='data-ok'){if(v==='1'&&o!=='1')this.triggerOk();else if(v!=='1'&&o==='1'){this.okMode=false;this.init();if(this.reduced)this.drawStatic();}}
   }
@@ -62,7 +62,7 @@ class GhostAmbience extends HTMLElement{
     const mob=w<600,first=!this.flames||mob!==this.mob;
     this.w=w;this.h=h;this.mob=mob;this.cv.width=Math.round(w*d);this.cv.height=Math.round(h*d);this.ctx.setTransform(d,0,0,d,0,0);
     if(first){this.init();if(this.dataset.ok==='1'){this.okMode=true;this.okT=9;}}
-    else this.flames.forEach(f=>{if(f.x>w||f.y>h)Object.assign(f,this.spot());});
+    else this.flames.forEach(f=>{if(this.over()){if(f.x>w)f.x=w*.9;if(f.y>h)f.y=h-4;}else if(f.x>w||f.y>h)Object.assign(f,this.spot());}); // phone: the address bar sliding in and out changes the height; keep the flames where they are
     if(this.reduced)this.drawStatic();}
   spot(){const w=this.w,h=this.h;
     if(this.over())return{x:rnd(.08,.92)*w,y:h-rnd(4,36)};
