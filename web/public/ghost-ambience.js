@@ -65,7 +65,8 @@ class GhostAmbience extends HTMLElement{
     else this.flames.forEach(f=>{if(this.over()){if(f.x>w)f.x=w*.9;if(f.y>h)f.y=h-4;}else if(f.x>w||f.y>h)Object.assign(f,this.spot());}); // phone: the address bar sliding in and out changes the height; keep the flames where they are
     if(this.reduced)this.drawStatic();}
   spot(){const w=this.w,h=this.h;
-    if(this.over())return{x:rnd(.08,.92)*w,y:h-rnd(4,36)};
+    if(this.over()){const tb=document.getElementById('tabs'),th=tb&&!tb.hidden?tb.getBoundingClientRect().height:0; // start just above the bottom tab bar (below it they would sit hidden)
+      return{x:rnd(.08,.92)*w,y:h-th-rnd(6,40)};}
     if(this.mode==='page')return{x:rnd(.45,.97)*w,y:h-rnd(6,30)};
     if((this.mode==='screen'||this.mode==='login')&&this.dataset.free==='1')return this.freeSpot();
     if(this.mode==='screen'||this.mode==='login'){ // bottom-heavy: only around the content (data-keep) and below the page header (data-top)
@@ -97,9 +98,10 @@ class GhostAmbience extends HTMLElement{
     const login=this.mode!=='page';
     if(this.light){this.flames=[];this.eyes=[];
       this.paper=Array.from({length:this.mode==='screen'?(this.mob?9:18):(this.mob?4:7)},()=>this.newPaper(rnd(-.1,1)));this.nextSpawn=9;return;}
-    const n=this.mode==='screen'?(this.mob?3:5):login?0:(this.mob?1:2);
+    const n=this.mode==='screen'?(this.mob?(this.over()?6:3):5):login?0:(this.mob?1:2);
     this.flames=Array.from({length:n},(_,i)=>{const z=rnd(.3,1),size=login?(this.mob?10+z*13:13+z*19):(this.mob?9+z*8:11+z*11);
       return{...this.spot(),form:Math.floor(rnd(0,3)),ft:0,z,size,seed:rnd(0,100),bobA:rnd(5,13),bobS:rnd(.35,.7),swA:rnd(2,6),swS:rnd(.5,1.1),phase:'on',a:login?1:.9,timer:rnd(4,16),dip:0,lean:0,rise:this.mode==='page'?rnd(5,10):this.mob?rnd(16,28):rnd(12,26)};}).sort((a,b)=>a.z-b.z);
+    if(this.over()){const tb=document.getElementById('tabs'),th=tb&&!tb.hidden?tb.getBoundingClientRect().height:0;this.flames.forEach(f=>{f.y=rnd(.12,.9)*(this.h-th);});} // phones: spread over the whole height at the start, then they keep rising from the bottom
     const slots=this.mode==='login'?(this.mob?EYE_M:EYE_D):[]; // no eyes inside the app pages for now
     this.eyes=slots.map(([x,y,s,r])=>({nx:x,ny:y,s:s?s*.85:rnd(.8,1.15),red:s?!!r:Math.random()<.35,ang:0,sq:0,dw:0,near:false,tilt:rnd(.06,.16),state:'closed',open:0,t:0,hold:0,blink:0,lx:0,ly:0}));
     if(this.mode==='login'&&this.eyes.length&&this.dataset.ok!=='1'){const n0=this.mob?3:4;const pick=[];this.eyes.slice().sort(()=>Math.random()-.5).forEach(e=>{if(pick.length<n0&&!pick.some(o=>this.eyeHit(e,o)))pick.push(e);});pick.forEach(e=>{e.state='opening';e.open=-rnd(0,.45);e.t=0;e.hold=rnd(2.5,5);e.blink=rnd(.8,e.hold-.5);});}
