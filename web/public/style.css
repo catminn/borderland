@@ -2000,7 +2000,7 @@ html[data-lang="en"] .wen{overflow:hidden}
 html[data-lang="en"] .wen .w-title b{font-size:38px;letter-spacing:.06em}
 html[data-lang="en"] .wen .w-title span{display:none}
 html[data-lang="en"] .stage .ttl{letter-spacing:.03em}
-.lgl{position:fixed;top:14px;right:14px;z-index:5}
+.lgl{position:absolute;top:8px;right:8px;z-index:5;padding:2px 8px;min-height:0;font-size:13px}
 html:has(body.login){scrollbar-gutter:auto;background-color:#030707}
 html[data-lang="en"] .wen .w-seal text.en{font-family:var(--sans);stroke:var(--sc);stroke-width:.5;paint-order:stroke}
 
