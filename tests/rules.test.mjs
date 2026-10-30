@@ -202,6 +202,6 @@ T('离线补录：♥8 独自通关 +1000', A('dealer', { type: 'offline', rows:
 T('Dealer 改自己房间的规则', A('dealer', { type: 'setrule', rid: '4S', text: '新规则' }, { rooms: ['4S'] }).ok && R.roomRule('4S') === '新规则');
 T('Dealer 不能改别的房间规则', !A('dealer', { type: 'setrule', rid: '8S', text: 'x' }, { rooms: ['4S'] }).ok);
 T('玩家和大屏收不到改过的规则', !Object.keys(R.viewFor(S, { role: 'player', pid: '001' }).rules).length && !Object.keys(R.viewFor(S, { role: 'screen' }).rules).length);
-T('清空保存 = 恢复原文', A('dealer', { type: 'setrule', rid: '4S', text: '  ' }, { rooms: ['4S'] }).ok && R.roomRule('4S') === R.ROOMS[0].rule);
+T('清空保存 = 规则为空', A('dealer', { type: 'setrule', rid: '4S', text: '  ' }, { rooms: ['4S'] }).ok && R.roomRule('4S') === '');
 T('8 间房都有规则（只在 Dealer 页显示）', R.ROOMS.every(r => typeof r.rule === 'string' && r.rule.length > 10));
 console.log(bad ? bad + ' FAILED' : 'all passed'); process.exit(bad ? 1 : 0);

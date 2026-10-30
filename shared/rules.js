@@ -220,11 +220,11 @@ function soup(pid){const p=pl(pid);if(!inMk(p))return no('该玩家不在鬼市'
 // ---------- 解谜题 ----------
 function puzInfo(p){const used=p.puz.reduce((a,r)=>a+r.pts,0);return {used,left:Math.max(0,PUZ_CAP-used),cap:PUZ_CAP};}
 // 判官输入谜题编码兑换：题库里有就记下题目，没有也照记（标成「第 N 号谜题」）
-// 房间规则：默认是 ROOMS[].rule，Dealer 在自己页面上可以改（存 S.rules，只发给工作人员；清空 = 恢复原文）
-const roomRule=id=>{const o=S.rules&&S.rules[id];return o!=null&&o!==''?o:(room(id)||{}).rule||'';};
+// 房间规则：默认是 ROOMS[].rule，Dealer 在自己页面上可以改（存 S.rules，只发给工作人员；清空保存 = 规则就是空的）
+const roomRule=id=>{const o=S.rules&&S.rules[id];return o!=null?o:(room(id)||{}).rule||'';};
 function setRule(rid,text){const r=room(rid);if(!r)return no('没有这个房间');text=String(text==null?'':text).replace(/\r/g,'').trim().slice(0,4000);
-  S.rules=S.rules||{};if(text===''||text===r.rule)delete S.rules[rid];else S.rules[rid]=text;
-  log(r.card+' 的规则'+(rid in S.rules?'改了':'恢复原文'));return ok(rid in S.rules?'规则已保存':'已恢复原文');}
+  S.rules=S.rules||{};S.rules[rid]=text;
+  log(r.card+' 的规则'+(text===''?'清空了':'改了'));return ok('规则已保存');}
 const puzTitle=code=>{const z=(S.bank||{})[code];return '#'+code+' '+(z&&z.q?String(z.q).replace(/\s+/g,' ').slice(0,30):'谜题');};
 function puzRedeem(pid,code){const p=pl(pid);if(!p)return no('没有这个编号');
   code=puzCode(code);if(!code)return no('先输入谜题编码');const key='z'+code,t=puzTitle(code);
