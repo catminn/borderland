@@ -1166,7 +1166,7 @@ html{scrollbar-gutter:stable}
 .wl.w3{grid-template-columns:repeat(3,minmax(0,1fr))}
 .wl.w3 button{font-size:18px;letter-spacing:.04em}
 .wl button[data-v="leave"][aria-pressed="true"]{background:var(--ink2);border-color:var(--ink2);color:var(--bg)}
-.kickb{align-self:flex-start;min-height:34px;font-size:13px}
+.kickb{position:absolute;top:10px;right:12px;min-height:34px;font-size:13px;padding:2px 12px}.rt.rp:has(.kickb) .stamp{right:76px}
 /* 判官：鬼门开前 3 名 */
 .gwin{display:flex;flex-direction:column;gap:10px;border:1.5px solid var(--line2);border-radius:12px;padding:12px;background:var(--card)}
 .gwin.ok{flex-direction:row;align-items:center;border-color:var(--accent)}
@@ -2017,3 +2017,4 @@ html[data-lang="en"] nav.pages button,html[data-lang="en"] #tabs button{font-siz
 
 /* 手机：鬼火飘在内容上面（不挡点击；弹窗时本来就隐藏），低于底部分页 */
 @media (max-width:599px){:root[data-theme="dark"] body:not(.login) #amb{z-index:30}}
+.rt.rp .hd{padding-right:130px}

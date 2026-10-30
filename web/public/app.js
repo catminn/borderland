@@ -343,7 +343,7 @@ function viewDealer(){
       +'<button class="l" data-a="res" data-t="'+id+'" data-v="lose" aria-pressed="'+(v==='lose')+'">输</button>'
       +'</div>'
       +(ui.kickAsk===id?'<span class="btns"><button class="btn-line fillred" data-a="kick" data-v="'+id+'">确认移出（不计结果）</button><button class="btn-line" data-a="kickno">取消</button></span>'
-        :'<button class="btn-line kickb" data-a="kickask" data-v="'+id+'">进错了，移出</button>')+'</div>';}).join('');
+        :'<button class="btn-line kickb" data-a="kickask" data-v="'+id+'">移出</button>')+'</div>';}).join('');
   const W=x.ps.filter(i=>ui.res[i]==='win'),So=x.ps.filter(i=>ui.res[i]==='solo'),Lo=x.ps.filter(i=>ui.res[i]==='lose');
   const summary=done?esc(ui.settled.msg):!x.ps.length?'':!ready?'还有 '+pending+' 人没选结果'
     :[So.length?'独自通关 '+So.join('、')+'（+'+r.solo+'）':'',W.length?'赢 '+W.join('、')+'（各 +'+r.n*100+'）':'',Lo.length?'输 '+Lo.join('、')+'（进鬼市）':''].filter(Boolean).join('；');
