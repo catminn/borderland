@@ -2021,3 +2021,6 @@ html[data-lang="en"] nav.pages button,html[data-lang="en"] #tabs button{font-siz
 
 .wl.w4{grid-template-columns:repeat(4,minmax(0,1fr))}.wl.w5{grid-template-columns:repeat(5,minmax(0,1fr))}.wl.w4 button,.wl.w5 button{font-size:17px;letter-spacing:.02em}
 html:has(body.screen){scrollbar-gutter:auto}
+/* 全站不显示滚动条（仍然可以滚动），也不再预留滚动条的位置 */
+html,body,*{scrollbar-width:none;scrollbar-gutter:auto!important}
+*::-webkit-scrollbar{display:none;width:0;height:0}
