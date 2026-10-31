@@ -2076,3 +2076,6 @@ body.bwr .mapp .mp-plan .mp-common{fill:color-mix(in srgb,var(--mute) 22%,transp
   .finbar .small{display:none}
   .finbar .btn-main{min-height:52px!important}
 }
+/* 2026-10-31 Dealer 玩家编号输入框字号与「奖励金币档位」一致 */
+.entin{font-size:15px!important;letter-spacing:normal!important}
+@media (max-width:719px){.entin{font-size:17px!important}}
