@@ -1369,7 +1369,7 @@ document.addEventListener('click',e=>{
   else if(a==='tuack'){ui.tuAck=true;try{sessionStorage.setItem(tuKey(),'1');}catch{/* ignore */}}
   else if(a==='ack'&&DEVME&&!ui.devOps){ui.devAck.add(b.dataset.n+':'+ME.pid);}
   else if(a==='ack'){const nid=+b.dataset.n,n=S&&S.notices.find(x=>x.id===nid);
-    if(n&&ME.pid&&!n.acks[ME.pid])n.acks[ME.pid]=S.t; // show the next notice right away; the server confirms
+    if(n&&ME.pid&&!n.acks[ME.pid])n.acks[ME.pid]=S.t+1; // show the next notice right away; the server confirms
     send({type:'ack',nid},null,true);}
   // 总控工具
   else if(a==='adm-ask'){A.ask=v;A.pinTo=v.startsWith('edit:')?v.slice(5):'';}

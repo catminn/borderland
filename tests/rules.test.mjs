@@ -237,4 +237,8 @@ T('8 间房都有规则（只在 Dealer 页显示）', R.ROOMS.every(r => typeof
  T('别的角色不能操作赞助商', !X('judge',{type:'spn',ids:['004']}).ok&&!X('player',{type:'spn',ids:['004']}).ok);
  T('赞助商离线补录', X('sponsor',{type:'offline',rows:[{k:'spn',pid:'005'},{k:'spn',pid:'005'}]}).ok&&sc('005').score===400);}
 
+// ---------- 通知确认：游戏时间 0（还没开始）时也要算已确认 ----------
+{const S0=R.newGame();R.use(S0);S0.t=0;R.apply(S0,{role:'sponsor'},{type:'spn',ids:['001']});const n=S0.notices[0];
+ T('T+0 时确认通知算已读', R.apply(S0,{role:'player',pid:'001'},{type:'ack',nid:n.id}).ok&&!!n.acks['001']);}
+
 console.log(bad ? bad + ' FAILED' : 'all passed'); process.exit(bad ? 1 : 0);

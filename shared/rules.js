@@ -113,7 +113,7 @@ function publish(f){f=f||{};const str=(v,n)=>String(v==null?'':v).slice(0,n);f={
   if(sub==='gate'){S.gp={nid:n.id,wins:[]};log('鬼门开「'+n.title+'」开启：最先完成的 '+gateN()+' 人有奖励','hook',1);}
   else log('发布'+n.kind+'「'+n.title+'」→ '+targetLabel(n));
   return ok('已发布给 '+targetLabel(n)+(staffSees(n)?'（含工作人员）':''));}
-function ack(nid,pid){const n=S.notices.find(x=>x.id===nid);if(n&&!n.acks[pid])n.acks[pid]=S.t;}
+function ack(nid,pid){const n=S.notices.find(x=>x.id===nid);if(n&&!n.acks[pid])n.acks[pid]=S.t+1;}
 function revokeNotice(nid){const i=S.notices.findIndex(x=>x.id===nid);if(i<0)return no('这条已经不存在');
   const n=S.notices[i];if(n.sub==='gate'&&S.gp&&S.gp.nid===nid){if(S.gp.wins.some(w=>w.rw))return no('已经发过奖励，不能撤销，请直接结束鬼门开');S.gp=null;}
   S.notices.splice(i,1);log('撤销发布「'+n.title+'」');return ok('已撤销「'+n.title+'」');}
