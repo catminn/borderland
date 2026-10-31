@@ -5,7 +5,6 @@ export let S;
 export function use(state){S=state;if(S&&!S.draw){S.draw=defaultDraw();delete S.auc;delete S.fin;}}   // 旧存档（拍卖/晋级名单）自动换成抽奖
 // 4 种花色各有 简单(4) / 困难(8) 两间房，共 8 间。成功得 n×100 金币和该花色；每人每间房最多成功一次。
 // 房间以场地地图为准（2026-10-28 起整场在一个大房间里，不再有房间号和楼层）
-// solo：♥8 孟婆的交易，拿到「生」的人可以独自通关（得 solo 金币），或带一人通关（两人各得 n×100）。
 // 房间规则（rule）只显示在 Dealer 页（2026-10-20 用户定：工作人员要看，玩家页面都不显示）
 const ROOMS=[
   {id:'4S',card:'♠4',suit:'♠',n:4,name:'一二三纸扎人',
@@ -14,7 +13,7 @@ const ROOMS=[
    rule:"在教室里交错布置挂有铃铛的红线，玩家需要穿过红线到达终点。\n可以弯腰、下蹲、侧身或跨越，但不能用手拨开红线，也不能绕路。\n90 秒内到达终点，且没有让铃铛响起，即挑战成功。\n铃铛响起或超时，则挑战失败。"},
   {id:'4H',card:'♥4',suit:'♥',n:4,name:'生死时速',
    rule:"1. 每轮开始前，玩家有 30 秒讨论时间（？）讨论结束后，每人秘密选择红牌或黑牌，并同时亮牌。投票提交后不能更改。\n2. 统计红、黑两边的人数。人数较少的一方是「少数派」，该方每位玩家得 1 分；人数较多的一方不得分。\n3. 如果红黑人数相同，或所有人都选了同一种颜色，本轮没有少数派，所有人都不得分。\n4. 每 3 轮投票为一个阶段。阶段结束后，累计分数最低的玩家淘汰；如果最低分并列，则并列玩家一起淘汰。\n5. 被淘汰的玩家离开游戏区，不再参与后续投票。游戏持续到只剩一位玩家，或达到预定时间。\n6. 玩家可以在讨论时间里谈判、误导或结盟，但投票必须保密；投票期间不能交谈、传递暗号或查看他人的选择。"},
-  {id:'8H',card:'♥8',suit:'♥',n:8,name:'孟婆的交易',solo:1000,
+  {id:'8H',card:'♥8',suit:'♥',n:8,name:'孟婆的交易',
    rule:"6 人一组，每人随机获得一个信封，其中 1 个「生」、5 个「死」。玩家可私下查看自己的信封，但不得展示，可以自由撒谎、结盟、谈判或作出承诺，承诺无需兑现。\n1) 自由讨论：玩家可自由交流并制定投票策略。讨论时间随人数递减：6 人 3 分钟、5 人 2 分钟、4 人 90 秒、3 人 60 秒。\n2) 投票：讨论结束后，所有玩家匿名投票，每人投给一名其他玩家（不可投自己），得票最多者公开信封。\n- 「死」：该玩家淘汰，剩余玩家重新随机分配信封，进入下一轮。\n- 「生」：该玩家立即获胜，并在揭晓后选择：独自通关获得 1000 金币，或带任何一名玩家共同通关，两人各获得 800 金币。其余玩家淘汰，游戏结束。\n3) 平票：平票玩家各有 20 秒进行陈述，随后重新投票（仅限平票玩家，不可投自己）。若再次平票，则随机抽取一名平票玩家揭晓信封。\n4) 如果只剩 2 人：主持人准备 1「生」1「死」两个信封。随机指定一人先抽取并秘密查看，可选择说谎或说真话；另一人决定抢走对方信封或选择剩余信封。最终持有「生」者获胜，并同样可选择独自通关（1000 金币）或携另外一名玩家共同通关（各 800 金币）。"},
   {id:'4C',card:'♣4',suit:'♣',n:4,name:'冥界传话',
    rule:"游戏开始后，第一位玩家根据主持人提供的题目进行绘画，限时 20 秒；第二位玩家根据画作用文字描述，限时 20 秒；第三位玩家根据文字描述重新绘画，第四位玩家再根据画作进行文字描述，依次交替传递。最后一位玩家根据前一位玩家的画猜测原始题目。不得交流或查看其他玩家的内容。最终猜对原始题目则挑战成功，猜错或超时则挑战失败。"},
@@ -26,8 +25,8 @@ const ROOMS=[
    rule:"房间内有 8 张符咒，其中 4 张是真符、4 张是假符。真符上的话一定为真，假符上的话一定为假。玩家需在 5 分钟内根据符咒之间的逻辑关系找出 4 张真符，并按照符咒编号从小到大读取真符上的数字，组成 4 位密码打开密码箱。最多尝试 3 次密码；成功获得 ♦ + 800 金币，超时或 3 次输入错误则挑战失败进入鬼市。现场随机使用 A/B 两套题目；如发现玩家通过泄题直接输入正确密码，可直接判定失败。"}];
 // 得分档位：Dealer 可给每间房填几档分值（存 S.rules['$'+房间]，如 "400 300 200"）；没填 = 只有「赢」= n×100。结果值 'w:300' = 拿了 300 那一档，'win' = 最高档
 const tiersOf=rid=>{const t=S&&S.rules&&S.rules['$'+rid];return t?String(t).match(/\d+/g).map(Number):[];};
-const resOk=(r,res)=>['win','lose'].concat(r.solo?['solo']:[]).includes(res)||(typeof res==='string'&&res.startsWith('w:')&&tiersOf(r.id).includes(+res.slice(2)));
-const winPts=(r,res)=>res==='solo'&&r.solo?r.solo:typeof res==='string'&&res.startsWith('w:')?+res.slice(2):(tiersOf(r.id)[0]||r.n*100);
+const resOk=(r,res)=>['win','lose'].includes(res)||(typeof res==='string'&&res.startsWith('w:')&&tiersOf(r.id).includes(+res.slice(2)));
+const winPts=(r,res)=>typeof res==='string'&&res.startsWith('w:')?+res.slice(2):(tiersOf(r.id)[0]||r.n*100);
 const SUITS=['♠','♦','♣','♥'];
 // 身份卡：编号 001 起，默认 100 张。没有起始房间（2026-10-19 删掉了，现场见机行事）。
 const N_PLAYERS=100;
@@ -143,13 +142,11 @@ function finishRoom(rid,results){
   const r=room(rid),st=S.rooms.find(x=>x.id===rid);results=results||{};
   if(!st||!st.ps.length)return no('房间里没有人');
   for(const id of st.ps)if(!resOk(r,results[id]))return no('请为 '+nameOf(id)+' 选择赢 / 输');
-  if(r.solo){const so=st.ps.filter(id=>results[id]==='solo').length,w=st.ps.filter(id=>results[id]==='win').length;
-    if(so>1)return no('独自通关只能有 1 人');if(so&&w)return no('独自通关时其他人都算输');if(w>2)return no('带人通关最多 2 人');}
   const notes=[];
   for(const id of st.ps){const p=pl(id),res=results[id];p.inRoom=null;
     const h=p.hist.filter(x=>x.rid===rid&&x.res===null).pop()||(p.hist[p.hist.length]={rid,t0:st.at,res:null,pts:0});h.t1=S.t;h.res=res;
     if(res!=='lose'){const pts=winPts(r,res);h.res='win';p.score+=pts;h.pts=pts;if(!p.cleared.includes(rid))p.cleared.push(rid);if(!p.cards.includes(r.suit))p.cards.push(r.suit);
-      log(nm(p)+' 赢下 '+r.card+'，+'+pts+' 金币'+(res==='solo'?'（独自通关）':''),'back',1);notes.push(p.id+' 赢');}
+      log(nm(p)+' 赢下 '+r.card+'，+'+pts+' 金币','back',1);notes.push(p.id+' 赢');}
     else{eliminate(p,'挑战 '+r.card+' 失败',r.card+' '+r.name);notes.push(p.id+' 输');}}
   st.ps=[];st.st='reset';st.at=S.t;
   return ok(r.card+' 结算完成：'+notes.join('，'));}
@@ -227,7 +224,7 @@ const roomRule=id=>{const o=S.rules&&S.rules[id];return o!=null?o:(room(id)||{})
 function setRule(rid,text){const r=room(rid);if(!r)return no('没有这个房间');text=String(text==null?'':text).replace(/\r/g,'').trim().slice(0,4000);
   S.rules=S.rules||{};S.rules[rid]=text;
   log(r.card+' 的规则'+(text===''?'清空了':'改了'));return ok('规则已保存');}
-function setTiers(rid,text){const r=room(rid);if(!r)return no('没有这个房间');if(r.solo)return no('这间房不能设档位');
+function setTiers(rid,text){const r=room(rid);if(!r)return no('没有这个房间');
   const a=[...new Set((String(text==null?'':text).match(/\d+/g)||[]).map(Number))].filter(n=>n>0&&n<=9999).sort((x,y)=>y-x).slice(0,4);
   S.rules=S.rules||{};if(a.length)S.rules['$'+rid]=a.join(' ');else delete S.rules['$'+rid];
   log(r.card+' 的得分'+(a.length?'改成 '+a.join(' / '):'恢复默认 +'+r.n*100));return ok(a.length?'得分档位已保存':'已恢复默认');}

@@ -188,17 +188,15 @@ fresh(); S.t = 1000;
   T('离线补录：总控和玩家不能补录', !A('ctrl', { type: 'offline', rows: [{ k: 'room', rid: '4S', pid: '001', res: 'win' }] }).ok && !A('player', { type: 'offline', rows: [] }, { pid: '001' }).ok);
   T('离线补录：写进日志', S.log.some(l => l.text.includes('离线补录'))); }
 
-// ---------- ♥8 孟婆的交易：独自通关 1000 / 带人通关各 800 ----------
+// ---------- ♥8 孟婆的交易：默认 +800，可设档位 ----------
 fresh(); S.t = 60;
-A('dealer', { type: 'enter', rid: '8H', pids: ['001', '002', '003'] });
-T('♥8：独自通关只能 1 人', !A('dealer', { type: 'finish', rid: '8H', results: { '001': 'solo', '002': 'solo', '003': 'lose' } }).ok);
-T('♥8：独自通关时其他人不能赢', !A('dealer', { type: 'finish', rid: '8H', results: { '001': 'solo', '002': 'win', '003': 'lose' } }).ok);
-T('♥8：带人通关最多 2 人', !A('dealer', { type: 'finish', rid: '8H', results: { '001': 'win', '002': 'win', '003': 'win' } }).ok);
-T('♥8：独自通关 +1000 + ♥', A('dealer', { type: 'finish', rid: '8H', results: { '001': 'solo', '002': 'lose', '003': 'lose' } }).ok && P('001').score === 1000 && P('001').cards.includes('♥') && P('001').hist[0].res === 'win');
-A('dealer', { type: 'resetdone', rid: '8H' }); A('dealer', { type: 'enter', rid: '8H', pids: ['004', '005'] });
-T('♥8：带人通关各 +800', A('dealer', { type: 'finish', rid: '8H', results: { '004': 'win', '005': 'win' } }).ok && P('004').score === 800 && P('005').score === 800);
-T('其他房间不能选独自通关', A('dealer', { type: 'enter', rid: '4S', pids: ['006'] }).ok && !A('dealer', { type: 'finish', rid: '4S', results: { '006': 'solo' } }).ok);
-T('离线补录：♥8 独自通关 +1000', A('dealer', { type: 'offline', rows: [{ k: 'room', rid: '8H', pid: '007', res: 'solo' }] }).data[0].ok && P('007').score === 1000);
+A('dealer', { type: 'enter', rid: '8H', pids: ['001', '002'] });
+T('♥8：默认赢 +800 + ♥', A('dealer', { type: 'finish', rid: '8H', results: { '001': 'win', '002': 'lose' } }).ok && P('001').score === 800 && P('001').cards.includes('♥'));
+A('dealer', { type: 'resetdone', rid: '8H' });
+T('♥8 可以设档位 1000 800', A('dealer', { type: 'settiers', rid: '8H', text: '1000 800' }, { rooms: ['8H'] }).ok && R.tiersOf('8H').join(' ') === '1000 800');
+A('dealer', { type: 'enter', rid: '8H', pids: ['004'] });
+T('♥8：档位 1000', A('dealer', { type: 'finish', rid: '8H', results: { '004': 'w:1000' } }).ok && P('004').score === 1000);
+T('离线补录：♥8 档位 800', A('dealer', { type: 'offline', rows: [{ k: 'room', rid: '8H', pid: '007', res: 'w:800' }] }).data[0].ok && P('007').score === 800);
 T('Dealer 改自己房间的规则', A('dealer', { type: 'setrule', rid: '4S', text: '新规则' }, { rooms: ['4S'] }).ok && R.roomRule('4S') === '新规则');
 T('Dealer 不能改别的房间规则', !A('dealer', { type: 'setrule', rid: '8S', text: 'x' }, { rooms: ['4S'] }).ok);
 T('玩家和大屏收不到改过的规则', !Object.keys(R.viewFor(S, { role: 'player', pid: '001' }).rules).length && !Object.keys(R.viewFor(S, { role: 'screen' }).rules).length);
@@ -217,7 +215,6 @@ T('8 间房都有规则（只在 Dealer 页显示）', R.ROOMS.every(r => typeof
  T('不在档位里的分值被拒', !D(['4D'],{type:'finish',rid:'4D',results:{'004':'w:350'}}).ok);
  T("'win' = 最高档", D(['4D'],{type:'finish',rid:'4D',results:{'004':'win'}}).ok&&sc('004').score===400);
  D(['4D'],{type:'settiers',rid:'4D',text:''});
- T('清空 = 默认', R.tiersOf('4D').length===0);
- T('♥8 不能设档位', !D(['8H'],{type:'settiers',rid:'8H',text:'1 2'}).ok);}
+ T('清空 = 默认', R.tiersOf('4D').length===0);}
 
 console.log(bad ? bad + ' FAILED' : 'all passed'); process.exit(bad ? 1 : 0);

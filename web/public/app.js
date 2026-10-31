@@ -327,7 +327,7 @@ function viewDealer(){
   const TI=R.tiersOf(r.id),tSaved=TI.join(' '),tCur=ui.tiersTx!=null?ui.tiersTx:tSaved,tDirty=(tCur.match(/\d+/g)||[]).join(' ')!==tSaved;
   const tiersBox='<label class="fld"><span>得分（可填多档，如 400 300 200，不填 = 赢 +'+r.n*100+'）</span><input class="in mono" id="tiersin" data-m="tiersTx" value="'+esc(tCur)+'" inputmode="numeric" placeholder="'+r.n*100+'" autocomplete="off"></label>'+(tDirty?'<button class="btn-line" data-a="tiers">保存得分</button>':'');
   const info='<div class="pn" style="gap:14px"><h2 class="sh">入场</h2>'
-    +'<div class="rwl"><span><b class="acc">赢</b> '+(r.solo?'独自通关 +'+r.solo+'，带人通关各 +'+r.n*100:'+'+(TI.length?TI.join(' / '):r.n*100))+' 金币 + '+r.suit+'</span><span><b class="red">输</b> 进鬼市，原地等黑白无常</span><span class="sub">中途放弃算输，每人每间只能成功一次</span></div>'+entry+(r.solo?'':tiersBox)+'</div>';
+    +'<div class="rwl"><span><b class="acc">赢</b> '+'+'+(TI.length?TI.join(' / '):r.n*100)+' 金币 + '+r.suit+'</span><span><b class="red">输</b> 进鬼市，原地等黑白无常</span><span class="sub">中途放弃算输，每人每间只能成功一次</span></div>'+entry+tiersBox+'</div>';
   // 规则：Dealer 自己能改（点「修改」→ 文本框 → 保存；清空保存 = 规则为空）
   const rTxt=R.roomRule(r.id),rEd=ui.ruleEd===r.id;
   const rulePn='<div class="pn" style="gap:10px"><div class="shrow"><h2 class="sh">规则</h2>'+(rEd?'':'<button class="btn-line" data-a="ruleed">修改</button>')+'</div>'
@@ -339,18 +339,18 @@ function viewDealer(){
   Object.keys(ui.res).forEach(id=>{if(!x.ps.includes(id))delete ui.res[id];});
   const pending=x.ps.filter(id=>!ui.res[id]).length,ready=x.ps.length&&!pending;
   const rows=x.ps.map(id=>{const p=pl(id),v=ui.res[id]||'';
-    return '<div class="rt rp"><div class="hd">'+who(p)+'</div>'+(v?'<span class="stamp">'+({win:'胜',solo:'胜',lose:'负'})[v]+'</span>':'')
-      +'<div class="wl'+(r.solo?' w3':TI.length>1?' w'+(TI.length+1):'')+'" role="group" aria-label="'+id+' 结果">'+(r.solo?'<button class="w" data-a="res" data-t="'+id+'" data-v="solo" aria-pressed="'+(v==='solo')+'">独自通关</button>':'')
+    return '<div class="rt rp"><div class="hd">'+who(p)+'</div>'+(v?'<span class="stamp">'+({win:'胜',lose:'负'})[v]+'</span>':'')
+      +'<div class="wl'+(TI.length>1?' w'+(TI.length+1):'')+'" role="group" aria-label="'+id+' 结果">'
       +(TI.length?TI.map(n=>'<button class="w" data-a="res" data-t="'+id+'" data-v="w:'+n+'" aria-pressed="'+(v==='w:'+n)+'">'+n+'</button>').join('')
-        :'<button class="w" data-a="res" data-t="'+id+'" data-v="win" aria-pressed="'+(v==='win')+'">'+(r.solo?'带人通关':'赢')+'</button>')
+        :'<button class="w" data-a="res" data-t="'+id+'" data-v="win" aria-pressed="'+(v==='win')+'">'+'赢'+'</button>')
       +'<button class="l" data-a="res" data-t="'+id+'" data-v="lose" aria-pressed="'+(v==='lose')+'">输</button>'
       +'</div>'
       +(ui.kickAsk===id?'<span class="btns"><button class="btn-line fillred" data-a="kick" data-v="'+id+'">确认移出（不计结果）</button><button class="btn-line" data-a="kickno">取消</button></span>'
         :'<button class="btn-line kickb" data-a="kickask" data-v="'+id+'">移出</button>')+'</div>';}).join('');
-  const W=x.ps.filter(i=>ui.res[i]==='win'&&!TI.length),So=x.ps.filter(i=>ui.res[i]==='solo'),Lo=x.ps.filter(i=>ui.res[i]==='lose');
+  const W=x.ps.filter(i=>ui.res[i]==='win'&&!TI.length),Lo=x.ps.filter(i=>ui.res[i]==='lose');
   const summary=done?esc(ui.settled.msg):!x.ps.length?'':!ready?'还有 '+pending+' 人没选结果'
-    :[So.length?'独自通关 '+So.join('、')+'（+'+r.solo+'）':'',W.length?'赢 '+W.join('、')+'（各 +'+(TI[0]||r.n*100)+'）':'',TI.length?TI.map(n=>{const g=x.ps.filter(i=>ui.res[i]==='w:'+n);return g.length?n+'分 '+g.join('、'):'';}).filter(Boolean).join('；'):'',Lo.length?'输 '+Lo.join('、')+'（进鬼市）':''].filter(Boolean).join('；');
-  const allBtns=x.ps.length>1&&!r.solo?'<div class="btns"><button class="btn-line" data-a="resall" data-v="'+(TI.length?'w:'+TI[0]:'win')+'">全部'+(TI.length?TI[0]:'赢')+'</button><button class="btn-line" data-a="resall" data-v="lose">全部输</button></div>':'';
+    :[W.length?'赢 '+W.join('、')+'（各 +'+(TI[0]||r.n*100)+'）':'',TI.length?TI.map(n=>{const g=x.ps.filter(i=>ui.res[i]==='w:'+n);return g.length?n+'分 '+g.join('、'):'';}).filter(Boolean).join('；'):'',Lo.length?'输 '+Lo.join('、')+'（进鬼市）':''].filter(Boolean).join('；');
+  const allBtns=x.ps.length>1?'<div class="btns"><button class="btn-line" data-a="resall" data-v="'+(TI.length?'w:'+TI[0]:'win')+'">全部'+(TI.length?TI[0]:'赢')+'</button><button class="btn-line" data-a="resall" data-v="lose">全部输</button></div>':'';
   const resetBtn='<button class="btn-main glow" data-a="resetdone" style="min-height:60px;letter-spacing:.1em">重置完成，重新开放</button><span class="small center">'+(done?esc(ui.settled.msg)+'。':'')+'点了之后，玩家才能再进这间房</span>';
   const settle='<div class="pn" style="gap:14px"><div class="shrow"><h2 class="sh">房间里的人</h2><span class="hint" style="font-weight:700;color:'+(ready?'var(--accent)':pending?'var(--sub)':'var(--sub)')+'">'+(st==='reset'?'重置中':!x.ps.length?'等待入场':pending?x.ps.length+' 人':'都选好了')+'</span></div>'
     +(st==='reset'?resetBtn:(rows?allBtns+'<div class="rteams">'+rows+'</div>':'<div class="empty">房间里还没有人</div>')
@@ -850,7 +850,7 @@ const online=()=>connected&&!ui.simOff;   // 模拟离线时当作断网
 const offRid=()=>Array.isArray(ME.rooms)&&ME.rooms.length?ME.rooms[0]:ui.room;
 const OFF_MK=[['market','入鬼市'],['redeem','自赎'],['ransom','被别人赎'],['soup','复活']];
 function offDesc(x){const r=x.rid&&room(x.rid);
-  return x.k==='room'?x.pid+' '+({win:'赢',solo:'独自通关',lose:'输'})[x.res]||String(x.res).replace('w:','')+'分'+' '+(r?r.card:''):x.k==='pickup'?'抓到 '+x.pid:x.k==='market'?x.pid+' 入鬼市'
+  return x.k==='room'?x.pid+' '+({win:'赢',lose:'输'})[x.res]||String(x.res).replace('w:','')+'分'+' '+(r?r.card:''):x.k==='pickup'?'抓到 '+x.pid:x.k==='market'?x.pid+' 入鬼市'
     :x.k==='redeem'?x.pid+' 自赎':x.k==='ransom'?x.pid+' 被 '+x.by+' 赎出':x.k==='soup'?x.pid+' 复活'
     :x.k==='puz'?x.pid+' 解出 #'+x.code:x.k==='gate'?x.pid+' 鬼门开奖励：'+(x.rw==='coin'?'+'+GATE_COIN+' 金币':x.rw==='save'?'救 '+x.arg:'拿 '+x.arg):'';}
 // 表单填好了吗：返回 null = 可以记；否则是按钮上显示的提示
@@ -868,7 +868,7 @@ function offBar(){
   if(!rows.length&&!ui.offOn)return '';
   const f=ui.off,k=ME.role==='dealer'?'room':f.k,seg=(key,opts)=>'<div class="seg'+opts.length+'">'+opts.map(([v,l])=>'<button class="sbtn'+(getp(key)===v?' on':'')+'" data-a="pick" data-k="'+key+'" data-v="'+v+'" aria-pressed="'+(getp(key)===v)+'">'+l+'</button>').join('')+'</div>';
   let what='';
-  if(ME.role==='dealer'){const dr=room(offRid());what=seg('off.res',dr&&dr.solo?[['solo','独自通关'],['win','带人通关'],['lose','输']]:R.tiersOf(offRid()).length?R.tiersOf(offRid()).map(n=>['w:'+n,String(n)]).concat([['lose','输']]):[['win','赢'],['lose','输']]);}
+  if(ME.role==='dealer'){const dr=room(offRid());what=seg('off.res',R.tiersOf(offRid()).length?R.tiersOf(offRid()).map(n=>['w:'+n,String(n)]).concat([['lose','输']]):[['win','赢'],['lose','输']]);}
   else if(ME.role==='wuchang')what=seg('off.k',[['pickup','抓到了'],['market','送入鬼市']]);
   else if(ME.role==='mengpo')what=seg('off.k',OFF_MK)+(k==='ransom'?'<input class="in mono" data-m="off.by" id="offby" value="'+esc(f.by||'')+'" inputmode="numeric" placeholder="出钱人编号">':'');
   else what=seg('off.k',[['puz','解谜题'],['gate','鬼门开奖励']])
