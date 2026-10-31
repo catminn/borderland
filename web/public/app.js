@@ -339,7 +339,7 @@ function viewDealer(){
   Object.keys(ui.res).forEach(id=>{if(!x.ps.includes(id))delete ui.res[id];});
   const pending=x.ps.filter(id=>!ui.res[id]).length,ready=x.ps.length&&!pending;
   const rows=x.ps.map(id=>{const p=pl(id),v=ui.res[id]||'';
-    return '<div class="rt rp"><div class="hd">'+who(p)+'</div>'+(v?'<span class="stamp">'+({win:'胜',lose:'负'})[v]+'</span>':'')
+    return '<div class="rt rp"><div class="hd">'+who(p)+'</div>'+(v?'<span class="stamp">'+(v==='lose'?'负':'胜')+'</span>':'')
       +'<div class="wl'+(TI.length>1?' w'+(TI.length+1):'')+'" role="group" aria-label="'+id+' 结果">'
       +(TI.length?TI.map(n=>'<button class="w" data-a="res" data-t="'+id+'" data-v="w:'+n+'" aria-pressed="'+(v==='w:'+n)+'">'+n+'</button>').join('')
         :'<button class="w" data-a="res" data-t="'+id+'" data-v="win" aria-pressed="'+(v==='win')+'">'+'赢'+'</button>')
