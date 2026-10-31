@@ -2056,3 +2056,7 @@ html[data-lang="en"] .mp-cor{letter-spacing:.12em;font-size:18px}
   html[data-lang="en"] .mp-plan .mp-ct{font-size:38px;letter-spacing:.04em}
   html[data-lang="en"] .mp-plan .mp-ent{font-size:24px;letter-spacing:.04em}
 }
+/* 2026-10-31 地图：自己所在的房间一律红框红底（压过游戏中/重置中的灰）；鬼市不再红 */
+body.bwr .mapp .mp-plan .mp-room.mine>rect{stroke:var(--red)!important;fill:var(--red-soft)!important;stroke-width:6!important;stroke-dasharray:none!important}
+body.bwr .mapp .mp-plan .mp-room.mine .mp-num{fill:var(--ink)!important}
+body.bwr .mapp .mp-plan .mp-common{fill:color-mix(in srgb,var(--mute) 22%,transparent)}
