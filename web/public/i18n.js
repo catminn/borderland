@@ -73,7 +73,7 @@ const P=[
   [/^找判官选奖励：(\d+) 金币 \/ 救一个人 \/ 拿一个花色。$/,(m)=>'See the Judge to pick a reward: '+m[1]+' coins / save someone / take a suit.'],
   [/^原因：挑战 (\S+) 失败。请自行去鬼市登记，不然黑白无常会来抓你哟！$/,(m)=>'Reason: failed '+m[1]+'. Please go register at the Ghost Market yourself, or the Wuchang will come and get you!'],
   [/^金币已冻结。用实体筹码赢到 (\d+) 就能自赎；待满 15 分钟，不管赚没赚到都可以复活。也可以求助朋友，用五百金币助力你复活哦！$/,(m)=>'Your coins are frozen. Win '+m[1]+' chips to buy yourself out, or wait 15 minutes and you can come back no matter what. You can also ask a friend to chip in 500 coins and bring you back!'],
-  [/^你回到了人间，金币已解冻。$/,()=>'You are back among the living and your coins are unfrozen.'],
+  [/^通过你的努力，你终于逃脱了鬼市，请继续努力生存哦！$/,()=>'Through your own effort, you have finally escaped the Ghost Market. Keep fighting to survive!'],
   [/^金币已解冻。$/,()=>'Your coins are unfrozen.'],
   [/^你被 (.+) 花 (\d+) 金币赎了出来，金币已解冻。$/,(m)=>'You were ransomed by '+m[1]+' for '+m[2]+' coins. Your coins are unfrozen.'],
   [/^你花 (\d+) 金币赎出了 (.+)。$/,(m)=>'You paid '+m[1]+' coins to ransom '+m[2]+'.'],
@@ -83,7 +83,7 @@ const P=[
   // 全场播报
   [/^(.+) 赢下 (♠|♥|♣|♦)(\d)，\+(\d+) 金币(（独自通关）)?$/,(m)=>m[1]+' cleared '+m[2]+m[3]+', +'+m[4]+' coins'+(m[5]?' (solo)':'')],
   [/^(.+) 挑战 (♠|♥|♣|♦)(\d) 失败，进入鬼市$/,(m)=>m[1]+' failed '+m[2]+m[3]+' and entered the Ghost Market'],
-  [/^(.+) 在鬼市赢够筹码，自赎回到人间$/,(m)=>m[1]+' won enough chips and bought their way back'],
+  [/^(.+) 在鬼市赢够筹码，逃出了鬼市$/,(m)=>m[1]+' won enough chips and escaped the Ghost Market'],
   [/^(.+) 花 (\d+) 金币把 (.+) 从鬼市赎了出来$/,(m)=>m[1]+' paid '+m[2]+' coins to ransom '+m[3]+' from the Ghost Market'],
   [/^(.+) 喝下孟婆汤复活$/,(m)=>m[1]+' drank Meng Po soup and is back'],
   [/^鬼门开「(.*)」开启：最先完成的 (\d+) 人有奖励$/,(m)=>'Ghost Gate "'+tg(m[1])+'" is open: the first '+m[2]+' to finish get rewards'],

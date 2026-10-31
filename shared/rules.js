@@ -196,8 +196,8 @@ function backAlive(p){p.st='alive';p.outAt=null;p.inAt=null;p.pickAt=null;p.chk=
 const inMk=p=>p&&p.st==='market'&&!(p.chk&&!p.chk.ok);
 // 自赎：玩家用实体筹码赢到 500，孟婆确认后点。不带出任何金币，只是解冻。
 function selfRedeem(pid){const p=pl(pid);if(!inMk(p))return no('该玩家不在鬼市');
-  backAlive(p);log(nm(p)+' 在鬼市赢够筹码，自赎回到人间','back',1);
-  tell(p.id,'自赎成功','你回到了人间，金币已解冻。');
+  backAlive(p);log(nm(p)+' 在鬼市赢够筹码，逃出了鬼市','back',1);
+  tell(p.id,'自赎成功','通过你的努力，你终于逃脱了鬼市，请继续努力生存哦！');
   return ok(p.id+' 已自赎');}
 // 赎人：任何在场的人花 500 金币把鬼市里的人赎出来
 function ransom(pid,byId){const p=pl(pid),by=pl(byId);if(!inMk(p))return no('该玩家不在鬼市');
@@ -368,7 +368,7 @@ function offRow(me,x,rnd){
   if(x.k==='pickup'){if(p.st==='market'||p.st==='picked')return ok(p.id+' 已经抓到了');
     if(p.st==='alive')p.outAt=S.t;p.st='picked';p.pickAt=S.t;p.on=true;log('黑白无常抓到 '+nm(p)+tag);return ok('抓到 '+p.id);}
   if(x.k==='market'){if(p.st==='market')return ok(p.id+' 已经在鬼市');toMarket(p);log(nm(p)+' 进入鬼市，金币冻结'+tag,'back');return ok(p.id+' 入鬼市');}
-  if(x.k==='redeem'){if(p.st==='alive')return ok(p.id+' 已经在场');backAlive(p);log(nm(p)+' 自赎回到人间'+tag,'back',1);return ok(p.id+' 自赎');}
+  if(x.k==='redeem'){if(p.st==='alive')return ok(p.id+' 已经在场');backAlive(p);log(nm(p)+' 自赎逃出鬼市'+tag,'back',1);return ok(p.id+' 自赎');}
   if(x.k==='ransom'){if(p.st==='alive')return ok(p.id+' 已经在场');const by=pl(String(x.by||''));if(!by)return no('没有出钱人编号 '+(x.by||'？'));if(by.id===p.id)return no('出钱人不能是自己');
     const paid=Math.min(RANSOM,by.score);by.score-=paid;backAlive(p);log(nm(by)+' 花 '+paid+' 金币把 '+nm(p)+' 从鬼市赎了出来'+tag,'back',1);return ok(by.id+' 赎出 '+p.id+(paid<RANSOM?'（只有 '+paid+'）':''));}
   if(x.k==='soup'){if(p.st==='alive')return ok(p.id+' 已经在场');backAlive(p);log(nm(p)+' 喝下孟婆汤复活'+tag,'back',1);return ok(p.id+' 复活');}
