@@ -226,4 +226,15 @@ T('8 间房都有规则（只在 Dealer 页显示）', R.ROOMS.every(r => typeof
  D(['4D'],{type:'settiers',rid:'4D',text:''});
  T('清空 = 默认', R.tiersOf('4D').length===0);}
 
+// ---------- 赞助商：每人一次 +400 ----------
+{const S0=R.newGame();R.use(S0);const X=(r,a)=>R.apply(S0,{role:r},a),sc=id=>S0.players.find(p=>p.id===id);
+ T('赞助商 +400（多人）', X('sponsor',{type:'spn',ids:['001','002']}).ok&&sc('001').score===400&&sc('002').score===400);
+ T('赞助商 同一人不能领两次', !X('sponsor',{type:'spn',ids:['001']}).ok&&sc('001').score===400);
+ T('赞助商 一批里有人领过，其余照加', X('sponsor',{type:'spn',ids:['001','003']}).ok&&sc('003').score===400&&sc('001').score===400);
+ T('赞助商 没有这个编号', !X('sponsor',{type:'spn',ids:['999']}).ok);
+ T('赞助商 撤销扣回', X('sponsor',{type:'spnundo',pid:'002'}).ok&&sc('002').score===0&&!sc('002').spn);
+ T('撤销后可以重新领', X('sponsor',{type:'spn',ids:['002']}).ok&&sc('002').score===400);
+ T('别的角色不能操作赞助商', !X('judge',{type:'spn',ids:['004']}).ok&&!X('player',{type:'spn',ids:['004']}).ok);
+ T('赞助商离线补录', X('sponsor',{type:'offline',rows:[{k:'spn',pid:'005'},{k:'spn',pid:'005'}]}).ok&&sc('005').score===400);}
+
 console.log(bad ? bad + ' FAILED' : 'all passed'); process.exit(bad ? 1 : 0);

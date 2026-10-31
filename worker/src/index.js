@@ -4,8 +4,8 @@
 import { DurableObject } from 'cloudflare:workers';
 import * as R from '../../shared/rules.js';
 
-const ROLE_NAME = { player: '玩家', dealer: 'Dealer', judge: '判官', mengpo: '孟婆', wuchang: '黑白无常', ctrl: '总控', screen: '大屏', dev: '开发者', demo: '展示' };
-const STAFF_ROLES = ['dealer', 'judge', 'mengpo', 'wuchang', 'ctrl', 'screen'];
+const ROLE_NAME = { player: '玩家', dealer: 'Dealer', judge: '判官', mengpo: '孟婆', wuchang: '黑白无常', sponsor: '赞助商', ctrl: '总控', screen: '大屏', dev: '开发者', demo: '展示' };
+const STAFF_ROLES = ['dealer', 'judge', 'mengpo', 'wuchang', 'sponsor', 'ctrl', 'screen'];
 const SNAP_EVERY = 10, SNAP_KEEP = 30, LOG_KEEP = 1500, SESSION_MAX = 3000;
 const STATS_KEEP = 360, STATS_EVERY = 60000;   // 统计：在线曲线每分钟一个点，只留最近 6 小时
 const SBOX_SNAP_KEEP = 8, SBOX_LOG_KEEP = 300, DEMO_MAX = 30;   // a shared demo game stays small: few backups, short log, capped number of 展示 PINs
@@ -68,7 +68,7 @@ export class Game extends DurableObject {
   async sandbox(pin, fn) {   // run fn against that 展示 PIN's shared demo game instead of the real one
     const D = await this.getD(pin), keep = { S: this.S, clock: this.clock, auth: this.auth };
     this.realAuth = keep.auth; this.S = D.S; this.clock = D.clock; this.auth = { ...this.auth, pins: D.pins }; this.inSandbox = D;   // this game's own PIN list + backups
-    if (!Object.keys(D.pins).length) { this.genPins({ dealer: 8, judge: 1, mengpo: 1, wuchang: 1, ctrl: 1, screen: 1 }); await this.ctx.storage.put('sandbox:' + pin, D); }   // 演示局第一次用：自动生成整套演示 PIN（可登录，进入这一局）
+    if (!Object.keys(D.pins).length) { this.genPins({ dealer: 8, judge: 1, mengpo: 1, wuchang: 1, sponsor: 1, ctrl: 1, screen: 1 }); await this.ctx.storage.put('sandbox:' + pin, D); }   // 演示局第一次用：自动生成整套演示 PIN（可登录，进入这一局）
     try { return await fn(); } finally { D.S = this.S; D.clock = this.clock; if (D.S.log.length > SBOX_LOG_KEEP) D.S.log.length = SBOX_LOG_KEEP; this.S = keep.S; this.clock = keep.clock; this.auth = keep.auth; this.inSandbox = null; this.realAuth = null; }
   }
   takenPins() {   // 所有已被占用的 PIN：真实 PIN、展示 PIN、每个演示局的 PIN、管理员/开发者（演示局 PIN 也能登录，所以全局不能重复）
@@ -269,7 +269,7 @@ export class Game extends DurableObject {
     if (a.type === 'pincounts' || a.type === 'setpincounts') {   // 「生成 PIN」各角色人数的共用默认值：总控和真开发者可读写，存服务器，所有设备一致
       if (this.inSandbox || s.demo) return { ok: true, msg: '', changed: false, data: null };   // 演示局不读写真实默认值
       if (!(s.role === 'ctrl' || s.role === 'dev')) return R.no('没有权限');
-      const au = this.realAuth || this.auth, def = { dealer: 8, judge: 1, mengpo: 1, wuchang: 1, ctrl: 1, screen: 1, players: 100 };
+      const au = this.realAuth || this.auth, def = { dealer: 8, judge: 1, mengpo: 1, wuchang: 1, sponsor: 1, ctrl: 1, screen: 1, players: 100 };
       if (a.type === 'setpincounts') {
         const c = { ...def, ...(au.counts || {}) };
         for (const k of Object.keys(def)) if (k !== 'dealer' && a.counts && a.counts[k] != null) { const v = Math.round(+a.counts[k]); if (v >= 0 && v <= (k === 'players' ? 500 : 30)) c[k] = v; }
@@ -303,7 +303,7 @@ export class Game extends DurableObject {
     if (s.demo && (!s.dwrite || s.dmode === 'local')) return R.no(s.dmode === 'local' ? '本地展示模式不连服务器' : '只读模式');
     const isDemo = !!s.demo, isShared = !!this.sbKey(s);
     if (s.role === 'dev') { // acts as the viewpoint chosen on the page, only when its 可操作 switch is on
-      const as = a.as || {}, roles = ['ctrl', 'dealer', 'judge', 'mengpo', 'wuchang', 'screen', 'player'];
+      const as = a.as || {}, roles = ['ctrl', 'dealer', 'judge', 'mengpo', 'wuchang', 'sponsor', 'screen', 'player'];
       if (!roles.includes(as.role)) return R.no('开发者模式：先打开右上角「可操作」');
       if (as.role === 'player' && !this.S.players.some(p => p.id === as.pid)) return R.no('没有这个玩家');
       s = { role: as.role, pid: as.role === 'player' ? as.pid : null, label: '开发者' };
