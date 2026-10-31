@@ -330,7 +330,7 @@ function viewDealer(){
       +'<button class="btn-main" data-a="enter"'+(okIds.length&&!bad.length&&!full?'':' disabled')+'>'+(!ids.length?'先输入编号':bad.length?'有 '+bad.length+' 人不能入场':full?'超过房间容量 '+cap+' 人':'放行 '+ids.length+' 人入场')+'</button>';
   }
   const TI=R.tiersOf(r.id),TD=TI.includes(r.n*100)?r.n*100:TI[0],tSaved=TI.join(' '),tCur=ui.tiersTx!=null?ui.tiersTx:tSaved,tDirty=(tCur.match(/\d+/g)||[]).join(' ')!==tSaved;
-  const tiersBox='<label class="fld"><span>奖励金币档位</span><input class="in mono" id="tiersin" data-m="tiersTx" value="'+esc(tCur)+'" inputmode="decimal" placeholder="'+r.n*100+'" autocomplete="off"><small class="hint">可填多档，用空格或任意符号隔开，如 400 300 200；留空使用默认奖励</small></label>'+(tDirty?'<button class="btn-line" data-a="tiers">保存得分</button>':'');
+  const tiersBox='<label class="fld"><span>奖励金币档位</span><input class="in mono" id="tiersin" data-m="tiersTx" value="'+esc(tCur)+'" inputmode="decimal" placeholder="'+r.n*100+'" autocomplete="off"><small class="hint">最多 4 档，用空格或任意符号隔开，如 400 300 200；留空使用默认奖励</small></label>'+(tDirty?'<button class="btn-line" data-a="tiers">保存得分</button>':'');
   const info='<div class="pn" style="gap:14px"><h2 class="sh">入场</h2>'
     +'<div class="rwl"><span><b class="acc">赢</b> '+'+'+(TI.length?TI.join(' / '):r.n*100)+' 金币 + '+r.suit+'</span><span><b class="red">输</b> 淘汰，进鬼市</span><span class="sub">中途放弃按失败结算。每人每间房仅可成功一次。</span></div>'+entry+tiersBox+'</div>';
   // 规则：Dealer 自己能改（点「修改」→ 文本框 → 保存；清空保存 = 规则为空）
@@ -856,10 +856,12 @@ function tickUpdate(){
   {const l=el.firstChild;if(l&&l.textContent!==XT('播报'))l.textContent=XT('播报');}
   {const t=$('#tabs'),h=t&&!t.hidden&&innerWidth<720?t.offsetHeight:0;if(el.dataset.th!==String(h)){el.dataset.th=String(h);el.style.bottom=h+'px';document.documentElement.style.setProperty('--tabh',h+'px');}}   // 手机：紧挨着底部分页上面（用布局高度，不用滚动时会变的视口位置）
   const bs=S.log.filter(l=>l.b);
-  if(tkLast===null){tkLast=bs[0]?tkKey(bs[0]):'';if(bs[0]&&S.t-bs[0].t<=120)tkQ.push(bs[0]);}   // 刚打开页面：只补滚两分钟内的最新一条
+  if(tkLast===null){tkLast=bs[0]?tkKey(bs[0]):'';let sv=null;try{sv=localStorage.getItem('borderland.tk');}catch(e){}
+    if(bs[0]&&S.t-bs[0].t<=120&&sv!==tkLast)tkQ.push(bs[0]);}   // 刚打开页面：只补滚两分钟内的最新一条，且这台设备没滚过（刷新不重放）
   else{const i=bs.findIndex(l=>tkKey(l)===tkLast),fresh=(i<0?bs.slice(0,1):bs.slice(0,i)).reverse();
     if(bs[0])tkLast=tkKey(bs[0]);
     fresh.forEach(l=>tkQ.push(l));}
+  try{if(bs[0])localStorage.setItem('borderland.tk',tkKey(bs[0]));}catch(e){}
   if(tkQ.length>5)tkQ=tkQ.slice(-5);
   if(!tkBusy)tickNext();
 }

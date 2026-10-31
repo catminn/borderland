@@ -2079,3 +2079,13 @@ body.bwr .mapp .mp-plan .mp-common{fill:color-mix(in srgb,var(--mute) 22%,transp
 /* 2026-10-31 Dealer 玩家编号输入框字号与「奖励金币档位」一致 */
 .entin{font-size:15px!important;letter-spacing:normal!important}
 @media (max-width:719px){.entin{font-size:17px!important}}
+
+/* 2026-10-31 得分档位多时按钮不被挤坏：字号随档数缩小；手机 3 档以上按钮单独占第二行 */
+.wl.w4 button,.wl.w5 button{padding-left:2px;padding-right:2px;min-width:0;white-space:nowrap}
+.wl.w5 button{font-size:15px;letter-spacing:0}
+@media (max-width:719px){
+  .rt.rp:has(.wl.w4,.wl.w5){grid-template-columns:minmax(0,1fr) auto}
+  .rt.rp:has(.wl.w4,.wl.w5) .wl{grid-column:1/-1;order:3}
+  .rt.rp:has(.wl.w4,.wl.w5) .kickb{order:2}
+  .rt.rp .wl.w4 button,.rt.rp .wl.w5 button{font-size:17px;letter-spacing:0}
+}

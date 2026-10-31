@@ -227,7 +227,8 @@ function setRule(rid,text){const r=room(rid);if(!r)return no('没有这个房间
   S.rules=S.rules||{};S.rules[rid]=text;
   log(r.card+' 的规则'+(text===''?'清空了':'改了'));return ok('规则已保存');}
 function setTiers(rid,text){const r=room(rid);if(!r)return no('没有这个房间');
-  const a=[...new Set((String(text==null?'':text).match(/\d+/g)||[]).map(Number))].filter(n=>n>0&&n<=9999).sort((x,y)=>y-x).slice(0,4);
+  const a=[...new Set((String(text==null?'':text).match(/\d+/g)||[]).map(Number))].filter(n=>n>0&&n<=9999).sort((x,y)=>y-x);
+  if(a.length>4)return no('最多 4 档，现在填了 '+a.length+' 档，请删掉几个');
   S.rules=S.rules||{};if(a.length)S.rules['$'+rid]=a.join(' ');else delete S.rules['$'+rid];
   log(r.card+' 的得分'+(a.length?'改成 '+a.join(' / '):'恢复默认 +'+r.n*100));return ok(a.length?'得分档位已保存':'已恢复默认');}
 const puzTitle=code=>{const z=(S.bank||{})[code];return '#'+code+' '+(z&&z.q?String(z.q).replace(/\s+/g,' ').slice(0,30):'谜题');};
