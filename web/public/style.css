@@ -2036,7 +2036,7 @@ html,body,*{scrollbar-width:none;scrollbar-gutter:auto!important}
 .coach .tip button.skip{float:left;background:transparent;color:inherit;opacity:.65;padding:0 4px;font-weight:600;font-size:14px}
 
 /* 全场播报横幅：半透明压在最上面，有播报才出现 */
-.tick{position:fixed;left:0;right:0;top:0;z-index:60;display:flex;align-items:center;gap:10px;height:36px;padding:0 12px;font-size:16px;overflow:hidden;pointer-events:none;background:rgba(0,0,0,.62);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);color:#fff}
+.tick{position:fixed;left:0;right:0;bottom:0;z-index:60;border-top:1px solid var(--line);display:flex;align-items:center;gap:10px;height:36px;padding:0 12px;font-size:16px;overflow:hidden;pointer-events:none;background:rgba(0,0,0,.62);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);color:#fff}
 .tick[hidden]{display:none}
 :root[data-theme=light] .tick{background:rgba(255,255,255,.72);color:#111}
 .tick .tk-l{flex:none;padding:2px 8px;border-radius:6px;background:var(--accent);color:var(--accent-ink);font-weight:900;font-size:13px;letter-spacing:.1em}

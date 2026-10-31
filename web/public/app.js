@@ -849,6 +849,7 @@ function tickUpdate(){
   const el=$('#tick');if(!el)return;
   if(!ME||entering||!S||!S.log){el.hidden=true;return;}
   {const l=el.firstChild;if(l&&l.textContent!==XT('播报'))l.textContent=XT('播报');}
+  {const t=$('#tabs'),r=t&&!t.hidden&&t.getBoundingClientRect();el.style.bottom=r&&innerWidth<720&&r.top>0?Math.max(0,innerHeight-r.top)+'px':'0';}   // 手机：紧挨着底部分页上面
   const bs=S.log.filter(l=>l.b);
   if(tkLast===null){tkLast=bs[0]?tkKey(bs[0]):'';if(bs[0]&&S.t-bs[0].t<=120)tkQ.push(bs[0]);}   // 刚打开页面：只补滚两分钟内的最新一条
   else{const i=bs.findIndex(l=>tkKey(l)===tkLast),fresh=(i<0?bs.slice(0,1):bs.slice(0,i)).reverse();
