@@ -307,7 +307,7 @@ function drawRun(id,rnd){const x=prize(id)||curPrize();if(!x)return no('先选�
   while(w[i]===0&&i>0)i--;x.tie=0;x.tk=w[i];x.all=sum;return fin(pool[i]);}
 function drawConfirm(id){const x=prize(id)||curPrize();if(!x||x.st!=='drawn')return no('没有等待确认的得主');
   const p=pl(x.win);p.won=x.id;x.st='done';log(nm(p)+' 获得「'+x.name+'」','back',1);
-  tell(p.id,'你中奖了',(x.kind==='tycoon'?'恭喜获得「'+x.name+'」！':'恭喜中奖：「'+x.name+'」！')+'请到台前领取。','final');
+  tell(p.id,'你中奖了','恭喜获得「'+x.name+'」！今晚的金币没白攒，请到台前领取你的大奖！','final');
   return ok(nm(p)+' 获得「'+x.name+'」');}
 // 得主不在场：这位不再参与这个奖品，马上重抽
 function drawRedo(id,rnd){const x=prize(id)||curPrize();if(!x||x.st!=='drawn')return no('没有等待确认的得主');

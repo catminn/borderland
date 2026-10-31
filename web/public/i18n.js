@@ -78,7 +78,7 @@ const P=[
   [/^你被 (.+) 花 (\d+) 金币赎了出来，金币已解冻。$/,(m)=>'You were ransomed by '+m[1]+' for '+m[2]+' coins. Your coins are unfrozen.'],
   [/^你花 (\d+) 金币赎出了 (.+)。$/,(m)=>'You paid '+m[1]+' coins to ransom '+m[2]+'.'],
   [/^(.+) 用鬼门开奖励把你救了回来。$/,(m)=>m[1]+' used a Ghost Gate reward to bring you back.'],
-  [/^恭喜获得「(.*)」！请到台前领取。$/,(m)=>'Congratulations! You won "'+tn(m[1])+'"! Please collect it at the front.'],
+  [/^恭喜获得「(.*)」！今晚的金币没白攒，请到台前领取你的大奖！$/,(m)=>'Congratulations! You won "'+tn(m[1])+'"! Your coins tonight were not saved in vain. Please collect your grand prize at the front!'],
   [/^恭喜中奖：「(.*)」！请到台前领取。$/,(m)=>'Congratulations! You won "'+tn(m[1])+'"! Please collect it at the front.'],
   // 全场播报
   [/^(.+) 赢下 (♠|♥|♣|♦)(\d)，\+(\d+) 金币(（独自通关）)?$/,(m)=>m[1]+' cleared '+m[2]+m[3]+', +'+m[4]+' coins'+(m[5]?' (solo)':'')],
