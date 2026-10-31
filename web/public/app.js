@@ -815,13 +815,15 @@ const coachOn=()=>!!(ME&&S&&!entering&&ME.role==='player'&&!DEVME&&meP()&&meP().
 let coachEl=null,coachStep=-1,coachRaf=0;
 function coachPos(){
   if(!coachEl)return;
-  const i=ui.tut||0,t=TUT[i],tg=t[2]==='tab'?[...$('#tabs').children].find(b=>{const x=b.textContent.trim();return x===t[0]||x===XT(t[0]);}):$(t[2]);if(!tg)return;
+  const i=ui.tut||0,t=TUT[i],tg=t[2]==='tab'?[...$('#tabs').children].find(b=>{const x=b.textContent.trim();return x===t[0]||x===XT(t[0]);}):$(t[2]);
+  if(!tg){const de0=document.documentElement,w0=Math.min(300,de0.clientWidth-32);coachEl.firstChild.style.cssText='display:none';coachEl.lastChild.className='tip dn';coachEl.lastChild.style.cssText='width:'+w0+'px;left:'+(de0.clientWidth-w0)/2+'px;top:30%';coachEl.lastChild.firstChild.style.display='none';return;}
   const r=tg.getBoundingClientRect(),sp=coachEl.firstChild,tip=coachEl.lastChild,de=document.documentElement,W=de.clientWidth,H=de.clientHeight,pad=4;
   sp.style.cssText='left:'+(r.left-pad)+'px;top:'+(r.top-pad)+'px;width:'+(r.width+pad*2)+'px;height:'+(r.height+pad*2)+'px';
   const w=Math.min(300,W-32),cx=r.left+r.width/2,left=Math.max(16,Math.min(cx-w/2,W-16-w));tip.style.width=w+'px';const th=tip.offsetHeight,fitDn=r.bottom+pad+14+th<=H-12,fitUp=r.top-pad-14-th>=12,up=fitDn?(!fitUp?false:r.top>H/2):fitUp;
   tip.className='tip '+(up?'up':'dn');
   tip.style.cssText='width:'+w+'px;left:'+left+'px;'+(up?'bottom:'+(H-r.top+pad+14)+'px':'top:'+(r.bottom+pad+14)+'px');
   tip.firstChild.style.left=Math.max(18,Math.min(cx-left,w-18))+'px';
+  const tr=tip.getBoundingClientRect();if(tr.top<8||tr.bottom>H-8){tip.style.top=Math.max(8,Math.min(tr.top,H-8-tr.height))+'px';tip.style.bottom='auto';}   // 小屏幕放不下时把气泡（和按钮）夹回屏幕内
 }
 const coachSoon=()=>{cancelAnimationFrame(coachRaf);coachRaf=requestAnimationFrame(coachPos);};
 ['scroll','resize','orientationchange'].forEach(e=>addEventListener(e,coachSoon,{passive:true}));
@@ -835,7 +837,7 @@ function coachRender(){
     coachEl.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});coachEl.addEventListener('wheel',e=>e.preventDefault(),{passive:false});}
   document.documentElement.classList.add('coaching');
   if(coachStep!==i){coachStep=i;scrollTo(0,0);
-    coachEl.innerHTML=X('<div class="sp"></div><div class="tip" role="dialog" aria-live="polite"><i class="ar"></i><div class="ct">'+(i+1)+' / '+TUT.length+'</div><b>'+t[0]+'</b><p>'+esc(XT(t[1])).replace(/\n/g,'<br>')+'</p><button data-a="tutnext" data-modal="1">'+(i+1<TUT.length?'下一步':'知道了')+'</button></div>');}
+    coachEl.innerHTML=X('<div class="sp"></div><div class="tip" role="dialog" aria-live="polite"><i class="ar"></i><div class="ct">'+(i+1)+' / '+TUT.length+'</div><b>'+t[0]+'</b><p>'+esc(XT(t[1])).replace(/\n/g,'<br>')+'</p><button data-a="tutnext" data-modal="1">'+(i+1<TUT.length?'下一步':'知道了')+'</button>'+(i+1<TUT.length?'<button class="skip" data-a="tutskip" data-modal="1">跳过</button>':'')+'</div>');}
   coachPos();
 }
 function modalHtml(){
@@ -1311,6 +1313,7 @@ document.addEventListener('click',e=>{
   else if(a==='sack'){const id=b.dataset.n;(ui.sa=ui.sa||{})[id]=true;try{sessionStorage.setItem('borderland.sa.'+id,'1');}catch{/* ignore */}}
   else if(a==='jscr')send({type:'draw.jscr',on:v==='1'});
   else if(a==='fzack'){ui.fzAck=true;try{sessionStorage.setItem(fzKey(),'1');}catch{/* ignore */}}
+  else if(a==='tutskip'){ui.tutDone=true;ui.tut=0;try{localStorage.setItem('borderland.tut','1');}catch{/* ignore */}}
   else if(a==='tutnext'){ui.tut=(ui.tut||0)+1;if(ui.tut>=TUT.length){ui.tutDone=true;ui.tut=0;try{localStorage.setItem('borderland.tut','1');}catch{/* ignore */}}}
   else if(a==='tuack'){ui.tuAck=true;try{sessionStorage.setItem(tuKey(),'1');}catch{/* ignore */}}
   else if(a==='ack'&&DEVME&&!ui.devOps){ui.devAck.add(b.dataset.n+':'+ME.pid);}

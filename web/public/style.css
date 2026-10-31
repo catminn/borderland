@@ -2033,3 +2033,4 @@ html,body,*{scrollbar-width:none;scrollbar-gutter:auto!important}
 @media (min-width:820px){.mp-pt .pgx{display:inline}}
 /* 时间到标题变长：缩小字号，手机上两行放下 */
 :root[data-theme] .ovl[data-k="time"] .dlg h3{font-size:clamp(30px,9.4vw,64px);line-height:1.15;white-space:nowrap}
+.coach .tip button.skip{float:left;background:transparent;color:inherit;opacity:.65;padding:0 4px;font-weight:600;font-size:14px}
