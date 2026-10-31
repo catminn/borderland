@@ -327,7 +327,7 @@ function viewDealer(){
   const TI=R.tiersOf(r.id),TD=TI.includes(r.n*100)?r.n*100:TI[0],tSaved=TI.join(' '),tCur=ui.tiersTx!=null?ui.tiersTx:tSaved,tDirty=(tCur.match(/\d+/g)||[]).join(' ')!==tSaved;
   const tiersBox='<label class="fld"><span>得分（可填多档，如 400 300 200，不填 = 赢 +'+r.n*100+'）</span><input class="in mono" id="tiersin" data-m="tiersTx" value="'+esc(tCur)+'" inputmode="numeric" placeholder="'+r.n*100+'" autocomplete="off"></label>'+(tDirty?'<button class="btn-line" data-a="tiers">保存得分</button>':'');
   const info='<div class="pn" style="gap:14px"><h2 class="sh">入场</h2>'
-    +'<div class="rwl"><span><b class="acc">赢</b> '+'+'+(TI.length?TI.join(' / '):r.n*100)+' 金币 + '+r.suit+'</span><span><b class="red">输</b> 进鬼市，原地等黑白无常</span><span class="sub">中途放弃算输，每人每间只能成功一次</span></div>'+entry+tiersBox+'</div>';
+    +'<div class="rwl"><span><b class="acc">赢</b> '+'+'+(TI.length?TI.join(' / '):r.n*100)+' 金币 + '+r.suit+'</span><span><b class="red">输</b> 淘汰，进鬼市</span><span class="sub">中途放弃算输，每人每间只能成功一次</span></div>'+entry+tiersBox+'</div>';
   // 规则：Dealer 自己能改（点「修改」→ 文本框 → 保存；清空保存 = 规则为空）
   const rTxt=R.roomRule(r.id),rEd=ui.ruleEd===r.id;
   const rulePn='<div class="pn" style="gap:10px"><div class="shrow"><h2 class="sh">规则</h2>'+(rEd?'':'<button class="btn-line" data-a="ruleed">修改</button>')+'</div>'
@@ -462,7 +462,7 @@ const chkBit=p=>!p.chk?'':p.chk.ok?'<span class="chk ok">登记已确认</span>'
 function inboundPanel(){
   const wait=S.players.filter(p=>p.st==='out'||p.st==='picked'||(p.st==='market'&&p.chk&&!p.chk.ok)).sort((a,b)=>a.outAt-b.outAt);
   const rows=wait.map(p=>'<div class="mrow'+(p.st==='picked'?' ok':'')+'"><div class="l1">'+who(p)
-    +'<span class="stay">'+(p.chk&&!p.chk.ok?'<b>黑白无常已送来，等孟婆确认</b>':p.st==='picked'?'<b>已被黑白无常抓到</b>':'等黑白无常来抓')+'</span></div>'
+    +'<span class="stay">'+(p.chk&&!p.chk.ok?'<b>黑白无常已送来，等孟婆确认</b>':p.st==='picked'?'<b>已被黑白无常抓到</b>':'还没去鬼市登记')+'</span></div>'
     +'<div class="l1"><span class="stay">位置：<b>'+esc(p.at||'未记录')+'</b>　已等 <b class="mono">'+mm(S.t-(p.outAt||S.t))+'</b></span></div>'
     +(p.chk&&!p.chk.ok?chkBit(p):'<button class="btn-main'+(p.st==='picked'?' glow':'')+'" data-a="checkin" data-p="'+p.id+'">登记入鬼市</button>')+'</div>').join('');
   const rid=ui.mkReg||'',rp=findP(rid),rw=!rid?'':!rp?'没有这个编号':rp.st==='market'&&!(rp.chk&&!rp.chk.ok)?rp.id+' 已在鬼市':'';
