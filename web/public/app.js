@@ -276,18 +276,23 @@ function mapSvg(me){
   const t=(x,y,c,txt)=>'<text x="'+x+'" y="'+y+'" class="'+c+'">'+txt+'</text>';
   let h='<svg viewBox="20 20 1160 640" role="img" aria-label="场地平面图">'
     +'<rect class="mp-common" x="440" y="40" width="250" height="200"/>'
-    +t(565,136,'mp-ct',enOn()?'Market':'鬼市')+t(565,174,'mp-cs','CASINO')
-    +t(140,345,'mp-cor','走 廊')
+    +(enOn()?'<text x="565" y="108" class="mp-ct">Ghost<tspan x="565" dy="1.05em">Market</tspan></text>'+t(565,184,'mp-cs','CASINO'):t(565,136,'mp-ct','鬼市')+t(565,174,'mp-cs','CASINO'))
+    +t(140,345,'mp-cor',enOn()?'Corridor':'走 廊')
     +'<path class="mp-q" d="'+MAP_Q+'"/>'+MAP_QH.map(([x,y,d])=>'<path class="mp-qh" d="M'+(x-8)+' '+(y-11*d)+'L'+x+' '+y+'L'+(x+8)+' '+(y-11*d)+'Z"/>').join('')
     +'<g class="mp-desk"><rect x="450" y="302" width="230" height="74" rx="5"/>'+t(565,340,"mp-dk","info desk")+'</g>';
   MAP_ROOMS.forEach(([id,x,y,w,hh,sub])=>{const r=room(id),[sl,sc]=mapSt(r),mine=me&&me.inRoom===id,done=me&&me.cleared.includes(id),cx=x+w/2,cy=y+hh/2;
+    const en=enOn(),k=en?0.58:1.02,mw=w-16,nm0=XT(r.name),sp=sub.split(' · '),s1=XT(sp.slice(0,2).join(' · ')),s2=XT(sp.slice(2).join(' · '));
+    let ln=[nm0];
+    if(en&&nm0.length*24*k>mw&&nm0.includes(' ')){const ws=nm0.split(' ');let b=null;for(let i=1;i<ws.length;i++){const a=ws.slice(0,i).join(' '),c=ws.slice(i).join(' '),m=Math.max(a.length,c.length);if(!b||m<b[0])b=[m,a,c];}ln=[b[1],b[2]];}
+    const mx=Math.max(...ln.map(x=>x.length)),fs=Math.min(24,Math.floor(mw/(mx*k))),two=ln.length>1,ny=two?cy-30:cy-14;
     h+='<g class="mp-room s-'+sc+(mine?' mine':done?' done':'')+(ui.msel===id?' sel':'')+'" data-a="msel" data-v="'+id+'" role="button" aria-label="'+r.card+' '+esc(r.name)+' '+sl+'">'
       +'<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+hh+'" rx="3"/>'
-      +'<g class="mp-tag'+(isRed(r.suit)?' red':'')+'" transform="translate('+(cx-22)+' '+(cy-62)+')"><rect width="44" height="26" rx="4"/>'+t(22,19,'',r.n+r.suit)+'</g>'
-      +t(cx,cy+2,'mp-gn mid',esc(r.name))+t(cx,cy+30,'mp-sub',esc(sub))+t(cx,cy+62,'mp-st',mine?'你在这里':done?'✓ 已成功':sl)+t(cx,cy,'mp-num mp-only',r.n+r.suit)+'</g>';});
+      +'<g class="mp-tag'+(isRed(r.suit)?' red':'')+'" transform="translate('+(cx-22)+' '+(cy-88)+')"><rect width="44" height="26" rx="4"/>'+t(22,19,'',r.n+r.suit)+'</g>'
+      +'<text x="'+cx+'" y="'+ny+'" class="mp-gn mid"'+(fs<24?' style="font-size:'+fs+'px"':'')+'>'+esc(ln[0])+(two?'<tspan x="'+cx+'" dy="1.1em">'+esc(ln[1])+'</tspan>':'')+'</text>'
+      +t(cx,cy+18,'mp-sub',esc(s1))+(s2?t(cx,cy+38,'mp-sub',esc(s2)):'')+t(cx,cy+74,'mp-st',mine?'你在这里':done?'✓ 已成功':sl)+t(cx,cy,'mp-num mp-only',r.n+r.suit)+'</g>';});
   h+='<path class="mp-cur" d="'+MAP_CUR+'"/>'
     +'<path class="mp-wall" d="M1090 300 V40 H40 V640 H1090 V380"/>'
-    +'<g class="mp-gate"><rect x="1010" y="300" width="76" height="80" rx="4"/>'+t(1048,324,'mp-dt',enOn()?'Entry':'入口')+(enOn()?t(1048,350,'mp-dt','No queue'):t(1048,346,'mp-dt','请勿在此')+t(1048,366,'mp-dt','排队'))+'</g>'
+    +'<g class="mp-gate"><rect x="1010" y="300" width="76" height="80" rx="4"/>'+t(1048,324,'mp-dt',enOn()?'Entry':'入口')+(enOn()?'<text x="1048" y="350" class="mp-dt" style="font-size:13px;letter-spacing:0">No queue</text>':t(1048,346,'mp-dt','请勿在此')+t(1048,366,'mp-dt','排队'))+'</g>'
     +'<path class="mp-arrow" d="M1170 340 H1100 M1110 332 L1100 340 L1110 348"/>'+t(1135,320,'mp-ent',enOn()?'Entry':'入口');
   return h+'</svg>';
 }

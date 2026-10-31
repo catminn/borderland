@@ -2051,3 +2051,4 @@ body.screen .tick .tk-l{font-size:22px;padding:4px 14px}
   body.bt{background-attachment:scroll;min-height:100vh;min-height:100dvh}
   body.bt #tabs{transform:translateZ(0);-webkit-transform:translateZ(0);will-change:transform;backface-visibility:hidden}
 }
+html[data-lang="en"] .mp-cor{letter-spacing:.12em;font-size:18px}

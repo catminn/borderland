@@ -150,6 +150,7 @@ export function trSeg(s){
   else if(RN[t])r=RN[t];
   else{for(const [re,f] of P){const m=re.exec(t);if(m){r=f(m);break;}}}
   if(r==null&&t.includes(' · ')){const a=t.split(' · ').map(x=>part(x)||trSeg(x));if(a.every(x=>!CJK.test(x)))r=a.join(' · ');}
+  if(r==null){const q=part(t);if(q)r=q;}
   if(r==null)return s;
   return lead+r+tail;
 }
