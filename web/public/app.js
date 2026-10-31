@@ -102,10 +102,10 @@ const ask2=(key,label,a,attrs,cls)=>ui.aucAsk===key
 // ---------- 大屏 ----------
 function broadcast(n){return S.log.filter(l=>l.b).slice(0,n||5).map(l=>({t:l.t,x:l.text,c:l.kind==='hook'?'hook':l.kind==='back'?'hot':''}));}
 // 房间状态：开放 / 游戏中（几人）/ 重置中。游戏、重置的计时只是显示，不会自动结束。
-const RST={open:['开放中','idle'],play:['挑战中','on'],reset:['重置中','rst']};
+const RST={open:['开放中','idle'],play:['游戏中','on'],reset:['重置中','rst']};
 function roomCard(r,me){
   const x=S.rooms.find(y=>y.id===r.id),st=x.st,mine=!!me&&me.inRoom===r.id,L=[];
-  if(st==='play')L.push('<span class="on"><i class="gd"></i><span class="tx">'+(mine?'你在这里':'挑战中')+'（<span data-rt="'+(x.at||0)+'">'+rtStr(x.at)+'</span>）</span></span>');
+  if(st==='play')L.push('<span class="on"><i class="gd"></i><span class="tx">'+(mine?'你在这里':'游戏中')+'（<span data-rt="'+(x.at||0)+'">'+rtStr(x.at)+'</span>）</span></span>');
   else if(st==='reset')L.push('<span class="rs rst">重置中</span>');
   else L.push('<span class="'+(timeUp()?'rst':'idle')+'">'+(timeUp()?'已关闭':'<i class="gd"></i>开放中')+'</span>');
   if(me&&me.cleared.includes(r.id))L.push('<span class="idle okk">✓ 你已成功</span>');
@@ -271,7 +271,7 @@ const MAP_CUR='M40 240H190M290 240H440M690 240H840M940 240H1090M240 40V290M440 4
 const MAP_Q='M67 341V283H217V258M67 341V399H342V422M421 314V283H267V258M711 314V283H865V258M987 341V283H914V258M987 341V399H789V422M544 376V399H392V422M587 376V399H740V422';
 const MAP_QH=[[217,250,-1],[267,250,-1],[865,250,-1],[914,250,-1],[342,432,1],[392,432,1],[740,432,1],[789,432,1]];
 function mapSt(r){const x=S.rooms.find(y=>y.id===r.id);
-  return x.st==='play'?['挑战中 · '+x.ps.length+'人','on']:x.st==='reset'?['重置中','rst']:timeUp()?['已关闭','shut']:['开放中','idle'];}
+  return x.st==='play'?['游戏中','on']:x.st==='reset'?['重置中','rst']:timeUp()?['已关闭','shut']:['开放中','idle'];}
 function mapSvg(me){
   const t=(x,y,c,txt)=>'<text x="'+x+'" y="'+y+'" class="'+c+'">'+txt+'</text>';
   let h='<svg viewBox="20 20 1160 640" role="img" aria-label="场地平面图">'
