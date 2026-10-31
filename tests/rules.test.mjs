@@ -204,4 +204,20 @@ T('Dealer 不能改别的房间规则', !A('dealer', { type: 'setrule', rid: '8S
 T('玩家和大屏收不到改过的规则', !Object.keys(R.viewFor(S, { role: 'player', pid: '001' }).rules).length && !Object.keys(R.viewFor(S, { role: 'screen' }).rules).length);
 T('清空保存 = 规则为空', A('dealer', { type: 'setrule', rid: '4S', text: '  ' }, { rooms: ['4S'] }).ok && R.roomRule('4S') === '');
 T('8 间房都有规则（只在 Dealer 页显示）', R.ROOMS.every(r => typeof r.rule === 'string' && r.rule.length > 10));
+
+// 得分档位
+{const S0=R.newGame();R.use(S0);const D=(rooms,a)=>R.apply(S0,{role:'dealer',rooms},a),sc=id=>S0.players.find(p=>p.id===id);
+ D(['4D'],{type:'settiers',rid:'4D',text:'200 400 300 400'});
+ T('档位排序去重', R.tiersOf('4D').join(' ')==='400 300 200');
+ T('Dealer 不能改别人房间的档位', !D(['4S'],{type:'settiers',rid:'4D',text:'1'}).ok);
+ D(['4D'],{type:'enter',rid:'4D',pids:['001','002','003']});
+ const f=D(['4D'],{type:'finish',rid:'4D',results:{'001':'w:300','002':'w:200','003':'lose'}});
+ T('各档按所选分值加分，200 也算成功', f.ok&&sc('001').score===300&&sc('002').score===200&&sc('001').cleared.includes('4D')&&sc('002').cleared.includes('4D'));
+ D(['4D'],{type:'resetdone',rid:'4D'});D(['4D'],{type:'enter',rid:'4D',pids:['004']});
+ T('不在档位里的分值被拒', !D(['4D'],{type:'finish',rid:'4D',results:{'004':'w:350'}}).ok);
+ T("'win' = 最高档", D(['4D'],{type:'finish',rid:'4D',results:{'004':'win'}}).ok&&sc('004').score===400);
+ D(['4D'],{type:'settiers',rid:'4D',text:''});
+ T('清空 = 默认', R.tiersOf('4D').length===0);
+ T('♥8 不能设档位', !D(['8H'],{type:'settiers',rid:'8H',text:'1 2'}).ok);}
+
 console.log(bad ? bad + ' FAILED' : 'all passed'); process.exit(bad ? 1 : 0);

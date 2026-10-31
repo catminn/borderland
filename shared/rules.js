@@ -24,7 +24,10 @@ const ROOMS=[
    rule:"计划 A：30 秒看桌上物品（准备打印一些万圣节图案和准备一些物品），盖布后答题。\n计划 B：打算用 AI 创一个像 super mario game 的 suit yourselves 类似的游戏。用 AI 把卡牌换成万圣节或者中式恐怖元素。游戏规则也是 30 秒记住大屏幕上面的卡牌物品，盖布后答题。一共 4 轮。答对 4 题积 400 分，3 题积 300 分，2 题积 200 分，一题或者以下等于失败。\nhttps://mingdeng-memory-game.dearbun513.chatgpt.site"},
   {id:'8D',card:'♦8',suit:'♦',n:8,name:'符咒密码',
    rule:"房间内有 8 张符咒，其中 4 张是真符、4 张是假符。真符上的话一定为真，假符上的话一定为假。玩家需在 5 分钟内根据符咒之间的逻辑关系找出 4 张真符，并按照符咒编号从小到大读取真符上的数字，组成 4 位密码打开密码箱。最多尝试 3 次密码；成功获得 ♦ + 800 金币，超时或 3 次输入错误则挑战失败进入鬼市。现场随机使用 A/B 两套题目；如发现玩家通过泄题直接输入正确密码，可直接判定失败。"}];
-const winPts=(r,res)=>res==='solo'&&r.solo?r.solo:r.n*100;
+// 得分档位：Dealer 可给每间房填几档分值（存 S.rules['$'+房间]，如 "400 300 200"）；没填 = 只有「赢」= n×100。结果值 'w:300' = 拿了 300 那一档，'win' = 最高档
+const tiersOf=rid=>{const t=S&&S.rules&&S.rules['$'+rid];return t?String(t).match(/\d+/g).map(Number):[];};
+const resOk=(r,res)=>['win','lose'].concat(r.solo?['solo']:[]).includes(res)||(typeof res==='string'&&res.startsWith('w:')&&tiersOf(r.id).includes(+res.slice(2)));
+const winPts=(r,res)=>res==='solo'&&r.solo?r.solo:typeof res==='string'&&res.startsWith('w:')?+res.slice(2):(tiersOf(r.id)[0]||r.n*100);
 const SUITS=['♠','♦','♣','♥'];
 // 身份卡：编号 001 起，默认 100 张。没有起始房间（2026-10-19 删掉了，现场见机行事）。
 const N_PLAYERS=100;
@@ -139,8 +142,7 @@ function enterRoom(rid,pids){
 function finishRoom(rid,results){
   const r=room(rid),st=S.rooms.find(x=>x.id===rid);results=results||{};
   if(!st||!st.ps.length)return no('房间里没有人');
-  const okv=r.solo?['win','solo','lose']:['win','lose'];
-  for(const id of st.ps)if(!okv.includes(results[id]))return no('请为 '+nameOf(id)+' 选择赢 / 输');
+  for(const id of st.ps)if(!resOk(r,results[id]))return no('请为 '+nameOf(id)+' 选择赢 / 输');
   if(r.solo){const so=st.ps.filter(id=>results[id]==='solo').length,w=st.ps.filter(id=>results[id]==='win').length;
     if(so>1)return no('独自通关只能有 1 人');if(so&&w)return no('独自通关时其他人都算输');if(w>2)return no('带人通关最多 2 人');}
   const notes=[];
@@ -225,6 +227,10 @@ const roomRule=id=>{const o=S.rules&&S.rules[id];return o!=null?o:(room(id)||{})
 function setRule(rid,text){const r=room(rid);if(!r)return no('没有这个房间');text=String(text==null?'':text).replace(/\r/g,'').trim().slice(0,4000);
   S.rules=S.rules||{};S.rules[rid]=text;
   log(r.card+' 的规则'+(text===''?'清空了':'改了'));return ok('规则已保存');}
+function setTiers(rid,text){const r=room(rid);if(!r)return no('没有这个房间');if(r.solo)return no('这间房不能设档位');
+  const a=[...new Set((String(text==null?'':text).match(/\d+/g)||[]).map(Number))].filter(n=>n>0&&n<=9999).sort((x,y)=>y-x).slice(0,4);
+  S.rules=S.rules||{};if(a.length)S.rules['$'+rid]=a.join(' ');else delete S.rules['$'+rid];
+  log(r.card+' 的得分'+(a.length?'改成 '+a.join(' / '):'恢复默认 +'+r.n*100));return ok(a.length?'得分档位已保存':'已恢复默认');}
 const puzTitle=code=>{const z=(S.bank||{})[code];return '#'+code+' '+(z&&z.q?String(z.q).replace(/\s+/g,' ').slice(0,30):'谜题');};
 function puzRedeem(pid,code){const p=pl(pid);if(!p)return no('没有这个编号');
   code=puzCode(code);if(!code)return no('先输入谜题编码');const key='z'+code,t=puzTitle(code);
@@ -354,7 +360,7 @@ function offRow(me,x,rnd){
   const tag='（离线补录）';
   if(x.k==='room'){const r=room(x.rid);if(!r)return no('没有这个房间');
     if(Array.isArray(me.rooms)&&!me.rooms.includes(r.id))return no('这个房间不归你管');
-    if(!['win','lose'].concat(r.solo?['solo']:[]).includes(x.res))return no('结果不对');
+    if(!resOk(r,x.res))return no('结果不对');
     if(p.inRoom===r.id){const st=S.rooms.find(y=>y.id===r.id);st.ps=st.ps.filter(y=>y!==p.id);if(!st.ps.length&&st.st==='play')st.st='open';p.inRoom=null;}
     p.on=true;const h={rid:r.id,t0:S.t,t1:S.t,res:x.res,pts:0};p.hist.push(h);
     if(x.res!=='lose'){h.res='win';if(p.cleared.includes(r.id)){if(!p.cards.includes(r.suit))p.cards.push(r.suit);return ok(p.id+' 已成功过 '+r.card+'，没有再加分');}
@@ -456,7 +462,7 @@ const seed=w=>w==='start'?seedStart():w==='freeze'?seedFinal('freeze'):w==='pre'
 export function newGame(demo){init();if(demo)seed(demo);return S;}
 
 // Which roles may perform each action. 总控只做自己页面上的事（金币、名单、发布、设置），不代替其他工作人员操作。
-const ROLE_OK={setrule:['dealer','ctrl'],enter:['dealer'],finish:['dealer'],resetdone:['dealer'],kick:['dealer'],
+const ROLE_OK={setrule:['dealer','ctrl'],settiers:['dealer','ctrl'],enter:['dealer'],finish:['dealer'],resetdone:['dealer'],kick:['dealer'],
   setcap:['ctrl'],setcapon:['ctrl'],setdur:['ctrl'],setscore:['ctrl'],setcards:['ctrl'],seton:['ctrl'],addplayers:['ctrl'],setbank:['ctrl'],
   publish:['ctrl','judge'],revoke:['ctrl','judge'],
   gatewin:['judge'],gateunwin:['judge'],gatereward:['judge'],gateend:['judge'],puz:['judge'],puzundo:['judge'],
@@ -473,7 +479,7 @@ export function apply(state,me,a){
   if(!roles)return no('未知操作');
   if(!roles.includes(me.role))return no('你的身份不能做这个操作');
   if(me.role==='judge'&&(a.type==='draw.screen'||a.type==='draw.lock')&&!S.judgeScr)return no('总控没有把切换大屏 / 锁定排名交给判官');
-  if(me.role==='dealer'&&Array.isArray(me.rooms)&&['enter','finish','resetdone','kick','setrule'].includes(a.type)&&!me.rooms.includes(a.rid))return no('这个房间不归你管，只能操作：'+me.rooms.map(r=>room(r).card).join(' '));
+  if(me.role==='dealer'&&Array.isArray(me.rooms)&&['enter','finish','resetdone','kick','setrule','settiers'].includes(a.type)&&!me.rooms.includes(a.rid))return no('这个房间不归你管，只能操作：'+me.rooms.map(r=>room(r).card).join(' '));
   switch(a.type){
     case 'enter':return enterRoom(a.rid,a.pids||a.pid);
     case 'finish':return finishRoom(a.rid,a.results||{});
@@ -488,6 +494,7 @@ export function apply(state,me,a){
     case 'addplayers':return addPlayers(a.n);
     case 'setbank':return setBank(a.rows);
     case 'setrule':return setRule(a.rid,a.text);
+    case 'settiers':return setTiers(a.rid,a.text);
     case 'publish':if(me.role==='judge'&&!(a.f&&a.f.kind==='鬼门开'))return no('判官只能发布鬼门开');return publish(a.f);
     case 'revoke':return revokeNotice(+a.nid);
     case 'gatewin':return gateWin(a.pid);
@@ -538,6 +545,6 @@ export function viewFor(state,me){
     players:state.players.map(x=>x.id===me.pid?x:{...x,hist:[],puz:[]}),...hideDraw(state,me.pid)};
 }
 
-export {setPlayerCount,roomRule,noticeStale,staffSees,puzCode,timeUp,MARKET_WAIT,needsReset,whyNotEnter,eliminate,soup,puzInfo,ticketsOf,drawPool,KIND_NAME,frozen,FREEZE_SEC,
+export {setPlayerCount,roomRule,tiersOf,noticeStale,staffSees,puzCode,timeUp,MARKET_WAIT,needsReset,whyNotEnter,eliminate,soup,puzInfo,ticketsOf,drawPool,KIND_NAME,frozen,FREEZE_SEC,
   ranking,suitsOf,stLabel,inMk,pl,nm,matches,targetLabel,room,fmt,esc,log,no,
   OFF_KINDS,ROOMS,SUITS,GATES,TK_COIN,TK_SUITS,TK_ALL,CHIP_START,CHIP_GOAL,RANSOM,PUZ_PTS,PUZ_CAP,GATE_WIN,GATE_COIN,ROOM_CAP0,DEMOS};

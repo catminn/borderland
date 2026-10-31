@@ -2018,3 +2018,5 @@ html[data-lang="en"] nav.pages button,html[data-lang="en"] #tabs button{font-siz
 /* 手机：鬼火飘在内容上面（不挡点击；弹窗时本来就隐藏），低于底部分页 */
 @media (max-width:599px){:root[data-theme="dark"] body:not(.login) #amb{z-index:30}}
 .rt.rp .hd{padding-right:130px}
+
+.wl.w4{grid-template-columns:repeat(4,minmax(0,1fr))}.wl.w5{grid-template-columns:repeat(5,minmax(0,1fr))}.wl.w4 button,.wl.w5 button{font-size:17px;letter-spacing:.02em}
