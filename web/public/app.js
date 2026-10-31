@@ -834,7 +834,8 @@ function coachRender(){
   const i=ui.tut||0,t=TUT[i];
   if(t[3]&&ui.tab!==t[3]){ui.tab=t[3];setTimeout(render,0);return;}   // 这一步要在「我的」页
   if(!coachEl){coachEl=document.createElement('div');coachEl.className='coach';document.body.appendChild(coachEl);coachStep=-1;
-    coachEl.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});coachEl.addEventListener('wheel',e=>e.preventDefault(),{passive:false});}
+    coachEl.addEventListener('touchmove',e=>{if(!e.target.closest('button'))e.preventDefault();},{passive:false});   // 按钮上手指稍微滑动也别拦（iPhone 会因此取消点击，表现为「下一步」点不动）
+    coachEl.addEventListener('wheel',e=>e.preventDefault(),{passive:false});}
   document.documentElement.classList.add('coaching');
   if(coachStep!==i){coachStep=i;scrollTo(0,0);
     coachEl.innerHTML=X('<div class="sp"></div><div class="tip" role="dialog" aria-live="polite"><i class="ar"></i><div class="ct">'+(i+1)+' / '+TUT.length+'</div><b>'+t[0]+'</b><p>'+esc(XT(t[1])).replace(/\n/g,'<br>')+'</p><button data-a="tutnext" data-modal="1">'+(i+1<TUT.length?'下一步':'知道了')+'</button>'+(i+1<TUT.length?'<button class="skip" data-a="tutskip" data-modal="1">跳过</button>':'')+'</div>');}
