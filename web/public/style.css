@@ -2052,3 +2052,7 @@ body.screen .tick .tk-l{font-size:22px;padding:4px 14px}
   body.bt #tabs{transform:translateZ(0);-webkit-transform:translateZ(0);will-change:transform;backface-visibility:hidden}
 }
 html[data-lang="en"] .mp-cor{letter-spacing:.12em;font-size:18px}
+@media (max-width:719px){
+  html[data-lang="en"] .mp-plan .mp-ct{font-size:38px;letter-spacing:.04em}
+  html[data-lang="en"] .mp-plan .mp-ent{font-size:24px;letter-spacing:.04em}
+}
