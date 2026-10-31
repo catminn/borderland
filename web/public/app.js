@@ -435,7 +435,7 @@ function viewSponsor(){
   return '<div class="page"><div class="pn" style="gap:12px"><div class="shrow"><h3>赞助商确认</h3><span class="small">每人一次 +'+SPN_PTS+' 金币</span></div>'
     +'<label class="fld"><span>玩家编号（多个用空格或任意符号隔开）</span><input class="in mono" id="spi" data-m="sp.ids" value="'+esc(ui.sp.ids)+'" inputmode="decimal" placeholder="例如 7 15" autocomplete="off"></label>'
     +(good.length?'<div class="small">'+good.map(p=>p.id+(p.nick?' '+esc(p.nick):'')).join('　')+'</div>':'')
-    +'<button class="btn-main'+(why?'':' glow')+'" data-a="spn"'+(why?' disabled':'')+'>'+(why||'确认 '+good.map(p=>p.id).join('、')+'，各 +'+SPN_PTS)+'</button>'
+    +'<button class="btn-main'+(why?'':' glow')+'" data-a="spn"'+(why?' disabled':'')+'>'+(why||'确认')+'</button>'
     +'<div style="display:flex;flex-direction:column"><span class="lbl" style="padding-top:6px">已确认（'+S.players.filter(x=>x.spn).length+' 人）</span>'
     +(recs.length?recs.map(p=>'<div class="li"><div class="grow"><span class="t">'+fmt(p.spn.t)+'</span><span class="x">'+p.id+(p.nick?' '+esc(p.nick):'')+' +'+SPN_PTS+'</span></div><button class="btn-line" data-a="spnundo" data-p="'+p.id+'">撤销</button></div>').join(''):'<div class="li small">暂无记录</div>')+'</div></div></div>';
 }
