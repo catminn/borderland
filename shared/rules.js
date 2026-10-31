@@ -164,7 +164,7 @@ function setCapOn(v){v=!!v;if(v===S.capOn)return no('没有变化');S.capOn=v;lo
 // 状态：alive 在场 · out 刚失败，原地等黑白无常 · picked 已被黑白无常抓到 · market 在鬼市（钱包冻结，玩筹码）
 const stLabel=p=>({alive:'在场',out:'待入鬼市',picked:'押送中',market:'鬼市'})[p.st]||p.st;
 function eliminate(p,why,where){
-  if(p.inRoom){const r=S.rooms.find(x=>x.id===p.inRoom);r.ps=r.ps.filter(x=>x!==p.id);if(!r.ps.length&&r.st==='play')r.st='open';p.inRoom=null;}
+  if(p.inRoom){const r=S.rooms.find(x=>x.id===p.inRoom);r.ps=r.ps.filter(x=>x!==p.id);if(!r.ps.length&&r.st==='play')r.st='open';const h=[...p.hist].reverse().find(x=>x.rid===p.inRoom&&x.res===null);if(h)h.res='lose';p.inRoom=null;}   // 在房间里被登记进鬼市 = 中途放弃算输，记录不能一直停在「游戏中」
   p.st='out';p.outAt=S.t;p.inAt=null;p.pickAt=null;p.chk=null;p.at=where||'';
   log(nm(p)+' '+why+'，即将前往鬼市','hook',1);
   tell(p.id,'挑战失败','很遗憾，你没能通过 '+(where||'').split(' ')[0]+' 的挑战！请自行前往【鬼市】找孟婆登记，不然黑白无常会来抓你哟！','out');}

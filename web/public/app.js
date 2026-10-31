@@ -527,7 +527,7 @@ function editPanel(){
   const p=ui.ed.pid&&pl(ui.ed.pid);
   if(!p)return '<div class="pn"><h3>修改玩家</h3><span class="muted">在左边点一个人。</span></div>';
   const amt=parseInt(String(ui.ed.amt).replace(/[^\d-]/g,''),10)||0;
-  const hist=[...p.hist].reverse().slice(0,8).map(h=>{const r=room(h.rid);return '<div class="hrow"><span class="mono">'+fmt(h.t0)+'</span><b>'+cardG(r)+'</b><span class="hres '+(h.res==='win'?'w':h.res==='lose'?'l':'')+'">'+(h.res===null?'游戏中':h.res==='win'?'成功 +'+h.pts:h.res==='lose'?'失败':'离开')+'</span></div>';}).join('');
+  const hist=[...p.hist].reverse().slice(0,8).map(h=>{const r=room(h.rid);return '<div class="hrow"><span class="mono">'+fmt(h.t0)+'</span><b>'+cardG(r)+'</b><span class="hres '+(h.res==='win'?'w':h.res==='lose'?'l':'')+'">'+(h.res===null?(p.inRoom===h.rid?'游戏中':'失败'):h.res==='win'?'成功 +'+h.pts:h.res==='lose'?'失败':'离开')+'</span></div>';}).join('');
   return '<div class="pn" style="gap:12px"><div class="shrow"><h3>'+who(p)+'</h3><span class="kb">'+stLabel(p)+'</span></div>'
     +'<div class="kvs"><span>金币 <b class="mono">'+p.score+'</b></span><span>花色 '+suits4(p)+'</span><span>解谜 '+puzInfo(p).used+'/'+R.puzCapOf()+'</span>'+'<span>彩券 <b class="mono">'+ticketsOf(p)+'</b></span>'+(p.won?'<span>中奖 '+esc((prize(p.won)||{}).name||'')+'</span>':'')+'</div>'
     +'<div class="fld"><span>金币增减（▲▼ 每次 100）</span><span class="coin-in"><input class="in mono" type="number" step="100" id="eda" data-m="ed.amt" value="'+esc(ui.ed.amt)+'" placeholder="0" aria-label="金币增减">'
@@ -769,8 +769,8 @@ function viewPlayer(){
     +'<div class="fcs">'
     +rw('集齐四种花色',TK_SUITS,got,SUITS.length,okS,suits,'c4')
     +rw('通关全部八间房',TK_ALL,nC,ROOMS.length,okR,rms,'c8')+'</div></div>';
-  const hist=[...me.hist].reverse().map(h=>{const r=room(h.rid),res=h.res===null?'游戏中':h.res==='win'?'成功　+'+h.pts:h.res==='lose'?'失败':'中途离开';
-    return '<div class="hrow"><span class="mono">'+fmt(h.t0)+'</span><b>'+cardG(r)+' '+r.name+'</b><span class="hres '+(h.res==='win'?'w':h.res==='lose'?'l':'')+'">'+res+'</span></div>';}).join('');
+  const hist=[...me.hist].reverse().map(h=>{const r=room(h.rid),res=h.res===null?(me.inRoom===h.rid?'游戏中':'失败'):h.res==='win'?'成功　+'+h.pts:h.res==='lose'?'失败':'中途离开';
+    return '<div class="hrow"><span class="mono">'+fmt(h.t0)+'</span><b>'+cardG(r)+' '+r.name+'</b><span class="hres '+(h.res==='win'?'w':h.res==='lose'||(h.res===null&&me.inRoom!==h.rid)?'l':'')+'">'+res+'</span></div>';}).join('');
   const pz=puzInfo(me);
   const info='<div class="pn histp"><div class="shrow"><h3>我的记录</h3><span class="small">解谜所得 <b class="mono">'+pz.used+' / '+R.puzCapOf()+'</b> 金币</span></div>'
     +(hist||'<span class="muted small">还没有闯关记录，去地图上挑一间试试吧！</span>')+(me.puz.length?'<span class="lbl">解谜题</span>'+me.puz.map(r=>'<div class="hrow"><span class="mono">'+fmt(r.t)+'</span><b>'+esc(r.title)+'</b><span class="hres w">+'+r.pts+'</span></div>').join(''):'')+'</div>';
