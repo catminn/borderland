@@ -50,7 +50,7 @@ const D={
   '看你的通行证、金币、彩券和每一间房的记录。':'Your pass, coins, tickets, and your record in every room.','看剩余时间、金币排行和全场播报。':'Time left, coin ranking, and the live feed.','看所有房间的位置和状态。有问题就去 info desk。':'Where every room is and whether it is open. Questions? Go to the info desk.',
   '终极目标':'The Big Goal',
   '每 100 金币兑换 1 张彩券，集齐花色和房间还有额外彩券奖励。\n彩券越多，最终的鬼市大抽奖越容易中奖。\n另外，金币最多的人也会获得大奖哟！':'Every 100 coins turns into 1 raffle ticket, and collecting suits and clearing rooms earns bonus tickets.\nThe more tickets you have, the better your odds in the final Ghost Market raffle.\nThe player with the most coins also wins a grand prize!',
-  '欢迎来到 CSSA 万圣夜！':'Welcome to CSSA Halloween Night!','地府全体工作人员竭诚为您服务，祝您今晚玩得愉快，平安返程！':'All Underworld staff are at your service. Have a great night, and a safe trip back!',
+  '欢迎来到 CSSA 万圣夜！':'Welcome to CSSA Halloween Night!','地府全体工作人员竭诚为您服务，':'All Underworld staff are at your service.','祝您今晚玩得愉快，平安返程！':'Have a great night, and a safe trip back!','地府全体工作人员竭诚为您服务，祝您今晚玩得愉快，平安返程！':'All Underworld staff are at your service. Have a great night, and a safe trip back!',
   '跳过':'Skip','待入鬼市':'To register','押送中':'Escorted','挑战中':'In play','挑战中（':'In play (','简单':'Easy',
   '请自行前往鬼市登记，不然黑白无常会来抓你哟！':'Please go register at the Ghost Market yourself, or the Wuchang will come and get you!','黑白无常正在送你去鬼市，到达后请找孟婆登记。':'The Wuchang is taking you to the Ghost Market. Register with Meng Po when you arrive.',
   '鬼市暂住中':'Staying in the Ghost Market','金币暂时冻结':'Your coins are temporarily frozen','你已中奖，后续抽奖不再参与。好运也给其他人留一点！':'You already won, so you are out of the remaining draws. Leave some luck for the others!',
