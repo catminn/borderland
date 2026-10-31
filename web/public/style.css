@@ -2060,7 +2060,7 @@ html[data-lang="en"] .mp-cor{letter-spacing:.12em;font-size:18px}
 body.bwr .mapp .mp-plan .mp-room.mine>rect{stroke:var(--red)!important;fill:var(--red-soft)!important;stroke-width:6!important;stroke-dasharray:none!important}
 body.bwr .mapp .mp-plan .mp-room.mine .mp-num{fill:var(--ink)!important}
 body.bwr .mapp .mp-plan .mp-common{fill:color-mix(in srgb,var(--mute) 22%,transparent)}
-/* 2026-10-31 手机 Dealer 结算：每人一行（编号 | 赢 输 | 移出），「结束并结算」条吸在底部分页上方，人多也不用翻到最后 */
+/* 2026-10-31 手机 Dealer 结算：每人一行（编号 | 赢 输 | 移出），「结束并结算」条放在名单上面（不浮动，iPhone 上浮动条会跳） */
 @media (max-width:719px){
   .rt.rp{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.8fr) auto;align-items:center;gap:6px 8px;padding:8px 10px}
   .rt.rp .stamp{display:none}
@@ -2070,8 +2070,9 @@ body.bwr .mapp .mp-plan .mp-common{fill:color-mix(in srgb,var(--mute) 22%,transp
   .rt.rp .wl button{min-height:44px;font-size:16px;letter-spacing:.04em}
   .rt.rp .kickb{position:static;min-height:34px;padding:2px 8px}
   .rt.rp>.btns{grid-column:1/-1}
-  .finwrap{min-height:112px}
-  .finbar{position:fixed;left:12px;right:12px;bottom:calc(var(--tabh,72px) + 8px);z-index:45;display:flex;flex-direction:column;gap:6px;padding:10px;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:0 -4px 14px rgba(0,0,0,.35)}
+  .finwrap{order:2}
+  .rteams{order:3}
+  .finbar{display:flex;flex-direction:column;gap:6px;padding:10px;background:var(--panel2);border:1px solid var(--line);border-radius:12px}
   .finbar .small{display:none}
   .finbar .btn-main{min-height:52px!important}
 }
