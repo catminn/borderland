@@ -21,7 +21,7 @@ const D={
   // 标签
   '我的':'Me','大屏':'Board','地图':'Map','我的信息':'My info','通知':'Notices','公告':'Announcement','鬼门开':'Ghost Gate',
   // 取昵称
-  '欢迎来到CSSA万圣夜':'Welcome to CSSA Halloween Night','取个昵称，显示在大屏排行榜上（最多 12 字）。':'Pick a nickname for the leaderboard (max 12 characters).','昵称':'Nickname','进入游戏':'Start playing','找不到这个编号':'ID not found',
+  '欢迎来到CSSA万圣夜':'Welcome to CSSA Halloween Night','取个昵称，显示在大屏排行榜上（最多 12 字）。':'Pick a nickname for the leaderboard (max 12 characters).','昵称':'Nickname','进入游戏':'Enter game','找不到这个编号':'ID not found',
   // 通行证
   '酆都通行证':'Underworld Pass','冥府签发':'Issued by the Underworld','持证人':'Holder','名号':'Name',
   '挑战失败':'Challenge failed','请自行去鬼市登记，不然黑白无常会来抓你哟！':'Please go register at the Ghost Market yourself, or the Wuchang will come and get you!','黑白无常已抓到你，正在送你去鬼市':'The Wuchang has caught you and is taking you to the Ghost Market',
