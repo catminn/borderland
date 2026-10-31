@@ -166,7 +166,7 @@ function eliminate(p,why,where){
   if(p.inRoom){const r=S.rooms.find(x=>x.id===p.inRoom);r.ps=r.ps.filter(x=>x!==p.id);if(!r.ps.length&&r.st==='play')r.st='open';p.inRoom=null;}
   p.st='out';p.outAt=S.t;p.inAt=null;p.pickAt=null;p.chk=null;p.at=where||'';
   log(nm(p)+' '+why+'，进入鬼市','hook',1);
-  tell(p.id,'挑战失败','原因：'+why+'。请留在原地，等黑白无常来抓你去鬼市。','out');}
+  tell(p.id,'挑战失败','原因：'+why+'。请自行去鬼市登记，不然黑白无常会来抓你哟！','out');}
 function pickup(pid){const p=pl(pid);
   if(!p)return no('没有这个编号');if(p.st!=='out')return no(p.id+(p.st==='picked'?' 已经抓到了':' 现在不在待抓状态'));
   p.st='picked';p.pickAt=S.t;log('黑白无常抓到 '+nm(p)+(p.at?'（'+p.at+'）':''));return ok('已抓到 '+p.id);}
