@@ -2060,3 +2060,17 @@ html[data-lang="en"] .mp-cor{letter-spacing:.12em;font-size:18px}
 body.bwr .mapp .mp-plan .mp-room.mine>rect{stroke:var(--red)!important;fill:var(--red-soft)!important;stroke-width:6!important;stroke-dasharray:none!important}
 body.bwr .mapp .mp-plan .mp-room.mine .mp-num{fill:var(--ink)!important}
 body.bwr .mapp .mp-plan .mp-common{fill:color-mix(in srgb,var(--mute) 22%,transparent)}
+/* 2026-10-31 手机 Dealer 结算：每人一行（编号 | 赢 输 | 移出），「结束并结算」条吸在底部分页上方，人多也不用翻到最后 */
+@media (max-width:719px){
+  .rt.rp{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.8fr) auto;align-items:center;gap:6px 8px;padding:8px 10px}
+  .rt.rp .stamp{display:none}
+  .rt.rp .hd{min-width:0}
+  .rt.rp .hd .who{display:flex;flex-direction:column;gap:0;min-width:0}
+  .rt.rp .hd .who :is(b,span){font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .rt.rp .wl button{min-height:44px;font-size:16px;letter-spacing:.04em}
+  .rt.rp .kickb{position:static;min-height:34px;padding:2px 8px}
+  .rt.rp>.btns{grid-column:1/-1}
+  .finbar{position:sticky;bottom:84px;z-index:20;display:flex;flex-direction:column;gap:6px;padding:10px;margin:0 -4px;background:var(--panel);border:1px solid var(--line);border-radius:12px}
+  .finbar .small{display:none}
+  .finbar .btn-main{min-height:52px!important}
+}
