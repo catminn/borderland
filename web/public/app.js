@@ -359,9 +359,9 @@ function viewDealer(){
   const resetBtn='<button class="btn-main glow" data-a="resetdone" style="min-height:60px;letter-spacing:.1em">重置完成，重新开放</button><span class="small center">'+(done?esc(ui.settled.msg)+'。':'')+'点了之后，玩家才能再进这间房</span>';
   const settle='<div class="pn" style="gap:14px"><div class="shrow"><h2 class="sh">房间里的人</h2><span class="hint" style="font-weight:700;color:'+(ready?'var(--accent)':pending?'var(--sub)':'var(--sub)')+'">'+(st==='reset'?'重置中':!x.ps.length?'等待入场':pending?x.ps.length+' 人':'都选好了')+'</span></div>'
     +(st==='reset'?resetBtn:(rows?allBtns+'<div class="rteams">'+rows+'</div>':'<div class="empty">房间里还没有人</div>')
-    +'<div class="finbar"><span class="sum'+(ready?' ready':'')+'">'+summary+'</span>'
+    +'<div class="finwrap"><div class="finbar"><span class="sum'+(ready?' ready':'')+'">'+summary+'</span>'
     +'<button class="btn-main'+(ready?' glow':'')+'" id="finbtn" data-a="finish"'+(ready?'':' disabled')+' style="min-height:60px;letter-spacing:.14em">结束并结算</button>'
-    +'<span class="small center">结算后立即发放，房间随即进入重置，请先核对</span></div>')+'</div>';
+    +'<span class="small center">结算后立即发放，房间随即进入重置，请先核对</span></div></div>')+'</div>';
   return '<div class="page tabbed">'+rooms+hero+'<div class="cols-dealer">'+sec('dealer','info',info)+sec('dealer','settle',settle)+'</div>'+(rulePn?sec('dealer','rule',rulePn):'')
     +sub('dealer',[['info','入场'],['settle','结算'+(x.ps.length?'（'+x.ps.length+'）':'')],['rule','规则']])+'</div>';
 }
@@ -854,7 +854,7 @@ function tickUpdate(){
   const el=$('#tick');if(!el)return;
   if(!ME||entering||!S||!S.log){el.hidden=true;return;}
   {const l=el.firstChild;if(l&&l.textContent!==XT('播报'))l.textContent=XT('播报');}
-  {const t=$('#tabs'),h=t&&!t.hidden&&innerWidth<720?t.offsetHeight:0;if(el.dataset.th!==String(h)){el.dataset.th=String(h);el.style.bottom=h+'px';}}   // 手机：紧挨着底部分页上面（用布局高度，不用滚动时会变的视口位置）
+  {const t=$('#tabs'),h=t&&!t.hidden&&innerWidth<720?t.offsetHeight:0;if(el.dataset.th!==String(h)){el.dataset.th=String(h);el.style.bottom=h+'px';document.documentElement.style.setProperty('--tabh',h+'px');}}   // 手机：紧挨着底部分页上面（用布局高度，不用滚动时会变的视口位置）
   const bs=S.log.filter(l=>l.b);
   if(tkLast===null){tkLast=bs[0]?tkKey(bs[0]):'';if(bs[0]&&S.t-bs[0].t<=120)tkQ.push(bs[0]);}   // 刚打开页面：只补滚两分钟内的最新一条
   else{const i=bs.findIndex(l=>tkKey(l)===tkLast),fresh=(i<0?bs.slice(0,1):bs.slice(0,i)).reverse();
