@@ -59,7 +59,8 @@ T('孟婆确认后进鬼市，金币冻结（网站不记筹码）', A('mengpo',
 R.eliminate(P('001'), '测试', ''); A('wuchang', { type: 'pickup', pid: '001' });
 T('孟婆登记已抓到的人：直接入鬼市，不用无常确认', A('mengpo', { type: 'checkin', pid: '001' }).ok && P('001').st === 'market' && P('001').chk.ok);
 A('mengpo', { type: 'redeem', pid: '001' });
-T('孟婆输入编号登记在场的人（自己走进鬼市）：直接入鬼市', P('003').st === 'alive' && A('mengpo', { type: 'checkin', pid: '003' }).ok && P('003').st === 'market' && !P('003').inRoom);
+T('孟婆不能登记还没淘汰的人', P('003').st === 'alive' && !A('mengpo', { type: 'checkin', pid: '003' }).ok && P('003').st === 'alive');
+T('孟婆登记淘汰状态的人：直接入鬼市', (P('003').st = 'out', A('mengpo', { type: 'checkin', pid: '003' }).ok) && P('003').st === 'market' && !P('003').inRoom);
 T('已在鬼市的人不能重复登记', !A('mengpo', { type: 'checkin', pid: '003' }).ok);
 A('mengpo', { type: 'redeem', pid: '003' });
 R.eliminate(P('001'), '测试', '');

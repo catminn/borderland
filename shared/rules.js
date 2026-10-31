@@ -182,6 +182,7 @@ function enterMarket(p,by){
 function checkIn(pid,role){const p=pl(pid);
   if(!p)return no('没有这个编号');
   if(role==='mengpo'){if(p.st==='market'&&!(p.chk&&!p.chk.ok))return no(p.id+' 已登记入鬼市，无需重复登记。');
+    if(p.st!=='out'&&p.st!=='picked')return no(p.id+' 还没有被淘汰，不能登记入鬼市。');
     enterMarket(p,'mengpo');return ok('已登记 '+p.id+' 入鬼市');}
   if(p.chk&&!p.chk.ok)return no('已提交送入记录，等待孟婆确认。');
   if(p.st!=='out'&&p.st!=='picked')return no('不在待入鬼市状态');

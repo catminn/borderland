@@ -475,7 +475,7 @@ function inboundPanel(){
     +'<span class="stay">'+(p.chk&&!p.chk.ok?'<b>黑白无常已送来，等孟婆确认</b>':p.st==='picked'?'<b>已被黑白无常抓到</b>':'还没去鬼市登记')+'</span></div>'
     +'<div class="l1"><span class="stay">位置：<b>'+esc(p.at||'未记录')+'</b>　已等 <b class="mono">'+mm(S.t-(p.outAt||S.t))+'</b></span></div>'
     +(p.chk&&!p.chk.ok?chkBit(p):'<button class="btn-main'+(p.st==='picked'?' glow':'')+'" data-a="checkin" data-p="'+p.id+'">登记入鬼市</button>')+'</div>').join('');
-  const rid=ui.mkReg||'',rp=findP(rid),rw=!rid?'':!rp?'没有这个编号':rp.st==='market'&&!(rp.chk&&!rp.chk.ok)?rp.id+' 已在鬼市':'';
+  const rid=ui.mkReg||'',rp=findP(rid),rw=!rid?'':!rp?'没有这个编号':rp.st==='market'&&!(rp.chk&&!rp.chk.ok)?rp.id+' 已在鬼市':rp.st!=='out'&&rp.st!=='picked'&&!(rp.st==='market'&&rp.chk&&!rp.chk.ok)?rp.id+' 还没被淘汰':'';
   const reg='<div class="mrow"><div class="give"><input class="in mono" data-m="mkReg" value="'+esc(rid)+'" inputmode="numeric" placeholder="玩家编号" aria-label="玩家编号">'
     +'<button data-a="mkreg"'+(rp&&!rw?'':' disabled')+'>'+(rw||'登记入鬼市')+'</button></div></div>';
   return '<section class="mcol"><div class="shrow"><h2 class="sh">待入鬼市</h2><span class="hint">孟婆登记后金币冻结，发 '+CHIP_START+' 筹码</span></div>'+reg
