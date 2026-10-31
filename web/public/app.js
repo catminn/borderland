@@ -388,8 +388,9 @@ function gatePanel(){
   const rec=!full?'<span class="lbl">第 '+(g.wins.length+1)+' 个完成的人</span><div class="btns">'+inp
       +'<button class="btn-main'+(gok?' glow':'')+'" data-a="gatewin"'+(gok?'':' disabled')+'>'+(gok?'记 '+gp.id+(gp.nick?' '+esc(gp.nick):'')+' 为第 '+(g.wins.length+1)+' 名':gwhy||'输入编号')+'</button></div>'
     :'<div class="lot">名额已满（'+R.gateN()+' 人）。'+(allRw?'奖励都发完了，可以结束鬼门开。':'给每人选奖励。')+'</div>'
-      +'<span class="lbl">要多给一个人？超出名额需要再确认一次</span><div class="btns">'+inp
-      +(gok?ask2('gx','记 '+gp.id+(gp.nick?' '+esc(gp.nick):'')+' 为第 '+(g.wins.length+1)+' 名（超出名额）','gatewinx','','')
+      +'<span class="lbl">第 '+(g.wins.length+1)+' 个完成的人</span><div class="btns">'+inp
+      +(gok?(ui.gwAsk===gp.id?'<span class="small" style="flex-basis:100%">已超出 '+R.gateN()+' 人名额，确定再记 '+gp.id+' 吗？</span><span class="btns two2" style="flex-basis:100%"><button class="btn-main glow" data-a="gatewinx">确定</button><button class="btn-line" data-a="gwno">取消</button></span>'
+        :'<button class="btn-main glow" data-a="gwask">记 '+gp.id+(gp.nick?' '+esc(gp.nick):'')+' 为第 '+(g.wins.length+1)+' 名</button>')
         :'<button class="btn-line" disabled>'+(gwhy||'输入编号')+'</button>')+'</div>';
   const downs=S.players.filter(p=>p.on&&p.st!=='alive');
   const wins=g.wins.map((w,i)=>{const p=pl(w.pid),k='gr.'+w.pid,c=ui.gr[w.pid]||{};
@@ -1242,7 +1243,9 @@ document.addEventListener('click',e=>{
   else if(a==='resetdone'){send({type:'resetdone',rid:ui.room},()=>{ui.settled=null;ui.sub.dealer='info';});}
   // 判官：鬼门开 / 解谜
   else if(a==='jgpub'){const j=ui.jg;send({type:'publish',f:{kind:'鬼门开',gate:j.gate,title:j.gate==='custom'?j.title:'',body:j.gate==='custom'?j.body:'',mins:+j.mins||0,loc:j.loc}},()=>{ui.jg.gate='';ui.jg.title='';ui.jg.body='';});}
-  else if(a==='gatewinx'){ui.aucAsk=null;const p=findP(ui.gw);if(p)send({type:'gatewin',pid:p.id,force:true},()=>{ui.gw='';});}
+  else if(a==='gwask'){const p=findP(ui.gw);ui.gwAsk=p?p.id:null;}
+  else if(a==='gwno'){ui.gwAsk=null;}
+  else if(a==='gatewinx'){ui.gwAsk=null;const p=findP(ui.gw);if(p)send({type:'gatewin',pid:p.id,force:true},()=>{ui.gw='';});}
   else if(a==='gatewin'){const p=findP(ui.gw);if(p)send({type:'gatewin',pid:p.id},()=>{ui.gw='';});}
   else if(a==='gateunwin'){send({type:'gateunwin',pid:v});}
   else if(a==='gatereward'){const c=ui.gr[v]||{};send({type:'gatereward',pid:v,kind:c.k,arg:c.arg},()=>{delete ui.gr[v];});}
