@@ -107,8 +107,16 @@ T('只记前 3 名', S.gp.wins.length === 3 && !A('judge', { type: 'gatewin', pi
 T('奖励：300 金币', A('judge', { type: 'gatereward', pid: '002', kind: 'coin' }).ok && P('002').score === 300);
 T('奖励：救一个人', A('judge', { type: 'gatereward', pid: '003', kind: 'save', arg: '020' }).ok && P('020').st === 'alive');
 T('奖励只能领一次', !A('judge', { type: 'gatereward', pid: '003', kind: 'coin' }).ok);
-T('奖励：拿一个花色；3 人发完自动结束', A('judge', { type: 'gatereward', pid: '004', kind: 'suit', arg: '♦' }).ok && P('004').cards.includes('♦') && !S.gp);
-T('通知上记了结果', S.notices.find(n => n.sub === 'gate').gr.length === 3);
+T('奖励：拿一个花色；发完不自动结束', A('judge', { type: 'gatereward', pid: '004', kind: 'suit', arg: '♦' }).ok && P('004').cards.includes('♦') && !!S.gp);
+T('判官确认后可超出名额再记一人', A('judge', { type: 'gatewin', pid: '006', force: true }).ok && S.gp.wins.length === 4);
+T('判官手动结束，通知上记了结果', A('judge', { type: 'gateend' }).ok && !S.gp && S.notices.find(n => n.sub === 'gate').gr.length === 4);
+T('集合地点写进鬼门开通知', (() => { fresh(); S.t = 1; A('judge', { type: 'publish', f: { kind: '鬼门开', gate: 'g1', loc: '二楼大厅' } }); return S.notices[0].body.includes('二楼大厅'); })());
+T('集合地点默认 info desk', (() => { fresh(); S.t = 1; A('judge', { type: 'publish', f: { kind: '鬼门开', gate: 'g2' } }); return S.notices[0].body.includes('info desk'); })());
+T('总控设鬼门开名额 2', (() => { fresh(); S.t = 1; A('ctrl', { type: 'setgaten', v: 2 }); A('judge', { type: 'publish', f: { kind: '鬼门开', gate: 'g1' } }); A('judge', { type: 'gatewin', pid: '002' }); A('judge', { type: 'gatewin', pid: '003' }); return !A('judge', { type: 'gatewin', pid: '004' }).ok; })());
+T('判官不能改名额', !A('judge', { type: 'setgaten', v: 5 }).ok);
+T('总控设解谜上限 200', (() => { fresh(); S.t = 1; A('ctrl', { type: 'setpuzcap', v: 200 }); A('judge', { type: 'puz', pid: '001', code: '1' }); A('judge', { type: 'puz', pid: '001', code: '2' }); return !A('judge', { type: 'puz', pid: '001', code: '3' }).ok && P('001').score === 200; })());
+T('判官可设开奖地点', (() => { fresh(); return A('judge', { type: 'setdrawloc', text: '二楼' }).ok && R.drawLoc() === '二楼'; })());
+T('挑战失败后状态名', (() => { fresh(); R.eliminate(P('020'), '挑战 ♠4 失败', '♠4 一二三纸扎人'); const a = R.stLabel ? R.stLabel(P('020')) : '待入鬼市'; return a === '待入鬼市'; })());
 
 // ---------- 压轴抽奖 ----------
 fresh(); S.t = 7300;

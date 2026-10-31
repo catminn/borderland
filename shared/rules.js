@@ -35,14 +35,14 @@ const pidOf=i=>String(i).padStart(3,'0');
 const puzCode=v=>{const n=parseInt(String(v==null?'':v).trim(),10);return n>0&&n<100000?String(n):null;};
 // 鬼门开题库：body = 玩家收到的通知（越短越好）；rule = 判官页上的简要规则（只给判官看）
 const GATES=[
-  {id:'g1',title:'阎王点名',body:'鬼门已开！想参加的请按判官指示集合。',
+  {id:'g1',title:'阎王点名',body:'鬼门已开！想争这一轮奖励的玩家，请前往{loc}找判官。奖励有限，先完成先得！',
    rule:'只有「阎王有令」开头的口令才执行，其他口令不动；做错的当轮出局（不进鬼市）。最后剩下的人抢答决胜轮（黑白无常亮两张符咒，判官喊名字，抢答对应编号），最先答对的 3 人获胜。'},
-  {id:'g2',title:'生死一线',body:'鬼门再开！想参加的请按判官指示集合。',
+  {id:'g2',title:'生死一线',body:'鬼门再开！新一轮挑战开始，请前往{loc}找判官。这次能不能抓住机会，就看你了！',
    rule:'每轮先给一条提示（如「阴阳颠倒，少者为生」），玩家 10 秒内选生门或死门，选错的出局观战，直到剩 3 人；最后超过 3 人就用一道抢答题决出。'}];
 const TK_COIN=100, TK_SUITS=5, TK_ALL=10;   // 压轴抽奖彩券：每 100 金币 1 张，集齐四花色 +5，八间房全部成功 +10
 const CHIP_START=200, CHIP_GOAL=500, RANSOM=500, MARKET_WAIT=900;   // 鬼市用实体筹码（网站不记）：领 200，赢到 500 自赎；待满 15 分钟（MARKET_WAIT）不管赚没赚到都可以复活，孟婆也可以提前强行复活；在场的人花 500 金币可以赎人
 const PUZ_PTS=100, PUZ_CAP=400;   // 解谜题 100 / 题，每人最多 400
-const GATE_WIN=3, GATE_COIN=300;  // 鬼门开：最先完成的 3 人，每人选 300 金币 / 救一个人 / 拿一个花色
+const GATE_WIN=3, GATE_COIN=300, GATE_LOC0='info desk', DRAW_LOC0='鬼市';  // 鬼门开：最先完成的 3 人，每人选 300 金币 / 救一个人 / 拿一个花色
 const ROOM_CAP0=6, DUR0=7200;  // 房间默认容量；主游戏 2 小时
 const FREEZE_SEC=900;   // 封榜：时间截止前最后 15 分钟，玩家和大屏看不到排行榜（判官揭晓金币大亨奖后恢复）
 const KINDS=['公告','鬼门开'];
@@ -91,13 +91,14 @@ const noticeStale=n=>n.sub==='gate'&&!(S.gp&&S.gp.nid===n.id);
 const staffSees=n=>(n.target==='staff'||n.target==='everyone')&&n.sub!=='gate';   // 鬼门开不弹给工作人员
 function targetLabel(n){return n.target==='all'?'全体玩家':n.target==='player'?(n.ids.length<=4?n.ids.join('、'):n.ids.slice(0,3).join('、')+' 等 '+n.ids.length+' 人'):n.target==='market'?'鬼市中的人':n.target==='staff'?'工作人员':n.target==='everyone'?'所有人':'存活玩家';}
 function pushNotice(o){S.notices.unshift({id:S.nid++,sub:o.sub||null,tone:o.tone||'',t:S.t,kind:o.kind,title:o.title,body:o.body,target:o.target,ids:o.ids||[],due:o.mins?S.t+o.mins*60:null,acks:{}});}
+const gateN=()=>(S&&S.gateN)||GATE_WIN, puzCapOf=()=>(S&&S.puzCap)||PUZ_CAP, drawLoc=()=>(S&&S.locDraw)||DRAW_LOC0;
 const tell=(pid,title,body,tone)=>pushNotice({kind:'通知',title,body,target:'player',ids:[pid],tone});
 // 公告：发给任意对象。鬼门开：发给全场，最先完成的 3 人有奖励。
 function publish(f){f=f||{};const str=(v,n)=>String(v==null?'':v).slice(0,n);f={...f,title:str(f.title,80),body:str(f.body,1000)};
   if(!KINDS.includes(f.kind))return no('类型不对');
   let target=f.target,ids=[],sub=null;
   if(f.kind==='鬼门开'){
-    const g=GATES.find(x=>x.id===f.gate);if(g){f.title=g.title;f.body=g.body;}
+    const g=GATES.find(x=>x.id===f.gate);if(g){f.title=g.title;f.body=g.body.replace(/\{loc\}/g,str(f.loc,30).trim()||GATE_LOC0);}
     if(!f.title.trim())return no('先从题库选一个鬼门开');
     if(S.gp)return no('鬼门开正在进行，先结束上一轮');
     target='all';sub='gate';
@@ -108,7 +109,7 @@ function publish(f){f=f||{};const str=(v,n)=>String(v==null?'':v).slice(0,n);f={
   }
   pushNotice({kind:f.kind,sub,title:f.title.trim(),body:f.body.trim(),target,ids,mins:Math.max(0,+f.mins||0)});
   const n=S.notices[0];
-  if(sub==='gate'){S.gp={nid:n.id,wins:[]};log('鬼门开「'+n.title+'」开启：最先完成的 '+GATE_WIN+' 人有奖励','hook',1);}
+  if(sub==='gate'){S.gp={nid:n.id,wins:[]};log('鬼门开「'+n.title+'」开启：最先完成的 '+gateN()+' 人有奖励','hook',1);}
   else log('发布'+n.kind+'「'+n.title+'」→ '+targetLabel(n));
   return ok('已发布给 '+targetLabel(n)+(staffSees(n)?'（含工作人员）':''));}
 function ack(nid,pid){const n=S.notices.find(x=>x.id===nid);if(n&&!n.acks[pid])n.acks[pid]=S.t;}
@@ -161,12 +162,12 @@ function setCapOn(v){v=!!v;if(v===S.capOn)return no('没有变化');S.capOn=v;lo
 
 // ---------- 淘汰 → 鬼市 ----------
 // 状态：alive 在场 · out 刚失败，原地等黑白无常 · picked 已被黑白无常抓到 · market 在鬼市（钱包冻结，玩筹码）
-const stLabel=p=>({alive:'在场',out:'待抓',picked:'已抓到',market:'鬼市'})[p.st]||p.st;
+const stLabel=p=>({alive:'在场',out:'待入鬼市',picked:'押送中',market:'鬼市'})[p.st]||p.st;
 function eliminate(p,why,where){
   if(p.inRoom){const r=S.rooms.find(x=>x.id===p.inRoom);r.ps=r.ps.filter(x=>x!==p.id);if(!r.ps.length&&r.st==='play')r.st='open';p.inRoom=null;}
   p.st='out';p.outAt=S.t;p.inAt=null;p.pickAt=null;p.chk=null;p.at=where||'';
-  log(nm(p)+' '+why+'，进入鬼市','hook',1);
-  tell(p.id,'挑战失败','原因：'+why+'。请自行去鬼市登记，不然黑白无常会来抓你哟！','out');}
+  log(nm(p)+' '+why+'，即将前往鬼市','hook',1);
+  tell(p.id,'挑战失败','很遗憾，你没能通过 '+(where||'').split(' ')[0]+' 的挑战！请自行前往【鬼市】找孟婆登记，不然黑白无常会来抓你哟！','out');}
 function pickup(pid){const p=pl(pid);
   if(!p)return no('没有这个编号');if(p.st!=='out')return no(p.id+(p.st==='picked'?' 已经抓到了':' 现在不在待抓状态'));
   p.st='picked';p.pickAt=S.t;log('黑白无常抓到 '+nm(p)+(p.at?'（'+p.at+'）':''));return ok('已抓到 '+p.id);}
@@ -176,17 +177,17 @@ function enterMarket(p,by){
   if(p.inRoom){const r=S.rooms.find(x=>x.id===p.inRoom);r.ps=r.ps.filter(x=>x!==p.id);if(!r.ps.length&&r.st==='play')r.st='open';p.inRoom=null;}
   if(p.st==='alive')p.outAt=S.t;if(p.pickAt==null)p.pickAt=S.t;
   p.st='market';p.inAt=S.t;p.on=true;p.chk={by,ok:true};
-  log(nm(p)+' 进入鬼市，金币冻结','back');
-  tell(p.id,'你已进入鬼市','金币已冻结。用实体筹码赢到 '+CHIP_GOAL+' 就能自赎；待满 15 分钟，不管赚没赚到都可以复活。也可以求助朋友，用五百金币助力你复活哦！');}
+  log(nm(p)+' 进入鬼市，金币冻结','back',1);
+  tell(p.id,'欢迎来到鬼市！','金币已暂时冻结，接下来就看你手气如何了！\n筹码攒到 '+CHIP_GOAL+' 即可找孟婆自赎复活；手气不佳也没关系，好心的孟婆允许你待满 15 分钟后复活。还可以找场上的朋友花 '+RANSOM+' 金币赎你出去哦！');}
 function checkIn(pid,role){const p=pl(pid);
   if(!p)return no('没有这个编号');
-  if(role==='mengpo'){if(p.st==='market'&&!(p.chk&&!p.chk.ok))return no(p.id+' 已经在鬼市');
+  if(role==='mengpo'){if(p.st==='market'&&!(p.chk&&!p.chk.ok))return no(p.id+' 已登记入鬼市，无需重复登记。');
     enterMarket(p,'mengpo');return ok('已登记 '+p.id+' 入鬼市');}
-  if(p.chk&&!p.chk.ok)return no('已送入，等孟婆确认');
+  if(p.chk&&!p.chk.ok)return no('已提交送入记录，等待孟婆确认。');
   if(p.st!=='out'&&p.st!=='picked')return no('不在待入鬼市状态');
   if(p.st==='out'){p.st='picked';p.pickAt=S.t;}
   p.chk={by:'wuchang',ok:false};log(nm(p)+' 已送入鬼市，等待孟婆确认');
-  return ok('已送入，等孟婆确认');}
+  return ok('已提交送入记录，等待孟婆确认。');}
 function confirmIn(pid,role){const p=pl(pid);
   if(!p||!['out','picked'].includes(p.st)||!p.chk||p.chk.ok)return no('没有待确认的送入');
   if(role!=='mengpo')return no('要由孟婆确认');
@@ -197,27 +198,27 @@ const inMk=p=>p&&p.st==='market'&&!(p.chk&&!p.chk.ok);
 // 自赎：玩家用实体筹码赢到 500，孟婆确认后点。不带出任何金币，只是解冻。
 function selfRedeem(pid){const p=pl(pid);if(!inMk(p))return no('该玩家不在鬼市');
   backAlive(p);log(nm(p)+' 在鬼市赢够筹码，逃出了鬼市','back',1);
-  tell(p.id,'自赎成功','通过你的努力，你终于逃脱了鬼市，请继续努力生存哦！');
+  tell(p.id,'复活成功','通过你的好运和努力，你终于将自己赎出了鬼市！金币已解冻，请继续努力生存，感谢你对地府业务的支持！');
   return ok(p.id+' 已自赎');}
 // 赎人：任何在场的人花 500 金币把鬼市里的人赎出来
 function ransom(pid,byId){const p=pl(pid),by=pl(byId);if(!inMk(p))return no('该玩家不在鬼市');
   if(!by)return no('先输入出钱人的编号');if(by.id===p.id)return no('不能自己赎自己');
   if(by.st!=='alive')return no(by.id+' 不在场，不能出钱');
-  if(by.score<RANSOM)return no(by.id+' 只有 '+by.score+' 金币，不够 '+RANSOM);
+  if(by.score<RANSOM)return no(by.id+' 当前有 '+by.score+' 金币，赎人需要 '+RANSOM+' 金币。');
   by.score-=RANSOM;backAlive(p);
   log(nm(by)+' 花 '+RANSOM+' 金币把 '+nm(p)+' 从鬼市赎了出来','back',1);
-  tell(p.id,'有人赎你','你被 '+nm(by)+' 花 '+RANSOM+' 金币赎了出来，金币已解冻。');
-  tell(by.id,'赎人成功','你花 '+RANSOM+' 金币赎出了 '+nm(p)+'。');
+  tell(p.id,'有人来赎你了！',nm(by)+' 花 '+RANSOM+' 金币把你赎出了鬼市，金币已解冻。看来你在人间的人缘还不错哦！');
+  tell(by.id,'赎人成功','你花 '+RANSOM+' 金币赎出了 '+nm(p)+'，对方已恢复挑战资格。感谢你对地府业务的支持！');
   return ok(by.id+' 赎出 '+p.id+'，扣 '+RANSOM+' 金币');}
 // 复活（孟婆汤）：待满 15 分钟，不管赚没赚到都可以复活；孟婆也可以不管时间强行复活。不再忘花色。
 function soup(pid){const p=pl(pid);if(!inMk(p))return no('该玩家不在鬼市');
   backAlive(p);
   log(nm(p)+' 喝下孟婆汤复活','back',1);
-  tell(p.id,'你复活了','金币已解冻。');
+  tell(p.id,'你复活了！','金币已解冻，请继续努力生存！孟婆表示希望下次晚点见到你。');
   return ok(p.id+' 已复活');}
 
 // ---------- 解谜题 ----------
-function puzInfo(p){const used=p.puz.reduce((a,r)=>a+r.pts,0);return {used,left:Math.max(0,PUZ_CAP-used),cap:PUZ_CAP};}
+function puzInfo(p){const used=p.puz.reduce((a,r)=>a+r.pts,0);return {used,left:Math.max(0,puzCapOf()-used),cap:puzCapOf()};}
 // 判官输入谜题编码兑换：题库里有就记下题目，没有也照记（标成「第 N 号谜题」）
 // 房间规则：默认是 ROOMS[].rule，Dealer 在自己页面上可以改（存 S.rules，只发给工作人员；清空保存 = 规则就是空的）
 const roomRule=id=>{const o=S.rules&&S.rules[id];return o!=null?o:(room(id)||{}).rule||'';};
@@ -232,11 +233,11 @@ const puzTitle=code=>{const z=(S.bank||{})[code];return '#'+code+' '+(z&&z.q?Str
 function puzRedeem(pid,code){const p=pl(pid);if(!p)return no('没有这个编号');
   code=puzCode(code);if(!code)return no('先输入谜题编码');const key='z'+code,t=puzTitle(code);
   if(p.st!=='alive')return no(p.id+' 不在场（'+stLabel(p)+'）');
-  if(p.puz.some(r=>r.k===key))return no(p.id+' 已经兑换过 #'+code);
-  const i=puzInfo(p);if(i.left<=0)return no(p.id+' 解谜题已达上限 '+PUZ_CAP);
+  if(p.puz.some(r=>r.k===key))return no(p.id+' 已领取过 #'+code+' 的奖励，不能重复领取');
+  const i=puzInfo(p);if(i.left<=0)return no(p.id+' 的解谜奖励已达 '+puzCapOf()+' 金币上限');
   const pts=Math.min(PUZ_PTS,i.left);p.puz.push({k:key,title:t,t:S.t,pts});p.score+=pts;p.on=true;
   log('判官记录 '+nm(p)+' 解出 '+t+'，+'+pts+' 金币','back');
-  return ok(p.id+' +'+pts+' 金币（解谜题累计 '+(i.used+pts)+' / '+PUZ_CAP+'）');}
+  return ok(p.id+' +'+pts+' 金币（解谜题累计 '+(i.used+pts)+' / '+puzCapOf()+'）');}
 // 总控导入题库：rows = [[编码,问,答],…]；整份替换
 function setBank(rows){if(!Array.isArray(rows))return no('题库格式不对');const b={};
   for(const r of rows){const c=puzCode(r&&r[0]);if(!c)continue;b[c]={q:String(r[1]||'').trim().slice(0,400),a:String(r[2]||'').trim().slice(0,200)};}
@@ -246,12 +247,12 @@ function puzUndo(pid,key){const p=pl(pid);if(!p)return no('没有这个编号');
 
 // ---------- 鬼门开 ----------
 // 判官按顺序记录最先完成的 3 人；每人再选奖励：coin +300 · save 救一个不在场的人 · suit 拿一个花色
-function gateWin(pid){const g=S.gp;if(!g)return no('现在没有进行中的鬼门开');const p=pl(pid);if(!p)return no('没有这个编号');
-  if(g.wins.some(w=>w.pid===pid))return no(p.id+' 已经记过了');if(g.wins.length>=GATE_WIN)return no('已经有 '+GATE_WIN+' 人完成');
+function gateWin(pid,force){const g=S.gp;if(!g)return no('现在没有进行中的鬼门开');const p=pl(pid);if(!p)return no('没有这个编号');
+  if(g.wins.some(w=>w.pid===pid))return no(p.id+' 已经记过了');if(g.wins.length>=gateN()&&!force)return no('名额已满（'+gateN()+' 人）');
   if(p.st!=='alive')return no(p.id+' 不在场');
   g.wins.push({pid,t:S.t,rw:null});p.on=true;const n=S.notices.find(x=>x.id===g.nid);
   log(nm(p)+' 第 '+g.wins.length+' 个完成鬼门开「'+(n?n.title:'')+'」','back',1);
-  tell(p.id,'鬼门开：你是第 '+g.wins.length+' 名','找判官选奖励：'+GATE_COIN+' 金币 / 救一个人 / 拿一个花色。');
+  tell(p.id,'鬼门开：你是第 '+g.wins.length+' 名！','请找判官任选一项奖励：'+GATE_COIN+' 金币、救回一名玩家，或获得一种花色。');
   return ok(p.id+' 记为第 '+g.wins.length+' 名，请选奖励');}
 function gateUnwin(pid){const g=S.gp;if(!g)return no('现在没有进行中的鬼门开');const i=g.wins.findIndex(w=>w.pid===pid);if(i<0)return no('没有这条记录');
   if(g.wins[i].rw)return no('已经发过奖励，不能撤销');g.wins.splice(i,1);log('判官撤销 '+nameOf(pid)+' 的鬼门开名次');return ok('已撤销');}
@@ -260,14 +261,13 @@ function gateReward(pid,kind,arg){const g=S.gp;if(!g)return no('现在没有进�
   if(kind==='coin'){p.score+=GATE_COIN;w.rw={k:'coin'};log(nm(p)+' 鬼门开奖励：+'+GATE_COIN+' 金币','back',1);}
   else if(kind==='save'){const q=pl(arg);if(!q)return no('先选要救的人');if(q.st==='alive')return no(q.id+' 本来就在场');
     backAlive(q);w.rw={k:'save',pid:q.id};
-    log(nm(p)+' 用鬼门开奖励救出了 '+nm(q),'back',1);tell(q.id,'有人救了你',nm(p)+' 用鬼门开奖励把你救了回来。');}
+    log(nm(p)+' 用鬼门开奖励救出了 '+nm(q),'back',1);tell(q.id,'有人救了你！',nm(p)+' 用鬼门开的奖励把你救了回来。你已恢复挑战资格，金币已解冻，请继续努力生存！');}
   else if(kind==='suit'){if(!SUITS.includes(arg))return no('先选花色');if(p.cards.includes(arg))return no(p.id+' 已经有 '+arg);
     p.cards.push(arg);w.rw={k:'suit',s:arg};log(nm(p)+' 鬼门开奖励：拿到花色 '+arg,'back',1);}
   else return no('先选奖励');
-  if(g.wins.length>=GATE_WIN&&g.wins.every(x=>x.rw))gateEnd(true);
   return ok('奖励已发放');}
 function gateRec(){const g=S.gp,n=g&&S.notices.find(x=>x.id===g.nid);if(n)n.gr=g.wins.map(w=>({...w}));}
-function gateEnd(auto){if(!S.gp)return no('现在没有进行中的鬼门开');gateRec();S.gp=null;log('鬼门开结束'+(auto?'（3 人奖励已发完）':''),'',1);return ok('鬼门开已结束');}
+function gateEnd(auto){if(!S.gp)return no('现在没有进行中的鬼门开');gateRec();S.gp=null;log('鬼门开结束','',1);return ok('鬼门开已结束');}
 
 // ---------- 压轴抽奖（判官主持） ----------
 // 彩券 = 金币 ÷ 100（取整）+ 集齐四花色 5 张 + 八间房全部成功 10 张。所有上榜的人都参与（鬼市里的人也算，冻结的金币照算）；中过奖的人不再参与。
@@ -307,7 +307,8 @@ function drawRun(id,rnd){const x=prize(id)||curPrize();if(!x)return no('先选�
   while(w[i]===0&&i>0)i--;x.tie=0;x.tk=w[i];x.all=sum;return fin(pool[i]);}
 function drawConfirm(id){const x=prize(id)||curPrize();if(!x||x.st!=='drawn')return no('没有等待确认的得主');
   const p=pl(x.win);p.won=x.id;x.st='done';log(nm(p)+' 获得「'+x.name+'」','back',1);
-  tell(p.id,'你中奖了','恭喜获得「'+x.name+'」！今晚的金币没白攒，请到台前领取你的大奖！','final');
+  if(x.kind==='tycoon')tell(p.id,'恭喜获得「'+x.name+'」！','判官反复核对过了，今晚确实数你最有钱。请到台前领取你的大奖！','final');
+  else tell(p.id,'你中奖了！','恭喜抽中「'+x.name+'」，请到台前领取。','final');
   return ok(nm(p)+' 获得「'+x.name+'」');}
 // 得主不在场：这位不再参与这个奖品，马上重抽
 function drawRedo(id,rnd){const x=prize(id)||curPrize();if(!x||x.st!=='drawn')return no('没有等待确认的得主');
@@ -343,6 +344,9 @@ function setPlayerCount(n){n=Math.round(+n);if(!(n>=1&&n<=500))return no('玩家
   while(S.players.length>n&&unused(S.players[S.players.length-1]))S.players.pop();
   const now=S.players.length;if(now!==k)log('总控把身份卡设为 '+now+' 张');
   return ok(now===n?'身份卡共 '+n+' 张':'身份卡共 '+now+' 张（后面的卡已有人用过，没法再减）');}
+function setGateN(v){v=Math.round(+v);if(!(v>=1&&v<=20))return no('名额要在 1 到 20 之间');S.gateN=v;log('总控把鬼门开奖励名额设为 '+v+' 人');return ok('鬼门开奖励名额已设为 '+v+' 人');}
+function setPuzCap(v){v=Math.round(+v);if(!(v>=100&&v<=5000))return no('解谜奖励上限要在 100 到 5000 之间');S.puzCap=v;log('总控把解谜奖励上限设为 '+v+' 金币');return ok('解谜奖励上限已设为 '+v+' 金币');}
+function setDrawLoc(t){t=String(t==null?'':t).trim().slice(0,30);S.locDraw=t||DRAW_LOC0;log('开奖地点设为「'+S.locDraw+'」');return ok('开奖地点已保存');}
 function setDur(secs){secs=Math.round(+secs);if(!(secs>=60&&secs<=86400))return no('总时长要在 1 分钟到 24 小时之间');S.dur=secs;log('总控把总时长设为 '+Math.floor(secs/60)+' 分钟');return ok('总时长已设为 '+Math.floor(secs/60)+' 分钟');}
 
 // ---------- 离线补录 ----------
@@ -426,7 +430,7 @@ function seedMid(){
   S.t=M(26,30); publish({kind:'鬼门开',gate:'g1',mins:10});
   S.t=M(28,30); gateWin('002'); gateReward('002','coin');
   S.t=M(29); gateWin('011'); gateReward('011','save','017');
-  S.t=M(29,40); gateWin('005'); gateReward('005','suit','♥');
+  S.t=M(29,40); gateWin('005'); gateReward('005','suit','♥'); gateEnd(true);
   S.t=M(31); selfRedeem('010');
   S.t=M(35); enterRoom('4C',['017']);
   S.t=M(37); enterRoom('8D',['001','002']); enterRoom('4S',['011','019']); enterRoom('8S',['009']);
@@ -460,7 +464,7 @@ export function newGame(demo){init();if(demo)seed(demo);return S;}
 
 // Which roles may perform each action. 总控只做自己页面上的事（金币、名单、发布、设置），不代替其他工作人员操作。
 const ROLE_OK={setrule:['dealer','ctrl'],settiers:['dealer','ctrl'],enter:['dealer'],finish:['dealer'],resetdone:['dealer'],kick:['dealer'],
-  setcap:['ctrl'],setcapon:['ctrl'],setdur:['ctrl'],setscore:['ctrl'],setcards:['ctrl'],seton:['ctrl'],addplayers:['ctrl'],setbank:['ctrl'],
+  setcap:['ctrl'],setgaten:['ctrl'],setpuzcap:['ctrl'],setdrawloc:['judge','ctrl'],setcapon:['ctrl'],setdur:['ctrl'],setscore:['ctrl'],setcards:['ctrl'],seton:['ctrl'],addplayers:['ctrl'],setbank:['ctrl'],
   publish:['ctrl','judge'],revoke:['ctrl','judge'],
   gatewin:['judge'],gateunwin:['judge'],gatereward:['judge'],gateend:['judge'],puz:['judge'],puzundo:['judge'],
   pickup:['wuchang'],checkin:['wuchang','mengpo'],confirm:['mengpo'],
@@ -485,6 +489,9 @@ export function apply(state,me,a){
     case 'setcap':return setCap(a.v);
     case 'setcapon':return setCapOn(a.v);
     case 'setdur':return setDur(a.secs);
+    case 'setgaten':return setGateN(a.v);
+    case 'setpuzcap':return setPuzCap(a.v);
+    case 'setdrawloc':return setDrawLoc(a.text);
     case 'setscore':return setScore(a.pid,a.v,a.why);
     case 'setcards':return setCards(a.pid,a.cards);
     case 'seton':return setOn(a.pid,a.on);
@@ -494,7 +501,7 @@ export function apply(state,me,a){
     case 'settiers':return setTiers(a.rid,a.text);
     case 'publish':if(me.role==='judge'&&!(a.f&&a.f.kind==='鬼门开'))return no('判官只能发布鬼门开');return publish(a.f);
     case 'revoke':return revokeNotice(+a.nid);
-    case 'gatewin':return gateWin(a.pid);
+    case 'gatewin':return gateWin(a.pid,!!a.force);
     case 'gateunwin':return gateUnwin(a.pid);
     case 'gatereward':return gateReward(a.pid,a.kind,a.arg);
     case 'gateend':return gateEnd();
@@ -544,4 +551,4 @@ export function viewFor(state,me){
 
 export {setPlayerCount,roomRule,tiersOf,noticeStale,staffSees,puzCode,timeUp,MARKET_WAIT,needsReset,whyNotEnter,eliminate,soup,puzInfo,ticketsOf,drawPool,KIND_NAME,frozen,FREEZE_SEC,
   ranking,suitsOf,stLabel,inMk,pl,nm,matches,targetLabel,room,fmt,esc,log,no,
-  OFF_KINDS,ROOMS,SUITS,GATES,TK_COIN,TK_SUITS,TK_ALL,CHIP_START,CHIP_GOAL,RANSOM,PUZ_PTS,PUZ_CAP,GATE_WIN,GATE_COIN,ROOM_CAP0,DEMOS};
+  OFF_KINDS,ROOMS,SUITS,GATES,TK_COIN,TK_SUITS,TK_ALL,CHIP_START,CHIP_GOAL,RANSOM,PUZ_PTS,PUZ_CAP,GATE_WIN,GATE_COIN,GATE_LOC0,DRAW_LOC0,gateN,puzCapOf,drawLoc,ROOM_CAP0,DEMOS};

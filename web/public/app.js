@@ -37,14 +37,14 @@ function loadCounts(){const c={dealer:8,judge:1,mengpo:1,wuchang:1,players:100,s
   try{const o=JSON.parse(localStorage.getItem('borderland.pincounts')||'{}');for(const k in c){const v=Math.round(+o[k]);if(k!=='dealer'&&v>=(k==='players'?1:0)&&v<=(k==='players'?500:30))c[k]=v;}}catch(e){}return c;}
 let ui={ddOpen:null,tab:null,room:'4S',as:(()=>{try{return localStorage.getItem('borderland.as')||'ctrl';}catch{return 'ctrl';}})(),devOps:true,demoRows:null,devAck:new Set(),
   ent:'',res:{},settled:null,kickAsk:null,                       // Dealer
-  gw:'',gr:{},jg:{gate:'',title:'',body:'',mins:10},gateEndAsk:false,pz:{pid:'',code:''},      // 判官
+  gw:'',gr:{},jg:{gate:'',title:'',body:'',mins:10,loc:R.GATE_LOC0},gateEndAsk:false,pz:{pid:'',code:''},      // 判官
   nw:{name:'',desc:'',kind:'small'},pe:{name:'',desc:'',kind:'small'},pzEdit:null,aucAsk:null,showTk:false,   // 抽奖
   ransomBy:{},mkAsk:null,mkReg:'',                              // 孟婆
   q:'',flt:'all',revokeAsk:null,ed:{pid:'',amt:'',why:'',nick:''},addN:'8',     // 生死簿
   nick:'',histOpen:false,off:{ids:'',k:'',res:'',code:'',rw:'',arg:'',by:''},offOn:false,
   sub:{dealer:'info',npc:'gate',ctrl:'status',player:'me',map:'1'},msel:null,
   pub:{kind:'公告',title:'',body:'',target:'everyone',players:'',mins:0,gate:''},
-  admin:{dur:'',cap:'',pins:null,snaps:null,counts:loadCounts(),ask:null,resetTxt:''}};
+  admin:{dur:'',cap:'',gn:'',pc:'',pins:null,snaps:null,counts:loadCounts(),ask:null,resetTxt:''}};
 const $=s=>document.querySelector(s);
 // 每个角色：自己的页 + 大屏 + 地图（大屏角色只有大屏）。手机上一级分页在底部，二级分页在顶部。
 const ROLE_TABS={ctrl:['ctrl','board','map'],dealer:['dealer','board','map'],judge:['npc','draw','board','map'],mengpo:['market','board','map'],wuchang:['wuchang','board','map'],screen:['board'],player:['player','board','map']};
@@ -102,10 +102,10 @@ const ask2=(key,label,a,attrs,cls)=>ui.aucAsk===key
 // ---------- 大屏 ----------
 function broadcast(n){return S.log.filter(l=>l.b).slice(0,n||5).map(l=>({t:l.t,x:l.text,c:l.kind==='hook'?'hook':l.kind==='back'?'hot':''}));}
 // 房间状态：开放 / 游戏中（几人）/ 重置中。游戏、重置的计时只是显示，不会自动结束。
-const RST={open:['开放','idle'],play:['游戏中','on'],reset:['重置中','rst']};
+const RST={open:['开放中','idle'],play:['挑战中','on'],reset:['重置中','rst']};
 function roomCard(r,me){
   const x=S.rooms.find(y=>y.id===r.id),st=x.st,mine=!!me&&me.inRoom===r.id,L=[];
-  if(st==='play')L.push('<span class="on"><i class="gd"></i><span class="tx">'+(mine?'你在这里':'游戏中')+'（<span data-rt="'+(x.at||0)+'">'+rtStr(x.at)+'</span>）</span></span>');
+  if(st==='play')L.push('<span class="on"><i class="gd"></i><span class="tx">'+(mine?'你在这里':'挑战中')+'（<span data-rt="'+(x.at||0)+'">'+rtStr(x.at)+'</span>）</span></span>');
   else if(st==='reset')L.push('<span class="rs rst">重置中</span>');
   else L.push('<span class="'+(timeUp()?'rst':'idle')+'">'+(timeUp()?'已关闭':'<i class="gd"></i>开放中')+'</span>');
   if(me&&me.cleared.includes(r.id))L.push('<span class="idle okk">✓ 你已成功</span>');
@@ -166,8 +166,8 @@ function viewBoard(){
 function gateBox(){
   if(!S.gp)return '';
   const n=(S.notices||[]).find(x=>x.id===S.gp.nid),w=S.gp.wins;
-  return '<div class="gbox"><div class="gh"><b>鬼门开</b>'+(n&&n.title&&n.title!=='鬼门开'?'<span>'+esc(n.title)+'</span>':'')+'<span class="gc mono">'+w.length+' / '+GATE_WIN+'</span></div>'
-    +'<div class="gs">'+Array.from({length:GATE_WIN},(_,i)=>{const x=w[i],p=x&&pl(x.pid);
+  return '<div class="gbox"><div class="gh"><b>鬼门开</b>'+(n&&n.title&&n.title!=='鬼门开'?'<span>'+esc(n.title)+'</span>':'')+'<span class="gc mono">'+w.length+' / '+R.gateN()+'</span></div>'
+    +'<div class="gs">'+Array.from({length:R.gateN()},(_,i)=>{const x=w[i],p=x&&pl(x.pid);
       return '<div class="sl'+(x?' on':'')+'"><span class="mono">'+(i+1)+'</span><b>'+(x?x.pid+(p&&p.nick?' '+esc(p.nick):''):'—')+'</b></div>';}).join('')+'</div></div>';
 }
 // 全场播报：放不下的整条藏起来（不截半条）
@@ -265,18 +265,18 @@ function confetti(big){
 
 // ---------- 地图（单房间平面图，房间显示实时状态） ----------
 // 坐标沿用场地图（1 米 = 50），手机和电脑同一张图；手机上只保留牌和颜色，游戏名看下面的列表。玩家不看尺寸、排队线等布置细节。
-const MAP_ROOMS=[['8H',40,40,200,200,'困难心理 · 6人'],['8D',240,40,200,200,'困难逻辑 · 每轮1-4人'],['4D',690,40,200,200,'简易逻辑 · 多人'],['8C',890,40,200,200,'困难团队配合 · 2v2 / 3v3'],['4S',40,440,325,200,'简易体能 · 6人'],['4H',365,440,200,200,'简易心理 · 1v1 回合制'],['4C',565,440,200,200,'简易团队配合 · 6人'],['8S',765,440,325,200,'困难体能 · 1人 · 90秒']];
+const MAP_ROOMS=[['8H',40,40,200,200,'困难 · 心理 · 6人'],['8D',240,40,200,200,'困难 · 逻辑 · 每轮1-4人'],['4D',690,40,200,200,'简单 · 逻辑 · 多人'],['8C',890,40,200,200,'困难 · 团队配合 · 2v2 / 3v3'],['4S',40,440,325,200,'简单 · 体能 · 6人'],['4H',365,440,200,200,'简单 · 心理 · 1v1 回合制'],['4C',565,440,200,200,'简单 · 团队配合 · 6人'],['8S',765,440,325,200,'困难 · 体能 · 1人 · 90秒']];
 // 隔断布帘和排队方向按场地原图：每两间共用一个入口，排队顺着隔间前面往入口走
 const MAP_CUR='M40 240H190M290 240H440M690 240H840M940 240H1090M240 40V290M440 40V240M690 40V240M890 40V290M40 440H315M415 440H715M815 440H1090M365 390V640M565 440V640M765 390V640';
 const MAP_Q='M67 341V283H217V258M67 341V399H342V422M421 314V283H267V258M711 314V283H865V258M987 341V283H914V258M987 341V399H789V422M544 376V399H392V422M587 376V399H740V422';
 const MAP_QH=[[217,250,-1],[267,250,-1],[865,250,-1],[914,250,-1],[342,432,1],[392,432,1],[740,432,1],[789,432,1]];
 function mapSt(r){const x=S.rooms.find(y=>y.id===r.id);
-  return x.st==='play'?['游戏中 '+x.ps.length+' 人','on']:x.st==='reset'?['重置中','rst']:timeUp()?['已关闭','shut']:['开放','idle'];}
+  return x.st==='play'?['挑战中 · '+x.ps.length+'人','on']:x.st==='reset'?['重置中','rst']:timeUp()?['已关闭','shut']:['开放中','idle'];}
 function mapSvg(me){
   const t=(x,y,c,txt)=>'<text x="'+x+'" y="'+y+'" class="'+c+'">'+txt+'</text>';
   let h='<svg viewBox="20 20 1160 640" role="img" aria-label="场地平面图">'
     +'<rect class="mp-common" x="440" y="40" width="250" height="200"/>'
-    +t(565,86,'mp-cap','最终抽奖集合点')+t(565,136,'mp-ct',enOn()?'Market':'鬼市')+t(565,174,'mp-cs','CASINO')
+    +t(565,136,'mp-ct',enOn()?'Market':'鬼市')+t(565,174,'mp-cs','CASINO')
     +t(140,345,'mp-cor','走 廊')
     +'<path class="mp-q" d="'+MAP_Q+'"/>'+MAP_QH.map(([x,y,d])=>'<path class="mp-qh" d="M'+(x-8)+' '+(y-11*d)+'L'+x+' '+y+'L'+(x+8)+' '+(y-11*d)+'Z"/>').join('')
     +'<g class="mp-desk"><rect x="450" y="302" width="230" height="74" rx="5"/>'+t(565,340,"mp-dk","info desk")+'</g>';
@@ -287,7 +287,7 @@ function mapSvg(me){
       +t(cx,cy+2,'mp-gn mid',esc(r.name))+t(cx,cy+30,'mp-sub',esc(sub))+t(cx,cy+62,'mp-st',mine?'你在这里':done?'✓ 已成功':sl)+t(cx,cy,'mp-num mp-only',r.n+r.suit)+'</g>';});
   h+='<path class="mp-cur" d="'+MAP_CUR+'"/>'
     +'<path class="mp-wall" d="M1090 300 V40 H40 V640 H1090 V380"/>'
-    +'<g class="mp-gate"><rect x="1010" y="300" width="76" height="80" rx="4"/>'+t(1048,330,'mp-dt',enOn()?'Entry':'入口')+t(1048,356,'mp-dt',enOn()?'No queue':'不排队')+'</g>'
+    +'<g class="mp-gate"><rect x="1010" y="300" width="76" height="80" rx="4"/>'+t(1048,324,'mp-dt',enOn()?'Entry':'入口')+(enOn()?t(1048,350,'mp-dt','No queue'):t(1048,346,'mp-dt','请勿在此')+t(1048,366,'mp-dt','排队'))+'</g>'
     +'<path class="mp-arrow" d="M1170 340 H1100 M1110 332 L1100 340 L1110 348"/>'+t(1135,320,'mp-ent',enOn()?'Entry':'入口');
   return h+'</svg>';
 }
@@ -295,7 +295,7 @@ function viewMap(){
   const me=ME&&ME.role==='player'?pl(ME.pid):null;
   const list='<div class="mp-list">'+ROOMS.map(r=>{const [sl,sc]=mapSt(r);
     const here=!!(me&&me.inRoom===r.id),done=!!(me&&me.cleared.includes(r.id));
-    return '<button class="mp-li'+(ui.msel===r.id?' on':'')+(here?' here':'')+'" data-a="msel" data-v="'+r.id+'"><span class="mp-card'+(isRed(r.suit)?' sr':'')+'">'+r.n+r.suit+'</span><span class="nm">'+esc(r.name)+'</span><span class="mp-pt mono">+'+r.n*100+'</span><span class="mp-s '+(here?'here':done?'done':sc)+'">'+(here?'你在这里':done?'✓ 已成功':sl)+'</span></button>';}).join('')+'</div>';
+    return '<button class="mp-li'+(ui.msel===r.id?' on':'')+(here?' here':'')+'" data-a="msel" data-v="'+r.id+'"><span class="mp-card'+(isRed(r.suit)?' sr':'')+'">'+r.n+r.suit+'</span><span class="nm">'+esc(r.name)+'</span><span class="mp-pt mono"><span class="pgx">通关奖励 </span>+'+r.n*100+'<span class="pgx">金币</span></span><span class="mp-s '+(here?'here':done?'done':sc)+'">'+(here?'你在这里':done?'✓ 已成功':sl)+'</span></button>';}).join('')+'</div>';
   return '<div class="page mapp"><div class="mp-plan">'+mapSvg(me)+'</div><div class="pn mp-idx">'+list+'</div></div>';
 }
 
@@ -317,7 +317,7 @@ function viewDealer(){
   // 入场：输入编号（可多人）
   let entry;
   if(timeUp())entry='<div class="empty">时间到，房间已关闭。房里的人照常结算。</div>';
-  else if(st==='reset')entry='<div class="empty">重置好后到「结算」页点「重置完成」</div>';
+  else if(st==='reset')entry='<div class="empty">场地准备好后，点「重置完成，重新开放」。</div>';
   else{
     const ids=parseIds(ui.ent),bad=ids.map(id=>[id,whyNotEnter(id,r.id)]).filter(([,w])=>w),okIds=ids.filter(id=>!whyNotEnter(id,r.id)),full=x.ps.length+ids.length>cap;
     entry='<label class="fld"><span>玩家编号（多个用空格隔开）</span><input class="in mono entin" id="entin" data-m="ent" value="'+esc(ui.ent)+'" inputmode="numeric" placeholder="例如 1 9 17" autocomplete="off"></label>'
@@ -325,9 +325,9 @@ function viewDealer(){
       +'<button class="btn-main" data-a="enter"'+(okIds.length&&!bad.length&&!full?'':' disabled')+'>'+(!ids.length?'先输入编号':bad.length?'有 '+bad.length+' 人不能入场':full?'超过房间容量 '+cap+' 人':'放行 '+ids.length+' 人入场')+'</button>';
   }
   const TI=R.tiersOf(r.id),TD=TI.includes(r.n*100)?r.n*100:TI[0],tSaved=TI.join(' '),tCur=ui.tiersTx!=null?ui.tiersTx:tSaved,tDirty=(tCur.match(/\d+/g)||[]).join(' ')!==tSaved;
-  const tiersBox='<label class="fld"><span>得分（可填多档，如 400 300 200，不填 = 赢 +'+r.n*100+'）</span><input class="in mono" id="tiersin" data-m="tiersTx" value="'+esc(tCur)+'" inputmode="numeric" placeholder="'+r.n*100+'" autocomplete="off"></label>'+(tDirty?'<button class="btn-line" data-a="tiers">保存得分</button>':'');
+  const tiersBox='<label class="fld"><span>奖励金币档位</span><input class="in mono" id="tiersin" data-m="tiersTx" value="'+esc(tCur)+'" inputmode="numeric" placeholder="'+r.n*100+'" autocomplete="off"><small class="hint">可填多档，如 400、300、200；留空使用默认奖励</small></label>'+(tDirty?'<button class="btn-line" data-a="tiers">保存得分</button>':'');
   const info='<div class="pn" style="gap:14px"><h2 class="sh">入场</h2>'
-    +'<div class="rwl"><span><b class="acc">赢</b> '+'+'+(TI.length?TI.join(' / '):r.n*100)+' 金币 + '+r.suit+'</span><span><b class="red">输</b> 淘汰，进鬼市</span><span class="sub">中途放弃算输，每人每间只能成功一次</span></div>'+entry+tiersBox+'</div>';
+    +'<div class="rwl"><span><b class="acc">赢</b> '+'+'+(TI.length?TI.join(' / '):r.n*100)+' 金币 + '+r.suit+'</span><span><b class="red">输</b> 淘汰，进鬼市</span><span class="sub">中途放弃按失败结算。每人每间房仅可成功一次。</span></div>'+entry+tiersBox+'</div>';
   // 规则：Dealer 自己能改（点「修改」→ 文本框 → 保存；清空保存 = 规则为空）
   const rTxt=R.roomRule(r.id),rEd=ui.ruleEd===r.id;
   const rulePn='<div class="pn" style="gap:10px"><div class="shrow"><h2 class="sh">规则</h2>'+(rEd?'':'<button class="btn-line" data-a="ruleed">修改</button>')+'</div>'
@@ -372,6 +372,7 @@ function gatePanel(){
       +'<div class="fld"><span>题库</span>'+dd('jg.gate',gq?gq.title:cus?'自定义':'','选择鬼门开',null,[...GATES.map(x=>({v:x.id,label:esc(x.title)})),{v:'custom',label:'自定义'}])+'</div>'
       +(gq?gateRef(gq):'')
       +(cus?'<label class="fld"><span>标题</span><input class="in" id="jgt" data-m="jg.title" value="'+esc(j.title)+'" placeholder="鬼门开题目"></label><label class="fld"><span>内容</span><textarea class="in" id="jgb" data-m="jg.body" rows="3">'+esc(j.body)+'</textarea></label>':'')
+      +(cus?'':'<label class="fld"><span>集合地点</span><input class="in" id="jgl" data-m="jg.loc" value="'+esc(j.loc)+'" placeholder="'+R.GATE_LOC0+'"></label>')
       +'<label class="fld"><span>限时（分钟，0 = 不限时）</span><input class="in mono" id="jgm" data-m="jg.mins" value="'+esc(j.mins)+'" inputmode="numeric"></label>'
       +'<button class="btn-main'+(okp?' glow':'')+'" data-a="jgpub"'+(okp?'':' disabled')+' style="min-height:52px">'+(okp?'发布鬼门开（全场）':'先选择鬼门开')+'</button>'
       +(last.length?'<span class="lbl">之前的鬼门开</span>'+last.map(n=>'<div class="li"><div class="grow"><span class="t">'+fmt(n.t)+'</span><span class="x">'+esc(n.title)+'：'+(n.gr.length?n.gr.map(w=>w.pid+' '+rwTxt(w.rw)).join('，'):'无人完成')+'</span></div></div>').join(''):'')+'</div>';}
@@ -379,11 +380,17 @@ function gatePanel(){
   const unrw=g.wins.filter(w=>!w.rw);
   const end=ui.gateEndAsk?(unrw.length?'<div class="gatebar"><b>还有 '+unrw.length+' 人没领奖</b><span>'+unrw.map(w=>w.pid).join('、')+'，结束后将无法再领</span></div>':'')
       +'<button class="btn-line fillred" data-a="gateend" style="min-height:48px;font-weight:900">确认结束鬼门开</button><button class="btn-line" data-a="gateendno" style="min-height:48px">取消</button>'
-    :'<button class="btn-line" data-a="gateendask">结束鬼门开</button>';
+    :'<button class="btn-line'+(g.wins.length>=R.gateN()&&g.wins.every(w=>w.rw)?' acc':'')+'" data-a="gateendask">结束鬼门开</button>';
   const head='<div class="shrow"><h3>鬼门开进行中</h3>'+(gn&&gn.due?'<span class="tm'+(live?' live':'')+'">'+(live?'<i class="gd r"></i>':'')+countdown(gn)+'</span>':'')+'</div>'+(gn?'<div class="ttitle"><b>'+esc(gn.title)+'</b></div>':'');
   const gp=findP(ui.gw),gwhy=!ui.gw?'':!gp?'没有这个编号':g.wins.some(w=>w.pid===gp.id)?'已经记过了':gp.st!=='alive'?'不在场':'';
-  const rec=g.wins.length<GATE_WIN?'<span class="lbl">第 '+(g.wins.length+1)+' 个完成的人</span><div class="btns"><input class="in mono" id="gwin" data-m="gw" value="'+esc(ui.gw)+'" inputmode="numeric" placeholder="编号" style="max-width:140px">'
-      +'<button class="btn-main'+(gp&&!gwhy?' glow':'')+'" data-a="gatewin"'+(gp&&!gwhy?'':' disabled')+'>'+(gp&&!gwhy?'记 '+gp.id+(gp.nick?' '+esc(gp.nick):'')+' 为第 '+(g.wins.length+1)+' 名':gwhy||'输入编号')+'</button></div>':'<div class="lot">前 '+GATE_WIN+' 名已满，给每人选奖励</div>';
+  const full=g.wins.length>=R.gateN(),allRw=g.wins.length>0&&g.wins.every(w=>w.rw);
+  const inp='<input class="in mono" id="gwin" data-m="gw" value="'+esc(ui.gw)+'" inputmode="numeric" placeholder="编号" style="max-width:140px">',gok=gp&&!gwhy;
+  const rec=!full?'<span class="lbl">第 '+(g.wins.length+1)+' 个完成的人</span><div class="btns">'+inp
+      +'<button class="btn-main'+(gok?' glow':'')+'" data-a="gatewin"'+(gok?'':' disabled')+'>'+(gok?'记 '+gp.id+(gp.nick?' '+esc(gp.nick):'')+' 为第 '+(g.wins.length+1)+' 名':gwhy||'输入编号')+'</button></div>'
+    :'<div class="lot">名额已满（'+R.gateN()+' 人）。'+(allRw?'奖励都发完了，可以结束鬼门开。':'给每人选奖励。')+'</div>'
+      +'<span class="lbl">要多给一个人？超出名额需要再确认一次</span><div class="btns">'+inp
+      +(gok?ask2('gx','记 '+gp.id+(gp.nick?' '+esc(gp.nick):'')+' 为第 '+(g.wins.length+1)+' 名（超出名额）','gatewinx','','')
+        :'<button class="btn-line" disabled>'+(gwhy||'输入编号')+'</button>')+'</div>';
   const downs=S.players.filter(p=>p.on&&p.st!=='alive');
   const wins=g.wins.map((w,i)=>{const p=pl(w.pid),k='gr.'+w.pid,c=ui.gr[w.pid]||{};
     if(w.rw)return '<div class="gwin ok"><span class="gno mono">'+(i+1)+'</span>'+who(p)+'<span class="small">'+rwTxt(w.rw)+'</span></div>';
@@ -397,18 +404,18 @@ function gatePanel(){
   return '<div class="pn gatep">'+head+rec+wins+'<div class="btns">'+end+'</div></div>';
 }
 // 判官看到的鬼门开说明：玩家收到的一句话 + 简要规则
-const gateRef=g=>'<div class="lot gref"><div><b>玩家收到：</b>'+esc(g.body)+'</div>'+(g.rule?'<div><b>规则：</b>'+esc(g.rule)+'</div>':'')+'</div>';
+const gateRef=g=>'<div class="lot gref"><div><b>玩家收到：</b>'+esc(g.body.replace(/\{loc\}/g,(ui.jg.loc||'').trim()||R.GATE_LOC0))+'</div>'+(g.rule?'<div><b>规则：</b>'+esc(g.rule)+'</div>':'')+'</div>';
 const rwTxt=r=>!r?'未领奖':r.k==='coin'?'+'+GATE_COIN+' 金币':r.k==='save'?'救了 '+r.pid:'拿了 '+r.s;
 function puzPanel(){
   const z=ui.pz,p=findP(z.pid),code=puzCode(z.code),bank=S.bank||{},nb=Object.keys(bank).length,q=code&&bank[code],key=code&&'z'+code;
-  const why=!z.pid?'先输入玩家编号':!p?'没有这个玩家':!code?'先输入谜题编码':p.st!=='alive'?p.id+' 不在场':p.puz.some(r=>r.k===key)?p.id+' 已经兑换过 #'+code:puzInfo(p).left<=0?p.id+' 已达上限 '+PUZ_CAP:'';
+  const why=!z.pid?'先输入玩家编号':!p?'没有这个玩家':!code?'先输入谜题编码':p.st!=='alive'?p.id+' 不在场':p.puz.some(r=>r.k===key)?p.id+' 已领取过 #'+code+' 的奖励，不能重复领取':puzInfo(p).left<=0?p.id+' 的解谜奖励已达 '+R.puzCapOf()+' 金币上限':'';
   const recs=S.players.flatMap(x=>x.puz.map(r=>({p:x,r}))).sort((a,b)=>b.r.t-a.r.t).slice(0,12);
   const card=!code?'':q?'<div class="pzq"><span class="k">#'+code+' 题目</span><div class="q">'+esc(q.q)+'</div><span class="k">答案</span><div class="a">'+esc(q.a)+'</div></div>'
     :'<div class="lot">题库里没有 #'+code+(nb?'':'（题库还没导入）')+'，照样可以兑换。</div>';
-  return '<div class="pn" style="gap:12px"><div class="shrow"><h3>解谜题兑换</h3><span class="small">每题 +'+PUZ_PTS+'，每人最多 '+PUZ_CAP+'</span></div>'
+  return '<div class="pn" style="gap:12px"><div class="shrow"><h3>解谜题兑换</h3><span class="small">每题 +'+PUZ_PTS+'，每人最多 '+R.puzCapOf()+'</span></div>'
     +'<div class="fgrid pz2"><label class="fld"><span>玩家编号</span><input class="in mono" id="pzp" data-m="pz.pid" value="'+esc(z.pid)+'" inputmode="numeric" placeholder="例如 7"></label>'
     +'<label class="fld"><span>谜题编码</span><input class="in mono" id="pzc" data-m="pz.code" value="'+esc(z.code)+'" inputmode="numeric" placeholder="例如 12"></label></div>'
-    +card+(p?'<span class="small">'+p.id+(p.nick?' '+esc(p.nick):'')+'　已兑换 '+puzInfo(p).used+' / '+PUZ_CAP+'</span>':'')
+    +card+(p?'<span class="small">'+p.id+(p.nick?' '+esc(p.nick):'')+'　已兑换 '+puzInfo(p).used+' / '+R.puzCapOf()+'</span>':'')
     +'<button class="btn-main'+(why?'':' glow')+'" data-a="puz"'+(why?' disabled':'')+'>'+(why||'确认 '+p.id+' 答对 #'+code+'，+'+PUZ_PTS)+'</button>'
     +'<div style="display:flex;flex-direction:column"><span class="lbl" style="padding-top:6px">最近兑换</span>'+(recs.length?recs.map(({p,r})=>'<div class="li"><div class="grow"><span class="t">'+fmt(r.t)+'</span><span class="x">'+p.id+(p.nick?' '+esc(p.nick):'')+' 解出 '+esc(r.title)+' <span class="mono">+'+r.pts+'</span></span></div>'
       +'<button class="btn-line" data-a="puzundo" data-p="'+p.id+'" data-v="'+esc(r.k)+'">撤销</button></div>').join(''):'<div class="li small">暂无记录</div>')+'</div>'
@@ -448,7 +455,9 @@ function viewDraw(){
   const add='<div class="pn"><h3>奖品列表</h3><div class="alist">'+(list||'<div class="li small">还没有奖品</div>')+'</div>'
     +(ui.addPz||!P.length?'<div class="addlot"><div class="shrow"><b>添加奖品</b>'+(P.length?'<button class="btn-line" data-a="addpz" data-v="0">收起</button>':'')+'</div>'+pzForm('nw')+'<button class="btn-line acc" data-a="pzadd">添加</button></div>'
       :'<button class="btn-line acc" data-a="addpz" data-v="1" style="align-self:flex-start">＋ 添加奖品</button>')+'</div>';
-  return '<div class="page"><div class="cols2 aucg"><div class="stack">'+(S.judgeScr?ctlBar(true):'')+cur+tkp+'</div><div class="stack">'+add+'</div></div></div>';
+  const dlCur=ui.dlTx!=null?ui.dlTx:R.drawLoc(),dl='<div class="pn"><label class="fld"><span>开奖地点</span><input class="in" id="dlin" data-m="dlTx" value="'+esc(dlCur)+'" placeholder="'+R.DRAW_LOC0+'"></label>'
+    +(dlCur.trim()!==R.drawLoc()?'<button class="btn-line acc" data-a="setdrawloc" style="align-self:flex-start">保存地点</button>':'<span class="small">时间到弹窗里会写这个地点</span>')+'</div>';
+  return '<div class="page"><div class="cols2 aucg"><div class="stack">'+(S.judgeScr?ctlBar(true):'')+dl+cur+tkp+'</div><div class="stack">'+add+'</div></div></div>';
 }
 function pzForm(k){const f=ui[k];
   return '<label class="fld"><span>名称</span><input class="in" data-m="'+k+'.name" value="'+esc(f.name)+'" placeholder="例如：拍立得"></label>'
@@ -475,14 +484,14 @@ function viewMarket(){
   const mk=S.players.filter(inMk).sort((a,b)=>a.inAt-b.inAt);
   const rows=mk.map(p=>{const a=ui.mkAsk;
     const byId=ui.ransomBy[p.id]||'',by=findP(byId),bw=!byId?'':!by?'没有这个编号':by.id===p.id?'不能自己赎自己':by.st!=='alive'?by.id+' 不在场':by.score<RANSOM?by.id+' 只有 '+by.score:'';
-    const act=a&&a.pid===p.id?'<div class="rvask"><button class="btn-main glow" data-a="mkok">'+({redeem:'确认自赎（筹码已赢到 '+CHIP_GOAL+'）',soup:(S.t-p.inAt<MARKET_WAIT?'还没满 15 分钟，仍要强行复活':'确认复活'),ransom:'确认 '+(by?by.id:'')+' 出 '+RANSOM+' 金币赎人'})[a.k]+'</button><button class="btn-line" data-a="mkno">取消</button></div>'
-      :'<div class="btns mkbtns two2"><button class="btn-main" data-a="mkask" data-p="'+p.id+'" data-v="redeem">自赎（赢到 '+CHIP_GOAL+'）</button><button class="btn-main'+(S.t-p.inAt>=MARKET_WAIT?' glow':'')+'" data-a="mkask" data-p="'+p.id+'" data-v="soup">复活</button></div>'
+    const act=a&&a.pid===p.id?'<div class="rvask"><button class="btn-main glow" data-a="mkok">'+({redeem:'确认自赎（已核实持有至少 '+CHIP_GOAL+' 筹码）',soup:(S.t-p.inAt<MARKET_WAIT?'未满 15 分钟，确认提前复活':'确认复活'),ransom:'确认扣除 '+(by?by.id:'')+' '+RANSOM+' 金币，赎出 '+p.id})[a.k]+'</button><button class="btn-line" data-a="mkno">取消</button></div>'
+      :'<div class="btns mkbtns two2"><button class="btn-main" data-a="mkask" data-p="'+p.id+'" data-v="redeem">自赎（攒到 '+CHIP_GOAL+'）</button><button class="btn-main'+(S.t-p.inAt>=MARKET_WAIT?' glow':'')+'" data-a="mkask" data-p="'+p.id+'" data-v="soup">复活</button></div>'
         +'<div class="give"><input class="in mono" data-m="ransomBy" data-p="'+p.id+'" value="'+esc(byId)+'" inputmode="numeric" placeholder="出钱人编号" aria-label="出钱人编号">'
         +'<button data-a="mkask" data-p="'+p.id+'" data-v="ransom"'+(by&&!bw?'':' disabled')+'>'+(bw||'别人花 '+RANSOM+' 金币赎他')+'</button></div>';
-    return '<div class="mrow"><div class="l1">'+who(p)+'<span class="stay">已待 <b class="mono">'+mm(S.t-p.inAt)+'</b>'+(S.t-p.inAt>=MARKET_WAIT?'，<b>已满 15 分钟，可以复活</b>':'，还差 '+mm(MARKET_WAIT-(S.t-p.inAt)))+'</span><span class="stay">冻结金币 <b class="mono">'+p.score+'</b></span><span class="stay">'+suits4(p)+'</span></div>'
+    return '<div class="mrow"><div class="l1">'+who(p)+'<span class="stay">已停留 <b class="mono">'+mm(S.t-p.inAt)+'</b>'+(S.t-p.inAt>=MARKET_WAIT?'，<b>已满 15 分钟，可以办理复活</b>':'，距可复活还剩 '+mm(MARKET_WAIT-(S.t-p.inAt)))+'</span><span class="stay">冻结金币 <b class="mono">'+p.score+'</b></span><span class="stay">'+suits4(p)+'</span></div>'
       +act+'</div>';}).join('');
-  const left='<section class="mcol"><div class="shrow"><h2 class="sh">鬼市</h2><span class="hint">领 '+CHIP_START+' 筹码，赢到 '+CHIP_GOAL+' 自赎，待满 15 分钟不管赚没赚到都能复活，别人可花 '+RANSOM+' 金币赎人</span></div>'
-    +(rows?'<div class="mlist">'+rows+'</div>':'<div class="empty">鬼市现在没有人。</div>')+'</section>';
+  const left='<section class="mcol"><div class="shrow"><h2 class="sh">鬼市</h2><span class="hint">领 '+CHIP_START+' 筹码，攒到 '+CHIP_GOAL+' 自赎，待满 15 分钟不管赚没赚到都能复活，别人可花 '+RANSOM+' 金币赎人</span></div>'
+    +(rows?'<div class="mlist">'+rows+'</div>':'<div class="empty">鬼市暂时没有客人。</div>')+'</section>';
   return lanternsHtml()+'<div class="page mkt">'+left+inboundPanel()+'</div>';
 }
 
@@ -491,10 +500,10 @@ function viewWuchang(){
   const meta=p=>'<div class="l1">'+who(p)+'<span class="stay">位置：<b>'+esc(p.at||'未记录')+'</b></span><span class="stay">已等 <b class="mono">'+mm(S.t-(p.outAt||S.t))+'</b></span></div>';
   const wait=S.players.filter(p=>p.st==='out'&&!p.chk).sort((a,b)=>a.outAt-b.outAt);
   const go=S.players.filter(p=>p.st==='picked'||(p.chk&&!p.chk.ok&&p.st!=='alive')).sort((a,b)=>(a.outAt||0)-(b.outAt||0));
-  const left='<section class="mcol"><div class="shrow"><h2 class="sh">待抓的人</h2><span class="hint">谁在哪里失败了；抓到后点「抓到了」</span></div>'
+  const left='<section class="mcol"><div class="shrow"><h2 class="sh">待抓的人</h2><span class="hint">以下玩家挑战失败，尚未登记入鬼市。找到本人后点「抓到了」。</span></div>'
     +(wait.length?'<div class="mlist">'+wait.map(p=>'<div class="mrow">'+meta(p)+'<button class="btn-main glow" data-a="pickup" data-p="'+p.id+'">抓到了</button></div>').join('')+'</div>':'<div class="empty">现在没有人需要抓。</div>')+'</section>';
   const right='<section class="mcol"><div class="shrow"><h2 class="sh">送入鬼市</h2><span class="hint">已抓到的人送去鬼市，由孟婆确认</span></div>'
-    +(go.length?'<div class="mlist">'+go.map(p=>'<div class="mrow ok">'+meta(p)+(p.chk&&!p.chk.ok?'<span class="chk wait">待孟婆确认</span>':'<button class="btn-main glow" data-a="checkin" data-p="'+p.id+'">送入鬼市</button>')+'</div>').join('')+'</div>':'<div class="empty">没有需要送入的人。</div>')+'</section>';
+    +(go.length?'<div class="mlist">'+go.map(p=>'<div class="mrow ok">'+meta(p)+(p.chk&&!p.chk.ok?'<span class="chk wait">待孟婆确认</span>':'<button class="btn-main glow" data-a="checkin" data-p="'+p.id+'">送入鬼市</button>')+'</div>').join('')+'</div>':'<div class="empty">暂时没有待押送的玩家。</div>')+'</section>';
   return '<div class="page mkt eq wuchang-layout">'+left+'<div class="wc-mask" aria-hidden="true"><div class="wc-in"><img src="img/mask-tongue.webp" alt=""></div></div>'+right+'</div>';
 }
 
@@ -519,7 +528,7 @@ function editPanel(){
   const amt=parseInt(String(ui.ed.amt).replace(/[^\d-]/g,''),10)||0;
   const hist=[...p.hist].reverse().slice(0,8).map(h=>{const r=room(h.rid);return '<div class="hrow"><span class="mono">'+fmt(h.t0)+'</span><b>'+cardG(r)+'</b><span class="hres '+(h.res==='win'?'w':h.res==='lose'?'l':'')+'">'+(h.res===null?'游戏中':h.res==='win'?'成功 +'+h.pts:h.res==='lose'?'失败':'离开')+'</span></div>';}).join('');
   return '<div class="pn" style="gap:12px"><div class="shrow"><h3>'+who(p)+'</h3><span class="kb">'+stLabel(p)+'</span></div>'
-    +'<div class="kvs"><span>金币 <b class="mono">'+p.score+'</b></span><span>花色 '+suits4(p)+'</span><span>解谜 '+puzInfo(p).used+'/'+PUZ_CAP+'</span>'+'<span>彩券 <b class="mono">'+ticketsOf(p)+'</b></span>'+(p.won?'<span>中奖 '+esc((prize(p.won)||{}).name||'')+'</span>':'')+'</div>'
+    +'<div class="kvs"><span>金币 <b class="mono">'+p.score+'</b></span><span>花色 '+suits4(p)+'</span><span>解谜 '+puzInfo(p).used+'/'+R.puzCapOf()+'</span>'+'<span>彩券 <b class="mono">'+ticketsOf(p)+'</b></span>'+(p.won?'<span>中奖 '+esc((prize(p.won)||{}).name||'')+'</span>':'')+'</div>'
     +'<div class="fld"><span>金币增减（▲▼ 每次 100）</span><span class="coin-in"><input class="in mono" type="number" step="100" id="eda" data-m="ed.amt" value="'+esc(ui.ed.amt)+'" placeholder="0" aria-label="金币增减">'
     +'<span class="cstep"><button type="button" data-a="edstep" data-v="100" aria-label="加 100">▲</button><button type="button" data-a="edstep" data-v="-100" aria-label="减 100">▼</button></span></span></div>'
     +'<label class="fld"><span>原因（写进日志）</span><input class="in" id="edw" data-m="ed.why" value="'+esc(ui.ed.why)+'" placeholder="例如：断网补录"></label>'
@@ -680,6 +689,10 @@ function adminPanel(){
     +'<div class="setrow"><div class="swrow"><span>房间人数上限<small>'+(S.capOn?'每间房同时最多 <b class="mono" style="color:var(--ink)">'+(S.cap||R.ROOM_CAP0)+'</b> 人':'现在不限人数')+'</small></span>'
     +'<button class="tgl'+(S.capOn?' on':'')+'" role="switch" data-a="capon" data-v="'+(S.capOn?'0':'1')+'" aria-checked="'+!!S.capOn+'" aria-label="房间人数上限"><i></i></button></div>'
     +(S.capOn?'<div class="btns" style="flex-wrap:nowrap;margin-top:8px"><input class="in mono" id="capn" data-m="capN" value="'+esc(A.cap)+'" inputmode="numeric" placeholder="人数" style="max-width:110px"><button class="btn-line acc" data-a="setcap">设置</button></div>':'')+'</div>'
+    +'<div class="setrow"><div class="swrow"><span>鬼门开奖励名额<small>最先完成的 <b class="mono" style="color:var(--ink)">'+R.gateN()+'</b> 人有奖励，判官确认后可超出</small></span>'
+    +'<div class="btns" style="flex-wrap:nowrap"><input class="in mono" id="gaten" data-m="gateN" value="'+esc(A.gn)+'" inputmode="numeric" placeholder="人数" style="max-width:110px"><button class="btn-line acc" data-a="setgaten">设置</button></div></div></div>'
+    +'<div class="setrow"><div class="swrow"><span>解谜奖励上限<small>每人最多 <b class="mono" style="color:var(--ink)">'+R.puzCapOf()+'</b> 金币</small></span>'
+    +'<div class="btns" style="flex-wrap:nowrap"><input class="in mono" id="puzc" data-m="puzC" value="'+esc(A.pc)+'" inputmode="numeric" placeholder="金币" style="max-width:110px"><button class="btn-line acc" data-a="setpuzcap">设置</button></div></div></div>'
     +'<div class="setrow"><div class="swrow"><span>判官也能切换大屏和锁定排名<small>'+(S.judgeScr?'判官抽奖页有这两个按钮':'现在只有总控能操作')+'</small></span>'
     +'<button class="tgl'+(S.judgeScr?' on':'')+'" role="switch" data-a="jscr" data-v="'+(S.judgeScr?'0':'1')+'" aria-checked="'+!!S.judgeScr+'" aria-label="判官也能切换大屏和锁定排名"><i></i></button></div></div>'
     +'<div class="setrow"><div class="swrow"><span>身份卡<small>现在共 <b class="mono" style="color:var(--ink)">'+S.players.length+'</b> 张（'+S.players[0].id+'–'+S.players[S.players.length-1].id+'），上榜 '+S.players.filter(p=>p.on).length+' 人</small></span>'
@@ -709,7 +722,8 @@ function adminPanel(){
 const meP=()=>S&&ME&&ME.role==='player'?pl(ME.pid):null;
 // 第一次登录：先取昵称（大屏排行显示）
 function viewNick(me){
-  return '<div class="page nickp"><div class="pn nickc"><span class="cap">欢迎来到CSSA万圣夜</span><h2>你的编号 <b class="mono">'+me.id+'</b></h2>'
+  return '<div class="page nickp"><div class="pn nickc"><span class="cap">欢迎来到 CSSA 万圣夜！</span><h2>你的编号 <b class="mono">'+me.id+'</b></h2>'
+    +'<span class="muted">地府全体工作人员竭诚为您服务，祝您今晚玩得愉快，平安返程！</span>'
     +'<span class="muted">取个昵称，显示在大屏排行榜上（最多 12 字）。</span>'
     +'<input class="in" id="nickin" data-m="nick" value="'+esc(ui.nick)+'" maxlength="12" placeholder="昵称" autocomplete="nickname">'
     +'<button class="btn-main glow" data-a="setnick"'+(ui.nick.trim()?'':' disabled')+' style="min-height:56px">进入游戏</button>'
@@ -728,12 +742,12 @@ function viewPlayer(){
   if(!me.nick&&!DEVME)return viewNick(me);
   const inMkt=me.st==='market',out=me.st==='out'||me.st==='picked';
   // 酆都通行证: a clearance document, stamped with the current state
-  const wst=inMkt||out?'market':'alive',wseal=out?'待抓':inMkt?'鬼市':me.won?'中奖':'在场';
-  const wnote=out?'<span class="w-hint">挑战失败</span><span class="w-lab">'+(me.st==='picked'?'黑白无常已抓到你，正在送你去鬼市':'请自行去鬼市登记，不然黑白无常会来抓你哟！')+'</span>'
-    :inMkt?'<span class="w-hint">你在鬼市</span><span class="w-lab">实体筹码赢到 '+CHIP_GOAL+' 可自赎</span><span class="w-lab">金币已冻结</span>'
+  const wst=inMkt||out?'market':'alive',wseal=out?(me.st==='picked'?'押送中':'待入鬼市'):inMkt?'鬼市':me.won?'中奖':'在场';
+  const wnote=out?'<span class="w-hint">挑战失败</span><span class="w-lab">'+(me.st==='picked'?'黑白无常正在送你去鬼市，到达后请找孟婆登记。':'请自行前往鬼市登记，不然黑白无常会来抓你哟！')+'</span>'
+    :inMkt?'<span class="w-hint">鬼市暂住中</span><span class="w-lab">实体筹码攒到 '+CHIP_GOAL+'，可找孟婆自赎</span><span class="w-lab">金币暂时冻结</span>'
     :me.won?'<span class="w-hint">你中奖了</span><span class="w-lab">「'+esc((prize(me.won)||{}).name||'')+'」，请到台前领取</span>'
     :'<span class="w-hint">金币 <b class="mono">'+me.score+'</b></span><span class="w-lab">'+(myRank(me)?'排第 '+myRank(me)+' 名':'')+'</span>';
-  const EN_=enOn(),WSE={'待抓':'CAUGHT','鬼市':'MARKET','中奖':'WINNER','在场':'ALIVE'},wch=EN_?[WSE[wseal]]:[...wseal],wn=EN_?2:wch.length,wh=wn>2?78:58,wy=wn>2?[27,51,75]:[29,55];
+  const EN_=enOn(),WSE={'待入鬼市':'PENDING','押送中':'ESCORT','鬼市':'MARKET','中奖':'WINNER','在场':'ALIVE'},wch=EN_?[WSE[wseal]]:[...wseal],wn=EN_?2:wch.length,wh=wn===3?78:58,wy=wn===3?[27,51,75]:[29,55];
   const wen='<div class="wen" data-st="'+wst+'"><svg class="w-grain" aria-hidden="true"><rect width="100%" height="100%" filter="url(#paperGrain)"></rect></svg>'
     +'<i class="w-frame"></i><i class="w-cn tl"></i><i class="w-cn tr"></i><i class="w-cn bl"></i><i class="w-cn br"></i>'
     +'<div class="w-title"><b>酆都通行证</b><span>冥府签发</span></div><div class="w-rule"></div>'
@@ -741,24 +755,24 @@ function viewPlayer(){
     +'<span class="w-teamg"><span class="w-k">名号</span><span class="w-team">'+esc(me.nick||'—')+'</span></span></div>'
     +'<div class="w-state"><div class="w-note">'+wnote+'</div>'
     +'<svg class="w-seal" viewBox="0 0 64 '+(wh+6)+'" role="img" aria-label="'+wseal+'"><g filter="url(#sealInk)"><rect x="3" y="3" width="58" height="'+wh+'" rx="2"></rect>'
-    +(EN_?'<text x="32" y="'+(wch[0].length>5?37:39)+'" text-anchor="middle" class="en" font-size="'+(wch[0].length>5?12.5:15.5)+'" font-weight="900">'+wch[0]+'</text>':wch.map((c,i)=>'<text x="32" y="'+wy[i]+'" text-anchor="middle" font-size="'+(wn>2?24:28)+'">'+c+'</text>').join(''))+'</g></svg></div></div>';
+    +(EN_?'<text x="32" y="'+(wch[0].length>5?37:39)+'" text-anchor="middle" class="en" font-size="'+(wch[0].length>5?12.5:15.5)+'" font-weight="900">'+wch[0]+'</text>':(wn===4?[wseal.slice(0,2),wseal.slice(2)].map((c,i)=>'<text x="32" y="'+[27,53][i]+'" text-anchor="middle" font-size="25">'+c+'</text>').join(''):wch.map((c,i)=>'<text x="32" y="'+wy[i]+'" text-anchor="middle" font-size="'+(wn===3?24:28)+'">'+c+'</text>').join('')))+'</g></svg></div></div>';
   // 彩券：金币、花色、八间房各一张卡
   const got=suitsOf(me).length,okS=got===SUITS.length,nC=me.cleared.length,okR=nC===ROOMS.length,tkC=Math.floor(me.score/TK_COIN),tk=ticketsOf(me);
   const suits=SUITS.map(x=>'<span class="ic su'+(me.cards.includes(x)?' lit':'')+(isRed(x)?' sr':'')+'" title="'+TYPE[x]+'">'+x+'</span>').join('');
   const rms=ROOMS.map(r=>'<span class="ic rm'+(me.cleared.includes(r.id)?' lit':'')+(isRed(r.suit)?' sr':'')+'" title="'+r.name+'"><i class="rk">'+r.n+'</i><b class="st">'+r.suit+'</b></span>').join('');
-  const rw=(ttl,pts,done,tot,ok,icons,cls)=>'<div class="fr'+(ok?' ok':'')+'"><div class="fh"><b>'+ttl+'<i class="mono">　+'+pts+'</i></b><span class="fk mono">'+done+' / '+tot+'</span></div><div class="ics '+cls+'">'+icons+'</div></div>';
+  const rw=(ttl,pts,done,tot,ok,icons,cls)=>'<div class="fr'+(ok?' ok':'')+'"><div class="fh"><b>'+ttl+'<i class="mono">　+'+pts+'彩券</i></b><span class="fk mono">'+done+' / '+tot+'</span></div><div class="ics '+cls+'">'+icons+'</div></div>';
   const chip=(k,v,on,lab)=>'<span class="chp'+(on?' on':'')+'"><i>'+lab+'</i><b>'+v+'</b></span>';
   const finSec='<div class="fin3"><div class="fhd"><div class="ft"><span class="cap">我的彩券</span><span class="slot">'+String(tk).split('').map(d=>'<b>'+d+'</b>').join('')+'<i>张</i></span></div>'
-    +'<div class="fs">'+(me.won?'你已中奖，不再参与后面的抽取':'彩券越多，最终抽奖越容易中奖')+'</div>'
-    +'<div class="eq">'+chip('c1',tkC,tkC>0,'金币÷'+TK_COIN)+'<span class="op">+</span>'+chip('c2',okS?TK_SUITS:0,okS,'花色')+'<span class="op">+</span>'+chip('c3',okR?TK_ALL:0,okR,'八间房')+'</div></div>'
+    +'<div class="fs">'+(me.won?'你已中奖，后续抽奖不再参与。好运也给其他人留一点！':'彩券越多，最终抽奖越容易中奖')+'</div>'
+    +'<div class="eq">'+chip('c1',tkC,tkC>0,'金币折算')+'<span class="op">+</span>'+chip('c2',okS?TK_SUITS:0,okS,'花色奖励')+'<span class="op">+</span>'+chip('c3',okR?TK_ALL:0,okR,'全通关')+'</div></div>'
     +'<div class="fcs">'
     +rw('集齐四种花色',TK_SUITS,got,SUITS.length,okS,suits,'c4')
-    +rw('八间房全部成功',TK_ALL,nC,ROOMS.length,okR,rms,'c8')+'</div></div>';
+    +rw('通关全部八间房',TK_ALL,nC,ROOMS.length,okR,rms,'c8')+'</div></div>';
   const hist=[...me.hist].reverse().map(h=>{const r=room(h.rid),res=h.res===null?'游戏中':h.res==='win'?'成功　+'+h.pts:h.res==='lose'?'失败':'中途离开';
     return '<div class="hrow"><span class="mono">'+fmt(h.t0)+'</span><b>'+cardG(r)+' '+r.name+'</b><span class="hres '+(h.res==='win'?'w':h.res==='lose'?'l':'')+'">'+res+'</span></div>';}).join('');
   const pz=puzInfo(me);
-  const info='<div class="pn histp"><div class="shrow"><h3>我的记录</h3><span class="small">解谜题 <b class="mono">'+pz.used+' / '+PUZ_CAP+'</b></span></div>'
-    +(hist||'<span class="muted small">还没有进过房间。</span>')+(me.puz.length?'<span class="lbl">解谜题</span>'+me.puz.map(r=>'<div class="hrow"><span class="mono">'+fmt(r.t)+'</span><b>'+esc(r.title)+'</b><span class="hres w">+'+r.pts+'</span></div>').join(''):'')+'</div>';
+  const info='<div class="pn histp"><div class="shrow"><h3>我的记录</h3><span class="small">解谜所得 <b class="mono">'+pz.used+' / '+R.puzCapOf()+'</b> 金币</span></div>'
+    +(hist||'<span class="muted small">还没有闯关记录，去地图上挑一间试试吧！</span>')+(me.puz.length?'<span class="lbl">解谜题</span>'+me.puz.map(r=>'<div class="hrow"><span class="mono">'+fmt(r.t)+'</span><b>'+esc(r.title)+'</b><span class="hres w">+'+r.pts+'</span></div>').join(''):'')+'</div>';
   // 通知
   const mine=S.notices.filter(n=>matches(n,me)),unread=mine.filter(n=>!n.acks[me.id]).length;
   const noteHtml=n=>{const acked=!!n.acks[me.id],[kl,kc]=kindOf(n);
@@ -767,7 +781,7 @@ function viewPlayer(){
       +(n.due?'<div class="nm"><span class="red">⏱ '+countdown(n,true)+'</span></div>':'')
       +(acked?'<span class="small">已读</span>':'<button class="ack" data-a="ack" data-n="'+n.id+'">知道了</button>')+'</div>';};
   const curN=mine.filter(n=>!n.acks[me.id]||(n.sub==='gate'&&S.gp&&S.gp.nid===n.id)),histN=mine.filter(n=>!curN.includes(n));
-  const taskSec='<h2 class="sh" style="font-size:22px">通知</h2>'+(curN.length?curN.map(noteHtml).join(''):'<div class="pn"><span class="muted">暂时没有新通知。</span></div>')
+  const taskSec='<h2 class="sh" style="font-size:22px">通知</h2>'+(curN.length?curN.map(noteHtml).join(''):'<div class="pn"><span class="muted">暂时没有新通知。有时候没消息也是好消息。</span></div>')
     +(histN.length?'<button class="histbtn" data-a="hist" aria-expanded="'+!!ui.histOpen+'">历史消息（'+histN.length+'）<span>'+(ui.histOpen?'收起 ▲':'展开 ▼')+'</span></button>'+(ui.histOpen?histN.map(noteHtml).join(''):''):'');
   const tabs=[['me','我的信息'],['task','通知'+(unread?'<b class="cnt">'+unread+'</b>':'')]];
   if(!['me','task'].includes(ui.sub.player))ui.sub.player='me';
@@ -781,17 +795,20 @@ const tuSeen=()=>{try{return sessionStorage.getItem(tuKey())==='1';}catch{return
 const staffAcked=id=>{try{return sessionStorage.getItem('borderland.sa.'+id)==='1';}catch{return !!(ui.sa&&ui.sa[id]);}};
 function tuDlg(){
   return '<div class="ovl" data-k="time"><div class="dlg" data-n="timeup" data-k="time" role="dialog" aria-modal="true" aria-labelledby="dt"><div class="new"><i></i>全场通知</div>'
-    +'<h3 id="dt">时间到</h3><div class="body">所有房间关闭，房里的人打完这一局。\n请到开奖地点集合，参加压轴抽奖。</div>'
+    +'<h3 id="dt">时间到，准备开奖！</h3><div class="body">各房间停止接收新玩家，正在挑战的玩家请完成本局。\n结束后前往「'+esc(R.drawLoc())+'」集合，参加压轴抽奖。辛苦生存到现在，看看今晚能带走什么吧！</div>'
     +'<div class="foot"><span class="cap">剩余时间</span><span class="cd over">0:00:00</span></div>'
     +'<button data-a="tuack" data-modal="1">知道了</button></div></div>';
 }
 const fzKey=()=>'borderland.fz.'+((S&&S.dur)||7200);
 const fzSeen=()=>{try{return sessionStorage.getItem(fzKey())==='1';}catch{return !!ui.fzAck;}};
 const fzDlg=()=>'<div class="ovl"><div class="dlg" data-n="fz" role="dialog" aria-modal="true" aria-labelledby="dt"><div class="new"><i></i>总控提醒</div>'
-  +'<h3 id="dt">已封榜</h3><div class="body">离结束还有 15 分钟，排行榜已封。</div>'
+  +'<h3 id="dt">已进入封榜阶段</h3><div class="body">距离结束还有15分钟，玩家与大屏暂时看不到金币排名，工作人员仍可查看。</div>'
   +'<div class="foot"></div><button data-a="fzack" data-modal="1">知道了</button></div></div>';
-const TUT=[['我的','看你的通行证、金币、彩券和每一间房的记录。','tab','player'],['大屏','看剩余时间、金币排行和全场播报。','tab'],['地图','看所有房间的位置和状态。有问题就去 info desk。','tab'],
-  ['终极目标','每 100 金币兑换 1 张彩券，集齐花色和房间还有额外彩券奖励。\n彩券越多，最终的鬼市大抽奖越容易中奖。\n另外，金币最多的人也会获得大奖哟！','.fin3','player']];
+const fzPlDlg=()=>'<div class="ovl"><div class="dlg" data-n="fzp" role="dialog" aria-modal="true" aria-labelledby="dt"><div class="new"><i></i>全场通知</div>'
+  +'<h3 id="dt">最后15分钟，排行榜已隐藏！</h3><div class="body">看热闹不嫌事大的判官表示，现在分出胜负还太早，决定先把排行榜藏起来。想偷偷干票大的弯道超鬼，现在正是时候！</div>'
+  +'<div class="foot"></div><button data-a="fzack" data-modal="1">知道了</button></div></div>';
+const TUT=[['我的','金币、通知和闯关记录都在这里，随时可以回来查看','tab','player'],['大屏','在这里查看剩余时间、金币排行和全场播报。','tab'],['地图','在这里查看房间位置和开放状态。有问题可以去info desk找地府工作人员。','tab'],
+  ['终极目标','每100金币计作1张彩券，集齐四种花色额外获得5张，通关全部八间房额外获得10张。\n彩券越多，压轴抽奖越容易中奖；金币最多的人还有大奖哦！','.fin3','player']];
 const tutSeen=()=>{try{return localStorage.getItem('borderland.tut')==='1';}catch{return !!ui.tutDone;}};
 const coachOn=()=>!!(ME&&S&&!entering&&ME.role==='player'&&!DEVME&&meP()&&meP().nick&&!tutSeen());
 let coachEl=null,coachStep=-1,coachRaf=0;
@@ -822,6 +839,7 @@ function coachRender(){
 }
 function modalHtml(){
   if(ME&&S&&!entering&&ME.role==='ctrl'&&S.t>=(S.dur||7200)-900&&S.t<(S.dur||7200)&&!fzSeen())return fzDlg();
+  if(ME&&S&&!entering&&ME.role==='player'&&!DEVME&&S.t>=(S.dur||7200)-900&&S.t<(S.dur||7200)&&!fzSeen())return fzPlDlg();
   if(ME&&S&&!entering&&R.timeUp()&&!tuSeen()&&!S.draw.pz.some(x=>x.st!=='wait'))return tuDlg();
   if(ME&&ME.role!=='player'&&S&&S.notices){ // 工作人员：发给「工作人员 / 所有人」的公告，已读只记在本机
     const n=S.notices.find(x=>staffSees(x)&&!R.noticeStale(x)&&!staffAcked(x.id)&&!(x.sub==='gate'&&ME.role==='screen'));if(!n)return '';
@@ -1223,7 +1241,8 @@ document.addEventListener('click',e=>{
   else if(a==='finish'){const rid=ui.room;send({type:'finish',rid,results:ui.res},m=>{ui.res={};ui.settled={rid,msg:m.msg};});}
   else if(a==='resetdone'){send({type:'resetdone',rid:ui.room},()=>{ui.settled=null;ui.sub.dealer='info';});}
   // 判官：鬼门开 / 解谜
-  else if(a==='jgpub'){const j=ui.jg;send({type:'publish',f:{kind:'鬼门开',gate:j.gate,title:j.gate==='custom'?j.title:'',body:j.gate==='custom'?j.body:'',mins:+j.mins||0}},()=>{ui.jg.gate='';ui.jg.title='';ui.jg.body='';});}
+  else if(a==='jgpub'){const j=ui.jg;send({type:'publish',f:{kind:'鬼门开',gate:j.gate,title:j.gate==='custom'?j.title:'',body:j.gate==='custom'?j.body:'',mins:+j.mins||0,loc:j.loc}},()=>{ui.jg.gate='';ui.jg.title='';ui.jg.body='';});}
+  else if(a==='gatewinx'){ui.aucAsk=null;const p=findP(ui.gw);if(p)send({type:'gatewin',pid:p.id,force:true},()=>{ui.gw='';});}
   else if(a==='gatewin'){const p=findP(ui.gw);if(p)send({type:'gatewin',pid:p.id},()=>{ui.gw='';});}
   else if(a==='gateunwin'){send({type:'gateunwin',pid:v});}
   else if(a==='gatereward'){const c=ui.gr[v]||{};send({type:'gatereward',pid:v,kind:c.k,arg:c.arg},()=>{delete ui.gr[v];});}
@@ -1276,6 +1295,9 @@ document.addEventListener('click',e=>{
   else if(a==='revoke'){ui.revokeAsk=+b.dataset.n;}
   else if(a==='revokeno'){ui.revokeAsk=null;}
   else if(a==='revokeok'){ui.revokeAsk=null;send({type:'revoke',nid:+b.dataset.n});}
+  else if(a==='setgaten'){send({type:'setgaten',v:+A.gn},()=>{A.gn='';});}
+  else if(a==='setpuzcap'){send({type:'setpuzcap',v:+A.pc},()=>{A.pc='';});}
+  else if(a==='setdrawloc'){send({type:'setdrawloc',text:ui.dlTx!=null?ui.dlTx:R.drawLoc()},()=>{ui.dlTx=null;});}
   else if(a==='setcap'){send({type:'setcap',v:+A.cap},()=>{A.cap='';});}
   else if(a==='capon'){send({type:'setcapon',v:v==='1'});}
   else if(a==='addplayers'){send({type:'addplayers',n:+ui.addN});}
@@ -1327,7 +1349,7 @@ document.addEventListener('keydown',e=>{
   if(e.key==='Escape'&&(ui.statsAsk||ui.cfm)){ui.statsAsk=false;ui.cfm=null;render();return;}
   if(e.key==='Escape'&&e.target.id==='pinto'){ui.admin.ask=null;render();return;}
   if(e.key!=='Enter'||!e.target.dataset)return;const m=e.target.dataset.m;   // 输入框里按回车 = 点旁边的主按钮
-  const go={tiersTx:'tiers',ent:'enter',gw:'gatewin','pz.pid':'puz','pz.code':'puz',nick:'setnick','admin.pinTo':'adm-setpin'}[m];if(!go)return;
+  const go={dlTx:'setdrawloc',tiersTx:'tiers',ent:'enter',gw:'gatewin','pz.pid':'puz','pz.code':'puz',nick:'setnick','admin.pinTo':'adm-setpin'}[m];if(!go)return;
   const btn=document.querySelector('[data-a="'+go+'"]');if(btn&&!btn.disabled){e.preventDefault();e.target.blur();btn.click();}
 });
 document.addEventListener('change',e=>{
@@ -1335,7 +1357,7 @@ document.addEventListener('change',e=>{
   const m=e.target.dataset.m;if(!m)return;
 });
 // 输入时只更新数据和少数按钮（不整页重绘，免得打断输入）；失焦后再整页重绘
-const LIVE={tiersTx:1,ent:1,gw:1,'pz.pid':1,'pz.code':1,nick:1,'ed.amt':1,'ed.nick':1,q:1,'pub.players':1,'off.code':1,'admin.bankTxt':1,'off.ids':1,'off.arg':1,'off.by':1,ransomBy:1,mkReg:1};
+const LIVE={dlTx:1,tiersTx:1,ent:1,gw:1,'pz.pid':1,'pz.code':1,nick:1,'ed.amt':1,'ed.nick':1,q:1,'pub.players':1,'off.code':1,'admin.bankTxt':1,'off.ids':1,'off.arg':1,'off.by':1,ransomBy:1,mkReg:1};
 document.addEventListener('input',e=>{
   if(e.target.id==='pin'){const el=e.target;el.value=el.value.replace(/\D/g,'').slice(0,6);if($('#lgmsg').classList.contains('err'))loginMsg('');syncBoxes();return;}
   const m=e.target.dataset.m,v=e.target.value;if(!m)return;
@@ -1343,6 +1365,8 @@ document.addEventListener('input',e=>{
   else if(m==='adm.resetTxt'){ui.admin.resetTxt=v;const btn=$('#rstbtn');if(btn){btn.disabled=v!=='重置';btn.classList.toggle('fillred',v==='重置');}return;}
   else if(m==='durMin'){ui.admin.dur=v.replace(/[^\d.]/g,'');return;}
   else if(m==='admin.pinTo'){const el=e.target;el.value=el.value.replace(/\D/g,'').slice(0,6);ui.admin.pinTo=el.value;liveRender();return;}
+  else if(m==='gateN'){ui.admin.gn=v.replace(/\D/g,'');return;}
+  else if(m==='puzC'){ui.admin.pc=v.replace(/\D/g,'');return;}
   else if(m==='capN'){ui.admin.cap=v.replace(/\D/g,'');return;}
   else if(m==='addN'){ui.addN=v.replace(/\D/g,'');return;}
   else if(m.startsWith('adm.')){ui.admin.counts[m.slice(4)]=+v;try{localStorage.setItem('borderland.pincounts',JSON.stringify(ui.admin.counts));}catch(e){}if(!LOCAL)send({type:'setpincounts',counts:ui.admin.counts},null,true);return;}

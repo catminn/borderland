@@ -98,7 +98,7 @@ class GhostAmbience extends HTMLElement{
     const login=this.mode!=='page';
     if(this.light){this.flames=[];this.eyes=[];
       this.paper=Array.from({length:this.mode==='screen'?(this.mob?9:18):(this.mob?4:7)},()=>this.newPaper(rnd(-.1,1)));this.nextSpawn=9;return;}
-    const n=this.mode==='screen'?(this.mob?(this.over()?6:3):5):login?0:(this.mob?1:2);
+    const n=this.mode==='screen'?(this.mob?(this.over()?3:3):5):login?0:(this.mob?1:2);
     this.flames=Array.from({length:n},(_,i)=>{const z=rnd(.3,1),size=login?(this.mob?10+z*13:13+z*19):(this.mob?9+z*8:11+z*11);
       return{...this.spot(),form:Math.floor(rnd(0,3)),ft:0,z,size,seed:rnd(0,100),bobA:rnd(5,13),bobS:rnd(.35,.7),swA:rnd(2,6),swS:rnd(.5,1.1),phase:'on',a:login?1:.9,timer:rnd(4,16),dip:0,lean:0,rise:this.mode==='page'?rnd(5,10):this.mob?rnd(16,28):rnd(12,26)};}).sort((a,b)=>a.z-b.z);
     if(this.over()){const tb=document.getElementById('tabs'),th=tb&&!tb.hidden?tb.getBoundingClientRect().height:0;this.flames.forEach(f=>{f.y=rnd(.12,.9)*(this.h-th);});} // phones: spread over the whole height at the start, then they keep rising from the bottom

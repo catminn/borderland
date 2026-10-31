@@ -82,7 +82,8 @@ T('gate: no 4th finisher', admin.S.gp.wins.length === 3 && !(await J0.act({ type
 await J0.act({ type: 'gatereward', pid: '004', kind: 'suit', arg: '♣' });
 const downs = admin.S.players.filter(p => p.st !== 'alive');
 { const r = await J0.act({ type: 'gatereward', pid: '006', kind: 'save', arg: downs[0].id }); await sleep(300);
-  T('gate: 3 rewards given → gate ends; save brings someone back', r.ok && !admin.S.gp && P_(downs[0].id).st === 'alive' && P_('004').cards.includes('♣')); }
+  await J0.act({ type: 'gateend' }); await sleep(300);
+  T('gate: 3 rewards given, judge ends; save brings someone back', r.ok && !admin.S.gp && P_(downs[0].id).st === 'alive' && P_('004').cards.includes('♣')); }
 await ctrl.click('[data-a=sub][data-p=ctrl][data-v=log]');
 T('ctrl log updated live', (await text(ctrl)).includes('011 黑猫 第 1 个完成鬼门开'));
 await ack(player); await ack(ctrl); await ack(judge); await ack(dealer); await ack(mengpo);
