@@ -100,6 +100,7 @@ const ask2=(key,label,a,attrs,cls)=>ui.aucAsk===key
   :'<button class="btn-line '+(cls||'')+'" data-a="askyes" data-v="'+key+'">'+label+'</button>';
 
 // ---------- 大屏 ----------
+function broadcast(n){return S.log.filter(l=>l.b).slice(0,n||5).map(l=>({t:l.t,x:l.text,c:l.kind==='hook'?'hook':l.kind==='back'?'hot':''}));}
 // 房间状态：开放 / 游戏中（几人）/ 重置中。游戏、重置的计时只是显示，不会自动结束。
 const RST={open:['开放中','idle'],play:['游戏中','on'],reset:['重置中','rst']};
 function roomCard(r,me){
@@ -145,7 +146,7 @@ function viewBoard(){
   if(drawOn())return viewDrawBoard();
   const me=ME&&ME.role==='player'?pl(ME.pid):null;
   const act=S.players.filter(p=>p.on),mk=act.filter(p=>p.st!=='alive').length;
-  const run=CLOCK&&CLOCK.running;
+  const bc=broadcast(8),run=CLOCK&&CLOCK.running;
   // 玩家手机：排行一页 5 名，翻页看全部；8 间房只在「地图」页看
   const isP=!!ME&&ME.role==='player',paged=innerWidth<820&&!hideRank(),RP=8,np=Math.max(1,Math.ceil(Math.max(0,act.length-3)/RP));
   ui.rkp=Math.min(Math.max(0,ui.rkp||0),np-1);
@@ -154,8 +155,9 @@ function viewBoard(){
     +'<div class="left"><div class="hd"><div class="ttl">百鬼夜行</div><div class="en">CORNELL CSSA 万圣夜</div></div>'
     +'<div class="clock"><span class="cap">'+(run?'剩余时间':'已暂停')+'</span><span class="ck mono'+(run?'':' paused')+(isFrz(S.t)?' frz':'')+'" id="sclk">'+remStr(S.t)+'</span>'
     +'</div>'+gateBox()
-    +'</div>'
-    +'<div class="right"><div class="rank"><div class="rh"><b>金币排行</b><span>在场 '+(act.length-mk)+' 人'+(mk?'　鬼市 '+mk+' 人':'')+'</span></div>'+(pod?podiumHtml()+(paged?'<div class="plist">'+rankRows(RP,ui.rkp,3)+'</div>':'<div class="plist pod">'+rankRows(12,null,3)+'</div>'):'<div class="plist">'+rankRows(10)+'</div>')
+    +'<div class="cast"><span class="cap" style="padding-bottom:8px">全场播报</span>'
+    +(bc.length?bc.map(b=>'<div class="bc '+b.c+'"><span class="t">'+fmt(b.t)+'</span><span class="x">'+esc(b.x)+'</span></div>').join(''):'<div class="bc"><span class="x muted">暂无播报</span></div>')+'</div></div>'
+    +'<div class="right"><div class="rank"><div class="rh"><b>金币排行</b><span>在场 '+(act.length-mk)+' 人'+(mk?'　鬼市 '+mk+' 人':'')+'</span></div>'+(pod?podiumHtml()+(paged?'<div class="plist">'+rankRows(RP,ui.rkp,3)+'</div>':'<div class="plist pod">'+rankRows(11,null,3)+'</div>'):'<div class="plist">'+rankRows(10)+'</div>')
       +(paged&&np>1?'<div class="rpg"><button data-a="rkpg" data-v="-1"'+(ui.rkp<=0?' disabled':'')+'>‹</button><span class="mono">'+(ui.rkp+1)+' / '+np+'</span><button data-a="rkpg" data-v="1"'+(ui.rkp>=np-1?' disabled':'')+'>›</button></div>':'')+'</div>'
     +'<div class="rgrid">'+ROOMS.map(r=>roomCard(r,me)).join('')+'</div></div>'
     +'</div></div>';
@@ -176,7 +178,7 @@ function fitStage(){
   requestAnimationFrame(clipCast);
   const g=$('#amb ghost-ambience');
   if(innerWidth<820){st.style.removeProperty('--k');w.style.height='';w.style.width='';if(g)g.removeAttribute('data-keep');return;}
-  const v=$('#view'),k=ME&&ME.role==='screen'?Math.min(innerWidth/1920,(innerHeight-((($('#tick')||{}).hidden?0:($('#tick')||{}).offsetHeight)||0))/1080):Math.min(w.parentElement.clientWidth/1920,(v.clientHeight-24-(($('.ctlbar')||{}).offsetHeight||0))/1080);
+  const v=$('#view'),k=ME&&ME.role==='screen'?Math.min(innerWidth/1920,innerHeight/1080):Math.min(w.parentElement.clientWidth/1920,(v.clientHeight-24-(($('.ctlbar')||{}).offsetHeight||0))/1080);
   st.style.setProperty('--k',k.toFixed(4));w.style.height=Math.round(1080*k)+'px';
   w.style.width=Math.round(1920*k)+'px';w.style.margin='0 auto';
   // keep the ghost fire off the text and cards: everything inside the stage's padding
@@ -846,24 +848,24 @@ const tkKey=l=>l.t+'|'+l.text;
 function tickUpdate(){
   const el=$('#tick');if(!el)return;
   if(!ME||entering||!S||!S.log){el.hidden=true;return;}
-  el.hidden=false;{const l=el.firstChild;if(l&&l.textContent!==XT('播报'))l.textContent=XT('播报');}
+  {const l=el.firstChild;if(l&&l.textContent!==XT('播报'))l.textContent=XT('播报');}
   const bs=S.log.filter(l=>l.b);
-  if(tkLast===null){tkLast=bs[0]?tkKey(bs[0]):'';tickIdle(bs[0]);return;}
-  const i=bs.findIndex(l=>tkKey(l)===tkLast),fresh=(i<0?bs.slice(0,1):bs.slice(0,i)).reverse();
-  if(bs[0])tkLast=tkKey(bs[0]);
-  fresh.forEach(l=>tkQ.push(l));if(tkQ.length>5)tkQ=tkQ.slice(-5);
-  if(!tkBusy)tickNext(bs[0]);
+  if(tkLast===null){tkLast=bs[0]?tkKey(bs[0]):'';if(bs[0]&&S.t-bs[0].t<=120)tkQ.push(bs[0]);}   // 刚打开页面：只补滚两分钟内的最新一条
+  else{const i=bs.findIndex(l=>tkKey(l)===tkLast),fresh=(i<0?bs.slice(0,1):bs.slice(0,i)).reverse();
+    if(bs[0])tkLast=tkKey(bs[0]);
+    fresh.forEach(l=>tkQ.push(l));}
+  if(tkQ.length>5)tkQ=tkQ.slice(-5);
+  if(!tkBusy)tickNext();
 }
-function tickIdle(l){const x=$('#tkx');if(!x)return;x.style.transform='none';x.className='tk-x idle'+(l&&l.kind==='hook'?' hook':'');x.textContent=l?XT(l.text):XT('暂无播报');}
-function tickNext(last){
-  const x=$('#tkx'),box=x&&x.parentElement,l=tkQ.shift();
+// 横幅压在页面最上面（半透明），有播报才出现，出现就滚，滚完消失；来得快的排队
+function tickNext(){
+  const el=$('#tick'),x=$('#tkx'),box=x&&x.parentElement,l=tkQ.shift();
   if(!x)return;
-  if(!l){tkBusy=false;tickIdle(last);return;}
-  if(matchMedia('(prefers-reduced-motion: reduce)').matches){tickIdle(l);tkQ=[];return;}
-  tkBusy=true;x.className='tk-x'+(l.kind==='hook'?' hook':'');x.textContent=XT(l.text);
+  if(!l){tkBusy=false;el.hidden=true;return;}
+  tkBusy=true;el.hidden=false;x.className='tk-x'+(l.kind==='hook'?' hook':'');x.textContent=XT(l.text);
   const W=box.clientWidth,w=x.scrollWidth,dur=Math.max(7000,Math.min(14000,(W+w)/0.1));
   const an=x.animate([{transform:'translateX('+W+'px)'},{transform:'translateX(-'+w+'px)'}],{duration:dur,easing:'linear'});
-  an.onfinish=()=>tickNext($('#tkx')&&S&&S.log.filter(q=>q.b)[0]);
+  an.onfinish=tickNext;
   an.oncancel=()=>{tkBusy=false;};
 }
 function modalHtml(){

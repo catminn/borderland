@@ -2035,18 +2035,14 @@ html,body,*{scrollbar-width:none;scrollbar-gutter:auto!important}
 :root[data-theme] .ovl[data-k="time"] .dlg h3{font-size:clamp(30px,9.4vw,64px);line-height:1.15;white-space:nowrap}
 .coach .tip button.skip{float:left;background:transparent;color:inherit;opacity:.65;padding:0 4px;font-weight:600;font-size:14px}
 
-/* 全场播报横幅 */
-.tick{display:flex;align-items:center;gap:10px;flex:none;height:34px;padding:0 4px;border-bottom:1px solid var(--line);font-size:15px;overflow:hidden;position:relative;z-index:2}
+/* 全场播报横幅：半透明压在最上面，有播报才出现 */
+.tick{position:fixed;left:0;right:0;top:0;z-index:60;display:flex;align-items:center;gap:10px;height:36px;padding:0 12px;font-size:16px;overflow:hidden;pointer-events:none;background:rgba(0,0,0,.62);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);color:#fff}
 .tick[hidden]{display:none}
+:root[data-theme=light] .tick{background:rgba(255,255,255,.72);color:#111}
 .tick .tk-l{flex:none;padding:2px 8px;border-radius:6px;background:var(--accent);color:var(--accent-ink);font-weight:900;font-size:13px;letter-spacing:.1em}
 .tick .tk-v{position:relative;flex:1;min-width:0;height:100%;overflow:hidden}
-.tick .tk-x{position:absolute;left:0;top:0;height:100%;display:flex;align-items:center;white-space:nowrap;font-weight:600;color:var(--ink)}
-.tick .tk-x.hook{color:var(--red)}
-.tick .tk-x.idle{position:static;display:block;line-height:34px;color:var(--sub);font-weight:500;overflow:hidden;text-overflow:ellipsis}
-.tick .tk-x.idle.hook{color:var(--red)}
-body.screen .tick{height:56px;font-size:28px;padding:0 18px}
+.tick .tk-x{position:absolute;left:0;top:0;height:100%;display:flex;align-items:center;white-space:nowrap;font-weight:700}
+.tick .tk-x.hook{color:#ff4d3d}
+body.screen .tick{height:60px;font-size:30px;padding:0 24px}
 body.screen .tick .tk-l{font-size:22px;padding:4px 14px}
-body.screen .tick .tk-x.idle{line-height:56px}
-@media (min-width:820px){
-  body .stage .plist.pod{grid-template-columns:1fr 1fr 1fr;grid-template-rows:repeat(4,50px);gap:0 36px}
-}
+@media (max-width:819px){.stage .cast{display:none}}
