@@ -354,7 +354,7 @@ function viewDealer(){
         :'<button class="btn-line kickb" data-a="kickask" data-v="'+id+'">移出</button>')+'</div>';}).join('');
   const W=x.ps.filter(i=>ui.res[i]==='win'&&!TI.length),Lo=x.ps.filter(i=>ui.res[i]==='lose');
   const summary=done?esc(ui.settled.msg):!x.ps.length?'':!ready?'还有 '+pending+' 人没选结果'
-    :[W.length?'赢 '+W.join('、')+'（各 +'+(TI[0]||r.n*100)+'）':'',TI.length?TI.map(n=>{const g=x.ps.filter(i=>ui.res[i]==='w:'+n);return g.length?n+'分 '+g.join('、'):'';}).filter(Boolean).join('；'):'',Lo.length?'输 '+Lo.join('、')+'（进鬼市）':''].filter(Boolean).join('；');
+    :[W.length?'赢 '+W.join('、')+'（+'+(TI[0]||r.n*100)+'）':'',TI.length?TI.map(n=>{const g=x.ps.filter(i=>ui.res[i]==='w:'+n);return g.length?n+'分 '+g.join('、'):'';}).filter(Boolean).join('；'):'',Lo.length?'输 '+Lo.join('、')+'（进鬼市）':''].filter(Boolean).join('；');
   const allBtns=x.ps.length>1?'<div class="btns"><button class="btn-line" data-a="resall" data-v="'+(TI.length?'w:'+TD:'win')+'">全部'+(TI.length?TD:'赢')+'</button><button class="btn-line" data-a="resall" data-v="lose">全部输</button></div>':'';
   const resetBtn='<button class="btn-main glow" data-a="resetdone" style="min-height:60px;letter-spacing:.1em">重置完成，重新开放</button><span class="small center">'+(done?esc(ui.settled.msg)+'。':'')+'点了之后，玩家才能再进这间房</span>';
   const settle='<div class="pn" style="gap:14px"><div class="shrow"><h2 class="sh">房间里的人</h2><span class="hint" style="font-weight:700;color:'+(ready?'var(--accent)':pending?'var(--sub)':'var(--sub)')+'">'+(st==='reset'?'重置中':!x.ps.length?'等待入场':pending?x.ps.length+' 人':'都选好了')+'</span></div>'
@@ -362,8 +362,8 @@ function viewDealer(){
     +'<span class="sum'+(ready?' ready':'')+'">'+summary+'</span>'
     +'<button class="btn-main'+(ready?' glow':'')+'" id="finbtn" data-a="finish"'+(ready?'':' disabled')+' style="min-height:60px;letter-spacing:.14em">结束并结算</button>'
     +'<span class="small center">结算后立即发放，房间随即进入重置，请先核对</span>')+'</div>';
-  return '<div class="page tabbed">'+rooms+hero+'<div class="cols-dealer">'+sec('dealer','info',info)+sec('dealer','settle',settle)+'</div>'+(rulePn?sec('dealer','info',rulePn):'')
-    +sub('dealer',[['info','入场'],['settle','结算'+(x.ps.length?'（'+x.ps.length+'）':'')]])+'</div>';
+  return '<div class="page tabbed">'+rooms+hero+'<div class="cols-dealer">'+sec('dealer','info',info)+sec('dealer','settle',settle)+'</div>'+(rulePn?sec('dealer','rule',rulePn):'')
+    +sub('dealer',[['info','入场'],['settle','结算'+(x.ps.length?'（'+x.ps.length+'）':'')],['rule','规则']])+'</div>';
 }
 
 // ---------- 判官 ----------
