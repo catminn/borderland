@@ -36,7 +36,7 @@ const D={
   // 状态
   '在场':'Alive','待抓':'Caught?','已抓到':'Caught','鬼市':'Ghost Market','中奖':'Winner','（在鬼市）':'(in Ghost Market)',
   // 大屏
-  '剩余时间':'Time left','已暂停':'Paused','全场播报':'Live Feed','暂无播报':'Nothing yet','金币排行':'Coin Ranking','还没有人上榜':'Nobody on the board yet',
+  '剩余时间':'Time left','已暂停':'Paused','全场播报':'Live Feed','播报':'Live','暂无播报':'Nothing yet','金币排行':'Coin Ranking','还没有人上榜':'Nobody on the board yet',
   '榜单已封，最后冲刺':'Ranking frozen, final sprint!','开放':'Open','重置中':'Resetting','已关闭':'Closed','开放中':'Open','✓ 你已成功':'✓ Cleared','你在这里':'You are here','✓ 已成功':'✓ Cleared',
   // 抽奖
   '压轴抽奖':'Grand Raffle','每人限得一件':'One prize per person','即将开始':'Starting soon','并列第一':'Tied for first','待抽':'Pending','揭晓中':'Revealing','待确认':'Confirming','已颁发':'Awarded',
