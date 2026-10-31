@@ -24,7 +24,7 @@ const D={
   '欢迎来到CSSA万圣夜':'Welcome to CSSA Halloween Night','取个昵称，显示在大屏排行榜上（最多 12 字）。':'Pick a nickname for the leaderboard (max 12 characters).','昵称':'Nickname','进入游戏':'Start playing','找不到这个编号':'ID not found',
   // 通行证
   '酆都通行证':'Underworld Pass','冥府签发':'Issued by the Underworld','持证人':'Holder','名号':'Name',
-  '挑战失败':'Challenge failed','留在原地，等黑白无常来抓你':'Stay where you are and wait for the Wuchang to catch you','黑白无常已抓到你，正在送你去鬼市':'The Wuchang has caught you and is taking you to the Ghost Market',
+  '挑战失败':'Challenge failed','请自行去鬼市登记，不然黑白无常会来抓你哟！':'Please go register at the Ghost Market yourself, or the Wuchang will come and get you!','黑白无常已抓到你，正在送你去鬼市':'The Wuchang has caught you and is taking you to the Ghost Market',
   '你在鬼市':'You are in the Ghost Market','金币已冻结':'Your coins are frozen','你中奖了':'You won a prize','请到台前领取':'please collect it at the front',
   // 彩券
   '我的彩券':'My Tickets','张':'tickets','彩券越多，最终抽奖越容易中奖':'More tickets, better odds in the final raffle','你已中奖，不再参与后面的抽取':'You already won, so you are out of the remaining draws',

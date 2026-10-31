@@ -729,7 +729,7 @@ function viewPlayer(){
   const inMkt=me.st==='market',out=me.st==='out'||me.st==='picked';
   // 酆都通行证: a clearance document, stamped with the current state
   const wst=inMkt||out?'market':'alive',wseal=out?'待抓':inMkt?'鬼市':me.won?'中奖':'在场';
-  const wnote=out?'<span class="w-hint">挑战失败</span><span class="w-lab">'+(me.st==='picked'?'黑白无常已抓到你，正在送你去鬼市':'留在原地，等黑白无常来抓你')+'</span>'
+  const wnote=out?'<span class="w-hint">挑战失败</span><span class="w-lab">'+(me.st==='picked'?'黑白无常已抓到你，正在送你去鬼市':'请自行去鬼市登记，不然黑白无常会来抓你哟！')+'</span>'
     :inMkt?'<span class="w-hint">你在鬼市</span><span class="w-lab">实体筹码赢到 '+CHIP_GOAL+' 可自赎</span><span class="w-lab">金币已冻结</span>'
     :me.won?'<span class="w-hint">你中奖了</span><span class="w-lab">「'+esc((prize(me.won)||{}).name||'')+'」，请到台前领取</span>'
     :'<span class="w-hint">金币 <b class="mono">'+me.score+'</b></span><span class="w-lab">'+(myRank(me)?'排第 '+myRank(me)+' 名':'')+'</span>';
