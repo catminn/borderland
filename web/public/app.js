@@ -324,7 +324,7 @@ function viewDealer(){
       +(ids.length?'<div class="entl">'+ids.map(id=>{const p=pl(id),w=whyNotEnter(id,r.id);return '<span class="ent'+(w?' bad':'')+'"><b class="mono">'+id+'</b>'+(p&&p.nick?' '+esc(p.nick):'')+(w?'<small>'+esc(w)+'</small>':'')+'</span>';}).join('')+'</div>':'')
       +'<button class="btn-main" data-a="enter"'+(okIds.length&&!bad.length&&!full?'':' disabled')+'>'+(!ids.length?'先输入编号':bad.length?'有 '+bad.length+' 人不能入场':full?'超过房间容量 '+cap+' 人':'放行 '+ids.length+' 人入场')+'</button>';
   }
-  const TI=R.tiersOf(r.id),tSaved=TI.join(' '),tCur=ui.tiersTx!=null?ui.tiersTx:tSaved,tDirty=(tCur.match(/\d+/g)||[]).join(' ')!==tSaved;
+  const TI=R.tiersOf(r.id),TD=TI.includes(r.n*100)?r.n*100:TI[0],tSaved=TI.join(' '),tCur=ui.tiersTx!=null?ui.tiersTx:tSaved,tDirty=(tCur.match(/\d+/g)||[]).join(' ')!==tSaved;
   const tiersBox='<label class="fld"><span>得分（可填多档，如 400 300 200，不填 = 赢 +'+r.n*100+'）</span><input class="in mono" id="tiersin" data-m="tiersTx" value="'+esc(tCur)+'" inputmode="numeric" placeholder="'+r.n*100+'" autocomplete="off"></label>'+(tDirty?'<button class="btn-line" data-a="tiers">保存得分</button>':'');
   const info='<div class="pn" style="gap:14px"><h2 class="sh">入场</h2>'
     +'<div class="rwl"><span><b class="acc">赢</b> '+'+'+(TI.length?TI.join(' / '):r.n*100)+' 金币 + '+r.suit+'</span><span><b class="red">输</b> 进鬼市，原地等黑白无常</span><span class="sub">中途放弃算输，每人每间只能成功一次</span></div>'+entry+tiersBox+'</div>';
@@ -350,7 +350,7 @@ function viewDealer(){
   const W=x.ps.filter(i=>ui.res[i]==='win'&&!TI.length),Lo=x.ps.filter(i=>ui.res[i]==='lose');
   const summary=done?esc(ui.settled.msg):!x.ps.length?'':!ready?'还有 '+pending+' 人没选结果'
     :[W.length?'赢 '+W.join('、')+'（各 +'+(TI[0]||r.n*100)+'）':'',TI.length?TI.map(n=>{const g=x.ps.filter(i=>ui.res[i]==='w:'+n);return g.length?n+'分 '+g.join('、'):'';}).filter(Boolean).join('；'):'',Lo.length?'输 '+Lo.join('、')+'（进鬼市）':''].filter(Boolean).join('；');
-  const allBtns=x.ps.length>1?'<div class="btns"><button class="btn-line" data-a="resall" data-v="'+(TI.length?'w:'+TI[0]:'win')+'">全部'+(TI.length?TI[0]:'赢')+'</button><button class="btn-line" data-a="resall" data-v="lose">全部输</button></div>':'';
+  const allBtns=x.ps.length>1?'<div class="btns"><button class="btn-line" data-a="resall" data-v="'+(TI.length?'w:'+TD:'win')+'">全部'+(TI.length?TD:'赢')+'</button><button class="btn-line" data-a="resall" data-v="lose">全部输</button></div>':'';
   const resetBtn='<button class="btn-main glow" data-a="resetdone" style="min-height:60px;letter-spacing:.1em">重置完成，重新开放</button><span class="small center">'+(done?esc(ui.settled.msg)+'。':'')+'点了之后，玩家才能再进这间房</span>';
   const settle='<div class="pn" style="gap:14px"><div class="shrow"><h2 class="sh">房间里的人</h2><span class="hint" style="font-weight:700;color:'+(ready?'var(--accent)':pending?'var(--sub)':'var(--sub)')+'">'+(st==='reset'?'重置中':!x.ps.length?'等待入场':pending?x.ps.length+' 人':'都选好了')+'</span></div>'
     +(st==='reset'?resetBtn:(rows?allBtns+'<div class="rteams">'+rows+'</div>':'<div class="empty">房间里还没有人</div>')
