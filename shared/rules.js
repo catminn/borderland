@@ -177,7 +177,7 @@ function enterMarket(p,by){
   if(p.st==='alive')p.outAt=S.t;if(p.pickAt==null)p.pickAt=S.t;
   p.st='market';p.inAt=S.t;p.on=true;p.chk={by,ok:true};
   log(nm(p)+' 进入鬼市，金币冻结','back');
-  tell(p.id,'你已进入鬼市','金币已冻结。用实体筹码赢到 '+CHIP_GOAL+' 就能自赎；待满 15 分钟，不管赚没赚到都可以复活。');}
+  tell(p.id,'你已进入鬼市','金币已冻结。用实体筹码赢到 '+CHIP_GOAL+' 就能自赎；待满 15 分钟，不管赚没赚到都可以复活。也可以求助朋友，用五百金币助力你复活哦！');}
 function checkIn(pid,role){const p=pl(pid);
   if(!p)return no('没有这个编号');
   if(role==='mengpo'){if(p.st==='market'&&!(p.chk&&!p.chk.ok))return no(p.id+' 已经在鬼市');

@@ -791,7 +791,7 @@ const fzDlg=()=>'<div class="ovl"><div class="dlg" data-n="fz" role="dialog" ari
   +'<h3 id="dt">已封榜</h3><div class="body">离结束还有 15 分钟，排行榜已封。</div>'
   +'<div class="foot"></div><button data-a="fzack" data-modal="1">知道了</button></div></div>';
 const TUT=[['我的','看你的通行证、金币、彩券和每一间房的记录。','tab','player'],['大屏','看剩余时间、金币排行和全场播报。','tab'],['地图','看所有房间的位置和状态。有问题就去 info desk。','tab'],
-  ['终极目标','每 100 金币兑换 1 张彩券，集齐花色和房间还有额外彩券奖励。\n彩券越多，最终的鬼市大抽奖越容易中奖。\n另外，金币最多的人还会获得大奖哟。','.fin3','player']];
+  ['终极目标','每 100 金币兑换 1 张彩券，集齐花色和房间还有额外彩券奖励。\n彩券越多，最终的鬼市大抽奖越容易中奖。\n另外，金币最多的人也会获得大奖哟！','.fin3','player']];
 const tutSeen=()=>{try{return localStorage.getItem('borderland.tut')==='1';}catch{return !!ui.tutDone;}};
 const coachOn=()=>!!(ME&&S&&!entering&&ME.role==='player'&&!DEVME&&meP()&&meP().nick&&!tutSeen());
 let coachEl=null,coachStep=-1,coachRaf=0;

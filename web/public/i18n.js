@@ -49,7 +49,7 @@ const D={
   // 新手引导
   '看你的通行证、金币、彩券和每一间房的记录。':'Your pass, coins, tickets, and your record in every room.','看剩余时间、金币排行和全场播报。':'Time left, coin ranking, and the live feed.','看所有房间的位置和状态。有问题就去 info desk。':'Where every room is and whether it is open. Questions? Go to the info desk.',
   '终极目标':'The Big Goal',
-  '每 100 金币兑换 1 张彩券，集齐花色和房间还有额外彩券奖励。\n彩券越多，最终的鬼市大抽奖越容易中奖。\n另外，金币最多的人还会获得大奖哟。':'Every 100 coins turns into 1 raffle ticket, and collecting suits and clearing rooms earns bonus tickets.\nThe more tickets you have, the better your odds in the final Ghost Market raffle.\nThe player with the most coins also wins a grand prize!',
+  '每 100 金币兑换 1 张彩券，集齐花色和房间还有额外彩券奖励。\n彩券越多，最终的鬼市大抽奖越容易中奖。\n另外，金币最多的人也会获得大奖哟！':'Every 100 coins turns into 1 raffle ticket, and collecting suits and clearing rooms earns bonus tickets.\nThe more tickets you have, the better your odds in the final Ghost Market raffle.\nThe player with the most coins also wins a grand prize!',
   '鬼门已开！想参加的请按判官指示集合。':'The ghost gate is open! Follow the Judge to join in.','鬼门再开！想参加的请按判官指示集合。':'The ghost gate opens again! Follow the Judge to join in.','阎王点名':"Yama's Roll Call",'生死一线':'Life on the Line',
 };
 // 带数字 / 名字的句子。$1 $2 是捕获的内容；名字（编号 + 昵称）原样保留。
@@ -72,7 +72,7 @@ const P=[
   [/^鬼门开：你是第 (\d+) 名$/,(m)=>'Ghost Gate: you came in #'+m[1]],
   [/^找判官选奖励：(\d+) 金币 \/ 救一个人 \/ 拿一个花色。$/,(m)=>'See the Judge to pick a reward: '+m[1]+' coins / save someone / take a suit.'],
   [/^原因：挑战 (\S+) 失败。请自行去鬼市登记，不然黑白无常会来抓你哟！$/,(m)=>'Reason: failed '+m[1]+'. Please go register at the Ghost Market yourself, or the Wuchang will come and get you!'],
-  [/^金币已冻结。用实体筹码赢到 (\d+) 就能自赎；待满 15 分钟，不管赚没赚到都可以复活。$/,(m)=>'Your coins are frozen. Win '+m[1]+' chips to buy yourself out, or wait 15 minutes and you can come back no matter what.'],
+  [/^金币已冻结。用实体筹码赢到 (\d+) 就能自赎；待满 15 分钟，不管赚没赚到都可以复活。也可以求助朋友，用五百金币助力你复活哦！$/,(m)=>'Your coins are frozen. Win '+m[1]+' chips to buy yourself out, or wait 15 minutes and you can come back no matter what. You can also ask a friend to chip in 500 coins and bring you back!'],
   [/^你回到了人间，金币已解冻。$/,()=>'You are back among the living and your coins are unfrozen.'],
   [/^金币已解冻。$/,()=>'Your coins are unfrozen.'],
   [/^你被 (.+) 花 (\d+) 金币赎了出来，金币已解冻。$/,(m)=>'You were ransomed by '+m[1]+' for '+m[2]+' coins. Your coins are unfrozen.'],
