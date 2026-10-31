@@ -245,7 +245,7 @@ function puzRedeem(pid,code){const p=pl(pid);if(!p)return no('没有这个编号
 function sponsorGive(ids){ids=[...new Set((Array.isArray(ids)?ids:[ids]).map(x=>String(x==null?'':x)))].filter(Boolean);if(!ids.length)return no('先输入玩家编号');
   const okN=[],bad=[];for(const id of ids){const p=pl(id);if(!p){bad.push(id+' 没有这个编号');continue;}if(p.spn){bad.push(p.id+' 已经领过了');continue;}
     p.spn={t:S.t};p.score+=SPN_PTS;p.on=true;okN.push(p.id);log('赞助商确认 '+nm(p)+'，+'+SPN_PTS+' 金币','back');
-    tell(p.id,'赞助商奖励到账！','感谢参与赞助商环节，+'+SPN_PTS+' 金币已到账。');}
+    tell(p.id,'赞助商奖励到账！','感谢您对地府业务的大力支持！');}
   if(!okN.length)return no(bad.join('；'));
   return ok(okN.join('、')+' 各 +'+SPN_PTS+' 金币'+(bad.length?'；没加：'+bad.join('；'):''));}
 function sponsorUndo(pid){const p=pl(pid);if(!p)return no('没有这个编号');if(!p.spn)return no(p.id+' 没有赞助商奖励');
