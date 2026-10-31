@@ -5,10 +5,10 @@ const BASE = (process.argv[2] || '').replace(/\/$/, '');
 if (!BASE) { console.log('用法：node tools/room-stats.mjs https://cssa-borderland.pages.dev [players.csv]'); process.exit(1); }
 const pin = await new Promise(res => {
   process.stdout.write('总控 PIN：'); const si = process.stdin; si.setRawMode?.(true); si.resume(); let s = '';
-  si.on('data', c => { for (const ch of c.toString()) { if (ch === '\r' || ch === '\n') { si.setRawMode?.(false); si.pause(); console.log(); return res(s); } if (ch === '\x03') process.exit(); if (ch === '\x7f') s = s.slice(0, -1); else s += ch; } });
+  si.on('data', c => { for (const ch of c.toString()) { if (ch === '\r' || ch === '\n') { si.setRawMode?.(false); si.pause(); console.log(); return res(s); } if (ch === '\x03') process.exit(); if (ch === '\x7f' || ch === '\b') { if (s) { s = s.slice(0, -1); process.stdout.write('\b \b'); } } else if (/\d/.test(ch)) { s += ch; process.stdout.write('*'); } } });
 });
 const j = await (await fetch(BASE + '/api/login', { method: 'POST', body: JSON.stringify({ pin }) })).json();
-if (!j.token) { console.log('登录失败'); process.exit(1); }
+if (!j.token) { console.log('登录失败：' + JSON.stringify(j) + '（输入了 ' + pin.length + ' 位）'); process.exit(1); }
 const ws = new WebSocket(BASE.replace('http', 'ws') + '/api/ws?token=' + j.token);
 const S = await new Promise(r => { ws.onmessage = e => { const m = JSON.parse(e.data); if (m.S) r(m.S); }; });
 ws.close();
