@@ -2046,3 +2046,8 @@ html,body,*{scrollbar-width:none;scrollbar-gutter:auto!important}
 body.screen .tick{height:60px;font-size:30px;padding:0 24px}
 body.screen .tick .tk-l{font-size:22px;padding:4px 14px}
 @media (max-width:819px){.stage .cast{display:none}}
+/* 2026-10-31 手机下边栏防乱跑（iOS）：底栏单独成层；body 不再用 fixed 背景（滚动时 iOS 会重绘跳动）；高度用 dvh，地址栏收放不改页面高度 */
+@media (max-width:719px){
+  body.bt{background-attachment:scroll;min-height:100vh;min-height:100dvh}
+  body.bt #tabs{transform:translateZ(0);-webkit-transform:translateZ(0);will-change:transform;backface-visibility:hidden}
+}
