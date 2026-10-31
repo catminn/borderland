@@ -2020,3 +2020,4 @@ html[data-lang="en"] nav.pages button,html[data-lang="en"] #tabs button{font-siz
 .rt.rp .hd{padding-right:130px}
 
 .wl.w4{grid-template-columns:repeat(4,minmax(0,1fr))}.wl.w5{grid-template-columns:repeat(5,minmax(0,1fr))}.wl.w4 button,.wl.w5 button{font-size:17px;letter-spacing:.02em}
+html:has(body.screen){scrollbar-gutter:auto}
